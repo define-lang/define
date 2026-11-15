@@ -1,0 +1,53 @@
+# Executing an operation that has a read/write view, with a local view after it is written, is reported only once. Later statements may still read the local view.
+define the operation<my.domain.com:my_lib:/test> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the view<twice_negated> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        define the view<negated> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        execute the operation</negate_number> {
+            with view<value> looking at view<number>.
+            with view<result> looking at view<negated>.
+        }
+        execute the operation</negate_in_place> {
+            with view<value> looking at view<negated>.
+        }
+        execute the operation</negate_number> {
+            with view<value> looking at view<negated>.
+            with view<result> looking at view<twice_negated>.
+        }
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</test_twice_negated>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<test_number> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<test_number>.
+        set the value of position<test_number> from literal<standard:/number>"1".
+        create a particle in position</test_twice_negated>.
+        execute the operation</test> {
+            with view<number> looking at position<test_number>.
+            with view<twice_negated> looking at position</test_twice_negated>.
+        }
+    }
+}

@@ -1,17 +1,21 @@
 # A literal and a position's value are both true with the built-in boolean and.
 define the potential action<my.domain.com:my_lib:/test> {
-    it also assigns the position</powered>.
-    it also assigns the position</both>.
+    it also assigns the position</final_result>.
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position</powered>.
-        create a particle in position</both>.
-        set the value of position</powered> from literal<standard:/boolean>"true".
+        define the position<powered> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<powered>.
+        create a particle in position</final_result>.
+        set the value of position<powered> from literal<standard:/boolean>"true".
         execute the operation<standard:/boolean/and> {
-            with view<a> looking at position</powered>.
+            with view<a> looking at position<powered>.
             with view<b> looking at literal<standard:/boolean>"true".
-            with view<result> looking at position</both>.
+            with view<result> looking at position</final_result>.
         }
     }
 }

@@ -10,25 +10,25 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
-        ValidateTestdataNonFilesystemWithReferenceGraph,
+        ValidateTestdataProjectWithReferenceGraph,
     )
 
 
 def test_valid_execution(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert_no_errors(result)
 
 
 def test_read_not_supported(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationReadNotSupportedDiagnostic(
             location=rendering.SourceLocation(
-                line=31, column=41, end_line=31, end_column=52
+                line=18, column=41, end_line=18, end_column=52, file_path="test.dfn"
             ),
             looked_at_name="view<amount>",
             logical_operation_name="logical_operation</negate>",
@@ -38,13 +38,13 @@ def test_read_not_supported(
 
 
 def test_write_not_supported(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
-                line=32, column=42, end_line=32, end_column=54
+                line=19, column=42, end_line=19, end_column=54, file_path="test.dfn"
             ),
             looked_at_name="view<negated>",
             logical_operation_name="logical_operation</negate>",
@@ -54,13 +54,13 @@ def test_write_not_supported(
 
 
 def test_logical_operation_not_supported(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationReadNotSupportedDiagnostic(
             location=rendering.SourceLocation(
-                line=40, column=41, end_line=40, end_column=52
+                line=18, column=41, end_line=18, end_column=52, file_path="test.dfn"
             ),
             looked_at_name="view<amount>",
             logical_operation_name="logical_operation</negate>",
@@ -68,7 +68,7 @@ def test_logical_operation_not_supported(
         ),
         diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
-                line=41, column=42, end_line=41, end_column=54
+                line=19, column=42, end_line=19, end_column=54, file_path="test.dfn"
             ),
             looked_at_name="view<negated>",
             logical_operation_name="logical_operation</negate>",
@@ -78,99 +78,99 @@ def test_logical_operation_not_supported(
 
 
 def test_write_to_input_only_view(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_diagnostics == [
         diagnostics.WriteToInputOnlyViewDiagnostic(
             location=rendering.SourceLocation(
-                line=33, column=42, end_line=33, end_column=52
+                line=19, column=42, end_line=19, end_column=52, file_path="test.dfn"
             ),
             looked_at_name="view<other>",
             view_name="view<result>",
-            operation_name="logical_operation</negate>",
+            operation_name="logical_operation<standard:/number/negate>",
         )
     ]
 
 
 def test_read_from_unwritten_output_view(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_diagnostics == [
         diagnostics.ReadFromUnwrittenOutputViewDiagnostic(
             location=rendering.SourceLocation(
-                line=32, column=41, end_line=32, end_column=51
+                line=18, column=37, end_line=18, end_column=47, file_path="test.dfn"
             ),
             looked_at_name="view<first>",
-            view_name="view<value>",
-            operation_name="logical_operation</negate>",
+            view_name="view<a>",
+            operation_name="logical_operation<standard:/number/negate>",
         )
     ]
 
 
 def test_undefined_logical_operation_view(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_diagnostics == [
         diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
-                line=31, column=21, end_line=31, end_column=46
+                line=17, column=21, end_line=17, end_column=62, file_path="test.dfn"
             ),
-            view_name="view<value>",
-            operation_name="logical_operation</negate>",
+            view_name="view<a>",
+            operation_name="logical_operation<standard:/number/negate>",
         ),
         diagnostics.UndefinedOperationViewDiagnostic(
             location=rendering.SourceLocation(
-                line=32, column=18, end_line=32, end_column=28
+                line=18, column=18, end_line=18, end_column=28, file_path="test.dfn"
             ),
             view_name="view<input>",
-            operation_name="logical_operation</negate>",
-            interface_view_names=["view<value>", "view<result>"],
+            operation_name="logical_operation<standard:/number/negate>",
+            interface_view_names=["view<a>", "view<result>"],
         ),
     ]
 
 
 def test_argument_order(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_diagnostics == [
         diagnostics.OperationArgumentOrderDiagnostic(
             location=rendering.SourceLocation(
-                line=33, column=18, end_line=33, end_column=28
+                line=19, column=18, end_line=19, end_column=24, file_path="test.dfn"
             ),
-            view_name="view<value>",
-            operation_name="logical_operation</negate>",
-            expected_order=["view<value>", "view<result>"],
+            view_name="view<a>",
+            operation_name="logical_operation<standard:/number/negate>",
+            expected_order=["view<a>", "view<result>"],
         )
     ]
 
 
 def test_missing_argument(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_diagnostics == [
         diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
-                line=25, column=21, end_line=25, end_column=46
+                line=11, column=21, end_line=11, end_column=62, file_path="test.dfn"
             ),
-            view_name="view<value>",
-            operation_name="logical_operation</negate>",
+            view_name="view<a>",
+            operation_name="logical_operation<standard:/number/negate>",
         )
     ]
 
 
 def test_looks_at_undefined_view(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_diagnostics == [
         diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
-                line=26, column=41, end_line=26, end_column=53
+                line=12, column=37, end_line=12, end_column=49, file_path="test.dfn"
             ),
             local_name="view<missing>",
         )
@@ -178,13 +178,13 @@ def test_looks_at_undefined_view(
 
 
 def test_missing_logical_operation(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
-                line=31, column=21, end_line=31, end_column=63
+                line=17, column=21, end_line=17, end_column=63, file_path="test.dfn"
             ),
             definition_name="logical_operation<standard:/number/missing>",
         )
@@ -192,13 +192,13 @@ def test_missing_logical_operation(
 
 
 def test_missing_value(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
-                line=20, column=24, end_line=20, end_column=54
+                line=6, column=24, end_line=6, end_column=54, file_path="test.dfn"
             ),
             definition_name="value<standard:/number/missing>",
         )
@@ -206,19 +206,19 @@ def test_missing_value(
 
 
 def test_view_without_value_quality(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
+    result = validate_testdata_project_with_reference_graph().program_result
     assert result.all_diagnostics == [
         diagnostics.ViewMissingValueQualityDiagnostic(
             location=rendering.SourceLocation(
-                line=17, column=16, end_line=17, end_column=27
+                line=3, column=16, end_line=3, end_column=27, file_path="test.dfn"
             ),
             view_name="view<amount>",
         ),
         diagnostics.ValueOperationViewEncodingDiagnostic(
             location=rendering.SourceLocation(
-                line=20, column=24, end_line=20, end_column=63
+                line=6, column=24, end_line=6, end_column=63, file_path="test.dfn"
             ),
             quality_name="encoding<standard:/number/decimal/ascii>",
         ),

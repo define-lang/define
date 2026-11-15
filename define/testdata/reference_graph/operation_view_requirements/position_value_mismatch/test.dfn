@@ -1,0 +1,17 @@
+# The particle a view looks at must have the view's value, not another value.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<runner> {
+            it may only contain particles where {
+                it has the action</run>.
+            }
+        }
+        create a particle in position<runner>.
+        create a particle in position<runner>::action</run>::position<first>.
+        set the value of position<runner>::action</run>::position<first> from literal<standard:/number>"1".
+        create a particle in position<runner>::action</run>::position<second>.
+        create a particle in position<runner>::action</run>::position<trigger>.
+    }
+}

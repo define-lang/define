@@ -1,0 +1,24 @@
+# A View Setting Statement whose target is a read/write interface view and whose source is not a local view is reported only by structural validation.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</copy_in_place_value>.
+    it also assigns the position</copy_in_place_result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</copy_in_place_value>.
+        set the value of position</copy_in_place_value> from literal<standard:/number>"1".
+        define the position<copy_in_place_number> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<copy_in_place_number>.
+        set the value of position<copy_in_place_number> from literal<standard:/number>"1".
+        create a particle in position</copy_in_place_result>.
+        execute the operation</copy_in_place> {
+            with view<value> looking at position</copy_in_place_value>.
+            with view<number> looking at position<copy_in_place_number>.
+            with view<result> looking at position</copy_in_place_result>.
+        }
+    }
+}

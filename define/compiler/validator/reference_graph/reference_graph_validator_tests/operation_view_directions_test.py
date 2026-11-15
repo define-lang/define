@@ -12,6 +12,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 if TYPE_CHECKING:
     from define.compiler.conftest import (
         ValidateTestdataNonFilesystemWithReferenceGraph,
+        ValidateTestdataProjectWithReferenceGraph,
     )
 
 
@@ -174,21 +175,20 @@ def test_output_view_sets_value_in_action(
 
 
 def test_output_view_argument_error_in_destructor_does_not_report_changed_value(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(
-        diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
-    )
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 37
-    assert diagnostic.location.column == 42
-    assert diagnostic.view_name == "view<target>"
-    assert diagnostic.looked_at_name == "position</value>"
-    assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
-    assert diagnostic.missing_qualities == ["value<standard:/number/natural>"]
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_diagnostics == [
+        diagnostics.OperationArgumentMissingQualitiesDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=42, end_line=8, end_column=57, file_path="cleanup.dfn"
+            ),
+            view_name="view<target>",
+            looked_at_name="position</value>",
+            looked_at_kind=diagnostics.LookedAtKind.POSITION,
+            missing_qualities=["value<standard:/number/natural>"],
+        )
+    ]
 
 
 def test_read_and_written_view_requires_set_value_in_action(

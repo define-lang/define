@@ -1,0 +1,20 @@
+# A View Setting Statement whose source and target are the same view is reported only by structural validation.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</negate_result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<negate_number> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<negate_number>.
+        set the value of position<negate_number> from literal<standard:/number>"1".
+        create a particle in position</negate_result>.
+        execute the operation</negate> {
+            with view<number> looking at position<negate_number>.
+            with view<result> looking at position</negate_result>.
+        }
+    }
+}

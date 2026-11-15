@@ -1,0 +1,21 @@
+# The execution statement before a View Setting Statement whose target is a read/write interface view must read that view.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</add_and_negate_in_place_value>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</add_and_negate_in_place_value>.
+        set the value of position</add_and_negate_in_place_value> from literal<standard:/number>"1".
+        define the position<add_and_negate_in_place_number> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<add_and_negate_in_place_number>.
+        set the value of position<add_and_negate_in_place_number> from literal<standard:/number>"1".
+        execute the operation</add_and_negate_in_place> {
+            with view<value> looking at position</add_and_negate_in_place_value>.
+            with view<number> looking at position<add_and_negate_in_place_number>.
+        }
+    }
+}

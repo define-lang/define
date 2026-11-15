@@ -1,0 +1,8 @@
+encodings: {
+  value_encodings: [
+    {
+      value: "/count"
+      encoding: "standard:/number/integer/ascii"
+    }
+  ]
+}

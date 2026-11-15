@@ -321,6 +321,10 @@ class OperationArgumentsValidator:
         missing: list[str] = []
         for statement in interface_view.quality_assignment_block.statements:
             quality = statement.typed_global_name
+            # A missing quality was already reported when its reference was
+            # resolved, and no particle could have it.
+            if quality not in self._definition_results:
+                continue
             if quality.full_typed_name not in qualities:
                 missing.append(quality.source_form_in_universe(self._enclosing_fqun))
         if missing:

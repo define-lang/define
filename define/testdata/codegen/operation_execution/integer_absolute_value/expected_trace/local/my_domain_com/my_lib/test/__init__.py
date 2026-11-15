@@ -4,36 +4,33 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.distance
-import local.my_domain_com.my_lib.offset
+import local.my_domain_com.my_lib.final_result
 import standard.number.integer.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.offset.OffsetPosition,
-        local.my_domain_com.my_lib.distance.DistancePosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.offset.OffsetPosition
-        ).create_particle()
-        literal.record_operation("test.create(/offset)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.distance.DistancePosition
-        ).create_particle()
-        literal.record_operation("test.create(/distance)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.offset.OffsetPosition
-        ).particle.value = -3
-        literal.record_operation("test.set_value(/offset, -3)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.distance.DistancePosition
-        ).particle.value = standard.number.integer.ascii.encoding_absolute_value(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.offset.OffsetPosition
-            ).particle.value,
+        position_offset = literal.LocalPosition[int](
+            "position<offset>",
         )
-        literal.record_operation("test.execute(operation<standard:/number/integer/absolute_value>, /offset, /distance)")
+        position_offset.create_particle()
+        literal.record_operation("test.create(offset)")
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).create_particle()
+        literal.record_operation("test.create(/final_result)")
+        position_offset.particle.value = -3
+        literal.record_operation("test.set_value(offset, -3)")
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).particle.value = standard.number.integer.ascii.encoding_absolute_value(
+            position_offset.particle.value,
+        )
+        literal.record_operation("test.execute(operation<standard:/number/integer/absolute_value>, offset, /final_result)")
+        position_offset.destroy_particle()
+        literal.record_operation("test.destroy(offset)")

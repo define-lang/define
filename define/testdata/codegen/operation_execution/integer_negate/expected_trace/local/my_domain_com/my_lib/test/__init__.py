@@ -4,30 +4,30 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.balance
+import local.my_domain_com.my_lib.final_result
 import standard.number.integer.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.balance.BalancePosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.balance.BalancePosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).create_particle()
-        literal.record_operation("test.create(/balance)")
+        literal.record_operation("test.create(/final_result)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.balance.BalancePosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = 3
-        literal.record_operation("test.set_value(/balance, 3)")
+        literal.record_operation("test.set_value(/final_result, 3)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.balance.BalancePosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = standard.number.integer.ascii.encoding_negate(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.balance.BalancePosition
+                local.my_domain_com.my_lib.final_result.FinalResultPosition
             ).particle.value,
         )
-        literal.record_operation("test.execute(operation<standard:/number/integer/negate>, /balance)")
+        literal.record_operation("test.execute(operation<standard:/number/integer/negate>, /final_result)")

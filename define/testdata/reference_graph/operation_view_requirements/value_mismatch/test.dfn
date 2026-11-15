@@ -1,0 +1,20 @@
+# view<source> requires a natural, but view<number> contains counts.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</double_result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<double_number> {
+            it may only contain particles where {
+                it has the value</count>.
+            }
+        }
+        create a particle in position<double_number>.
+        set the value of position<double_number> from literal<standard:/number>"1".
+        create a particle in position</double_result>.
+        execute the operation</double> {
+            with view<number> looking at position<double_number>.
+            with view<result> looking at position</double_result>.
+        }
+    }
+}

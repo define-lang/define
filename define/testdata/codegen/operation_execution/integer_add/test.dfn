@@ -1,17 +1,21 @@
 # An action adds a position's value and a literal with the built-in integer addition.
 define the potential action<my.domain.com:my_lib:/test> {
-    it also assigns the position</augend>.
-    it also assigns the position</total>.
+    it also assigns the position</final_result>.
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position</augend>.
-        create a particle in position</total>.
-        set the value of position</augend> from literal<standard:/number>"-3".
+        define the position<augend> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<augend>.
+        create a particle in position</final_result>.
+        set the value of position<augend> from literal<standard:/number>"-3".
         execute the operation<standard:/number/integer/add> {
-            with view<a> looking at position</augend>.
+            with view<a> looking at position<augend>.
             with view<b> looking at literal<standard:/number>"2".
-            with view<result> looking at position</total>.
+            with view<result> looking at position</final_result>.
         }
     }
 }

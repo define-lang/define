@@ -1,0 +1,27 @@
+# view<missing> is not a view of operation</test>.
+define the operation<my.domain.com:my_lib:/test> {
+    define the view<negated> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        execute the logical_operation<standard:/number/negate> {
+            with view<a> looking at view<missing>.
+            with view<result> looking at view<negated>.
+        }
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</test_negated>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</test_negated>.
+        execute the operation</test> {
+            with view<negated> looking at position</test_negated>.
+        }
+    }
+}

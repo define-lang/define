@@ -4,43 +4,35 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.limit
-import local.my_domain_com.my_lib.matches
-import local.my_domain_com.my_lib.reading
+import local.my_domain_com.my_lib.final_result
 import standard.text.unicode.scalar.utf8
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.reading.ReadingPosition,
-        local.my_domain_com.my_lib.limit.LimitPosition,
-        local.my_domain_com.my_lib.matches.MatchesPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.reading.ReadingPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.limit.LimitPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.matches.MatchesPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.reading.ReadingPosition
-        ).particle.value = "q"
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.limit.LimitPosition
-        ).particle.value = "q"
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.matches.MatchesPosition
-        ).particle.value = standard.text.unicode.scalar.utf8.encoding_equals(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.reading.ReadingPosition
-            ).particle.value,
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.limit.LimitPosition
-            ).particle.value,
+        position_limit = literal.LocalPosition[str](
+            "position<limit>",
         )
+        position_reading = literal.LocalPosition[str](
+            "position<reading>",
+        )
+        position_reading.create_particle()
+        position_limit.create_particle()
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).create_particle()
+        position_reading.particle.value = "q"
+        position_limit.particle.value = "q"
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).particle.value = standard.text.unicode.scalar.utf8.encoding_equals(
+            position_reading.particle.value,
+            position_limit.particle.value,
+        )
+        position_limit.destroy_particle()
+        position_reading.destroy_particle()

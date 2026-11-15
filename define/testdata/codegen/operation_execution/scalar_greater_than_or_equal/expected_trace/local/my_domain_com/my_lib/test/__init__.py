@@ -4,37 +4,34 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.at_least
-import local.my_domain_com.my_lib.reading
+import local.my_domain_com.my_lib.final_result
 import standard.text.unicode.scalar.utf8
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.reading.ReadingPosition,
-        local.my_domain_com.my_lib.at_least.AtLeastPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
+        position_reading = literal.LocalPosition[str](
+            "position<reading>",
+        )
+        position_reading.create_particle()
+        literal.record_operation("test.create(reading)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.reading.ReadingPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).create_particle()
-        literal.record_operation("test.create(/reading)")
+        literal.record_operation("test.create(/final_result)")
+        position_reading.particle.value = "e"
+        literal.record_operation('test.set_value(reading, "e")')
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.at_least.AtLeastPosition
-        ).create_particle()
-        literal.record_operation("test.create(/at_least)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.reading.ReadingPosition
-        ).particle.value = "e"
-        literal.record_operation('test.set_value(/reading, "e")')
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.at_least.AtLeastPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = standard.text.unicode.scalar.utf8.encoding_greater_than_or_equal(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.reading.ReadingPosition
-            ).particle.value,
+            position_reading.particle.value,
             "a",
         )
-        literal.record_operation('test.execute(operation<standard:/text/unicode/scalar/greater_than_or_equal>, /reading, "a", /at_least)')
+        literal.record_operation('test.execute(operation<standard:/text/unicode/scalar/greater_than_or_equal>, reading, "a", /final_result)')
+        position_reading.destroy_particle()
+        literal.record_operation("test.destroy(reading)")

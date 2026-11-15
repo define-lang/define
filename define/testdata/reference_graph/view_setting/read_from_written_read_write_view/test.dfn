@@ -1,0 +1,16 @@
+# A View Setting Statement may not read a read/write interface view after a statement writes it.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</negate_twice_in_place_and_add_value>.
+    it also assigns the position</negate_twice_in_place_and_add_result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</negate_twice_in_place_and_add_value>.
+        set the value of position</negate_twice_in_place_and_add_value> from literal<standard:/number>"1".
+        create a particle in position</negate_twice_in_place_and_add_result>.
+        execute the operation</negate_twice_in_place_and_add> {
+            with view<value> looking at position</negate_twice_in_place_and_add_value>.
+            with view<result> looking at position</negate_twice_in_place_and_add_result>.
+        }
+    }
+}

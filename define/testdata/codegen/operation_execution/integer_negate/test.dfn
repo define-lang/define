@@ -1,13 +1,13 @@
 # An action negates a position's value with the built-in integer negation.
 define the potential action<my.domain.com:my_lib:/test> {
-    it also assigns the position</balance>.
+    it also assigns the position</final_result>.
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position</balance>.
-        set the value of position</balance> from literal<standard:/number>"3".
+        create a particle in position</final_result>.
+        set the value of position</final_result> from literal<standard:/number>"3".
         execute the operation<standard:/number/integer/negate> {
-            with view<value> looking at position</balance>.
+            with view<value> looking at position</final_result>.
         }
     }
 }

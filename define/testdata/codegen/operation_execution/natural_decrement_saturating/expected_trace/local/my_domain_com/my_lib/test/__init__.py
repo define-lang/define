@@ -4,30 +4,30 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.count
+import local.my_domain_com.my_lib.final_result
 import standard.number.natural.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.count.CountPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.count.CountPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).create_particle()
-        literal.record_operation("test.create(/count)")
+        literal.record_operation("test.create(/final_result)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.count.CountPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = 0
-        literal.record_operation("test.set_value(/count, 0)")
+        literal.record_operation("test.set_value(/final_result, 0)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.count.CountPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = standard.number.natural.ascii.encoding_decrement_saturating(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.count.CountPosition
+                local.my_domain_com.my_lib.final_result.FinalResultPosition
             ).particle.value,
         )
-        literal.record_operation("test.execute(operation<standard:/number/natural/decrement_saturating>, /count)")
+        literal.record_operation("test.execute(operation<standard:/number/natural/decrement_saturating>, /final_result)")

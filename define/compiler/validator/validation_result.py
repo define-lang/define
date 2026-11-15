@@ -74,9 +74,10 @@ type ValueOperationStep = (
 class ValueOperationPostorderValidationResult(PostorderValidationResult):
     """Result of validating a Value Operation definition."""
 
-    # None when the Value Operation has diagnostics, because its steps may then
-    # be incomplete, and nothing executing it can choose Encoding Operations
-    # from them.
+    # None when either validation phase reported anything about the Value
+    # Operation, because its steps may then be incomplete or refer to views
+    # that do not exist, and nothing executing it can choose Encoding
+    # Operations from them.
     steps: list[ValueOperationStep] | None
 
 

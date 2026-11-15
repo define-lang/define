@@ -4,27 +4,27 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.balance
+import local.my_domain_com.my_lib.final_result
 import standard.number.integer.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.balance.BalancePosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.balance.BalancePosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.balance.BalancePosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = 3
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.balance.BalancePosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = standard.number.integer.ascii.encoding_negate(
             self.on_particle.get_position(
-                local.my_domain_com.my_lib.balance.BalancePosition
+                local.my_domain_com.my_lib.final_result.FinalResultPosition
             ).particle.value,
         )

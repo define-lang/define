@@ -398,13 +398,22 @@ class ValueOperationDefinitionValidator(
     ):
         self._steps.append(statement)
 
+    def _has_diagnostics(self) -> bool:
+        """Whether either validation phase reported anything about the Value Operation."""
+        # Structural validation also reports problems that leave the steps
+        # unusable, such as an execution that looks at an undefined view.
+        return bool(
+            self._diagnostics
+            or self._definition_results[self._definition.typed_name].diagnostics
+        )
+
     @override
     def _build_result(
         self,
     ) -> validation_result.ValueOperationPostorderValidationResult:
         return validation_result.ValueOperationPostorderValidationResult(
             diagnostics=self._diagnostics,
-            steps=None if self._diagnostics else self._steps,
+            steps=None if self._has_diagnostics() else self._steps,
         )
 
 

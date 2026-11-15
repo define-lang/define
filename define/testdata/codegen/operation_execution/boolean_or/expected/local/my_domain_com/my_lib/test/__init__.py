@@ -4,43 +4,35 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.either
-import local.my_domain_com.my_lib.powered
-import local.my_domain_com.my_lib.unlocked
+import local.my_domain_com.my_lib.final_result
 import standard.boolean.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.powered.PoweredPosition,
-        local.my_domain_com.my_lib.unlocked.UnlockedPosition,
-        local.my_domain_com.my_lib.either.EitherPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.powered.PoweredPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.unlocked.UnlockedPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.either.EitherPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.powered.PoweredPosition
-        ).particle.value = True
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.unlocked.UnlockedPosition
-        ).particle.value = False
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.either.EitherPosition
-        ).particle.value = standard.boolean.ascii.encoding_or(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.powered.PoweredPosition
-            ).particle.value,
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.unlocked.UnlockedPosition
-            ).particle.value,
+        position_unlocked = literal.LocalPosition[bool](
+            "position<unlocked>",
         )
+        position_powered = literal.LocalPosition[bool](
+            "position<powered>",
+        )
+        position_powered.create_particle()
+        position_unlocked.create_particle()
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).create_particle()
+        position_powered.particle.value = True
+        position_unlocked.particle.value = False
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).particle.value = standard.boolean.ascii.encoding_or(
+            position_powered.particle.value,
+            position_unlocked.particle.value,
+        )
+        position_unlocked.destroy_particle()
+        position_powered.destroy_particle()

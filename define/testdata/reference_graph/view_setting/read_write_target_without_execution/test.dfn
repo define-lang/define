@@ -1,0 +1,16 @@
+# A View Setting Statement whose target is a read/write interface view must directly follow an execution statement.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</negate_in_place_value>.
+    it also assigns the position</negate_in_place_result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</negate_in_place_value>.
+        set the value of position</negate_in_place_value> from literal<standard:/number>"1".
+        create a particle in position</negate_in_place_result>.
+        execute the operation</negate_in_place> {
+            with view<value> looking at position</negate_in_place_value>.
+            with view<result> looking at position</negate_in_place_result>.
+        }
+    }
+}

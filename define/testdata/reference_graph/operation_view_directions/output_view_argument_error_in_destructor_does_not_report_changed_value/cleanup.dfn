@@ -1,0 +1,11 @@
+define the potential action<my.domain.com:my_lib:/cleanup> {
+    it also assigns the position</value>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        execute the operation</copy> {
+            with view<source> looking at literal<standard:/number>"5".
+            with view<target> looking at position</value>.
+        }
+    }
+}

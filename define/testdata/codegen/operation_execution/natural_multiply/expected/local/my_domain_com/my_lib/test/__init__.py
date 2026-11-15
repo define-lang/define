@@ -4,33 +4,29 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.factor
-import local.my_domain_com.my_lib.product
+import local.my_domain_com.my_lib.final_result
 import standard.number.natural.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.factor.FactorPosition,
-        local.my_domain_com.my_lib.product.ProductPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
+        position_factor = literal.LocalPosition[int](
+            "position<factor>",
+        )
+        position_factor.create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.factor.FactorPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).create_particle()
+        position_factor.particle.value = 3
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.product.ProductPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.factor.FactorPosition
-        ).particle.value = 3
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.product.ProductPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = standard.number.natural.ascii.encoding_multiply(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.factor.FactorPosition
-            ).particle.value,
+            position_factor.particle.value,
             4,
         )
+        position_factor.destroy_particle()

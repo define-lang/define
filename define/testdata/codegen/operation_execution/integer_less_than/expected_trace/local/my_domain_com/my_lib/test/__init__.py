@@ -4,49 +4,43 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.below
-import local.my_domain_com.my_lib.limit
-import local.my_domain_com.my_lib.reading
+import local.my_domain_com.my_lib.final_result
 import standard.number.integer.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.reading.ReadingPosition,
-        local.my_domain_com.my_lib.limit.LimitPosition,
-        local.my_domain_com.my_lib.below.BelowPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.reading.ReadingPosition
-        ).create_particle()
-        literal.record_operation("test.create(/reading)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.limit.LimitPosition
-        ).create_particle()
-        literal.record_operation("test.create(/limit)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.below.BelowPosition
-        ).create_particle()
-        literal.record_operation("test.create(/below)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.reading.ReadingPosition
-        ).particle.value = -3
-        literal.record_operation("test.set_value(/reading, -3)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.limit.LimitPosition
-        ).particle.value = 4
-        literal.record_operation("test.set_value(/limit, 4)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.below.BelowPosition
-        ).particle.value = standard.number.integer.ascii.encoding_less_than(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.reading.ReadingPosition
-            ).particle.value,
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.limit.LimitPosition
-            ).particle.value,
+        position_limit = literal.LocalPosition[int](
+            "position<limit>",
         )
-        literal.record_operation("test.execute(operation<standard:/number/integer/less_than>, /reading, /limit, /below)")
+        position_reading = literal.LocalPosition[int](
+            "position<reading>",
+        )
+        position_reading.create_particle()
+        literal.record_operation("test.create(reading)")
+        position_limit.create_particle()
+        literal.record_operation("test.create(limit)")
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).create_particle()
+        literal.record_operation("test.create(/final_result)")
+        position_reading.particle.value = -3
+        literal.record_operation("test.set_value(reading, -3)")
+        position_limit.particle.value = 4
+        literal.record_operation("test.set_value(limit, 4)")
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).particle.value = standard.number.integer.ascii.encoding_less_than(
+            position_reading.particle.value,
+            position_limit.particle.value,
+        )
+        literal.record_operation("test.execute(operation<standard:/number/integer/less_than>, reading, limit, /final_result)")
+        position_limit.destroy_particle()
+        literal.record_operation("test.destroy(limit)")
+        position_reading.destroy_particle()
+        literal.record_operation("test.destroy(reading)")

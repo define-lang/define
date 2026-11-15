@@ -1,0 +1,21 @@
+define the potential action<my.domain.com:my_lib:/run> {
+    define the position<first> {
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the position<second> {
+        it may only contain particles where {
+            it has the value</text>.
+        }
+    }
+    define the position<trigger>.
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        execute the operation</copy> {
+            with view<source> looking at position<first>.
+            with view<target> looking at position<second>.
+        }
+    }
+}

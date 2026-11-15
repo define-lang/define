@@ -1,17 +1,21 @@
 # An action subtracts a literal from a position's value with the built-in integer subtraction.
 define the potential action<my.domain.com:my_lib:/test> {
-    it also assigns the position</balance>.
-    it also assigns the position</remaining>.
+    it also assigns the position</final_result>.
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position</balance>.
-        create a particle in position</remaining>.
-        set the value of position</balance> from literal<standard:/number>"-5".
+        define the position<balance> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<balance>.
+        create a particle in position</final_result>.
+        set the value of position<balance> from literal<standard:/number>"-5".
         execute the operation<standard:/number/integer/subtract> {
-            with view<a> looking at position</balance>.
+            with view<a> looking at position<balance>.
             with view<b> looking at literal<standard:/number>"2".
-            with view<result> looking at position</remaining>.
+            with view<result> looking at position</final_result>.
         }
     }
 }

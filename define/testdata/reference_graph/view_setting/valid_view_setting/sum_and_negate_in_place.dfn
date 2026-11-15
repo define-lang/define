@@ -1,0 +1,40 @@
+define the operation<my.domain.com:my_lib:/sum_and_negate_in_place> {
+    define the view<a> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the view<b> {
+        it is read.
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        define the view<quotient> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        define the view<remainder> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        execute the logical_operation<standard:/number/add> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<quotient>.
+        }
+        set the value of view<a> from view<quotient>.
+        execute the logical_operation<standard:/number/negate> {
+            with view<a> looking at view<b>.
+            with view<result> looking at view<remainder>.
+        }
+        set the value of view<b> from view<remainder>.
+    }
+}

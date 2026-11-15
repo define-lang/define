@@ -4,33 +4,29 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.at_most
-import local.my_domain_com.my_lib.reading
+import local.my_domain_com.my_lib.final_result
 import standard.text.unicode.scalar.utf8
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.reading.ReadingPosition,
-        local.my_domain_com.my_lib.at_most.AtMostPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
+        position_reading = literal.LocalPosition[str](
+            "position<reading>",
+        )
+        position_reading.create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.reading.ReadingPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).create_particle()
+        position_reading.particle.value = "h"
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.at_most.AtMostPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.reading.ReadingPosition
-        ).particle.value = "h"
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.at_most.AtMostPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = standard.text.unicode.scalar.utf8.encoding_less_than_or_equal(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.reading.ReadingPosition
-            ).particle.value,
+            position_reading.particle.value,
             "h",
         )
+        position_reading.destroy_particle()

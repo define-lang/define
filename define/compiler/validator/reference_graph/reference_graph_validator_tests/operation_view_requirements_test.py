@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
     from define.compiler.conftest import (
         ValidateTestdataNonFilesystemWithReferenceGraph,
+        ValidateTestdataProjectWithReferenceGraph,
     )
 
 
@@ -35,21 +37,20 @@ def test_duplicate_caller_view(
 
 
 def test_value_mismatch(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(
-        diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
-    )
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 42
-    assert diagnostic.location.column == 42
-    assert diagnostic.view_name == "view<source>"
-    assert diagnostic.looked_at_name == "view<number>"
-    assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.VIEW
-    assert diagnostic.missing_qualities == ["value<standard:/number/natural>"]
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_diagnostics == [
+        diagnostics.OperationArgumentMissingQualitiesDiagnostic(
+            location=rendering.SourceLocation(
+                line=17, column=42, end_line=17, end_column=53, file_path="double.dfn"
+            ),
+            view_name="view<source>",
+            looked_at_name="view<number>",
+            looked_at_kind=diagnostics.LookedAtKind.VIEW,
+            missing_qualities=["value<standard:/number/natural>"],
+        )
+    ]
 
 
 def test_invalid_literal_content(
@@ -69,16 +70,17 @@ def test_invalid_literal_content(
 
 
 def test_literal_value_has_no_encoding(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ValueHasNoEncodingDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 36
-    assert diagnostic.location.column == 42
-    assert diagnostic.value_quality == "value</count>"
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_diagnostics == [
+        diagnostics.ValueHasNoEncodingDiagnostic(
+            location=rendering.SourceLocation(
+                line=11, column=42, end_line=11, end_column=66, file_path="double.dfn"
+            ),
+            value_quality="value</count>",
+        )
+    ]
 
 
 def test_literal_for_view_without_value(
@@ -148,21 +150,20 @@ def test_position_missing_value_quality(
 
 
 def test_position_value_mismatch(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(
-        diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
-    )
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 42
-    assert diagnostic.location.column == 42
-    assert diagnostic.view_name == "view<target>"
-    assert diagnostic.looked_at_name == "position<second>"
-    assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
-    assert diagnostic.missing_qualities == ["value<standard:/number/natural>"]
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_diagnostics == [
+        diagnostics.OperationArgumentMissingQualitiesDiagnostic(
+            location=rendering.SourceLocation(
+                line=18, column=42, end_line=18, end_column=57, file_path="run.dfn"
+            ),
+            view_name="view<target>",
+            looked_at_name="position<second>",
+            looked_at_kind=diagnostics.LookedAtKind.POSITION,
+            missing_qualities=["value<standard:/number/natural>"],
+        )
+    ]
 
 
 def test_particle_qualities_in_position_without_assignments(

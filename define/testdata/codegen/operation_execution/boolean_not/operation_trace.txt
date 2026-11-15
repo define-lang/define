@@ -1,2 +1,2 @@
-test.create(/enabled)
-test.execute(operation<standard:/boolean/not>, True, /enabled)
+test.create(/final_result)
+test.execute(operation<standard:/boolean/not>, True, /final_result)

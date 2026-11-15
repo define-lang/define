@@ -4,37 +4,34 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.factor
-import local.my_domain_com.my_lib.product
+import local.my_domain_com.my_lib.final_result
 import standard.number.natural.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.factor.FactorPosition,
-        local.my_domain_com.my_lib.product.ProductPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
+        position_factor = literal.LocalPosition[int](
+            "position<factor>",
+        )
+        position_factor.create_particle()
+        literal.record_operation("test.create(factor)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.factor.FactorPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).create_particle()
-        literal.record_operation("test.create(/factor)")
+        literal.record_operation("test.create(/final_result)")
+        position_factor.particle.value = 3
+        literal.record_operation("test.set_value(factor, 3)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.product.ProductPosition
-        ).create_particle()
-        literal.record_operation("test.create(/product)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.factor.FactorPosition
-        ).particle.value = 3
-        literal.record_operation("test.set_value(/factor, 3)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.product.ProductPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = standard.number.natural.ascii.encoding_multiply(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.factor.FactorPosition
-            ).particle.value,
+            position_factor.particle.value,
             4,
         )
-        literal.record_operation("test.execute(operation<standard:/number/natural/multiply>, /factor, 4, /product)")
+        literal.record_operation("test.execute(operation<standard:/number/natural/multiply>, factor, 4, /final_result)")
+        position_factor.destroy_particle()
+        literal.record_operation("test.destroy(factor)")

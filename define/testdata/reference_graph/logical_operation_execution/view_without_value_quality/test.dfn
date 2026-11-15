@@ -1,0 +1,40 @@
+# view<amount> has an encoding but no value quality.
+define the operation<my.domain.com:my_lib:/test> {
+    define the view<amount> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/decimal/ascii>.
+        }
+    }
+    define the view<negated> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        execute the logical_operation<standard:/number/negate> {
+            with view<a> looking at view<amount>.
+            with view<result> looking at view<negated>.
+        }
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</test_negated>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<test_amount> {
+            it may only contain particles where {
+                it has the encoding<standard:/number/decimal/ascii>.
+            }
+        }
+        create a particle in position<test_amount>.
+        create a particle in position</test_negated>.
+        execute the operation</test> {
+            with view<amount> looking at position<test_amount>.
+            with view<negated> looking at position</test_negated>.
+        }
+    }
+}

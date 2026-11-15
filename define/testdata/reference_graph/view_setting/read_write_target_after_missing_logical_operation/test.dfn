@@ -1,0 +1,13 @@
+# A View Setting Statement whose target is a read/write interface view is not reported after an execution of a missing logical operation, because what that execution reads and writes is unknown.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</negate_in_place_value>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</negate_in_place_value>.
+        set the value of position</negate_in_place_value> from literal<standard:/number>"1".
+        execute the operation</negate_in_place> {
+            with view<value> looking at position</negate_in_place_value>.
+        }
+    }
+}

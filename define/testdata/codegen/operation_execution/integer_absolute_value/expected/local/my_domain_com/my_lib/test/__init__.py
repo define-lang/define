@@ -4,32 +4,28 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.distance
-import local.my_domain_com.my_lib.offset
+import local.my_domain_com.my_lib.final_result
 import standard.number.integer.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.offset.OffsetPosition,
-        local.my_domain_com.my_lib.distance.DistancePosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.offset.OffsetPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.distance.DistancePosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.offset.OffsetPosition
-        ).particle.value = -3
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.distance.DistancePosition
-        ).particle.value = standard.number.integer.ascii.encoding_absolute_value(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.offset.OffsetPosition
-            ).particle.value,
+        position_offset = literal.LocalPosition[int](
+            "position<offset>",
         )
+        position_offset.create_particle()
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).create_particle()
+        position_offset.particle.value = -3
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).particle.value = standard.number.integer.ascii.encoding_absolute_value(
+            position_offset.particle.value,
+        )
+        position_offset.destroy_particle()

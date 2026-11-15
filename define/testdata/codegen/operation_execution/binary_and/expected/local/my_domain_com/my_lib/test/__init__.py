@@ -4,33 +4,29 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.flags
-import local.my_domain_com.my_lib.masked
+import local.my_domain_com.my_lib.final_result
 import standard.binary.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.flags.FlagsPosition,
-        local.my_domain_com.my_lib.masked.MaskedPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
+        position_flags = literal.LocalPosition[int](
+            "position<flags>",
+        )
+        position_flags.create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.flags.FlagsPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).create_particle()
+        position_flags.particle.value = 0b1100
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.masked.MaskedPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.flags.FlagsPosition
-        ).particle.value = 0b1100
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.masked.MaskedPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = standard.binary.ascii.encoding_and(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.flags.FlagsPosition
-            ).particle.value,
+            position_flags.particle.value,
             0b1010,
         )
+        position_flags.destroy_particle()

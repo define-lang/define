@@ -4,33 +4,29 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.both
-import local.my_domain_com.my_lib.powered
+import local.my_domain_com.my_lib.final_result
 import standard.boolean.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.powered.PoweredPosition,
-        local.my_domain_com.my_lib.both.BothPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
+        position_powered = literal.LocalPosition[bool](
+            "position<powered>",
+        )
+        position_powered.create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.powered.PoweredPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).create_particle()
+        position_powered.particle.value = True
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.both.BothPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.powered.PoweredPosition
-        ).particle.value = True
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.both.BothPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = standard.boolean.ascii.encoding_and(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.powered.PoweredPosition
-            ).particle.value,
+            position_powered.particle.value,
             True,
         )
+        position_powered.destroy_particle()

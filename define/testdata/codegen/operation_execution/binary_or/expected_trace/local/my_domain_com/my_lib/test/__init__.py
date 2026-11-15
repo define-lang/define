@@ -4,49 +4,43 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.combined
-import local.my_domain_com.my_lib.flags
-import local.my_domain_com.my_lib.mask
+import local.my_domain_com.my_lib.final_result
 import standard.binary.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.flags.FlagsPosition,
-        local.my_domain_com.my_lib.mask.MaskPosition,
-        local.my_domain_com.my_lib.combined.CombinedPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.flags.FlagsPosition
-        ).create_particle()
-        literal.record_operation("test.create(/flags)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.mask.MaskPosition
-        ).create_particle()
-        literal.record_operation("test.create(/mask)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.combined.CombinedPosition
-        ).create_particle()
-        literal.record_operation("test.create(/combined)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.flags.FlagsPosition
-        ).particle.value = 0b1100
-        literal.record_operation("test.set_value(/flags, 0b1100)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.mask.MaskPosition
-        ).particle.value = 0b1010
-        literal.record_operation("test.set_value(/mask, 0b1010)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.combined.CombinedPosition
-        ).particle.value = standard.binary.ascii.encoding_or(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.flags.FlagsPosition
-            ).particle.value,
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.mask.MaskPosition
-            ).particle.value,
+        position_mask = literal.LocalPosition[int](
+            "position<mask>",
         )
-        literal.record_operation("test.execute(operation<standard:/binary/or>, /flags, /mask, /combined)")
+        position_flags = literal.LocalPosition[int](
+            "position<flags>",
+        )
+        position_flags.create_particle()
+        literal.record_operation("test.create(flags)")
+        position_mask.create_particle()
+        literal.record_operation("test.create(mask)")
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).create_particle()
+        literal.record_operation("test.create(/final_result)")
+        position_flags.particle.value = 0b1100
+        literal.record_operation("test.set_value(flags, 0b1100)")
+        position_mask.particle.value = 0b1010
+        literal.record_operation("test.set_value(mask, 0b1010)")
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).particle.value = standard.binary.ascii.encoding_or(
+            position_flags.particle.value,
+            position_mask.particle.value,
+        )
+        literal.record_operation("test.execute(operation<standard:/binary/or>, flags, mask, /final_result)")
+        position_mask.destroy_particle()
+        literal.record_operation("test.destroy(mask)")
+        position_flags.destroy_particle()
+        literal.record_operation("test.destroy(flags)")

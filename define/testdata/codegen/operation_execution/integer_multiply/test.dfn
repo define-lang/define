@@ -1,17 +1,21 @@
 # An action multiplies a position's value by a literal with the built-in integer multiplication.
 define the potential action<my.domain.com:my_lib:/test> {
-    it also assigns the position</factor>.
-    it also assigns the position</product>.
+    it also assigns the position</final_result>.
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position</factor>.
-        create a particle in position</product>.
-        set the value of position</factor> from literal<standard:/number>"-3".
+        define the position<factor> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<factor>.
+        create a particle in position</final_result>.
+        set the value of position<factor> from literal<standard:/number>"-3".
         execute the operation<standard:/number/integer/multiply> {
-            with view<a> looking at position</factor>.
+            with view<a> looking at position<factor>.
             with view<b> looking at literal<standard:/number>"4".
-            with view<result> looking at position</product>.
+            with view<result> looking at position</final_result>.
         }
     }
 }

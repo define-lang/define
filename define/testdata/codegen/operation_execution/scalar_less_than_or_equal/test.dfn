@@ -1,17 +1,21 @@
 # An action checks whether one position's scalar comes before or is the same as another's with the built-in scalar less than or equal.
 define the potential action<my.domain.com:my_lib:/test> {
-    it also assigns the position</reading>.
-    it also assigns the position</at_most>.
+    it also assigns the position</final_result>.
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position</reading>.
-        create a particle in position</at_most>.
-        set the value of position</reading> from literal<standard:/text>"h".
+        define the position<reading> {
+            it may only contain particles where {
+                it has the value<standard:/text/unicode/scalar>.
+            }
+        }
+        create a particle in position<reading>.
+        create a particle in position</final_result>.
+        set the value of position<reading> from literal<standard:/text>"h".
         execute the operation<standard:/text/unicode/scalar/less_than_or_equal> {
-            with view<a> looking at position</reading>.
+            with view<a> looking at position<reading>.
             with view<b> looking at literal<standard:/text>"h".
-            with view<result> looking at position</at_most>.
+            with view<result> looking at position</final_result>.
         }
     }
 }

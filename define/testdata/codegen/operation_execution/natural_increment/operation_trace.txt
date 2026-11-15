@@ -1,3 +1,3 @@
-test.create(/count)
-test.set_value(/count, 1)
-test.execute(operation<standard:/number/natural/increment>, /count)
+test.create(/final_result)
+test.set_value(/final_result, 1)
+test.execute(operation<standard:/number/natural/increment>, /final_result)

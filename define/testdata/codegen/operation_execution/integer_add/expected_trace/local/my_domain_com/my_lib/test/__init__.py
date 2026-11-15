@@ -4,37 +4,34 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.augend
-import local.my_domain_com.my_lib.total
+import local.my_domain_com.my_lib.final_result
 import standard.number.integer.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.augend.AugendPosition,
-        local.my_domain_com.my_lib.total.TotalPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
+        position_augend = literal.LocalPosition[int](
+            "position<augend>",
+        )
+        position_augend.create_particle()
+        literal.record_operation("test.create(augend)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.augend.AugendPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).create_particle()
-        literal.record_operation("test.create(/augend)")
+        literal.record_operation("test.create(/final_result)")
+        position_augend.particle.value = -3
+        literal.record_operation("test.set_value(augend, -3)")
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.total.TotalPosition
-        ).create_particle()
-        literal.record_operation("test.create(/total)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.augend.AugendPosition
-        ).particle.value = -3
-        literal.record_operation("test.set_value(/augend, -3)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.total.TotalPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = standard.number.integer.ascii.encoding_add(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.augend.AugendPosition
-            ).particle.value,
+            position_augend.particle.value,
             2,
         )
-        literal.record_operation("test.execute(operation<standard:/number/integer/add>, /augend, 2, /total)")
+        literal.record_operation("test.execute(operation<standard:/number/integer/add>, augend, 2, /final_result)")
+        position_augend.destroy_particle()
+        literal.record_operation("test.destroy(augend)")

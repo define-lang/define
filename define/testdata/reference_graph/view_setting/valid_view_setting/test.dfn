@@ -1,0 +1,36 @@
+# A View Setting Statement reads its source and writes its target, and may write a read/write interface view after the execution statement that read it.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</double_doubled>.
+    it also assigns the position</negate_in_place_value>.
+    it also assigns the position</sum_and_negate_in_place_a>.
+    it also assigns the position</sum_and_negate_in_place_b>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<double_number> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<double_number>.
+        set the value of position<double_number> from literal<standard:/number>"1".
+        create a particle in position</double_doubled>.
+        execute the operation</double> {
+            with view<number> looking at position<double_number>.
+            with view<doubled> looking at position</double_doubled>.
+        }
+        create a particle in position</negate_in_place_value>.
+        set the value of position</negate_in_place_value> from literal<standard:/number>"1".
+        execute the operation</negate_in_place> {
+            with view<value> looking at position</negate_in_place_value>.
+        }
+        create a particle in position</sum_and_negate_in_place_a>.
+        set the value of position</sum_and_negate_in_place_a> from literal<standard:/number>"1".
+        create a particle in position</sum_and_negate_in_place_b>.
+        set the value of position</sum_and_negate_in_place_b> from literal<standard:/number>"1".
+        execute the operation</sum_and_negate_in_place> {
+            with view<a> looking at position</sum_and_negate_in_place_a>.
+            with view<b> looking at position</sum_and_negate_in_place_b>.
+        }
+    }
+}

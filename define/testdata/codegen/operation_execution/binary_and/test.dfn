@@ -1,17 +1,21 @@
 # A literal masks a position's value with the built-in binary and.
 define the potential action<my.domain.com:my_lib:/test> {
-    it also assigns the position</flags>.
-    it also assigns the position</masked>.
+    it also assigns the position</final_result>.
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position</flags>.
-        create a particle in position</masked>.
-        set the value of position</flags> from literal<standard:/binary>"1100".
+        define the position<flags> {
+            it may only contain particles where {
+                it has the value<standard:/binary>.
+            }
+        }
+        create a particle in position<flags>.
+        create a particle in position</final_result>.
+        set the value of position<flags> from literal<standard:/binary>"1100".
         execute the operation<standard:/binary/and> {
-            with view<a> looking at position</flags>.
+            with view<a> looking at position<flags>.
             with view<b> looking at literal<standard:/binary>"1010".
-            with view<result> looking at position</masked>.
+            with view<result> looking at position</final_result>.
         }
     }
 }

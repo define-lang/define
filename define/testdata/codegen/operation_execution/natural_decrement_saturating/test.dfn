@@ -1,13 +1,13 @@
 # An action decrements a position's value of zero with the built-in natural saturating decrement, which stops at zero.
 define the potential action<my.domain.com:my_lib:/test> {
-    it also assigns the position</count>.
+    it also assigns the position</final_result>.
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position</count>.
-        set the value of position</count> from literal<standard:/number>"0".
+        create a particle in position</final_result>.
+        set the value of position</final_result> from literal<standard:/number>"0".
         execute the operation<standard:/number/natural/decrement_saturating> {
-            with view<value> looking at position</count>.
+            with view<value> looking at position</final_result>.
         }
     }
 }

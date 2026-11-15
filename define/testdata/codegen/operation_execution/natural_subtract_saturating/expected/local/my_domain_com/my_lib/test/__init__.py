@@ -4,33 +4,29 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.balance
-import local.my_domain_com.my_lib.remaining
+import local.my_domain_com.my_lib.final_result
 import standard.number.natural.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.balance.BalancePosition,
-        local.my_domain_com.my_lib.remaining.RemainingPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
+        position_balance = literal.LocalPosition[int](
+            "position<balance>",
+        )
+        position_balance.create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.balance.BalancePosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).create_particle()
+        position_balance.particle.value = 2
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.remaining.RemainingPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.balance.BalancePosition
-        ).particle.value = 2
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.remaining.RemainingPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = standard.number.natural.ascii.encoding_subtract_saturating(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.balance.BalancePosition
-            ).particle.value,
+            position_balance.particle.value,
             5,
         )
+        position_balance.destroy_particle()

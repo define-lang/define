@@ -4,49 +4,43 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.limit
-import local.my_domain_com.my_lib.matches
-import local.my_domain_com.my_lib.reading
+import local.my_domain_com.my_lib.final_result
 import standard.text.unicode.scalar.utf8
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.reading.ReadingPosition,
-        local.my_domain_com.my_lib.limit.LimitPosition,
-        local.my_domain_com.my_lib.matches.MatchesPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.reading.ReadingPosition
-        ).create_particle()
-        literal.record_operation("test.create(/reading)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.limit.LimitPosition
-        ).create_particle()
-        literal.record_operation("test.create(/limit)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.matches.MatchesPosition
-        ).create_particle()
-        literal.record_operation("test.create(/matches)")
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.reading.ReadingPosition
-        ).particle.value = "q"
-        literal.record_operation('test.set_value(/reading, "q")')
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.limit.LimitPosition
-        ).particle.value = "q"
-        literal.record_operation('test.set_value(/limit, "q")')
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.matches.MatchesPosition
-        ).particle.value = standard.text.unicode.scalar.utf8.encoding_equals(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.reading.ReadingPosition
-            ).particle.value,
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.limit.LimitPosition
-            ).particle.value,
+        position_limit = literal.LocalPosition[str](
+            "position<limit>",
         )
-        literal.record_operation("test.execute(operation<standard:/text/unicode/scalar/equals>, /reading, /limit, /matches)")
+        position_reading = literal.LocalPosition[str](
+            "position<reading>",
+        )
+        position_reading.create_particle()
+        literal.record_operation("test.create(reading)")
+        position_limit.create_particle()
+        literal.record_operation("test.create(limit)")
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).create_particle()
+        literal.record_operation("test.create(/final_result)")
+        position_reading.particle.value = "q"
+        literal.record_operation('test.set_value(reading, "q")')
+        position_limit.particle.value = "q"
+        literal.record_operation('test.set_value(limit, "q")')
+        self.on_particle.get_position(
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
+        ).particle.value = standard.text.unicode.scalar.utf8.encoding_equals(
+            position_reading.particle.value,
+            position_limit.particle.value,
+        )
+        literal.record_operation("test.execute(operation<standard:/text/unicode/scalar/equals>, reading, limit, /final_result)")
+        position_limit.destroy_particle()
+        literal.record_operation("test.destroy(limit)")
+        position_reading.destroy_particle()
+        literal.record_operation("test.destroy(reading)")

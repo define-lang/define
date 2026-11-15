@@ -4,33 +4,29 @@ from typing import ClassVar, override
 
 from define.runtime import literal
 
-import local.my_domain_com.my_lib.augend
-import local.my_domain_com.my_lib.total
+import local.my_domain_com.my_lib.final_result
 import standard.number.integer.ascii
 
 
 class TestAction(literal.Action):
     implied_qualities: ClassVar[tuple[type[literal.Quality], ...]] = (
-        local.my_domain_com.my_lib.augend.AugendPosition,
-        local.my_domain_com.my_lib.total.TotalPosition,
+        local.my_domain_com.my_lib.final_result.FinalResultPosition,
     )
 
     @override
     def run(self):
+        position_augend = literal.LocalPosition[int](
+            "position<augend>",
+        )
+        position_augend.create_particle()
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.augend.AugendPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).create_particle()
+        position_augend.particle.value = -3
         self.on_particle.get_position(
-            local.my_domain_com.my_lib.total.TotalPosition
-        ).create_particle()
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.augend.AugendPosition
-        ).particle.value = -3
-        self.on_particle.get_position(
-            local.my_domain_com.my_lib.total.TotalPosition
+            local.my_domain_com.my_lib.final_result.FinalResultPosition
         ).particle.value = standard.number.integer.ascii.encoding_add(
-            self.on_particle.get_position(
-                local.my_domain_com.my_lib.augend.AugendPosition
-            ).particle.value,
+            position_augend.particle.value,
             2,
         )
+        position_augend.destroy_particle()

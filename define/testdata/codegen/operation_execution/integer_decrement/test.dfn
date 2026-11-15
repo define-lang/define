@@ -1,13 +1,13 @@
 # An action decrements a position's value with the built-in integer decrement.
 define the potential action<my.domain.com:my_lib:/test> {
-    it also assigns the position</count>.
+    it also assigns the position</final_result>.
     it happens when {
         this particle is created.
     } and it does {
-        create a particle in position</count>.
-        set the value of position</count> from literal<standard:/number>"2".
+        create a particle in position</final_result>.
+        set the value of position</final_result> from literal<standard:/number>"2".
         execute the operation<standard:/number/integer/decrement> {
-            with view<value> looking at position</count>.
+            with view<value> looking at position</final_result>.
         }
     }
 }
