@@ -270,15 +270,14 @@ class ActionOperationExecutionValidator:
         list[diagnostics.Diagnostic],
     ]:
         """Choose the Encoding Operations that executing the Value Operation runs for the encodings of what the arguments look at, and return what it runs, with a diagnostic if a logical operation it executes has no Encoding Operation for them."""
-        encodings: list[ast.GlobalTypedNameReference] = []
+        view_encodings: dict[str, ast.GlobalTypedNameReference] = {}
         for argument in arguments:
             looking_at = argument.looking_at
+            view_name = argument.interface_view.typed_name.source_typed_name
             if isinstance(looking_at, codegen_input.EncodedLiteral):
-                encodings.append(looking_at.encoding)
+                view_encodings[view_name] = looking_at.encoding
                 continue
-            value_quality = looked_at_value_qualities.get(
-                argument.interface_view.typed_name.source_typed_name
-            )
+            value_quality = looked_at_value_qualities.get(view_name)
             # A looked-at position whose value quality is unknown was already
             # reported.
             if value_quality is None:
@@ -292,9 +291,9 @@ class ActionOperationExecutionValidator:
             # chosen.
             if encoding is None:
                 return None, []
-            encodings.append(encoding)
+            view_encodings[view_name] = encoding
         result = self._value_operation_executions.choose_encoding_operations(
-            executed, encodings
+            executed, view_encodings
         )
         if isinstance(result, value_operation_executions.MissingEncodingOperation):
             return None, [

@@ -42,8 +42,9 @@ type ValueOperationExecutionResult = (
     codegen_input.OperationExecution | MissingEncodingOperation | None
 )
 
-# A Value Operation and the encodings of its interface views, by their full
-# typed names, because typed names also compare their source locations.
+# A Value Operation and the encodings of its interface views, in their order,
+# by their full typed names, because typed names also compare their source
+# locations.
 type _ValueOperationEncodings = tuple[str, tuple[str, ...]]
 
 
@@ -88,16 +89,19 @@ class ValueOperationExecutions:
         # their encodings, which does not depend on that.
         for composite_list in by_value_operation.values():
             composite_list.sort(
-                key=lambda composite: _full_typed_names(composite.encodings)
+                key=lambda composite: _full_typed_names(composite.encodings())
             )
         return by_value_operation
 
     def choose_encoding_operations(
         self,
         value_operation: ast.ValueOperationDefinition,
-        encodings: list[ast.GlobalTypedNameReference],
+        view_encodings: dict[str, ast.GlobalTypedNameReference],
     ) -> ValueOperationExecutionResult:
-        """Return what executing the Value Operation runs when its interface views have ``encodings``, in their order."""
+        """Return what executing the Value Operation runs when its interface views have ``view_encodings``, keyed by each view's source typed name."""
+        encodings: list[ast.GlobalTypedNameReference] = []
+        for view in value_operation.views:
+            encodings.append(view_encodings[view.typed_name.source_typed_name])
         key = (
             value_operation.typed_name.full_typed_name,
             _full_typed_names(encodings),
@@ -108,7 +112,9 @@ class ValueOperationExecutions:
             # receives the result selected for the memo.
             _ = self._results.setdefault(
                 key,
-                self._choose_uncached_encoding_operations(value_operation, encodings),
+                self._choose_uncached_encoding_operations(
+                    value_operation, view_encodings
+                ),
             )
         result, _ = self._results[key]
         return result
@@ -116,20 +122,19 @@ class ValueOperationExecutions:
     def _choose_uncached_encoding_operations(
         self,
         value_operation: ast.ValueOperationDefinition,
-        encodings: list[ast.GlobalTypedNameReference],
+        interface_view_encodings: dict[str, ast.GlobalTypedNameReference],
     ) -> tuple[
         ValueOperationExecutionResult, codegen_input.CompositeValueOperation | None
     ]:
-        """Work out what executing the Value Operation runs when its interface views have ``encodings``, and return it with the composite Value Operation it is, if it is one."""
+        """Work out what executing the Value Operation runs when its interface views have ``interface_view_encodings``, and return it with the composite Value Operation it is, if it is one."""
         steps = self._validation_state.get_value_operation_steps(
             value_operation.typed_name
         )
         # A Value Operation with diagnostics publishes no steps.
         if steps is None:
             return None, None
-        view_encodings: dict[str, ast.GlobalTypedNameReference] = {}
-        for view, encoding in zip(value_operation.views, encodings, strict=True):
-            view_encodings[view.typed_name.source_typed_name] = encoding
+        # Local views are added as they are defined.
+        view_encodings = dict(interface_view_encodings)
         composite_steps: list[codegen_input.OperationStep] = []
         for step in steps:
             match step:
@@ -180,7 +185,9 @@ class ValueOperationExecutions:
                 )
             )
         composite = codegen_input.CompositeValueOperation(
-            definition=value_operation, encodings=encodings, steps=composite_steps
+            definition=value_operation,
+            view_encodings=interface_view_encodings,
+            steps=composite_steps,
         )
         return codegen_input.OperationExecution(
             runtime_operation=composite, arguments=arguments
@@ -244,14 +251,19 @@ class ValueOperationExecutions:
         view_encodings: dict[str, ast.GlobalTypedNameReference],
     ) -> codegen_input.OperationExecution | MissingEncodingOperation | None:
         """Return what an execution of another Value Operation runs, for the encodings of what its arguments look at."""
-        encodings: list[ast.GlobalTypedNameReference] = []
+        executed_view_encodings: dict[str, ast.GlobalTypedNameReference] = {}
         for argument in execution.arguments:
             looking_at = argument.looking_at
+            executed_view = argument.interface_view.typed_name.source_typed_name
             if isinstance(looking_at, codegen_input.EncodedLiteral):
-                encodings.append(looking_at.encoding)
+                executed_view_encodings[executed_view] = looking_at.encoding
             else:
-                encodings.append(view_encodings[looking_at.source_typed_name])
-        executed = self.choose_encoding_operations(execution.value_operation, encodings)
+                executed_view_encodings[executed_view] = view_encodings[
+                    looking_at.source_typed_name
+                ]
+        executed = self.choose_encoding_operations(
+            execution.value_operation, executed_view_encodings
+        )
         if isinstance(executed, MissingEncodingOperation):
             return MissingEncodingOperation(
                 view_encodings=executed.view_encodings,

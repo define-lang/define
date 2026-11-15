@@ -297,9 +297,9 @@ def generate_encoding_operation(
     """Build the template context for the function that performs an Encoding Operation."""
     definition = operation_input.definition
     function = converter.function_reference(definition.typed_name)
-    view_python_types: list[str] = []
+    view_python_types: dict[str, str] = {}
     for view in definition.views:
-        view_python_types.append(
+        view_python_types[view.typed_name.source_typed_name] = (
             value_types.encoded_python_value_type(view.quality_assignment_block)
         )
     if not isinstance(operation_input.body, ast.ComputerOperationExecutionStatement):

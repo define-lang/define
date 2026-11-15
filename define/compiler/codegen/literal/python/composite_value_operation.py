@@ -16,13 +16,13 @@ def generate_composite_value_operation(
     converter: naming.NameConverter,
 ) -> renderer.OperationFunction:
     """Build the template context for a composite Value Operation's function for one set of encodings."""
-    view_python_types: list[str] = []
-    for encoding in composite.encodings:
-        view_python_types.append(value_types.encoding_python_value_type(encoding))
+    view_python_types: dict[str, str] = {}
+    for view_name, encoding in composite.view_encodings.items():
+        view_python_types[view_name] = value_types.encoding_python_value_type(encoding)
     return operation_function.generate_step_function(
         converter,
         converter.composite_value_operation_function_reference(
-            composite.definition.typed_name, composite.encodings
+            composite.definition.typed_name, composite.encodings()
         ),
         composite.definition.views,
         view_python_types,

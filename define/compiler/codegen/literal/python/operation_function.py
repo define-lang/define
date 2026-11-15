@@ -55,10 +55,10 @@ def generate_step_function(
     converter: naming.NameConverter,
     function: renderer.FunctionReference,
     views: Sequence[ast.InterfaceViewDefinition],
-    view_python_types: Sequence[str],
+    view_python_types: Mapping[str, str],
     steps: Sequence[codegen_input.OperationStep],
 ) -> renderer.OperationFunction:
-    """Build the template context for a function with the interface views ``views``, whose values have the Python types ``view_python_types``, that performs ``steps``."""
+    """Build the template context for a function with the interface views ``views``, whose values have the Python types ``view_python_types``, keyed by each view's source typed name, that performs ``steps``."""
     callees: list[renderer.FunctionReference] = []
     for step in steps:
         if isinstance(step, codegen_input.OperationExecution):
@@ -80,18 +80,19 @@ def generate_step_function(
 def finish_function(
     function: renderer.FunctionReference,
     views: Sequence[ast.InterfaceViewDefinition],
-    view_python_types: Sequence[str],
+    view_python_types: Mapping[str, str],
     function_locals: FunctionLocals,
     statements: list[renderer.OperationStatement],
     last_written_names: list[str],
 ) -> renderer.OperationFunction:
-    """Build the template context for a function with the interface views ``views``, whose values have the Python types ``view_python_types``, from its statements and the local names that the last of them assigns, in order."""
+    """Build the template context for a function with the interface views ``views``, whose values have the Python types ``view_python_types``, keyed by each view's source typed name, from its statements and the local names that the last of them assigns, in order."""
     parameters: list[renderer.TypedLocalName] = []
     results: list[renderer.TypedLocalName] = []
-    for view, python_type in zip(views, view_python_types, strict=True):
+    for view in views:
+        view_name = view.typed_name.source_typed_name
         view_local = renderer.TypedLocalName(
-            name=function_locals.view_names[view.typed_name.source_typed_name],
-            python_type=python_type,
+            name=function_locals.view_names[view_name],
+            python_type=view_python_types[view_name],
         )
         if view.is_input:
             parameters.append(view_local)

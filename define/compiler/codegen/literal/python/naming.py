@@ -361,7 +361,7 @@ class NameConverter:
         """Build a reference to a runtime operation's function."""
         if isinstance(runtime_operation, codegen_input.CompositeValueOperation):
             return self.composite_value_operation_function_reference(
-                runtime_operation.definition.typed_name, runtime_operation.encodings
+                runtime_operation.definition.typed_name, runtime_operation.encodings()
             )
         return self.function_reference(runtime_operation)
 

@@ -187,10 +187,17 @@ class CompositeValueOperation(msgspec.Struct):
     """A composite Value Operation for one set of encodings: its source-ordered steps, with an Encoding Operation chosen for each execution for those encodings."""
 
     definition: ast.ValueOperationDefinition
-    # The encodings of the views that executions of the Value Operation look
-    # at, in the order of its interface views.
-    encodings: list[ast.GlobalTypedNameReference]
+    # The encoding of each of the Value Operation's interface views, keyed by
+    # the view's source typed name.
+    view_encodings: dict[str, ast.GlobalTypedNameReference]
     steps: list[OperationStep]
+
+    def encodings(self) -> list[ast.GlobalTypedNameReference]:
+        """Return the encodings of the Value Operation's interface views, in their order."""
+        encodings: list[ast.GlobalTypedNameReference] = []
+        for view in self.definition.views:
+            encodings.append(self.view_encodings[view.typed_name.source_typed_name])
+        return encodings
 
 
 class CodegenInput(msgspec.Struct):
