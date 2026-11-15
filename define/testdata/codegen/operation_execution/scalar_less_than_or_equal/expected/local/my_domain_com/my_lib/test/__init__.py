@@ -5,7 +5,7 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.final_result
-import standard.text.unicode.scalar.utf8
+import standard.text.unicode.scalar.less_than_or_equal
 
 
 class TestAction(literal.Action):
@@ -25,7 +25,7 @@ class TestAction(literal.Action):
         position_reading.particle.value = "h"
         self.on_particle.get_position(
             local.my_domain_com.my_lib.final_result.FinalResultPosition
-        ).particle.value = standard.text.unicode.scalar.utf8.encoding_less_than_or_equal(
+        ).particle.value = standard.text.unicode.scalar.less_than_or_equal.value_text_unicode_scalar_utf8__text_unicode_scalar_utf8__boolean_ascii(
             position_reading.particle.value,
             "h",
         )

@@ -5,7 +5,7 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.final_result
-import standard.binary.ascii
+import standard.binary.or_
 
 
 class TestAction(literal.Action):
@@ -35,7 +35,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.set_value(mask, 0b1010)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.final_result.FinalResultPosition
-        ).particle.value = standard.binary.ascii.encoding_or(
+        ).particle.value = standard.binary.or_.value_binary_ascii(
             position_flags.particle.value,
             position_mask.particle.value,
         )

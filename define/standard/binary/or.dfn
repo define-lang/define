@@ -19,6 +19,31 @@ define the operation<standard:/binary/or> {
     }
 
     it does {
-        execute the encoding operation.
+        # a or b is the bits in exactly one of them, plus the bits in both.
+        define the view<either> {
+            it may only contain particles where {
+                it has the value</binary>.
+            }
+        }
+        execute the logical_operation</binary/exclusive_or> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<either>.
+        }
+        define the view<both> {
+            it may only contain particles where {
+                it has the value</binary>.
+            }
+        }
+        execute the logical_operation</binary/and> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<both>.
+        }
+        execute the logical_operation</binary/exclusive_or> {
+            with view<a> looking at view<either>.
+            with view<b> looking at view<both>.
+            with view<result> looking at view<result>.
+        }
     }
 }

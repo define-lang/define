@@ -19,6 +19,38 @@ define the operation<standard:/boolean/or> {
     }
 
     it does {
-        execute the encoding operation.
+        # a or b is not (not a and not b).
+        define the view<not_a> {
+            it may only contain particles where {
+                it has the value</boolean>.
+            }
+        }
+        execute the logical_operation</boolean/not> {
+            with view<a> looking at view<a>.
+            with view<result> looking at view<not_a>.
+        }
+        define the view<not_b> {
+            it may only contain particles where {
+                it has the value</boolean>.
+            }
+        }
+        execute the logical_operation</boolean/not> {
+            with view<a> looking at view<b>.
+            with view<result> looking at view<not_b>.
+        }
+        define the view<neither> {
+            it may only contain particles where {
+                it has the value</boolean>.
+            }
+        }
+        execute the logical_operation</boolean/and> {
+            with view<a> looking at view<not_a>.
+            with view<b> looking at view<not_b>.
+            with view<result> looking at view<neither>.
+        }
+        execute the logical_operation</boolean/not> {
+            with view<a> looking at view<neither>.
+            with view<result> looking at view<result>.
+        }
     }
 }

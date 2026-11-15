@@ -18,6 +18,9 @@ define the operation<standard:/number/integer/absolute_value> {
     }
 
     it does {
-        execute the encoding operation.
+        execute the logical_operation</number/absolute_value> {
+            with view<a> looking at view<value>.
+            with view<result> looking at view<result>.
+        }
     }
 }

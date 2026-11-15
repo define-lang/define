@@ -447,13 +447,10 @@ impl ActionDefinition {
 #[pyclass(frozen)]
 pub(crate) enum BinaryOperator {
     Add {},
-    Subtract {},
     Multiply {},
     And {},
-    Or {},
     ExclusiveOr {},
     BitwiseAnd {},
-    BitwiseOr {},
     Equal {},
     LessThan {},
 }
@@ -463,12 +460,6 @@ pub(crate) enum BinaryOperator {
 pub(crate) enum PrefixOperator {
     Negate {},
     Not {},
-}
-
-/// An operation written as an expression over its operands.
-#[pyclass(frozen)]
-pub(crate) enum ExpressionOperator {
-    SaturatingSubtract {},
 }
 
 /// A statement in the function of an Encoding Operation or of a composite Value
@@ -485,11 +476,6 @@ pub(crate) enum OperationStatement {
     PrefixOperation {
         operator: Py<PrefixOperator>,
         operand: String,
-        result: String,
-    },
-    ExpressionOperation {
-        operator: Py<ExpressionOperator>,
-        operands: Vec<String>,
         result: String,
     },
     /// Calls the function of an Encoding Operation or of a composite Value

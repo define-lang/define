@@ -21,6 +21,9 @@ define the operation<standard:/boolean/not> {
     }
 
     it does {
-        execute the encoding operation.
+        execute the logical_operation</boolean/not> {
+            with view<a> looking at view<a>.
+            with view<result> looking at view<result>.
+        }
     }
 }

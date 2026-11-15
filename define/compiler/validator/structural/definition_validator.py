@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from define.compiler import (
     ast,
     constants,
-    encoding_operation_associations,
     name_types,
 )
 from define.compiler.config import config_loader
@@ -192,15 +191,6 @@ class DefinitionStructuralValidator:
                 self._encoding_operation_edges.append(edge)
 
     def _validate_operation_definition(self, definition: ast.OperationDefinition):
-        if isinstance(definition, ast.ValueOperationDefinition):
-            # Executing a Value Operation executes the Encoding Operation that
-            # performs it, so the Value Operation references that Encoding
-            # Operation.
-            encoding_operation = (
-                encoding_operation_associations.encoding_operation_reference(definition)
-            )
-            if encoding_operation is not None:
-                self._process_reference(encoding_operation)
         views = scope_tracker.ScopeTracker[
             ast.InterfaceViewDefinition | ast.LocalViewDefinition
         ]()

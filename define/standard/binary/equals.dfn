@@ -32,6 +32,10 @@ define the operation<standard:/binary/equals> {
     }
 
     it does {
-        execute the encoding operation.
+        execute the logical_operation</binary/equals> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<result>.
+        }
     }
 }

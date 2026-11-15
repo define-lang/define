@@ -12,7 +12,6 @@ py_library(
         ":view_setting_order_tracker",
         "//define/compiler:ast",
         "//define/compiler:constants",
-        "//define/compiler:encoding_operation_associations",
         "//define/compiler:name_types",
         "//define/compiler/config:config_loader",
         "//define/compiler/data_structures:typed_name_dict",

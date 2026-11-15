@@ -5,7 +5,7 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.final_result
-import standard.number.natural.ascii
+import standard.number.natural.subtract
 
 
 class TestAction(literal.Action):
@@ -25,7 +25,7 @@ class TestAction(literal.Action):
         position_balance.particle.value = 5
         self.on_particle.get_position(
             local.my_domain_com.my_lib.final_result.FinalResultPosition
-        ).particle.value = standard.number.natural.ascii.encoding_subtract(
+        ).particle.value = standard.number.natural.subtract.value_number_natural_ascii__number_natural_ascii__number_integer_ascii(
             position_balance.particle.value,
             2,
         )

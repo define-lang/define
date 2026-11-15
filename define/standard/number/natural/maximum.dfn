@@ -19,6 +19,31 @@ define the operation<standard:/number/natural/maximum> {
     }
 
     it does {
-        execute the encoding operation.
+        # The maximum of a and b is their sum minus their minimum.
+        define the view<sum> {
+            it may only contain particles where {
+                it has the value</number/natural>.
+            }
+        }
+        execute the logical_operation</number/add> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<sum>.
+        }
+        define the view<smaller> {
+            it may only contain particles where {
+                it has the value</number/natural>.
+            }
+        }
+        execute the logical_operation</number/minimum> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<smaller>.
+        }
+        execute the operation</number/natural/subtract_saturating> {
+            with view<a> looking at view<sum>.
+            with view<b> looking at view<smaller>.
+            with view<result> looking at view<result>.
+        }
     }
 }

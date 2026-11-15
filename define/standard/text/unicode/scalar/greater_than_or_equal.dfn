@@ -19,6 +19,20 @@ define the operation<standard:/text/unicode/scalar/greater_than_or_equal> {
     }
 
     it does {
-        execute the encoding operation.
+        # a is at least b if a is not less than b.
+        define the view<less> {
+            it may only contain particles where {
+                it has the value</boolean>.
+            }
+        }
+        execute the logical_operation</text/less_than> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<less>.
+        }
+        execute the logical_operation</boolean/not> {
+            with view<a> looking at view<less>.
+            with view<result> looking at view<result>.
+        }
     }
 }

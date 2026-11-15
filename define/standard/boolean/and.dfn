@@ -30,6 +30,10 @@ define the operation<standard:/boolean/and> {
     }
 
     it does {
-        execute the encoding operation.
+        execute the logical_operation</boolean/and> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<result>.
+        }
     }
 }

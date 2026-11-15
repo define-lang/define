@@ -19,6 +19,10 @@ define the operation<standard:/number/integer/add> {
     }
 
     it does {
-        execute the encoding operation.
+        execute the logical_operation</number/add> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<result>.
+        }
     }
 }

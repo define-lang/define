@@ -32,6 +32,10 @@ define the operation<standard:/binary/exclusive_or> {
     }
 
     it does {
-        execute the encoding operation.
+        execute the logical_operation</binary/exclusive_or> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<result>.
+        }
     }
 }

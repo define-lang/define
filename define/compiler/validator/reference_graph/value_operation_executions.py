@@ -6,7 +6,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, encoding_operation_associations
+from define.compiler import ast
 from define.compiler.validator import codegen_input, validation_result
 
 if typing.TYPE_CHECKING:
@@ -159,12 +159,9 @@ class ValueOperationExecutions:
                         return execution, None
                     composite_steps.append(execution)
                 case ast.EncodingOperationExecutionStatement():
-                    execution = self._associated_encoding_operation_execution(
-                        value_operation
-                    )
-                    if execution is None:
-                        return None, None
-                    composite_steps.append(execution)
+                    # TODO: Remove this once `execute the encoding operation.`
+                    # is deleted. Nothing performs it any more.
+                    return None, None
         # Calling a function that makes a single execution is no smaller than
         # making that execution where the Value Operation is executed.
         if len(composite_steps) == 1:
@@ -275,34 +272,4 @@ class ValueOperationExecutions:
         return codegen_input.OperationExecution(
             runtime_operation=executed.runtime_operation,
             arguments=executed.arguments_for(execution.arguments),
-        )
-
-    @staticmethod
-    def _associated_encoding_operation_execution(
-        value_operation: ast.ValueOperationDefinition,
-    ) -> codegen_input.OperationExecution | None:
-        """Return the execution of the Encoding Operation associated with a Value Operation whose step is `execute the encoding operation.`."""
-        # TODO: Remove this once `execute the encoding operation.` is deleted.
-        reference = encoding_operation_associations.encoding_operation_reference(
-            value_operation
-        )
-        # TODO: Report executing a Value Operation that no Encoding Operation
-        # performs, until `execute the encoding operation.` is deleted. Code
-        # generation relies on every executed Value Operation having one.
-        if reference is None:
-            return None
-        arguments: list[
-            codegen_input.OperationArgument[ast.LocalTypedNameReference]
-        ] = []
-        # The associated Encoding Operation takes the Value Operation's input
-        # views and returns its output views, in the Value Operation's view
-        # order, even where its own views have other names.
-        for view in value_operation.views:
-            arguments.append(
-                codegen_input.OperationArgument(
-                    interface_view=view, looking_at=view.typed_name
-                )
-            )
-        return codegen_input.OperationExecution(
-            runtime_operation=reference, arguments=arguments
         )

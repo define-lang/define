@@ -348,7 +348,6 @@ py_library(
     deps = [
         ":reference_graph_validation_state",
         "//define/compiler:ast",
-        "//define/compiler:encoding_operation_associations",
         "//define/compiler/validator:codegen_input",
         "//define/compiler/validator:validation_result",
         "@pypi//msgspec",

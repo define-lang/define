@@ -19,6 +19,38 @@ define the operation<standard:/number/integer/maximum> {
     }
 
     it does {
-        execute the encoding operation.
+        # The maximum of a and b is the negation of the minimum of -a and -b.
+        define the view<negated_a> {
+            it may only contain particles where {
+                it has the value</number/integer>.
+            }
+        }
+        execute the logical_operation</number/negate> {
+            with view<a> looking at view<a>.
+            with view<result> looking at view<negated_a>.
+        }
+        define the view<negated_b> {
+            it may only contain particles where {
+                it has the value</number/integer>.
+            }
+        }
+        execute the logical_operation</number/negate> {
+            with view<a> looking at view<b>.
+            with view<result> looking at view<negated_b>.
+        }
+        define the view<smaller> {
+            it may only contain particles where {
+                it has the value</number/integer>.
+            }
+        }
+        execute the logical_operation</number/minimum> {
+            with view<a> looking at view<negated_a>.
+            with view<b> looking at view<negated_b>.
+            with view<result> looking at view<smaller>.
+        }
+        execute the logical_operation</number/negate> {
+            with view<a> looking at view<smaller>.
+            with view<result> looking at view<result>.
+        }
     }
 }

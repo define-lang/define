@@ -5,7 +5,7 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.final_result
-import standard.boolean.ascii
+import standard.boolean.or_
 
 
 class TestAction(literal.Action):
@@ -30,7 +30,7 @@ class TestAction(literal.Action):
         position_unlocked.particle.value = False
         self.on_particle.get_position(
             local.my_domain_com.my_lib.final_result.FinalResultPosition
-        ).particle.value = standard.boolean.ascii.encoding_or(
+        ).particle.value = standard.boolean.or_.value_boolean_ascii(
             position_powered.particle.value,
             position_unlocked.particle.value,
         )

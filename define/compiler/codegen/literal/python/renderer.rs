@@ -107,9 +107,9 @@ mod renderer {
     use super::template_context::{
         ActionDefinition, ActionStatement, BinaryOperator, ChainElement, ClassReference,
         DestructionContractArgument, DestructionContractDefinition, DestructionContractMethod,
-        ExpressionOperator, ForwardedContribution, FunctionReference,
-        GuaranteedParticleDestructors, InterfacePosition, OperationFunction, OperationStatement,
-        PositionDefinition, PositionExpression, PrefixOperator, TypedLocalName,
+        ForwardedContribution, FunctionReference, GuaranteedParticleDestructors, InterfacePosition,
+        OperationFunction, OperationStatement, PositionDefinition, PositionExpression,
+        PrefixOperator, TypedLocalName,
     };
     #[pymodule_export]
     use super::{

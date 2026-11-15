@@ -276,9 +276,9 @@ def test_executes_read_write_operation(
     assert result.all_diagnostics == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
-                line=12, column=21, end_line=12, end_column=80
+                line=35, column=21, end_line=35, end_column=50
             ),
-            operation_name="encoding_operation<standard:/number/integer/ascii/increment>",
+            operation_name="encoding_operation</increment>",
             view_name="view<value>",
         ),
     ]

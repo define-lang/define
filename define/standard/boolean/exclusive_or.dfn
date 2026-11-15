@@ -19,6 +19,40 @@ define the operation<standard:/boolean/exclusive_or> {
     }
 
     it does {
-        execute the encoding operation.
+        # a exclusive-or b is a or b, but not both.
+        define the view<either> {
+            it may only contain particles where {
+                it has the value</boolean>.
+            }
+        }
+        execute the operation</boolean/or> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<either>.
+        }
+        define the view<both> {
+            it may only contain particles where {
+                it has the value</boolean>.
+            }
+        }
+        execute the logical_operation</boolean/and> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<both>.
+        }
+        define the view<not_both> {
+            it may only contain particles where {
+                it has the value</boolean>.
+            }
+        }
+        execute the logical_operation</boolean/not> {
+            with view<a> looking at view<both>.
+            with view<result> looking at view<not_both>.
+        }
+        execute the logical_operation</boolean/and> {
+            with view<a> looking at view<either>.
+            with view<b> looking at view<not_both>.
+            with view<result> looking at view<result>.
+        }
     }
 }

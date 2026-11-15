@@ -19,6 +19,20 @@ define the operation<standard:/number/natural/subtract> {
     }
 
     it does {
-        execute the encoding operation.
+        # a minus b is a plus the negation of b.
+        define the view<negated_b> {
+            it may only contain particles where {
+                it has the value</number/integer>.
+            }
+        }
+        execute the logical_operation</number/negate> {
+            with view<a> looking at view<b>.
+            with view<result> looking at view<negated_b>.
+        }
+        execute the logical_operation</number/add> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<negated_b>.
+            with view<result> looking at view<result>.
+        }
     }
 }

@@ -8,6 +8,15 @@ define the operation<standard:/number/integer/negate> {
     }
 
     it does {
-        execute the encoding operation.
+        define the view<negated> {
+            it may only contain particles where {
+                it has the value</number/integer>.
+            }
+        }
+        execute the logical_operation</number/negate> {
+            with view<a> looking at view<value>.
+            with view<result> looking at view<negated>.
+        }
+        set the value of view<value> from view<negated>.
     }
 }

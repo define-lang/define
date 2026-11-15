@@ -19,6 +19,52 @@ define the operation<standard:/number/natural/subtract_saturating> {
     }
 
     it does {
-        execute the encoding operation.
+        # A difference can be negative, so it is an integer.
+        define the view<negated_b> {
+            it may only contain particles where {
+                it has the value</number/integer>.
+            }
+        }
+        execute the logical_operation</number/negate> {
+            with view<a> looking at view<b>.
+            with view<result> looking at view<negated_b>.
+        }
+        define the view<difference> {
+            it may only contain particles where {
+                it has the value</number/integer>.
+            }
+        }
+        execute the logical_operation</number/add> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<negated_b>.
+            with view<result> looking at view<difference>.
+        }
+        # To stop at 0, the result is the larger of the difference and 0:
+        # the absolute value of the smaller of 0 and the negated difference.
+        define the view<negated_difference> {
+            it may only contain particles where {
+                it has the value</number/integer>.
+            }
+        }
+        execute the logical_operation</number/negate> {
+            with view<a> looking at view<difference>.
+            with view<result> looking at view<negated_difference>.
+        }
+        define the view<smaller> {
+            it may only contain particles where {
+                it has the value</number/integer>.
+            }
+        }
+        # Logical operations may not look at literals, so this passes 0
+        # through a Value Operation.
+        execute the operation</number/integer/minimum> {
+            with view<a> looking at view<negated_difference>.
+            with view<b> looking at literal</number>"0".
+            with view<result> looking at view<smaller>.
+        }
+        execute the logical_operation</number/absolute_value> {
+            with view<a> looking at view<smaller>.
+            with view<result> looking at view<result>.
+        }
     }
 }

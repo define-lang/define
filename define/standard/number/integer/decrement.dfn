@@ -8,6 +8,16 @@ define the operation<standard:/number/integer/decrement> {
     }
 
     it does {
-        execute the encoding operation.
+        define the view<difference> {
+            it may only contain particles where {
+                it has the value</number/integer>.
+            }
+        }
+        execute the operation</number/integer/subtract> {
+            with view<a> looking at view<value>.
+            with view<b> looking at literal</number>"1".
+            with view<result> looking at view<difference>.
+        }
+        set the value of view<value> from view<difference>.
     }
 }

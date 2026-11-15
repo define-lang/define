@@ -5,7 +5,7 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.final_result
-import standard.number.integer.ascii
+import standard.number.integer.equals
 
 
 class TestAction(literal.Action):
@@ -28,7 +28,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.set_value(reading, -3)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.final_result.FinalResultPosition
-        ).particle.value = standard.number.integer.ascii.encoding_equals(
+        ).particle.value = standard.number.integer.equals.value_number_integer_ascii__number_integer_ascii__boolean_ascii(
             position_reading.particle.value,
             -3,
         )

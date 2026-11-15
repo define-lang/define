@@ -19,6 +19,49 @@ define the operation<standard:/number/integer/equals> {
     }
 
     it does {
-        execute the encoding operation.
+        # a and b are equal if neither is less than the other.
+        define the view<less> {
+            it may only contain particles where {
+                it has the value</boolean>.
+            }
+        }
+        execute the logical_operation</number/less_than> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<less>.
+        }
+        define the view<greater> {
+            it may only contain particles where {
+                it has the value</boolean>.
+            }
+        }
+        execute the logical_operation</number/less_than> {
+            with view<a> looking at view<b>.
+            with view<b> looking at view<a>.
+            with view<result> looking at view<greater>.
+        }
+        define the view<not_less> {
+            it may only contain particles where {
+                it has the value</boolean>.
+            }
+        }
+        execute the logical_operation</boolean/not> {
+            with view<a> looking at view<less>.
+            with view<result> looking at view<not_less>.
+        }
+        define the view<not_greater> {
+            it may only contain particles where {
+                it has the value</boolean>.
+            }
+        }
+        execute the logical_operation</boolean/not> {
+            with view<a> looking at view<greater>.
+            with view<result> looking at view<not_greater>.
+        }
+        execute the logical_operation</boolean/and> {
+            with view<a> looking at view<not_less>.
+            with view<b> looking at view<not_greater>.
+            with view<result> looking at view<result>.
+        }
     }
 }
