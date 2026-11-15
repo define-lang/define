@@ -77,11 +77,18 @@ class ImportAnalysis(msgspec.Struct, frozen=True):
     unresolved: frozenset[str]
 
 
+class ParsedSource(msgspec.Struct, frozen=True):
+    """A Python source file and its parsed tree."""
+
+    path: Path
+    tree: ast.Module
+
+
 class ParsedTarget(msgspec.Struct, frozen=True):
-    """A Python target paired with the parsed tree of each of its sources."""
+    """A Python target and each of its sources, parsed."""
 
     target: PythonTarget
-    trees: tuple[ast.Module, ...]
+    sources: list[ParsedSource]
 
 
 class RepositoryAnalysis(msgspec.Struct, frozen=True):
@@ -520,8 +527,8 @@ def _target_imports(
 ) -> ImportAnalysis:
     dependencies: set[str] = set()
     unresolved: set[str] = set()
-    for tree in parsed_target.trees:
-        analysis = analyze_imports(tree, module_owners, external_module_owners)
+    for source in parsed_target.sources:
+        analysis = analyze_imports(source.tree, module_owners, external_module_owners)
         dependencies.update(analysis.dependencies)
         unresolved.update(analysis.unresolved)
     return ImportAnalysis(frozenset(dependencies), frozenset(unresolved))
@@ -541,8 +548,8 @@ def _expected_deps(
     expected.discard(target.label)
     if target.rule_class == "py_test":
         requested_fixtures: set[str] = set()
-        for tree in parsed_target.trees:
-            requested_fixtures.update(requested_fixture_names(tree))
+        for parsed_source in parsed_target.sources:
+            requested_fixtures.update(requested_fixture_names(parsed_source.tree))
         for source in target.sources:
             package = source.parent
             while package.parts:
@@ -695,15 +702,17 @@ def _load_repository(
     for target in targets:
         if target.generated_source:
             continue
-        trees = tuple(_parse_source(repository, source) for source in target.sources)
-        parsed_targets.append(ParsedTarget(target, trees))
+        sources: list[ParsedSource] = []
+        for source in target.sources:
+            sources.append(
+                ParsedSource(path=source, tree=_parse_source(repository, source))
+            )
+        parsed_targets.append(ParsedTarget(target, sources))
     conftest_fixtures: dict[Path, frozenset[str]] = {}
     for parsed_target in parsed_targets:
-        for source, tree in zip(
-            parsed_target.target.sources, parsed_target.trees, strict=True
-        ):
-            if source.name == "conftest.py":
-                conftest_fixtures[source] = fixture_names(tree)
+        for source in parsed_target.sources:
+            if source.path.name == "conftest.py":
+                conftest_fixtures[source.path] = fixture_names(source.tree)
     return RepositoryAnalysis(
         repository,
         tuple(parsed_targets),

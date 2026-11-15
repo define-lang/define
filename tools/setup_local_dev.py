@@ -17,31 +17,12 @@ REPO_ROOT = Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
 # it by the same name.
 SUCCESSFUL_RUN_STAMP = "setup-local-dev-stamp"
 
-# rust-analyzer reads generated Rust sources from the source tree. They are in
-# the order of their command-line arguments.
-GENERATED_RUST_SOURCES = [
-    "define/compiler/parsing/ast.rs",
-    "define/compiler/parsing/ast_constructors.rs",
-    "define/compiler/parsing/parser_diagnostics.rs",
-    "define/compiler/parsing/load_failures.rs",
-]
-
-# Type checkers and editors read generated Python modules, and the stubs of
-# native extensions whose stubs Bazel generates, from the source tree. They are
-# in the order of their command-line arguments.
-GENERATED_PYTHON_FILES = [
-    "defcl/python/error_types.py",
-    "define/compiler/codegen/literal/python/renderer.pyi",
-]
-
-# Native extensions, by the package that each is copied into, in the order of
-# their command-line arguments.
-NATIVE_EXTENSION_PACKAGES = [
-    "defcl/python",
-    "define/compiler/codegen/literal/python",
-    "define/compiler/parsing",
-    "crates/source_rendering/python",
-]
+# Each argument after uv's location names a Bazel-built file to copy into the
+# source tree: `--file=DESTINATION=LOCATION` copies it to that path, and
+# `--extension=PACKAGE=LOCATION` copies a native extension into that package
+# under its own name, which depends on the platform.
+_FILE_ARGUMENT = "--file="
+_EXTENSION_ARGUMENT = "--extension="
 
 # re2 makes only its py_library public, so its files are found by their path in
 # that library's runfiles, using re2's apparent repository name.
@@ -240,17 +221,25 @@ def _record_successful_run():
     (REPO_ROOT / stamp_path).touch()
 
 
+def _copy_built_file(argument: str):
+    """Copy the Bazel-built file that a `--file` or `--extension` argument names into the source tree."""
+    if argument.startswith(_FILE_ARGUMENT):
+        destination, location = argument.removeprefix(_FILE_ARGUMENT).split("=", 1)
+        _copy_file(runfiles.resolve(location), REPO_ROOT / destination)
+        print(destination)
+        return
+    if not argument.startswith(_EXTENSION_ARGUMENT):
+        raise ValueError(f"unexpected argument: {argument}")
+    package, location = argument.removeprefix(_EXTENSION_ARGUMENT).split("=", 1)
+    extension_source = runfiles.resolve(location)
+    extension_path = Path(package) / extension_source.name
+    _copy_file(extension_source, REPO_ROOT / extension_path)
+    print(extension_path)
+
+
 def main():
     """Build Bazel-generated files, copy them into the source tree, and configure git."""
-    uv_location, *locations = sys.argv[1:]
-    generated_rust_locations = locations[: len(GENERATED_RUST_SOURCES)]
-    generated_python_locations = locations[
-        len(GENERATED_RUST_SOURCES) : len(GENERATED_RUST_SOURCES)
-        + len(GENERATED_PYTHON_FILES)
-    ]
-    native_extension_locations = locations[
-        len(GENERATED_RUST_SOURCES) + len(GENERATED_PYTHON_FILES) :
-    ]
+    uv_location, *copy_arguments = sys.argv[1:]
     sync_venv(runfiles.resolve(uv_location))
     proto_targets = _discover_py_proto_targets()
     print(f"Building {len(proto_targets)} targets...")
@@ -260,23 +249,8 @@ def main():
     _copy_proto_files(proto_dirs)
     _copy_buf_validate()
     _copy_re2()
-    for package, location in zip(
-        NATIVE_EXTENSION_PACKAGES, native_extension_locations, strict=True
-    ):
-        extension_source = runfiles.resolve(location)
-        extension_path = Path(package) / extension_source.name
-        _copy_file(extension_source, REPO_ROOT / extension_path)
-        print(extension_path)
-    for source, location in zip(
-        GENERATED_RUST_SOURCES, generated_rust_locations, strict=True
-    ):
-        _copy_file(runfiles.resolve(location), REPO_ROOT / source)
-        print(source)
-    for generated_file, location in zip(
-        GENERATED_PYTHON_FILES, generated_python_locations, strict=True
-    ):
-        _copy_file(runfiles.resolve(location), REPO_ROOT / generated_file)
-        print(generated_file)
+    for argument in copy_arguments:
+        _copy_built_file(argument)
     _configure_git_blame()
     _install_git_hooks()
     _record_successful_run()

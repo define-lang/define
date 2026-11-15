@@ -382,7 +382,13 @@ def test_repository_analysis_removes_conftest_dep_after_fixture_removal(
         tmp_path,
         (
             check_python_deps.ParsedTarget(
-                target, (ast.parse("def test_example(removed_fixture): pass\n"),)
+                target,
+                [
+                    check_python_deps.ParsedSource(
+                        path=Path("define/example/example_test.py"),
+                        tree=ast.parse("def test_example(removed_fixture): pass\n"),
+                    )
+                ],
             ),
         ),
         {"define.example.conftest": "//define/example:conftest"},

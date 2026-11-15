@@ -356,6 +356,8 @@ def _shown(functions: Path, depth: int) -> str:
 
 def _common_length(first: Path, second: Path) -> int:
     length = 0
+    # ZIP: The two paths are compared function by function, from the outermost
+    # function in, to count how many outermost functions they share.
     for first_function, second_function in zip(first, second, strict=False):
         if first_function != second_function:
             break

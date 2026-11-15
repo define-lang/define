@@ -336,16 +336,20 @@ py_binary(
     srcs = ["setup_local_dev.py"],
     args = [
         "$(rlocationpath @multitool//tools/uv)",
-        "$(rlocationpath //define/compiler/parsing:ast)",
-        "$(rlocationpath //define/compiler/parsing:ast_constructors)",
-        "$(rlocationpath //define/compiler/parsing:parser_diagnostics)",
-        "$(rlocationpath //define/compiler/parsing:load_failures)",
-        "$(rlocationpath //defcl/python:error_types_gen)",
-        "$(rlocationpath //define/compiler/codegen/literal/python:renderer_stub)",
-        "$(rlocationpath //defcl/python:validator_extension)",
-        "$(rlocationpath //define/compiler/codegen/literal/python:renderer)",
-        "$(rlocationpath //define/compiler/parsing:parser_extension)",
-        "$(rlocationpath //crates/source_rendering/python:rendering_extension)",
+        # rust-analyzer reads generated Rust sources from the source tree.
+        "--file=define/compiler/parsing/ast.rs=$(rlocationpath //define/compiler/parsing:ast)",
+        "--file=define/compiler/parsing/ast_constructors.rs=$(rlocationpath //define/compiler/parsing:ast_constructors)",
+        "--file=define/compiler/parsing/parser_diagnostics.rs=$(rlocationpath //define/compiler/parsing:parser_diagnostics)",
+        "--file=define/compiler/parsing/load_failures.rs=$(rlocationpath //define/compiler/parsing:load_failures)",
+        # Type checkers and editors read generated Python modules, and the
+        # stubs of native extensions whose stubs Bazel generates, from the
+        # source tree.
+        "--file=defcl/python/error_types.py=$(rlocationpath //defcl/python:error_types_gen)",
+        "--file=define/compiler/codegen/literal/python/renderer.pyi=$(rlocationpath //define/compiler/codegen/literal/python:renderer_stub)",
+        "--extension=defcl/python=$(rlocationpath //defcl/python:validator_extension)",
+        "--extension=define/compiler/codegen/literal/python=$(rlocationpath //define/compiler/codegen/literal/python:renderer)",
+        "--extension=define/compiler/parsing=$(rlocationpath //define/compiler/parsing:parser_extension)",
+        "--extension=crates/source_rendering/python=$(rlocationpath //crates/source_rendering/python:rendering_extension)",
     ],
     data = [
         "//crates/source_rendering/python:rendering_extension",
