@@ -230,41 +230,41 @@
     "binaries": [
       {
         "kind": "archive",
-        "url": "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_linux_arm64.tar.gz",
+        "url": "https://github.com/jdx/jactionlint/releases/download/v2.6.0/jactionlint_2.6.0_linux_arm64.tar.gz",
         "file": "jactionlint",
-        "sha256": "ad7e33b6264cea16b7e83ad2bb004824d5b1c15aedb35ba0dc84917f791c5525",
+        "sha256": "c726185a85f26d09aa94ea556509a19827979074b35d65f357f3a4947573e934",
         "os": "linux",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_linux_amd64.tar.gz",
+        "url": "https://github.com/jdx/jactionlint/releases/download/v2.6.0/jactionlint_2.6.0_linux_amd64.tar.gz",
         "file": "jactionlint",
-        "sha256": "5ac307b0499bb0eab45ae99c23e8e0790874fbc667c75224410954e0e3c6e0f5",
+        "sha256": "d5400967b8f0d3a5ae9a4cee21f56400a50eb3f05d0cbb4ef17184f17f0760c8",
         "os": "linux",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_darwin_arm64.tar.gz",
+        "url": "https://github.com/jdx/jactionlint/releases/download/v2.6.0/jactionlint_2.6.0_darwin_arm64.tar.gz",
         "file": "jactionlint",
-        "sha256": "15b47d53e3b1aafbd674cca0e8fff0d5952f3cf2a7d7501a8f67576ef76397b4",
+        "sha256": "c3f373c7eac668aacb390b9c802cf4b5e2ad1a11b0b0c0aea6b04ca0cfa0c018",
         "os": "macos",
         "cpu": "arm64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_darwin_amd64.tar.gz",
+        "url": "https://github.com/jdx/jactionlint/releases/download/v2.6.0/jactionlint_2.6.0_darwin_amd64.tar.gz",
         "file": "jactionlint",
-        "sha256": "f8f10def21260aa9515974f0aa145f5a6741efd60efe1f880c8c6f53a4ba676c",
+        "sha256": "aa89c49ad5c9530f2308f18333166050f97f14d420f478a8225d043bef1e2cab",
         "os": "macos",
         "cpu": "x86_64"
       },
       {
         "kind": "archive",
-        "url": "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_windows_amd64.zip",
+        "url": "https://github.com/jdx/jactionlint/releases/download/v2.6.0/jactionlint_2.6.0_windows_amd64.zip",
         "file": "jactionlint.exe",
-        "sha256": "6f6202d6fc476cbe3978c7dd2349c881cfcfa98257593cb2f1bde87004f054c6",
+        "sha256": "e939dd8c0eeeb620e70d30aa9aa21c671be078876660a831a82d07e372f0fa4d",
         "os": "windows",
         "cpu": "x86_64"
       }
