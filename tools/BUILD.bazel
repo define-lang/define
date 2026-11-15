@@ -339,6 +339,9 @@ py_test(
         "CARGO_TOML": "$(rlocationpath //:Cargo.toml)",
         "RUSTC": "$(rlocationpath @rules_rust//rust/toolchain:current_rustc_files)",
     },
+    # The Windows VM gets the Linux rustc from the cross build. rustc's lints
+    # are the same on every platform, so Linux checks them.
+    tags = ["no_windows_vm"],
     deps = [
         ":runfiles",
         ":rustc_lints",
