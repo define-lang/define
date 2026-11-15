@@ -1,0 +1,32 @@
+id: zip-explains-correspondence
+snapshots:
+  "# The views and the types are in the same order.\nfor view, python_type in zip(views, types, strict=True):\n    pass\n":
+    labels:
+    - source: zip(views, types, strict=True)
+      style: primary
+      start: 74
+      end: 104
+  "# ZIP: A comment separated by a statement does not count.\npairs = []\npairs.extend(zip(first, second, strict=True))\n":
+    labels:
+    - source: zip(first, second, strict=True)
+      style: primary
+      start: 82
+      end: 113
+  "# ZIP: An enclosing statement's comment does not explain this one.\nfor item in items:\n    for view, python_type in zip(views, types, strict=True):\n        pass\n":
+    labels:
+    - source: zip(views, types, strict=True)
+      style: primary
+      start: 115
+      end: 145
+  "def pairs(views, types):\n    # ZIP: A comment before the first statement does not cover the second.\n    print(views)\n    return list(zip(views, types, strict=True))\n":
+    labels:
+    - source: zip(views, types, strict=True)
+      style: primary
+      start: 133
+      end: 163
+  "for first, second in zip(first_key, second_key, strict=False):\n    pass\n":
+    labels:
+    - source: zip(first_key, second_key, strict=False)
+      style: primary
+      start: 21
+      end: 61

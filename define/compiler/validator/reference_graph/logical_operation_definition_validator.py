@@ -101,6 +101,9 @@ class LogicalOperationDefinitionValidator:
                 )
             ]
         view_diagnostics: list[diagnostics.Diagnostic] = []
+        # ZIP: An associated Encoding Operation must have the logical
+        # operation's views in the same order, so this compares the two views
+        # at each position. A different number of views was reported above.
         for number, (logical_view, encoding_view) in enumerate(
             zip(logical_views, encoding_views, strict=True), start=1
         ):

@@ -1,0 +1,57 @@
+id: zip-explains-correspondence
+language: python
+severity: error
+message: >-
+  Every statement that calls `zip(...)` needs a comment immediately before it
+  that starts with `# ZIP:` and says why the zipped sequences correspond
+  position for position. Before writing one, find out why the values are in
+  separate sequences at all. Trace where each sequence is built: if they were
+  built together, or from things that were already associated (a caller that
+  had each pair, a loop that derived one value from the other, a data structure
+  or command line that splits pairs into parallel lists), fix the association
+  where it is lost, for example by passing pairs, a mapping by name, or an
+  object that holds both, so that nothing has to be zipped. Keep a zip only
+  when the sequences really are independent and their positions are what
+  matters, such as comparing two sequences element by element, checking a rule
+  that two definitions match in order, or pairing what an API outside this
+  repository returns separately.
+files:
+  - "**/*.py"
+ignores:
+  - vendored/**
+utils:
+  # The comment lines directly before a node, one of which starts with
+  # `# ZIP:`.
+  after-zip-comment:
+    follows:
+      kind: comment
+      regex: "^# ZIP:"
+      stopBy:
+        not:
+          kind: comment
+rule:
+  pattern: zip($$$)
+  not:
+    # The statement that contains the call is the nearest ancestor whose
+    # parent is a block or the module, so a comment on an enclosing statement
+    # does not count.
+    inside:
+      stopBy:
+        any:
+          - kind: block
+          - kind: module
+      inside:
+        any:
+          - kind: block
+          - kind: module
+      any:
+        - matches: after-zip-comment
+        # Comments before a block's first statement belong to the statement
+        # that has the block, just before the block.
+        - all:
+            - not:
+                follows:
+                  regex: "."
+            - inside:
+                kind: block
+                matches: after-zip-comment

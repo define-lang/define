@@ -231,8 +231,10 @@ class ValueOperationExecutions:
         arguments: list[
             codegen_input.OperationArgument[ast.LocalTypedNameReference]
         ] = []
-        # The index holds only Encoding Operations with the logical
-        # operation's views, in its order.
+        # ZIP: The index holds only Encoding Operations whose views have the
+        # names and order of the logical operation's views, and the statement's
+        # arguments are in the logical operation's view order. So each argument
+        # is for the Encoding Operation's view at its position.
         for interface_view, argument in zip(
             encoding_operation.views, execution.arguments, strict=True
         ):

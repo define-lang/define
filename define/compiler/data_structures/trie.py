@@ -287,6 +287,8 @@ class ReparentingTrie[V]:
             if key in results:
                 continue
             common_depth = 0
+            # ZIP: Both keys are paths. This counts how many of their leading
+            # segments the previous key and this key have in common.
             for previous_segment, segment in zip(previous_key, key, strict=False):
                 if previous_segment != segment:
                     break
