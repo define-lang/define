@@ -287,7 +287,11 @@ def test_project_value_encoding(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.reference_graph_result.codegen_input.value_encodings == {
+    value_encodings = result.reference_graph_result.codegen_input.value_encodings
+    assert {
+        value_quality: encoding.full_typed_name
+        for value_quality, encoding in value_encodings.items()
+    } == {
         "value<my.domain.com:my_lib:/test>": "encoding<my.domain.com:my_lib:/test/digits>"
     }
 
@@ -297,7 +301,11 @@ def test_encoding_from_another_universe(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.reference_graph_result.codegen_input.value_encodings == {
+    value_encodings = result.reference_graph_result.codegen_input.value_encodings
+    assert {
+        value_quality: encoding.full_typed_name
+        for value_quality, encoding in value_encodings.items()
+    } == {
         "value<my.domain.com:my_lib:/test>": "encoding<mv:define-lang.org:numbers:/number/digits>"
     }
 
@@ -307,7 +315,11 @@ def test_encoding_from_universe_without_multiverse(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.reference_graph_result.codegen_input.value_encodings == {
+    value_encodings = result.reference_graph_result.codegen_input.value_encodings
+    assert {
+        value_quality: encoding.full_typed_name
+        for value_quality, encoding in value_encodings.items()
+    } == {
         "value<my.domain.com:my_lib:/test>": "encoding<define-lang.org:numbers:/number/digits>"
     }
 
@@ -317,9 +329,11 @@ def test_standard_encoding(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    assert result.reference_graph_result.codegen_input.value_encodings == {
-        "value<my.domain.com:my_lib:/test>": "encoding<standard:/binary/ascii>"
-    }
+    value_encodings = result.reference_graph_result.codegen_input.value_encodings
+    assert {
+        value_quality: encoding.full_typed_name
+        for value_quality, encoding in value_encodings.items()
+    } == {"value<my.domain.com:my_lib:/test>": "encoding<standard:/binary/ascii>"}
 
 
 def test_associated_encoding_not_defined(

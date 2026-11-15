@@ -14,7 +14,7 @@ from define.compiler.errors import invisible_characters
 from define.compiler.validator.reference_graph import propagation_step
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from crates.source_rendering.python import rendering
 
@@ -847,6 +847,55 @@ class DuplicateAssociatedEncodingOperationDiagnostic(Diagnostic):
             + f" associated here:\n{sources.render_location(self.association_location)}"
             + f"\n{sources.render_location(self.first_association_location)}"
         )
+
+
+class OperationExecutionStep(msgspec.Struct, frozen=True):
+    """One execution in a stack of executions that a diagnostic shows."""
+
+    executing_name: str
+    executed_name: str
+    # The executed operation's name in the statement that executes it.
+    location: rendering.SourceLocation
+
+
+class MissingEncodingOperationDiagnostic(Diagnostic):
+    """Diagnostic for executing a Value Operation that, for the encodings of what the execution looks at, executes a logical operation that no Encoding Operation performs for the encodings of the views it looks at."""
+
+    logical_operation_name: str
+    # The encoding of each of the logical operation's views, keyed by the
+    # view's name, in the order of its views.
+    view_encodings: Mapping[str, str]
+    # The executions from the action down to the Logical Operation Execution
+    # Statement, in the order they happen.
+    execution_stack: Sequence[OperationExecutionStep]
+
+    @property
+    def view_encoding_list(self) -> str:
+        """Format each view with its encoding as an indented list."""
+        lines: list[str] = []
+        for view_name, encoding_name in self.view_encodings.items():
+            lines.append(f"{view_name}: {encoding_name}")
+        return "\n  ".join(lines)
+
+    message_format: ClassVar[str] = (
+        "no Encoding Operation performs '{self.logical_operation_name}'"
+        " for these encodings:\n"
+        "  {self.view_encoding_list}\n"
+        "so this execution cannot run.\n\n"
+        "{execution_stack}"
+    )
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        lines = ["This error happens because:"]
+        for step in self.execution_stack:
+            lines.extend(
+                (
+                    f"  '{step.executing_name}' executes '{step.executed_name}':",
+                    textwrap.indent(sources.render_location(step.location), "    "),
+                )
+            )
+        return self.message_format.format(self=self, execution_stack="\n".join(lines))
 
 
 class ExecutedOperationHasReadWriteViewDiagnostic(Diagnostic):

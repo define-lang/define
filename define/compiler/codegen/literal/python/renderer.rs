@@ -1,9 +1,7 @@
 use askama::Template;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use template_context::{
-    ActionDefinition, ClassReference, EncodingOperationDefinition, PositionDefinition,
-};
+use template_context::{ActionDefinition, ClassReference, OperationFunction, PositionDefinition};
 
 mod template_context;
 
@@ -87,9 +85,7 @@ fn render_action(definition: &Bound<'_, ActionDefinition>) -> PyResult<String> {
 }
 
 #[pyfunction]
-fn render_encoding_operation(
-    definition: &Bound<'_, EncodingOperationDefinition>,
-) -> PyResult<String> {
+fn render_operation_function(definition: &Bound<'_, OperationFunction>) -> PyResult<String> {
     render(definition.get())
 }
 
@@ -110,13 +106,13 @@ mod renderer {
     use super::template_context::{
         ActionDefinition, ActionStatement, BinaryOperator, ChainElement, ClassReference,
         DestructionContractArgument, DestructionContractDefinition, DestructionContractMethod,
-        EncodingOperationDefinition, EncodingOperationStatement, ExpressionOperator,
-        ForwardedContribution, FunctionReference, GuaranteedParticleDestructors, InterfacePosition,
+        ExpressionOperator, ForwardedContribution, FunctionReference,
+        GuaranteedParticleDestructors, InterfacePosition, OperationFunction, OperationStatement,
         PositionDefinition, PositionExpression, PrefixOperator, TypedLocalName,
     };
     #[pymodule_export]
     use super::{
-        render_action, render_encoding_operation, render_entry_point, render_module_header,
+        render_action, render_entry_point, render_module_header, render_operation_function,
         render_position,
     };
 }

@@ -1,0 +1,5 @@
+test.create(count)
+test.set_value(count, -1)
+test.create(/final_result)
+test.execute(operation<my.domain.com:my_lib:/add_two>, count, /final_result)
+test.destroy(count)

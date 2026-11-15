@@ -1,0 +1,13 @@
+# An action executes a read/write composite Value Operation that copies its view into a local view with a View Setting Statement, so its function copies the value before the Encoding Operation writes the view.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</final_result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</final_result>.
+        set the value of position</final_result> from literal<standard:/number>"21".
+        execute the operation</negate_in_place> {
+            with view<value> looking at position</final_result>.
+        }
+    }
+}

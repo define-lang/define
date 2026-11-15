@@ -1,0 +1,21 @@
+define the operation<my.domain.com:my_lib:/negation> {
+    define the view<value> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        execute the logical_operation<standard:/number/negate> {
+            with view<a> looking at view<value>.
+            with view<result> looking at view<result>.
+        }
+    }
+}

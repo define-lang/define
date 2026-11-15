@@ -10,6 +10,7 @@ from pathlib import Path
 
 from define.compiler import ast, constants, name_types
 from define.compiler.codegen.literal.python import renderer
+from define.compiler.validator import codegen_input
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
@@ -27,14 +28,27 @@ _READABLE_AUTHORITY = re.compile(r"[a-z0-9]+(?:[./][a-z0-9]+)*")
 # Separates a translated authority from the digest of the original. Readable
 # authority segments never contain it, so the two forms never collide.
 _AUTHORITY_DIGEST_SEPARATOR = "___"
-# An Encoding Operation's function lives in the module of its path's parent,
-# beside the packages of its sibling path segments. The prefix keeps its name
-# from being a package name, a keyword, or a built-in, so that every function
-# and module name depends only on the Define name it is for.
+# Every generated function's name starts with one of these. No package name
+# starts with one (see _ESCAPED_COMPONENT_PREFIXES), so a function never has the
+# name of a package in its module, and no function's name is a Python keyword
+# or built-in.
 _ENCODING_OPERATION_PREFIX = "encoding_"
+_VALUE_OPERATION_PREFIX = "value_"
 # A module-name component that starts with one of these gets one more leading
 # `_`, so that no module-name component starts with a function's prefix.
-_ESCAPED_COMPONENT_PREFIXES = ("_", _ENCODING_OPERATION_PREFIX)
+_ESCAPED_COMPONENT_PREFIXES = (
+    "_",
+    _ENCODING_OPERATION_PREFIX,
+    _VALUE_OPERATION_PREFIX,
+)
+# Between the encodings in a composite Value Operation's function name, and
+# between the path segments of each encoding.
+_ENCODING_SEPARATOR = "__"
+_ENCODING_PATH_SEPARATOR = "_"
+# Separates the encodings' path segments in a composite Value Operation's
+# function name from the digest of the encodings. A name without a digest
+# never contains it, so a name with a digest never equals one without.
+_ENCODINGS_DIGEST_SEPARATOR = "___"
 # Local names start with a prefix so that no local name is a keyword, a
 # built-in, or a name the generated method itself uses.
 VIEW_PREFIX = "view_"
@@ -59,12 +73,16 @@ _PATH_SEPARATOR = "/"
 # must already respect the filesystem limit for the import to resolve to the
 # file this compiler writes.
 _MODULE_COMPONENT_BYTE_LIMIT = 255
-# 8 bytes keeps distinct components apart well past the number of definitions
-# a single program can hold, and the digest must stay a pure function of the
-# component so that truncation never makes a module name depend on what else
-# was compiled.
-_MODULE_COMPONENT_DIGEST_BYTES = 8
+# 8 bytes keeps distinct names apart well past the number of definitions a
+# single program can hold, and a digest must stay a pure function of what it
+# digests so that no generated name depends on what else was compiled.
+_DIGEST_BYTES = 8
 _QUALITY_NAME_TYPES = (name_types.NameType.POSITION, name_types.NameType.ACTION)
+
+
+def _digest(text: str) -> str:
+    """Return a short digest of ``text``, which keeps different texts apart in generated names."""
+    return hashlib.blake2b(text.encode(), digest_size=_DIGEST_BYTES).hexdigest()
 
 
 def _truncate_module_component(component: str) -> str:
@@ -77,9 +95,7 @@ def _truncate_module_component(component: str) -> str:
     # permits only ASCII characters in module-name components.
     if len(component) <= _MODULE_COMPONENT_BYTE_LIMIT:
         return component
-    encoded = component.encode()
-    digest = hashlib.blake2b(encoded, digest_size=_MODULE_COMPONENT_DIGEST_BYTES)
-    suffix = f"_{digest.hexdigest()}"
+    suffix = f"_{_digest(component)}"
     prefix_byte_limit = _MODULE_COMPONENT_BYTE_LIMIT - len(suffix)
     prefix = component[:prefix_byte_limit]
     return prefix + suffix
@@ -164,6 +180,37 @@ def _with_occurrence(name: str, occurrence: int) -> str:
     return name
 
 
+def _encodings_part(encodings: Sequence[ast.GlobalTypedNameReference]) -> str:
+    """Return the part of a composite Value Operation's function name that names its encodings, which no other encodings of the same Value Operation get.
+
+    The part joins the path segments of the encodings. When every encoding is
+    in the standard universe and none of its segments has an underscore, no
+    other set of encodings joins to the same text. Otherwise another set
+    could, so a digest of the encodings follows to keep them apart.
+    """
+    full_typed_names: list[str] = []
+    for encoding in encodings:
+        full_typed_names.append(encoding.full_typed_name)
+    joined_encodings: list[str] = []
+    needs_digest = False
+    # When every view has the same encoding, the name lists that encoding only
+    # once. Otherwise it lists one encoding for each view. A Value Operation
+    # has the same number of views in every set of encodings, so a name that
+    # lists one encoding can only mean that every view has it.
+    named_encodings = encodings[:1] if len(set(full_typed_names)) == 1 else encodings
+    for encoding in named_encodings:
+        segments = encoding.name_content.path.relative_path.parts
+        if encoding.effective_fqun.canonical != constants.STANDARD_UNIVERSE or any(
+            _ENCODING_PATH_SEPARATOR in segment for segment in segments
+        ):
+            needs_digest = True
+        joined_encodings.append(_ENCODING_PATH_SEPARATOR.join(segments))
+    part = _ENCODING_SEPARATOR.join(joined_encodings)
+    if needs_digest:
+        part += _ENCODINGS_DIGEST_SEPARATOR + _digest("\n".join(full_typed_names))
+    return part
+
+
 def authority_segment(authority: str) -> str:
     """Convert an authority to a Python module segment that no other authority gets.
 
@@ -175,10 +222,7 @@ def authority_segment(authority: str) -> str:
     # authority's module name never depends on what else was compiled.
     segment = authority.translate(_AUTHORITY_CHAR_TABLE)
     if _READABLE_AUTHORITY.fullmatch(authority) is None:
-        digest = hashlib.blake2b(
-            authority.encode(), digest_size=_MODULE_COMPONENT_DIGEST_BYTES
-        )
-        segment += _AUTHORITY_DIGEST_SEPARATOR + digest.hexdigest()
+        segment += _AUTHORITY_DIGEST_SEPARATOR + _digest(authority)
     return _escape_module_component(segment)
 
 
@@ -241,6 +285,13 @@ class NameConverter:
 
     _class_names: dict[tuple[define_path.DefinePath, str], str]
     _class_references: dict[str, renderer.ClassReference]
+    # Keyed by the Encoding Operation's full typed name.
+    _function_references: dict[str, renderer.FunctionReference]
+    # Keyed by the Value Operation's full typed name and the full typed names of
+    # the encodings.
+    _composite_value_operation_function_references: dict[
+        tuple[str, tuple[str, ...]], renderer.FunctionReference
+    ]
     # The module name components that name each FQUN, keyed by its canonical
     # form.
     _universe_module_name_parts: dict[str, list[str]]
@@ -250,18 +301,69 @@ class NameConverter:
         self._universe_module_name_parts = {}
         self._class_names = {}
         self._class_references = {}
+        self._function_references = {}
+        self._composite_value_operation_function_references = {}
 
     def function_reference(
         self,
         typed_global_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
     ) -> renderer.FunctionReference:
-        """Build a reference to a generated function, which lives in the module of its path's parent."""
+        """Build a reference to a generated function, which lives in the module of its path's parent.
+
+        Results are cached, because every execution of the Encoding Operation
+        needs one.
+        """
+        key = typed_global_name.full_typed_name
+        existing = self._function_references.get(key)
+        if existing is not None:
+            return existing
         fqun = self._fqun(typed_global_name)
         parent_segments = typed_global_name.name_content.path.relative_path.parts[:-1]
-        return renderer.FunctionReference(
+        function = renderer.FunctionReference(
             function_name=self._function_name(typed_global_name),
             module_name=".".join(self._module_name_parts(fqun, parent_segments)),
         )
+        self._function_references[key] = function
+        return function
+
+    def composite_value_operation_function_reference(
+        self,
+        value_operation: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+        encodings: Sequence[ast.GlobalTypedNameReference],
+    ) -> renderer.FunctionReference:
+        """Build a reference to a composite Value Operation's function for ``encodings``, which lives in the module of the Value Operation's path.
+
+        Results are cached, because every execution of the composite Value
+        Operation for those encodings needs one.
+        """
+        key = (
+            value_operation.full_typed_name,
+            tuple(encoding.full_typed_name for encoding in encodings),
+        )
+        existing = self._composite_value_operation_function_references.get(key)
+        if existing is not None:
+            return existing
+        function = renderer.FunctionReference(
+            function_name=_VALUE_OPERATION_PREFIX + _encodings_part(encodings),
+            module_name=".".join(
+                self._module_name_parts(
+                    self._fqun(value_operation),
+                    value_operation.name_content.path.relative_path.parts,
+                )
+            ),
+        )
+        self._composite_value_operation_function_references[key] = function
+        return function
+
+    def runtime_operation_function_reference(
+        self, runtime_operation: codegen_input.RuntimeOperation
+    ) -> renderer.FunctionReference:
+        """Build a reference to a runtime operation's function."""
+        if isinstance(runtime_operation, codegen_input.CompositeValueOperation):
+            return self.composite_value_operation_function_reference(
+                runtime_operation.definition.typed_name, runtime_operation.encodings
+            )
+        return self.function_reference(runtime_operation)
 
     @staticmethod
     def _function_name(

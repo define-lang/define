@@ -71,7 +71,7 @@ class LiteralEncoder:
             ]
         (value_encoding,) = value_encodings
         parser = literal_parsers.LITERAL_PARSERS.get(
-            (literal_encoding.full_typed_name, value_encoding)
+            (literal_encoding.full_typed_name, value_encoding.full_typed_name)
         )
         if parser is None:
             return None, [
@@ -86,7 +86,9 @@ class LiteralEncoder:
                     value_quality=value_quality.source_form_in_universe(
                         self._enclosing_fqun
                     ),
-                    supported_encodings=_supported_encodings(value_encoding),
+                    supported_encodings=_supported_encodings(
+                        value_encoding.full_typed_name
+                    ),
                 )
             ]
         return self._parse(literal, parser, value_encoding)
@@ -118,7 +120,7 @@ class LiteralEncoder:
                     supported_encodings=_supported_encodings(encoding.full_typed_name),
                 )
             ]
-        return self._parse(literal, parser, encoding.full_typed_name)
+        return self._parse(literal, parser, encoding)
 
     def _literal_encoding(
         self, potential_literal: ast.GlobalTypedNameReference
@@ -136,7 +138,7 @@ class LiteralEncoder:
         self,
         literal: ast.Literal,
         parser: Callable[[str], str],
-        destination_encoding: str,
+        destination_encoding: ast.GlobalTypedNameReference,
     ) -> tuple[codegen_input.EncodedLiteral | None, list[diagnostics.Diagnostic]]:
         try:
             return codegen_input.EncodedLiteral(
@@ -150,7 +152,7 @@ class LiteralEncoder:
                     potential_literal=literal.potential_literal.source_form_in_universe(
                         self._enclosing_fqun
                     ),
-                    value_encoding=destination_encoding,
+                    value_encoding=destination_encoding.full_typed_name,
                     reason=e.reason,
                 )
             ]

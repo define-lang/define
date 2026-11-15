@@ -8,17 +8,16 @@ from functools import cached_property
 from define.compiler import (
     ast,
     chained_name,
-    encoding_operation_associations,
     name_types,
 )
 from define.compiler.errors import diagnostics
 from define.compiler.validator import codegen_input, scope_tracker, validation_result
 from define.compiler.validator.reference_graph import (
     action_contract,
+    action_operation_execution_validator,
     action_requirement_validator,
     chained_name_validator,
     literal_encoder,
-    operation_arguments_validator,
     particle_operation_validator,
     position_occupancy,
     position_quality_resolver,
@@ -42,12 +41,13 @@ from define.compiler.validator.reference_graph.particles import (
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Sequence
+    from collections.abc import Sequence
 
     from define.compiler.data_structures import interned_set, typed_name_dict
     from define.compiler.validator.reference_graph import (
         quality_assignment,
         reference_graph_validation_state,
+        value_operation_executions,
     )
     from define.compiler.validator.reference_graph.destruction import (
         destruction_contract,
@@ -65,6 +65,7 @@ class ActionDefinitionValidator:
         validation_result.DefinitionValidationResult,
     ]
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
+    _value_operation_executions: value_operation_executions.ValueOperationExecutions
     _diagnostics: list[diagnostics.Diagnostic]
     _destruction_contracts: list[action_contract.DestructionContracts]
 
@@ -80,13 +81,15 @@ class ActionDefinitionValidator:
             validation_result.DefinitionValidationResult,
         ],
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
+        value_operation_executions: value_operation_executions.ValueOperationExecutions,
     ):
-        """Initialize with the Action Definition, statement validity, and known definitions."""
+        """Initialize with the Action Definition, statement validity, known definitions, and what executing each Value Operation runs, which action validators share."""
         self._definition = definition
         self._particle_statement_validity = particle_statement_validity
         self._looked_at_position_validity = looked_at_position_validity
         self._definition_results = definition_results
         self._validation_state = validation_state
+        self._value_operation_executions = value_operation_executions
         self._diagnostics = []
         self._destruction_contracts = []
         self._steps: list[codegen_input.ActionStep] = []
@@ -111,14 +114,6 @@ class ActionDefinitionValidator:
     def _literal_encoder(self) -> literal_encoder.LiteralEncoder:
         return literal_encoder.LiteralEncoder(
             self._definition_results, self._validation_state, self._enclosing_fqun
-        )
-
-    @cached_property
-    def _operation_arguments_validator(
-        self,
-    ) -> operation_arguments_validator.OperationArgumentsValidator:
-        return operation_arguments_validator.OperationArgumentsValidator(
-            self._definition_results, self._enclosing_fqun, self._literal_encoder
         )
 
     @cached_property
@@ -175,6 +170,24 @@ class ActionDefinitionValidator:
             self._requirement_validator,
             self._dead_quality_assignment_validator,
             self._dead_value_write_validator,
+        )
+
+    @cached_property
+    def _operation_execution_validator(
+        self,
+    ) -> action_operation_execution_validator.ActionOperationExecutionValidator:
+        return action_operation_execution_validator.ActionOperationExecutionValidator(
+            self._definition,
+            self._definition_results,
+            self._validation_state,
+            self._value_operation_executions,
+            self._tracker,
+            self._chained_name_validator,
+            self._requirement_validator,
+            self._dead_quality_assignment_validator,
+            self._dead_value_write_validator,
+            self._operation_validator,
+            self._literal_encoder,
         )
 
     @cached_property
@@ -345,9 +358,14 @@ class ActionDefinitionValidator:
                     validity = next(validity_iter)
                     self._analyze_destroy(stmt, validity, scope)
                 case ast.OperationExecutionStatement():
-                    self._analyze_operation_execution(
-                        stmt, looked_at_validity_iter, scope
+                    statement_diagnostics, step = (
+                        self._operation_execution_validator.validate(
+                            stmt, looked_at_validity_iter, scope
+                        )
                     )
+                    self._diagnostics.extend(statement_diagnostics)
+                    if step is not None:
+                        self._steps.append(step)
         self._auto_destruct_locals(scope)
 
     def _auto_destruct_locals(self, scope: scope_tracker.PositionScopeTracker):
@@ -451,131 +469,6 @@ class ActionDefinitionValidator:
             self._diagnostics.extend(
                 self._dead_value_write_validator.record_write(stmt.target_position)
             )
-
-    def _analyze_operation_execution(
-        self,
-        stmt: ast.OperationExecutionStatement[ast.PositionReference | ast.Literal],
-        looked_at_validity: Iterator[bool],
-        scope: scope_tracker.PositionScopeTracker,
-    ):
-        statement_diagnostics: list[diagnostics.Diagnostic] = []
-        executed = self._operation_arguments_validator.get_executed_operation(stmt)
-        looked_at_qualities: dict[
-            ast.OperationArgumentStatement[ast.LookedAt], Collection[str]
-        ] = {}
-        written_positions: list[ast.PositionReference] = []
-        positions_with_unknown_use: list[ast.PositionReference] = []
-        view_indexes = {} if executed is None else executed.view_indexes_by_name()
-        for argument in stmt.arguments:
-            position = argument.looking_at
-            if not isinstance(position, ast.PositionReference):
-                continue
-            if not next(looked_at_validity):
-                continue
-            view_index = view_indexes.get(argument.view.source_typed_name)
-            interface_view = (
-                None
-                if executed is None or view_index is None
-                else executed.views[view_index]
-            )
-            is_read = interface_view is not None and interface_view.is_input
-            particle = self._analyze_looked_at_position(
-                position, scope, statement_diagnostics, is_read=is_read
-            )
-            if particle is None:
-                continue
-            looked_at_qualities[argument] = particle.qualities.names
-            if particle.qualities.value_quality is None:
-                continue
-            # A missing operation or an undefined interface view is reported
-            # when the arguments are validated, so whether this statement
-            # reads or writes its position is unknown.
-            if interface_view is None:
-                positions_with_unknown_use.append(position)
-            elif interface_view.is_output:
-                written_positions.append(position)
-        argument_diagnostics, literal_values = (
-            self._operation_arguments_validator.validate(stmt, looked_at_qualities)
-        )
-        statement_diagnostics.extend(argument_diagnostics)
-        self._diagnostics.extend(statement_diagnostics)
-        # The statement may have read the value of a position with unknown
-        # use, or written it, so neither an earlier write nor a later read
-        # reports the same mistake again.
-        for position in positions_with_unknown_use:
-            self._dead_value_write_validator.mark_used(position)
-            self._tracker.mark_value_error(position)
-        # A failed statement still counts as writing its output views, so
-        # later reads do not report the same mistake again as an unset value.
-        for position in written_positions:
-            if statement_diagnostics:
-                self._tracker.mark_value_error(position)
-            else:
-                self._tracker.set_value(position, particle_info.ParticleValueState.SET)
-                self._diagnostics.extend(
-                    self._dead_value_write_validator.record_write(position)
-                )
-        if executed is None or statement_diagnostics:
-            return
-        encoding_operation = (
-            encoding_operation_associations.encoding_operation_reference(
-                # Actions can only execute Value Operations.
-                typing.cast("ast.ValueOperationDefinition", executed)
-            )
-        )
-        # TODO: Once users can define Value Operations and Encoding Operations
-        # that associate, report executing a Value Operation that no Encoding
-        # Operation performs. Code generation relies on every executed Value
-        # Operation having one.
-        if encoding_operation is None:
-            return
-        arguments = self._operation_arguments_validator.operation_arguments(
-            stmt, executed, literal_values
-        )
-        if arguments is not None:
-            self._steps.append(
-                codegen_input.ActionOperationExecution(
-                    operation=stmt.operation,
-                    encoding_operation=encoding_operation,
-                    arguments=arguments,
-                )
-            )
-
-    def _analyze_looked_at_position(
-        self,
-        position: ast.PositionReference,
-        scope: scope_tracker.PositionScopeTracker,
-        statement_diagnostics: list[diagnostics.Diagnostic],
-        *,
-        is_read: bool,
-    ) -> particle_info.ParticleInfo | None:
-        """Validate a position looked at by an Operation Argument Statement, and return its particle when it can be checked further.
-
-        Diagnostics are added to ``statement_diagnostics``.
-        """
-        self._dead_quality_assignment_validator.mark_referenced_child_positions_alive(
-            position
-        )
-        statement_diagnostics.extend(
-            self._chained_name_validator.validate(position, scope)
-        )
-        if self._tracker.has_error_state(position):
-            return None
-        self._requirement_validator.infer_requirements_on_chain(
-            position_occupancy.PositionOccupancyState.OCCUPIED, position, scope
-        )
-        self._dead_quality_assignment_validator.mark_value_and_encoding_alive(position)
-        if is_read:
-            self._requirement_validator.infer_value_requirement(
-                position, inferred_at=position.location
-            )
-            self._dead_value_write_validator.mark_used(position)
-        diagnostic = self._operation_validator.validate_looked_at(
-            position, is_read=is_read
-        )
-        if diagnostic is not None:
-            statement_diagnostics.append(diagnostic)
-        return self._tracker.get_occupant_or_none(position)
 
     def _analyze_create(
         self,

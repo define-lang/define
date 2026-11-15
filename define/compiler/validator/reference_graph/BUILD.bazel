@@ -28,18 +28,18 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":action_contract",
+        ":action_operation_execution_validator",
         ":action_requirement_validator",
         ":chained_name_validator",
         ":literal_encoder",
-        ":operation_arguments_validator",
         ":particle_operation_validator",
         ":position_occupancy",
         ":position_quality_resolver",
         ":quality_assignment",
         ":reference_graph_validation_state",
+        ":value_operation_executions",
         "//define/compiler:ast",
         "//define/compiler:chained_name",
-        "//define/compiler:encoding_operation_associations",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:interned_set",
         "//define/compiler/data_structures:typed_name_dict",
@@ -57,6 +57,32 @@ py_library(
         "//define/compiler/validator/reference_graph/destruction:guaranteed_particle_destruction",
         "//define/compiler/validator/reference_graph/particles:particle_info",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
+    ],
+)
+
+py_library(
+    name = "action_operation_execution_validator",
+    srcs = ["action_operation_execution_validator.py"],
+    deps = [
+        ":action_requirement_validator",
+        ":chained_name_validator",
+        ":literal_encoder",
+        ":operation_arguments_validator",
+        ":particle_operation_validator",
+        ":position_occupancy",
+        ":reference_graph_validation_state",
+        ":value_operation_executions",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator:scope_tracker",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph/dead_code:dead_quality_assignment_validator",
+        "//define/compiler/validator/reference_graph/dead_code:dead_value_write_validator",
+        "//define/compiler/validator/reference_graph/particles:particle_info",
+        "//define/compiler/validator/reference_graph/particles:particle_tracker",
+        "@pypi//msgspec",
     ],
 )
 
@@ -243,6 +269,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:chained_name",
         "//define/compiler/data_structures:interned_set",
+        "//define/compiler/validator:validation_result",
     ],
 )
 
@@ -275,6 +302,7 @@ py_library(
         ":operation_definition_validator",
         ":position_occupancy",
         ":reference_graph_validation_state",
+        ":value_operation_executions",
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
@@ -315,6 +343,19 @@ py_library(
 )
 
 py_library(
+    name = "value_operation_executions",
+    srcs = ["value_operation_executions.py"],
+    deps = [
+        ":reference_graph_validation_state",
+        "//define/compiler:ast",
+        "//define/compiler:encoding_operation_associations",
+        "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator:validation_result",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
     name = "view_use_tracker",
     srcs = ["view_use_tracker.py"],
     deps = [
@@ -333,6 +374,7 @@ pyright_test(
     deps = [
         ":action_contract",
         ":action_definition_validator",
+        ":action_operation_execution_validator",
         ":action_requirement_validator",
         ":chained_name_validator",
         ":literal_encoder",
@@ -351,6 +393,7 @@ pyright_test(
         ":reference_graph_validator",
         ":reference_graph_validator_test",
         ":test_helpers",
+        ":value_operation_executions",
         ":view_use_tracker",
     ],
 )

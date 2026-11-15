@@ -471,10 +471,11 @@ pub enum ExpressionOperator {
     SaturatingSubtract {},
 }
 
-/// A statement in the function of an Encoding Operation. Each operand and
-/// argument is a local name or a literal already in its view's encoding.
+/// A statement in the function of an Encoding Operation or of a composite Value
+/// Operation. Each operand and argument is a local name or a literal already in
+/// its view's encoding.
 #[pyclass(frozen)]
-pub enum EncodingOperationStatement {
+pub enum OperationStatement {
     BinaryOperation {
         operator: Py<BinaryOperator>,
         left: String,
@@ -491,7 +492,8 @@ pub enum EncodingOperationStatement {
         operands: Vec<String>,
         result: String,
     },
-    /// Calls the function of another Encoding Operation.
+    /// Calls the function of an Encoding Operation or of a composite Value
+    /// Operation.
     Call {
         function: Py<FunctionReference>,
         arguments: Vec<String>,
@@ -517,15 +519,15 @@ impl TypedLocalName {
     }
 }
 
-/// The function of an Encoding Operation.
+/// The function of an Encoding Operation or of a composite Value Operation.
 #[pyclass(frozen, get_all)]
 #[derive(Template)]
-#[template(path = "encoding_operation_definition.j2", escape = "none")]
-pub struct EncodingOperationDefinition {
+#[template(path = "operation_function.j2", escape = "none")]
+pub struct OperationFunction {
     function_name: String,
     module_name: String,
     parameters: Vec<Py<TypedLocalName>>,
-    statements: Vec<Py<EncodingOperationStatement>>,
+    statements: Vec<Py<OperationStatement>>,
     results: Vec<Py<TypedLocalName>>,
     /// Whether the last statement writes exactly the results, so the function
     /// returns its expression instead.
@@ -535,13 +537,13 @@ pub struct EncodingOperationDefinition {
 }
 
 #[pymethods]
-impl EncodingOperationDefinition {
+impl OperationFunction {
     #[new]
     const fn new(
         function_name: String,
         module_name: String,
         parameters: Vec<Py<TypedLocalName>>,
-        statements: Vec<Py<EncodingOperationStatement>>,
+        statements: Vec<Py<OperationStatement>>,
         results: Vec<Py<TypedLocalName>>,
         return_last_statement: bool,
         imports: FxHashSet<String>,

@@ -38,6 +38,18 @@ py_library(
 )
 
 py_library(
+    name = "composite_value_operation",
+    srcs = ["composite_value_operation.py"],
+    deps = [
+        ":naming",
+        ":operation_function",
+        ":renderer",
+        ":value_types",
+        "//define/compiler/validator:codegen_input",
+    ],
+)
+
+py_library(
     name = "destruction_contracts",
     srcs = ["destruction_contracts.py"],
     deps = [
@@ -57,6 +69,7 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":naming",
+        ":operation_function",
         ":renderer",
         ":value_types",
         "//define/compiler:ast",
@@ -72,6 +85,7 @@ py_library(
     visibility = ["//define/compiler/codegen:__subpackages__"],
     deps = [
         ":action_definition",
+        ":composite_value_operation",
         ":encoding_operation_definition",
         ":naming",
         ":position_definition",
@@ -108,6 +122,7 @@ py_library(
         "//define/compiler:constants",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
     ],
 )
@@ -118,9 +133,23 @@ py_test(
     srcs = ["naming_test.py"],
     deps = [
         ":naming",
+        ":renderer",
         "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:name_types",
+    ],
+)
+
+py_library(
+    name = "operation_function",
+    srcs = ["operation_function.py"],
+    deps = [
+        ":naming",
+        ":renderer",
+        ":value_types",
+        "//define/compiler:ast",
+        "//define/compiler/validator:codegen_input",
+        "@pypi//msgspec",
     ],
 )
 
@@ -218,12 +247,14 @@ pyright_test(
     deps = [
         ":action_definition",
         ":action_statements",
+        ":composite_value_operation",
         ":destruction_contracts",
         ":encoding_operation_definition",
         ":generator",
         ":known_destruction_work",
         ":naming",
         ":naming_test",
+        ":operation_function",
         ":operation_labels",
         ":position_definition",
         ":position_expression",

@@ -1,0 +1,21 @@
+# A Value Operation with more than one step calls the function of another with more than one step, and makes the one execution of another with a single step itself. The function it calls comes first in their module, although its name sorts later.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</final_result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<count> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<count>.
+        set the value of position<count> from literal<standard:/number>"7".
+        create a particle in position</final_result>.
+        execute the operation</negated_difference> {
+            with view<a> looking at position<count>.
+            with view<b> looking at literal<standard:/number>"10".
+            with view<result> looking at position</final_result>.
+        }
+    }
+}

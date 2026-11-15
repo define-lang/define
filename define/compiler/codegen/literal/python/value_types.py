@@ -76,7 +76,12 @@ _ENCODING_PYTHON_LITERALS: Final[dict[str, Callable[[str], str]]] = {
 
 def python_literal(literal: codegen_input.EncodedLiteral) -> str:
     """Return the Python expression for a literal's value."""
-    return _ENCODING_PYTHON_LITERALS[literal.encoding](literal.content)
+    return _ENCODING_PYTHON_LITERALS[literal.encoding.full_typed_name](literal.content)
+
+
+def encoding_python_value_type(encoding: ast.GlobalTypedNameReference) -> str:
+    """Return the Python type that generated code uses for values in an encoding."""
+    return _ENCODING_PYTHON_TYPES[encoding.full_typed_name]
 
 
 def encoded_python_value_type(block: ast.QualityAssignmentBlock) -> str:
@@ -90,17 +95,24 @@ def encoded_python_value_type(block: ast.QualityAssignmentBlock) -> str:
 class PythonValueTypes:
     """The Python types of values in generated code, by their value qualities."""
 
-    _value_encodings: Mapping[str, str]
+    _value_encodings: Mapping[str, ast.GlobalTypedNameReference]
 
-    def __init__(self, value_encodings: Mapping[str, str]):
-        """Initialize with the full typed name of each value quality's encoding."""
+    def __init__(self, value_encodings: Mapping[str, ast.GlobalTypedNameReference]):
+        """Initialize with each value quality's encoding, keyed by the value quality's full typed name."""
         self._value_encodings = value_encodings
 
     def python_value_type(self, value_quality: ast.GlobalTypedNameReference) -> str:
         """Return the Python type that generated code uses for values of a value quality."""
-        return _ENCODING_PYTHON_TYPES[
+        return encoding_python_value_type(
             self._value_encodings[value_quality.full_typed_name]
-        ]
+        )
+
+    def view_python_value_type(self, view: ast.InterfaceViewDefinition) -> str:
+        """Return the Python type of the values an interface view holds, whether it has a value quality, as on a Value Operation, or an encoding, as on an Encoding Operation."""
+        value_quality = view.quality_assignment_block.value_quality
+        if value_quality is not None:
+            return self.python_value_type(value_quality)
+        return encoded_python_value_type(view.quality_assignment_block)
 
     def assigned_python_value_type(
         self, block: ast.QualityAssignmentBlock | None

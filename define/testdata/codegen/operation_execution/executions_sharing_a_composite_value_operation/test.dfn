@@ -1,0 +1,32 @@
+# Two executions of a composite Value Operation, whose arguments look at values with the same encodings, share one function.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</final_result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<count> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        define the position<first_total> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<count>.
+        set the value of position<count> from literal<standard:/number>"4".
+        create a particle in position<first_total>.
+        execute the operation</difference> {
+            with view<a> looking at position<count>.
+            with view<b> looking at literal<standard:/number>"1".
+            with view<result> looking at position<first_total>.
+        }
+        create a particle in position</final_result>.
+        execute the operation</difference> {
+            with view<a> looking at position<first_total>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at position</final_result>.
+        }
+    }
+}

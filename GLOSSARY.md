@@ -11,6 +11,10 @@ Use these exact terms for these Define concepts. "Not:" lists terms to avoid.
 - **Action Requirement**: An occupancy requirement or value requirement the
   compiler infers for a contracted position. Callers must satisfy it before
   triggering the action. Not: constraint.
+- **composite value operation**: A value operation that has more than one step.
+  Each local view it defines, View Setting Statement it has, and logical
+  operation or value operation it executes is one step. Not: compiled value
+  operation.
 - **constraint**: A name type. A named boolean expression on a particle's value,
   assigned like any other quality: `it has the constraint</positive>.` All of a
   position's or view's constraints must be true. Not: predicate, value

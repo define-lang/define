@@ -1,6 +1,6 @@
 {% macro expression(statement, module_name) -%}
     {%- match statement -%}
-        {%- when EncodingOperationStatement::BinaryOperation { operator, left, right, .. } -%}
+        {%- when OperationStatement::BinaryOperation { operator, left, right, .. } -%}
 {{ left }} {% match operator.get() -%}
             {%- when BinaryOperator::Add {} -%}
 +
@@ -23,7 +23,7 @@ or
             {%- when BinaryOperator::LessThan {} -%}
 <
             {%- endmatch %} {{ right }}
-        {%- when EncodingOperationStatement::PrefixOperation { operator, operand, .. } -%}
+        {%- when OperationStatement::PrefixOperation { operator, operand, .. } -%}
             {%- match operator.get() -%}
                 {%- when PrefixOperator::Negate {} -%}
 -
@@ -31,14 +31,14 @@ or
 not{{ " " }}
             {%- endmatch -%}
 {{ operand }}
-        {%- when EncodingOperationStatement::ExpressionOperation { operator, operands, .. } -%}
+        {%- when OperationStatement::ExpressionOperation { operator, operands, .. } -%}
             {%- match operator.get() -%}
                 {%- when ExpressionOperator::SaturatingSubtract {} -%}
 {{ operands[0] }} - {{ operands[1] }} if {{ operands[0] }} > {{ operands[1] }} else 0
             {%- endmatch -%}
-        {%- when EncodingOperationStatement::Call { function, arguments, .. } -%}
+        {%- when OperationStatement::Call { function, arguments, .. } -%}
 {{ function.get().name_in_module(module_name) }}({{ arguments|join(", ") }})
-        {%- when EncodingOperationStatement::Assignment { source, .. } -%}
+        {%- when OperationStatement::Assignment { source, .. } -%}
 {{ source }}
     {%- endmatch -%}
 {%- endmacro -%}
@@ -63,14 +63,14 @@ def {{ self.function_name }}(
     return {{ expression(statement, module_name) }}
     {%- else %}
         {%- match statement %}
-            {%- when EncodingOperationStatement::BinaryOperation { result, .. }
-                | EncodingOperationStatement::PrefixOperation { result, .. }
-                | EncodingOperationStatement::ExpressionOperation { result, .. } %}
+            {%- when OperationStatement::BinaryOperation { result, .. }
+                | OperationStatement::PrefixOperation { result, .. }
+                | OperationStatement::ExpressionOperation { result, .. } %}
     {{ result }} = {{ expression(statement, module_name) }}
-            {%- when EncodingOperationStatement::Call { results, .. } %}
+            {%- when OperationStatement::Call { results, .. } %}
     {% if !results.is_empty() %}{{ results|join(", ") }} = {% endif -%}
     {{ expression(statement, module_name) }}
-            {%- when EncodingOperationStatement::Assignment { target, .. } %}
+            {%- when OperationStatement::Assignment { target, .. } %}
     {{ target }} = {{ expression(statement, module_name) }}
         {%- endmatch %}
     {%- endif %}

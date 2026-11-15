@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import collections
 import threading
 import typing
 
@@ -10,6 +11,7 @@ import msgspec
 from define.compiler import ast
 from define.compiler.codegen.literal.python import (
     action_definition,
+    composite_value_operation,
     encoding_operation_definition,
     naming,
     position_definition,
@@ -19,7 +21,7 @@ from define.compiler.codegen.literal.python import (
 from define.compiler.graphs import reference_graph_executor
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Collection, Sequence
+    from collections.abc import Collection, Mapping, Sequence
     from pathlib import Path
 
     from define.compiler.validator import codegen_input as codegen_input_types
@@ -68,16 +70,29 @@ class _SharedModule:
 def _generates_module_part(
     definition: ast.GlobalDefinition,
 ) -> typing.TypeIs[
-    ast.ActionDefinition | ast.EncodingOperationDefinition | ast.PositionDefinition
+    ast.ActionDefinition
+    | ast.EncodingOperationDefinition
+    | ast.PositionDefinition
+    | ast.ValueOperationDefinition
 ]:
     # Literals are already in their values' encodings in generated code, so
     # values, encodings, and Potential Literals need no code of their own.
-    # Executing a Value Operation runs the Encoding Operation that performs it,
-    # so Value Operations need no code either. Logical operations are part of
-    # the compiler, not of the generated program.
+    # Logical operations are part of the compiler, not of the generated
+    # program.
+    #
+    # A composite Value Operation generates a function for each set of
+    # encodings that executions of it look at. A Value Operation that has
+    # only one step generates nothing: that step is an execution, and
+    # whatever executes the Value Operation makes that execution itself
+    # instead of calling a function.
     return isinstance(
         definition,
-        (ast.ActionDefinition, ast.EncodingOperationDefinition, ast.PositionDefinition),
+        (
+            ast.ActionDefinition,
+            ast.EncodingOperationDefinition,
+            ast.PositionDefinition,
+            ast.ValueOperationDefinition,
+        ),
     )
 
 
@@ -120,25 +135,40 @@ class _ModulePlan(msgspec.Struct, frozen=True):
 
     # Keyed by full typed name.
     definition_indexes: dict[str, int]
-    # Definitions of different name types at the same path share a module.
+    # Definitions of different name types at the same path share a module, as
+    # do the functions of Encoding Operations with the same parent path. A
+    # composite Value Operation has its functions in the module of its path.
     shared_modules: dict[str, _SharedModule]
 
     @classmethod
     def from_definitions(
         cls,
         definitions: Sequence[ast.GlobalDefinition],
+        composite_value_operations: Mapping[
+            str, Sequence[codegen_input_types.CompositeValueOperation]
+        ],
         converter: naming.NameConverter,
     ) -> _ModulePlan:
         """Assign definitions to modules, in definition order."""
         definition_indexes: dict[str, int] = {}
-        definition_counts: dict[str, int] = {}
+        definition_counts: collections.Counter[str] = collections.Counter()
         for index, definition in enumerate(definitions):
+            if not _generates_module_part(definition):
+                continue
+            full_typed_name = definition.typed_name.full_typed_name
+            # Before generating any code, count the definitions that will put
+            # code in each module. A module that several definitions share is
+            # written once it has received code from that many of them.
+            # However, a Value Operation that has only one step generates no
+            # code and so doesn't need to be added here.
+            if (
+                isinstance(definition, ast.ValueOperationDefinition)
+                and full_typed_name not in composite_value_operations
+            ):
+                continue
+            definition_indexes[full_typed_name] = index
             module_name = _module_name(definition, converter)
-            if _generates_module_part(definition):
-                definition_indexes[definition.typed_name.full_typed_name] = index
-                definition_counts[module_name] = (
-                    definition_counts.get(module_name, 0) + 1
-                )
+            definition_counts[module_name] += 1
         shared_modules: dict[str, _SharedModule] = {}
         for module_name, count in definition_counts.items():
             if count > 1:
@@ -205,8 +235,11 @@ class _DefinitionGenerator:
         self,
         definition: ast.ActionDefinition
         | ast.EncodingOperationDefinition
-        | ast.PositionDefinition,
+        | ast.PositionDefinition
+        | ast.ValueOperationDefinition,
     ) -> str | None:
+        if isinstance(definition, ast.ValueOperationDefinition):
+            return self._generate_composite_value_operations(definition)
         definition_index = self._module_plan.definition_indexes[
             definition.typed_name.full_typed_name
         ]
@@ -226,17 +259,17 @@ class _DefinitionGenerator:
             )
         elif isinstance(definition, ast.EncodingOperationDefinition):
             encoding_operation = (
-                encoding_operation_definition.EncodingOperationDefinitionGenerator(
+                encoding_operation_definition.generate_encoding_operation(
                     self._codegen_input.encoding_operations[
                         definition.typed_name.full_typed_name
                     ],
                     self._converter,
-                ).generate()
+                )
             )
             module_name = encoding_operation.module_name
             part = _ModulePart(
                 definition_index=definition_index,
-                body=renderer.render_encoding_operation(encoding_operation),
+                body=renderer.render_operation_function(encoding_operation),
                 imports=encoding_operation.imports,
                 typing_names=[],
                 needs_runtime_import=False,
@@ -259,6 +292,42 @@ class _DefinitionGenerator:
                 ),
                 needs_runtime_import=True,
             )
+        return self._write_part(module_name, part)
+
+    def _generate_composite_value_operations(
+        self, definition: ast.ValueOperationDefinition
+    ) -> str | None:
+        composite_list = self._codegen_input.composite_value_operations.get(
+            definition.typed_name.full_typed_name
+        )
+        if composite_list is None:
+            return None
+        bodies: list[str] = []
+        imports: set[str] = set()
+        for composite in composite_list:
+            function = composite_value_operation.generate_composite_value_operation(
+                composite, self._converter
+            )
+            bodies.append(renderer.render_operation_function(function))
+            imports.update(function.imports)
+        return self._write_part(
+            self._converter.module_name(definition.typed_name.name_content),
+            _ModulePart(
+                definition_index=self._module_plan.definition_indexes[
+                    definition.typed_name.full_typed_name
+                ],
+                # _write_module separates the code of different definitions in
+                # one module with the same blank line, so these functions are
+                # spaced like any other code in the module.
+                body="\n\n".join(bodies),
+                imports=imports,
+                typing_names=[],
+                needs_runtime_import=False,
+            ),
+        )
+
+    def _write_part(self, module_name: str, part: _ModulePart) -> str | None:
+        """Write the module that holds a part once every part it holds is generated."""
         shared_module = self._module_plan.shared_modules.get(module_name)
         if shared_module is None:
             return self._write_module(module_name, [part])
@@ -324,7 +393,9 @@ class PythonLiteralCodeGenerator:
         """Generate Python files for the entry-point constructor and its references."""
         converter = naming.NameConverter()
         module_plan = _ModulePlan.from_definitions(
-            codegen_input.definition_order.definitions, converter
+            codegen_input.definition_order.definitions,
+            codegen_input.composite_value_operations,
+            converter,
         )
         entry_definition, packages = _DefinitionGenerator(
             codegen_input,

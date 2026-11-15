@@ -9,6 +9,8 @@ import msgspec
 from define.compiler import ast
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from define.compiler import chained_name
     from define.compiler.graphs import reference_graph_order
     from define.compiler.validator.reference_graph.destruction import (
@@ -49,8 +51,7 @@ class GuaranteedParticleDestructors(msgspec.Struct):
 class EncodedLiteral(msgspec.Struct):
     """A literal's content, validated and in the encoding that its use requires."""
 
-    # The full typed name of the encoding.
-    encoding: str
+    encoding: ast.GlobalTypedNameReference
     content: str
 
 
@@ -83,23 +84,67 @@ class OperationArgument[LookedAt](msgspec.Struct):
     looking_at: LookedAt | EncodedLiteral
 
 
+# What runs when the program runs: an Encoding Operation, by its name, or a
+# composite Value Operation for one set of encodings.
+type RuntimeOperation = (
+    ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]]
+    | CompositeValueOperation
+)
+
+
 @final
 class ActionOperationExecution(msgspec.Struct):
     """A validated Operation Execution Statement in an action."""
 
     operation: ast.GlobalTypedNameReference
-    # Executing a Value Operation runs the Encoding Operation that performs it.
-    encoding_operation: ast.GlobalTypedNameReference
-    # In the order of the executed operation's interface views.
+    # The statement's arguments, in the order of the executed Value
+    # Operation's interface views.
+    operation_arguments: list[OperationArgument[ast.PositionReference]]
+    # What executing the Value Operation runs for the encodings of the
+    # positions that the arguments look at.
+    runtime_operation: RuntimeOperation
+    # In the order of the runtime operation's interface views.
     arguments: list[OperationArgument[ast.PositionReference]]
 
 
-class EncodingOperationExecution(msgspec.Struct):
-    """A validated Operation Execution Statement in an Encoding Operation."""
+class OperationExecution(msgspec.Struct):
+    """An execution in an Encoding Operation or in a composite Value Operation."""
 
-    encoding_operation: ast.GlobalTypedNameReference
-    # In the order of the executed Encoding Operation's interface views.
+    runtime_operation: RuntimeOperation
+    # In the order of the runtime operation's interface views.
     arguments: list[OperationArgument[ast.LocalTypedNameReference]]
+
+    def arguments_for[LookedAtT](
+        self, execution_arguments: Sequence[OperationArgument[LookedAtT]]
+    ) -> list[OperationArgument[LookedAtT]]:
+        """Return this execution's arguments for one execution of a Value Operation, whose arguments are ``execution_arguments``.
+
+        This must be what executing the Value Operation runs, so its arguments
+        look at the Value Operation's interface views, or at literals in its
+        statements.
+        """
+        looked_at_by_view: dict[str, LookedAtT | EncodedLiteral] = {}
+        for argument in execution_arguments:
+            looked_at_by_view[argument.interface_view.typed_name.source_typed_name] = (
+                argument.looking_at
+            )
+        arguments: list[OperationArgument[LookedAtT]] = []
+        for argument in self.arguments:
+            looking_at = argument.looking_at
+            if isinstance(looking_at, EncodedLiteral):
+                arguments.append(
+                    OperationArgument(
+                        interface_view=argument.interface_view, looking_at=looking_at
+                    )
+                )
+            else:
+                arguments.append(
+                    OperationArgument(
+                        interface_view=argument.interface_view,
+                        looking_at=looked_at_by_view[looking_at.source_typed_name],
+                    )
+                )
+        return arguments
 
 
 type ActionStep = (
@@ -113,11 +158,10 @@ type ActionStep = (
     | ActionOperationExecution
 )
 
-type EncodingOperationStep = (
-    ast.LocalViewDefinition
-    | EncodingOperationExecution
-    | ast.ViewSettingStatement
-    | ast.ComputerOperationExecutionStatement
+# A step of an Encoding Operation that does not execute the computer
+# operation, or of a composite Value Operation.
+type OperationStep = (
+    ast.LocalViewDefinition | OperationExecution | ast.ViewSettingStatement
 )
 
 
@@ -133,10 +177,20 @@ class ActionCodegenInput(msgspec.Struct):
 
 
 class EncodingOperationCodegenInput(msgspec.Struct):
-    """An Encoding Operation's source-ordered steps."""
+    """An Encoding Operation's body: its source-ordered steps, or the computer operation that is its only statement."""
 
     definition: ast.EncodingOperationDefinition
-    steps: list[EncodingOperationStep]
+    body: list[OperationStep] | ast.ComputerOperationExecutionStatement
+
+
+class CompositeValueOperation(msgspec.Struct):
+    """A composite Value Operation for one set of encodings: its source-ordered steps, with an Encoding Operation chosen for each execution for those encodings."""
+
+    definition: ast.ValueOperationDefinition
+    # The encodings of the views that executions of the Value Operation look
+    # at, in the order of its interface views.
+    encodings: list[ast.GlobalTypedNameReference]
+    steps: list[OperationStep]
 
 
 class CodegenInput(msgspec.Struct):
@@ -145,6 +199,10 @@ class CodegenInput(msgspec.Struct):
     definition_order: reference_graph_order.ReferenceGraphOrder
     actions: dict[str, ActionCodegenInput]
     encoding_operations: dict[str, EncodingOperationCodegenInput]
-    # The full typed name of each value quality's one associated encoding, keyed
-    # by the value quality's full typed name.
-    value_encodings: dict[str, str]
+    # Each value quality's one associated encoding, keyed by the value quality's
+    # full typed name.
+    value_encodings: dict[str, ast.GlobalTypedNameReference]
+    # The composite Value Operations of each Value Operation that has any, one
+    # for each set of encodings that executions of it look at, keyed by the
+    # Value Operation's full typed name, in the order of their encodings.
+    composite_value_operations: dict[str, list[CompositeValueOperation]]

@@ -1,0 +1,28 @@
+# A missing Encoding Operation inside a Value Operation that another executes is reported at the action's execution, naming each Value Operation down to the Logical Operation Execution Statement.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</final_result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<offset> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        define the position<count> {
+            it may only contain particles where {
+                it has the value<standard:/number/natural>.
+            }
+        }
+        create a particle in position<offset>.
+        set the value of position<offset> from literal<standard:/number>"-1".
+        create a particle in position<count>.
+        set the value of position<count> from literal<standard:/number>"2".
+        create a particle in position</final_result>.
+        execute the operation</outer_sum> {
+            with view<a> looking at position<offset>.
+            with view<b> looking at position<count>.
+            with view<result> looking at position</final_result>.
+        }
+    }
+}

@@ -1,0 +1,5 @@
+test.create(count)
+test.set_value(count, 7)
+test.create(/final_result)
+test.execute(operation<my.domain.com:my_lib:/negated_difference>, count, 10, /final_result)
+test.destroy(count)

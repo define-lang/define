@@ -1,0 +1,22 @@
+define the operation<my.domain.com:my_lib:/add_two> {
+    define the view<value> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        execute the operation</sum> {
+            with view<a> looking at view<value>.
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at view<result>.
+        }
+    }
+}

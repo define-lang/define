@@ -1,3 +1,6 @@
+# TODO: Delete this once Encoding Converters (DLP 49) exist. In ASCII, a
+# natural's digits are already an integer, so a converter to the integer
+# encoding followed by the integer add does the same thing.
 define the encoding_operation<standard:/number/natural/ascii/add_integer> {
     define the view<a> {
         it is read.

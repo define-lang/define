@@ -49,7 +49,7 @@ def operation_execution_label(
 ) -> str:
     """Format the trace label for executing an operation, with what each interface view looks at."""
     arguments: list[str] = [execution.operation.full_typed_name]
-    for argument in execution.arguments:
+    for argument in execution.operation_arguments:
         looking_at = argument.looking_at
         if isinstance(looking_at, codegen_input.EncodedLiteral):
             arguments.append(value_types.python_literal(looking_at))

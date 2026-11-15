@@ -18,6 +18,7 @@ from define.compiler.validator.reference_graph import (
     operation_definition_validator,
     position_occupancy,
     reference_graph_validation_state,
+    value_operation_executions,
 )
 
 if typing.TYPE_CHECKING:
@@ -70,6 +71,7 @@ class ReferenceGraphValidator:
     ]
     _entry_action: ast.ActionDefinition | None
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
+    _value_operation_executions: value_operation_executions.ValueOperationExecutions
     _allow_entry_action_occupied_implied_position_requirements: bool
 
     def __init__(
@@ -94,6 +96,9 @@ class ReferenceGraphValidator:
         self._validation_state = (
             reference_graph_validation_state.ReferenceGraphValidationState()
         )
+        self._value_operation_executions = (
+            value_operation_executions.ValueOperationExecutions(self._validation_state)
+        )
         self._allow_entry_action_occupied_implied_position_requirements = (
             allow_entry_action_occupied_implied_position_requirements
         )
@@ -112,7 +117,7 @@ class ReferenceGraphValidator:
 
         actions: dict[str, codegen_input.ActionCodegenInput] = {}
         encoding_operations: dict[str, codegen_input.EncodingOperationCodegenInput] = {}
-        value_encodings: dict[str, str] = {}
+        value_encodings: dict[str, ast.GlobalTypedNameReference] = {}
         for result in results:
             match result:
                 case validation_result.ActionPostorderValidationResult():
@@ -142,6 +147,7 @@ class ReferenceGraphValidator:
                 actions=actions,
                 encoding_operations=encoding_operations,
                 value_encodings=value_encodings,
+                composite_value_operations=self._value_operation_executions.composite_value_operations(),
             ),
         )
 
@@ -162,6 +168,10 @@ class ReferenceGraphValidator:
                         definition, self._definition_results, self._validation_state
                     ).analyze()
                 )
+                if result.steps is not None:
+                    self._validation_state.publish_value_operation_steps(
+                        definition.typed_name, result.steps
+                    )
             case ast.EncodingOperationDefinition():
                 result = (
                     operation_definition_validator.EncodingOperationDefinitionValidator(
@@ -186,20 +196,21 @@ class ReferenceGraphValidator:
         self, definition: ast.ValueDefinition
     ) -> validation_result.ValuePostorderValidationResult:
         """Find the one encoding associated with a value quality, if it has one."""
-        encodings: list[str] = []
+        encodings: list[ast.GlobalTypedNameReference] = []
         for encoding in self._definition_results[
             definition.typed_name
         ].associated_encodings:
             # A missing encoding was already reported when its reference was
             # resolved.
             if encoding in self._definition_results:
-                encodings.append(encoding.full_typed_name)
+                encodings.append(encoding)
         self._validation_state.publish_value_encodings(definition.typed_name, encodings)
         if len(encodings) > 1:
             # TODO: Choose between a value quality's encodings when each
             # particle is created, as the spec allows.
             raise NotImplementedError(
-                f"{definition.typed_name.source_typed_name} has more than one encoding: {encodings}"
+                f"{definition.typed_name.source_typed_name} has more than one encoding:"
+                + f" {[encoding.full_typed_name for encoding in encodings]}"
             )
         # A value quality without an encoding is not an error by itself. It is
         # an error only when a literal sets the value, so the literal reports
@@ -221,6 +232,7 @@ class ReferenceGraphValidator:
             looked_at_position_validity=definition_result.looked_at_position_validity,
             definition_results=self._definition_results,
             validation_state=self._validation_state,
+            value_operation_executions=self._value_operation_executions,
         ).analyze()
         self._validation_state.publish_contract(definition.typed_name, result.contract)
         return result

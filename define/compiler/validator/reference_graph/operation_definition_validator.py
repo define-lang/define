@@ -1,4 +1,4 @@
-"""Reference graph validation of a Value Operation or Encoding Operation definition."""
+"""Reference graph validation of a Value Operation or Encoding Operation definition, and collection of its steps."""
 
 from __future__ import annotations
 
@@ -34,7 +34,10 @@ class _ViewArgument(typing.NamedTuple):
     executed_view: ast.ViewDefinition | None
 
 
-class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC):
+class OperationDefinitionValidator[
+    DefinitionT: ast.OperationDefinition,
+    ResultT: validation_result.PostorderValidationResult,
+](abc.ABC):
     """Validates the execution statements of an operation definition against the operations and logical operations they execute."""
 
     _definition: DefinitionT
@@ -80,7 +83,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
             )
         )
 
-    def analyze(self) -> validation_result.PostorderValidationResult:
+    def analyze(self) -> ResultT:
         """Validate the definition and return its validation result."""
         for statement in self._definition.operation_statements.statements:
             self._view_uses.start_statement(statement)
@@ -91,7 +94,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
                 case ast.OperationExecutionStatement():
                     self._analyze_operation_execution(statement)
                 case ast.LogicalOperationExecutionStatement():
-                    self._analyze_logical_operation_execution(statement)
+                    _ = self._analyze_logical_operation_execution(statement)
                 case ast.ViewSettingStatement():
                     self._diagnostics.extend(
                         self._view_uses.record_view_setting(statement)
@@ -131,7 +134,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
         """Record a statement that only uses the operation's own views."""
 
     @abc.abstractmethod
-    def _build_result(self) -> validation_result.PostorderValidationResult: ...
+    def _build_result(self) -> ResultT: ...
 
     def _define_view(self, view: ast.InterfaceViewDefinition | ast.LocalViewDefinition):
         # Structural validation reports a view whose name is already defined.
@@ -184,11 +187,12 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
 
     def _analyze_logical_operation_execution(
         self, statement: ast.LogicalOperationExecutionStatement
-    ):
+    ) -> bool:
+        """Validate a Logical Operation Execution Statement, and return whether it is valid."""
         executed = self._arguments_validator.get_executed_logical_operation(statement)
         if executed is None:
             self._mark_views_with_unknown_use(statement.arguments)
-            return
+            return False
         statement_diagnostics: list[diagnostics.Diagnostic] = []
         operation_name = statement.logical_operation.source_form_in_universe(
             self._definition.typed_name.name_content.fqun
@@ -209,6 +213,7 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
             statement_diagnostics,
         )
         self._diagnostics.extend(statement_diagnostics)
+        return not statement_diagnostics
 
     def _record_view_arguments(
         self,
@@ -309,9 +314,27 @@ class OperationDefinitionValidator[DefinitionT: ast.OperationDefinition](abc.ABC
 
 
 class ValueOperationDefinitionValidator(
-    OperationDefinitionValidator[ast.ValueOperationDefinition]
+    OperationDefinitionValidator[
+        ast.ValueOperationDefinition,
+        validation_result.ValueOperationPostorderValidationResult,
+    ]
 ):
-    """Validates a Value Operation definition."""
+    """Validates a Value Operation definition and collects its steps, which are independent of the encodings of what an execution of it looks at."""
+
+    _steps: list[validation_result.ValueOperationStep]
+
+    def __init__(
+        self,
+        definition: ast.ValueOperationDefinition,
+        definition_results: typed_name_dict.TypedNameDict[
+            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+            validation_result.DefinitionValidationResult,
+        ],
+        validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
+    ):
+        """Initialize with the Value Operation Definition and known definitions."""
+        super().__init__(definition, definition_results, validation_state)
+        self._steps = []
 
     @override
     def _analyze_encoding_or_computer_operation_execution(
@@ -322,6 +345,25 @@ class ValueOperationDefinitionValidator(
         self._diagnostics.extend(
             self._view_uses.fulfill_every_interface_view_direction(statement.location)
         )
+        # The grammar allows only `execute the encoding operation.` in a Value
+        # Operation.
+        self._steps.append(
+            typing.cast("ast.EncodingOperationExecutionStatement", statement)
+        )
+
+    @override
+    def _analyze_logical_operation_execution(
+        self, statement: ast.LogicalOperationExecutionStatement
+    ) -> bool:
+        is_valid = super()._analyze_logical_operation_execution(statement)
+        if is_valid:
+            self._steps.append(
+                validation_result.LogicalOperationExecution(
+                    logical_operation=statement.logical_operation,
+                    arguments=statement.arguments,
+                )
+            )
+        return is_valid
 
     @override
     def _analyze_valid_execution(
@@ -334,29 +376,48 @@ class ValueOperationDefinitionValidator(
             ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
         ],
     ):
-        # Value Operations have no code of their own: executing one runs the
-        # Encoding Operation that performs it.
-        pass
+        arguments = self._arguments_validator.operation_arguments(
+            statement, executed, literal_values
+        )
+        if arguments is not None:
+            self._steps.append(
+                validation_result.ValueOperationExecution(
+                    # The grammar allows a Value Operation to execute only
+                    # Value Operations.
+                    value_operation=typing.cast(
+                        "ast.ValueOperationDefinition", executed
+                    ),
+                    operation=statement.operation,
+                    arguments=arguments,
+                )
+            )
 
     @override
     def _add_local_statement(
         self, statement: ast.LocalViewDefinition | ast.ViewSettingStatement
     ):
-        # Value Operations have no code of their own: executing one runs the
-        # Encoding Operation that performs it.
-        pass
+        self._steps.append(statement)
 
     @override
-    def _build_result(self) -> validation_result.PostorderValidationResult:
-        return validation_result.PostorderValidationResult(self._diagnostics)
+    def _build_result(
+        self,
+    ) -> validation_result.ValueOperationPostorderValidationResult:
+        return validation_result.ValueOperationPostorderValidationResult(
+            diagnostics=self._diagnostics,
+            steps=None if self._diagnostics else self._steps,
+        )
 
 
 class EncodingOperationDefinitionValidator(
-    OperationDefinitionValidator[ast.EncodingOperationDefinition]
+    OperationDefinitionValidator[
+        ast.EncodingOperationDefinition,
+        validation_result.EncodingOperationPostorderValidationResult,
+    ]
 ):
     """Validates an Encoding Operation definition and collects its steps for code generation."""
 
-    _steps: list[codegen_input.EncodingOperationStep]
+    _steps: list[codegen_input.OperationStep]
+    _computer_operation: ast.ComputerOperationExecutionStatement | None
 
     def __init__(
         self,
@@ -370,6 +431,7 @@ class EncodingOperationDefinitionValidator(
         """Initialize with the Encoding Operation Definition and known definitions."""
         super().__init__(definition, definition_results, validation_state)
         self._steps = []
+        self._computer_operation = None
 
     @override
     def _analyze_encoding_or_computer_operation_execution(
@@ -385,8 +447,8 @@ class EncodingOperationDefinitionValidator(
         )
         # The grammar allows only computer operations in an Encoding
         # Operation.
-        self._steps.append(
-            typing.cast("ast.ComputerOperationExecutionStatement", statement)
+        self._computer_operation = typing.cast(
+            "ast.ComputerOperationExecutionStatement", statement
         )
 
     @override
@@ -405,8 +467,8 @@ class EncodingOperationDefinitionValidator(
         )
         if arguments is not None:
             self._steps.append(
-                codegen_input.EncodingOperationExecution(
-                    encoding_operation=statement.operation, arguments=arguments
+                codegen_input.OperationExecution(
+                    runtime_operation=statement.operation, arguments=arguments
                 )
             )
 
@@ -417,10 +479,15 @@ class EncodingOperationDefinitionValidator(
         self._steps.append(statement)
 
     @override
-    def _build_result(self) -> validation_result.PostorderValidationResult:
+    def _build_result(
+        self,
+    ) -> validation_result.EncodingOperationPostorderValidationResult:
         return validation_result.EncodingOperationPostorderValidationResult(
             diagnostics=self._diagnostics,
             codegen_input=codegen_input.EncodingOperationCodegenInput(
-                definition=self._definition, steps=self._steps
+                definition=self._definition,
+                # The parser allows `execute the computer operation.` only as
+                # the one statement of an Encoding Operation.
+                body=self._computer_operation or self._steps,
             ),
         )

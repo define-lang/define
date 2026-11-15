@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from define.compiler import ast, name_types
 from define.compiler.codegen.literal.python import naming
+
+if TYPE_CHECKING:
+    from define.compiler.codegen.literal.python import renderer
 
 _LOCATION = rendering.SourceLocation(
     line=1, column=1, end_line=1, end_column=1, file_path="test.dfn"
@@ -303,3 +307,104 @@ def test_authority_segments_that_translate_alike_are_distinct():
         for authority in ("a.b", "a-b", "a~b", "a.b/c", "a-b/c", "ab.cd/ef", "ab/cd.ef")
     }
     assert len(segments) == 7
+
+
+_STANDARD_FQUN = ast.Fqun(
+    multiverse=None,
+    authority=None,
+    universe=ast.Universe(name="standard", location=_LOCATION),
+    location=_LOCATION,
+)
+
+
+def _encoding(fqun: ast.Fqun | None, path: str) -> ast.GlobalTypedNameReference:
+    return ast.GlobalTypedNameReference(
+        name_type=name_types.NameType.ENCODING,
+        name_content=ast.ReferenceGlobalNameContent(
+            fqun=fqun,
+            path=ast.GlobalPathName(name=path, location=_LOCATION),
+            location=_LOCATION,
+        ),
+        enclosing_fqun=_FQUN,
+        location=_LOCATION,
+    )
+
+
+def _composite_value_operation_function(
+    *encodings: ast.GlobalTypedNameReference,
+) -> renderer.FunctionReference:
+    return naming.NameConverter().composite_value_operation_function_reference(
+        _typed_name(name_types.NameType.OPERATION, "/number/sum"), encodings
+    )
+
+
+def test_composite_value_operation_is_in_value_operation_module():
+    function = _composite_value_operation_function(
+        _encoding(_STANDARD_FQUN, "/number/integer/ascii"),
+        _encoding(_STANDARD_FQUN, "/number/natural/ascii"),
+    )
+    assert function.function_name == "value_number_integer_ascii__number_natural_ascii"
+    assert function.module_name == "local.my_domain_com.my_lib.number.sum"
+
+
+def test_composite_value_operation_names_an_encoding_every_view_shares_once():
+    function = _composite_value_operation_function(
+        _encoding(_STANDARD_FQUN, "/number/integer/ascii"),
+        _encoding(_STANDARD_FQUN, "/number/integer/ascii"),
+        _encoding(_STANDARD_FQUN, "/number/integer/ascii"),
+    )
+    assert function.function_name == "value_number_integer_ascii"
+
+
+def test_composite_value_operation_with_underscore_in_encoding_path_ends_in_digest():
+    digest = hashlib.blake2b(
+        b"encoding<standard:/text/unicode/code_point/ascii>", digest_size=8
+    ).hexdigest()
+    assert (
+        _composite_value_operation_function(
+            _encoding(_STANDARD_FQUN, "/text/unicode/code_point/ascii")
+        ).function_name
+        == "value_text_unicode_code_point_ascii___" + digest
+    )
+
+
+def test_composite_value_operation_with_encoding_in_another_universe_ends_in_digest():
+    digest = hashlib.blake2b(
+        b"encoding<my.domain.com:my_lib:/number/integer/ascii>", digest_size=8
+    ).hexdigest()
+    assert (
+        _composite_value_operation_function(
+            _encoding(None, "/number/integer/ascii")
+        ).function_name
+        == "value_number_integer_ascii___" + digest
+    )
+
+
+def test_package_starting_with_composite_value_operation_prefix_gets_underscore():
+    converter = naming.NameConverter()
+    count = _typed_name(
+        name_types.NameType.POSITION, "/number/sum/value_count"
+    ).name_content
+    assert (
+        converter.module_name(count)
+        == "local.my_domain_com.my_lib.number.sum._value_count"
+    )
+
+
+def test_function_reference_cached():
+    converter = naming.NameConverter()
+    first = converter.function_reference(_encoding_operation_name("/number/add"))
+    second = converter.function_reference(_encoding_operation_name("/number/add"))
+    assert first is second
+
+
+def test_composite_value_operation_function_reference_cached():
+    converter = naming.NameConverter()
+    value_operation = _typed_name(name_types.NameType.OPERATION, "/number/sum")
+    first = converter.composite_value_operation_function_reference(
+        value_operation, (_encoding(_STANDARD_FQUN, "/number/integer/ascii"),)
+    )
+    second = converter.composite_value_operation_function_reference(
+        value_operation, (_encoding(_STANDARD_FQUN, "/number/integer/ascii"),)
+    )
+    assert first is second

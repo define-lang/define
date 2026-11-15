@@ -2,17 +2,23 @@
 
 from __future__ import annotations
 
+import typing
 from typing import Final, final
 
 import msgspec
 
 from define.compiler import ast, constants
 from define.compiler.codegen.literal.python import (
-    naming,
+    operation_function,
     renderer,
     value_types,
 )
-from define.compiler.validator import codegen_input
+
+if typing.TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from define.compiler.codegen.literal.python import naming
+    from define.compiler.validator import codegen_input
 
 
 class _BinaryOperation(msgspec.Struct, frozen=True):
@@ -167,6 +173,12 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         right_view="view<b>",
         result_view="view<result>",
     ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/add_integer>": _BinaryOperation(
+        operator=renderer.BinaryOperator.Add(),
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/equals>": _BinaryOperation(
         operator=renderer.BinaryOperator.Equal(),
         left_view="view<a>",
@@ -189,6 +201,11 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         operator=renderer.BinaryOperator.Multiply(),
         left_view="view<a>",
         right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/negate>": _PrefixOperation(
+        operator=renderer.PrefixOperator.Negate(),
+        operand_view="view<a>",
         result_view="view<result>",
     ),
     f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/subtract>": _BinaryOperation(
@@ -218,140 +235,29 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
 
 
 @final
-class EncodingOperationDefinitionGenerator:
-    """Generate the function that performs an Encoding Operation."""
+class _ComputerOperationStatement:
+    """Performs an Encoding Operation's computer operation from the compiler's table of computer operations."""
 
-    def __init__(
-        self,
-        operation_input: codegen_input.EncodingOperationCodegenInput,
-        converter: naming.NameConverter,
-    ):
-        """Initialize from the validated Encoding Operation and the shared name converter."""
-        self._operation_input = operation_input
-        self._converter = converter
+    def __init__(self, definition: ast.EncodingOperationDefinition):
+        """Initialize from the Encoding Operation whose computer operation this performs."""
+        self._computer_operation = _lookup_computer_operation(definition)
 
-    def generate(self) -> renderer.EncodingOperationDefinition:
-        """Build the template context for this Encoding Operation's function."""
-        definition = self._operation_input.definition
-        function = self._converter.function_reference(definition.typed_name)
-        callees: list[renderer.FunctionReference] = []
-        for step in self._operation_input.steps:
-            match step:
-                case codegen_input.EncodingOperationExecution():
-                    callees.append(
-                        self._converter.function_reference(step.encoding_operation)
-                    )
-                case ast.ComputerOperationExecutionStatement():
-                    computer_operation = _lookup_computer_operation(definition)
-                    if isinstance(computer_operation, _FunctionCall):
-                        callees.append(computer_operation.function)
-                case ast.LocalViewDefinition() | ast.ViewSettingStatement():
-                    pass
-        imports = {
-            callee.module_name
-            for callee in callees
-            if callee.module_name != function.module_name
-        }
-        names = naming.LocalNameAllocator()
-        # A view's local name must not hide an imported module, or a function in
-        # this module that the Encoding Operation calls.
-        names.reserve_module_first_names(imports)
-        names.reserve_module_first_names(
-            callee.function_name
-            for callee in callees
-            if callee.module_name == function.module_name
-        )
-        view_names: dict[str, str] = {}
-        for view in definition.views:
-            view_names[view.typed_name.source_typed_name] = names.allocate(
-                naming.VIEW_PREFIX + view.typed_name.name_content.name
-            )
-        statements: list[renderer.EncodingOperationStatement] = []
-        # The local names that the last statement assigns, in order.
-        last_written_names: list[str] = []
-        for step in self._operation_input.steps:
-            match step:
-                case ast.LocalViewDefinition():
-                    view_names[step.typed_name.source_typed_name] = names.allocate(
-                        naming.VIEW_PREFIX + step.typed_name.name_content.name
-                    )
-                case codegen_input.EncodingOperationExecution():
-                    call = self._call(step, view_names)
-                    statements.append(call)
-                    last_written_names = call.results
-                case ast.ViewSettingStatement():
-                    target = view_names[step.target.source_typed_name]
-                    statements.append(
-                        renderer.EncodingOperationStatement.Assignment(
-                            target=target,
-                            source=view_names[step.source.source_typed_name],
-                        )
-                    )
-                    last_written_names = [target]
-                case ast.ComputerOperationExecutionStatement():
-                    computer_operation, last_written_names = self._computer_operation(
-                        definition, view_names
-                    )
-                    statements.append(computer_operation)
-        parameters: list[renderer.TypedLocalName] = []
-        results: list[renderer.TypedLocalName] = []
-        for view in definition.views:
-            view_local = renderer.TypedLocalName(
-                name=view_names[view.typed_name.source_typed_name],
-                python_type=value_types.encoded_python_value_type(
-                    view.quality_assignment_block
-                ),
-            )
-            if view.is_input:
-                parameters.append(view_local)
-            if view.is_output:
-                results.append(view_local)
-        result_names = [result.name for result in results]
-        return renderer.EncodingOperationDefinition(
-            function_name=function.function_name,
-            module_name=function.module_name,
-            parameters=parameters,
-            statements=statements,
-            results=results,
-            # Returning the last statement's expression avoids assigning
-            # locals only to return them.
-            return_last_statement=bool(results) and last_written_names == result_names,
-            imports=imports,
-        )
+    @property
+    def callee(self) -> renderer.FunctionReference | None:
+        """The library function that the computer operation calls, if it calls one."""
+        if isinstance(self._computer_operation, _FunctionCall):
+            return self._computer_operation.function
+        return None
 
-    def _call(
-        self,
-        execution: codegen_input.EncodingOperationExecution,
-        view_names: dict[str, str],
-    ) -> renderer.EncodingOperationStatement.Call:
-        arguments: list[str] = []
-        results: list[str] = []
-        for argument in execution.arguments:
-            looking_at = argument.looking_at
-            if isinstance(looking_at, codegen_input.EncodedLiteral):
-                looked_at = value_types.python_literal(looking_at)
-            else:
-                looked_at = view_names[looking_at.source_typed_name]
-            if argument.interface_view.is_input:
-                arguments.append(looked_at)
-            if argument.interface_view.is_output:
-                results.append(looked_at)
-        return renderer.EncodingOperationStatement.Call(
-            function=self._converter.function_reference(execution.encoding_operation),
-            arguments=arguments,
-            results=results,
-        )
-
-    @staticmethod
-    def _computer_operation(
-        definition: ast.EncodingOperationDefinition, view_names: dict[str, str]
-    ) -> tuple[renderer.EncodingOperationStatement, list[str]]:
-        """Return the statement that performs the Encoding Operation's computer operation, and the local names it assigns."""
-        computer_operation = _lookup_computer_operation(definition)
+    def statement(
+        self, view_names: Mapping[str, str]
+    ) -> tuple[renderer.OperationStatement, list[str]]:
+        """Return the statement that performs the computer operation, and the local names it assigns."""
+        computer_operation = self._computer_operation
         match computer_operation:
             case _BinaryOperation():
                 result = view_names[computer_operation.result_view]
-                return renderer.EncodingOperationStatement.BinaryOperation(
+                return renderer.OperationStatement.BinaryOperation(
                     operator=computer_operation.operator,
                     left=view_names[computer_operation.left_view],
                     right=view_names[computer_operation.right_view],
@@ -359,14 +265,14 @@ class EncodingOperationDefinitionGenerator:
                 ), [result]
             case _PrefixOperation():
                 result = view_names[computer_operation.result_view]
-                return renderer.EncodingOperationStatement.PrefixOperation(
+                return renderer.OperationStatement.PrefixOperation(
                     operator=computer_operation.operator,
                     operand=view_names[computer_operation.operand_view],
                     result=result,
                 ), [result]
             case _ExpressionOperation():
                 result = view_names[computer_operation.result_view]
-                return renderer.EncodingOperationStatement.ExpressionOperation(
+                return renderer.OperationStatement.ExpressionOperation(
                     operator=computer_operation.operator,
                     operands=[
                         view_names[view] for view in computer_operation.operand_views
@@ -375,13 +281,53 @@ class EncodingOperationDefinitionGenerator:
                 ), [result]
             case _FunctionCall():
                 result = view_names[computer_operation.result_view]
-                return renderer.EncodingOperationStatement.Call(
+                return renderer.OperationStatement.Call(
                     function=computer_operation.function,
                     arguments=[
                         view_names[view] for view in computer_operation.argument_views
                     ],
                     results=[result],
                 ), [result]
+
+
+def generate_encoding_operation(
+    operation_input: codegen_input.EncodingOperationCodegenInput,
+    converter: naming.NameConverter,
+) -> renderer.OperationFunction:
+    """Build the template context for the function that performs an Encoding Operation."""
+    definition = operation_input.definition
+    function = converter.function_reference(definition.typed_name)
+    view_python_types: list[str] = []
+    for view in definition.views:
+        view_python_types.append(
+            value_types.encoded_python_value_type(view.quality_assignment_block)
+        )
+    if not isinstance(operation_input.body, ast.ComputerOperationExecutionStatement):
+        return operation_function.generate_step_function(
+            converter,
+            function,
+            definition.views,
+            view_python_types,
+            operation_input.body,
+        )
+    computer_operation = _ComputerOperationStatement(definition)
+    callees: list[renderer.FunctionReference] = []
+    if computer_operation.callee is not None:
+        callees.append(computer_operation.callee)
+    function_locals = operation_function.name_function_locals(
+        function, definition.views, callees
+    )
+    statement, last_written_names = computer_operation.statement(
+        function_locals.view_names
+    )
+    return operation_function.finish_function(
+        function,
+        definition.views,
+        view_python_types,
+        function_locals,
+        [statement],
+        last_written_names,
+    )
 
 
 def _lookup_computer_operation(

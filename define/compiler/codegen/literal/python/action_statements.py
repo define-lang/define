@@ -100,8 +100,8 @@ class ActionStatementsGenerator:
                     modules.update(work.referenced_modules(step.contribution.work))
                 case codegen_input.ActionOperationExecution():
                     modules.add(
-                        self._converter.function_reference(
-                            step.encoding_operation
+                        self._converter.runtime_operation_function_reference(
+                            step.runtime_operation
                         ).module_name
                     )
                     for argument in step.arguments:
@@ -368,8 +368,8 @@ class ActionStatementsGenerator:
             if isinstance(looking_at, codegen_input.EncodedLiteral):
                 arguments.append(value_types.python_literal(looking_at))
                 continue
-            value_type = self._python_value_types.assigned_python_value_type(
-                argument.interface_view.quality_assignment_block
+            value_type = self._python_value_types.view_python_value_type(
+                argument.interface_view
             )
             if argument.interface_view.is_input:
                 arguments.append(positions.build(looking_at, value_type=value_type))
@@ -384,7 +384,9 @@ class ActionStatementsGenerator:
             for view_name in output_view_names:
                 result_names.append(names.allocate(naming.VIEW_PREFIX + view_name))
         return renderer.ActionStatement.ExecuteOperation(
-            function=self._converter.function_reference(execution.encoding_operation),
+            function=self._converter.runtime_operation_function_reference(
+                execution.runtime_operation
+            ),
             arguments=arguments,
             outputs=outputs,
             result_names=result_names,

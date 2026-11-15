@@ -1,0 +1,37 @@
+define the operation<my.domain.com:my_lib:/negated_difference> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the view<b> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        define the view<difference> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        execute the operation</subtraction> {
+            with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<difference>.
+        }
+        execute the operation</negation> {
+            with view<value> looking at view<difference>.
+            with view<result> looking at view<result>.
+        }
+    }
+}

@@ -1,0 +1,5 @@
+test.create(count)
+test.set_value(count, 3)
+test.create(/final_result)
+test.execute(operation<my.domain.com:my_lib:/difference>, count, 5, /final_result)
+test.destroy(count)

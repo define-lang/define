@@ -40,6 +40,46 @@ class ActionPostorderValidationResult(PostorderValidationResult):
     codegen_input: codegen_input.ActionCodegenInput
 
 
+class LogicalOperationExecution(msgspec.Struct):
+    """A validated Logical Operation Execution Statement in a Value Operation."""
+
+    logical_operation: ast.GlobalTypedNameReference
+    # The statement's arguments, in the order of the logical operation's views.
+    arguments: tuple[ast.OperationArgumentStatement[ast.LocalTypedNameReference], ...]
+
+
+class ValueOperationExecution(msgspec.Struct):
+    """A validated Operation Execution Statement in a Value Operation."""
+
+    value_operation: ast.ValueOperationDefinition
+    # The statement's name of the executed Value Operation, where diagnostics
+    # about the execution are reported.
+    operation: ast.GlobalTypedNameReference
+    # In the order of the executed Value Operation's interface views.
+    arguments: list[codegen_input.OperationArgument[ast.LocalTypedNameReference]]
+
+
+# What a Value Operation does, independent of the encodings of the views that
+# an execution of it looks at.
+type ValueOperationStep = (
+    ast.LocalViewDefinition
+    | ast.ViewSettingStatement
+    | LogicalOperationExecution
+    | ValueOperationExecution
+    # TODO: Remove this once `execute the encoding operation.` is deleted.
+    | ast.EncodingOperationExecutionStatement
+)
+
+
+class ValueOperationPostorderValidationResult(PostorderValidationResult):
+    """Result of validating a Value Operation definition."""
+
+    # None when the Value Operation has diagnostics, because its steps may then
+    # be incomplete, and nothing executing it can choose Encoding Operations
+    # from them.
+    steps: list[ValueOperationStep] | None
+
+
 class LogicalOperationPostorderValidationResult(PostorderValidationResult):
     """Result of validating a logical operation definition during the DFS post-order walk."""
 
@@ -54,9 +94,9 @@ class ValuePostorderValidationResult(PostorderValidationResult):
 
     # The full typed name of the value quality.
     value_quality: str
-    # The full typed name of the value quality's one associated encoding, or
-    # None when it has none or more than one.
-    encoding: str | None
+    # The value quality's one associated encoding, or None when it has none or
+    # more than one.
+    encoding: ast.GlobalTypedNameReference | None
 
 
 class EncodingOperationPostorderValidationResult(PostorderValidationResult):

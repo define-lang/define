@@ -2274,3 +2274,134 @@ def test_logical_operation_write_not_supported_format(
                                          ^^^^^^^^^^^^^
         'logical_operation</negate>' cannot write to 'view<negated>'. 'view<negated>' holds a 'value</number>'. However, 'value</number>' does not support being written by 'logical_operation</negate>'.""")
     )
+
+
+def test_missing_encoding_operation_format(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "final_result.dfn": (
+                "define the potential position<my.domain.com:my_lib:/final_result> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the value<standard:/number/integer>.\n"
+                "    }\n"
+                "}\n"
+            ),
+            "mixed_sum.dfn": (
+                "define the operation<my.domain.com:my_lib:/mixed_sum> {\n"
+                "    define the view<a> {\n"
+                "        it is read.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/integer>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<b> {\n"
+                "        it is read.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<result> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/integer>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the logical_operation<standard:/number/add> {\n"
+                "            with view<a> looking at view<a>.\n"
+                "            with view<b> looking at view<b>.\n"
+                "            with view<result> looking at view<result>.\n"
+                "        }\n"
+                "    }\n"
+                "}\n"
+            ),
+            "outer_sum.dfn": (
+                "define the operation<my.domain.com:my_lib:/outer_sum> {\n"
+                "    define the view<a> {\n"
+                "        it is read.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/integer>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<b> {\n"
+                "        it is read.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<result> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/integer>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the operation</mixed_sum> {\n"
+                "            with view<a> looking at view<a>.\n"
+                "            with view<b> looking at view<b>.\n"
+                "            with view<result> looking at view<result>.\n"
+                "        }\n"
+                "    }\n"
+                "}\n"
+            ),
+            "test.dfn": (
+                "define the potential action<my.domain.com:my_lib:/test> {\n"
+                "    it also assigns the position</final_result>.\n"
+                "    it happens when {\n"
+                "        this particle is created.\n"
+                "    } and it does {\n"
+                "        define the position<offset> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the value<standard:/number/integer>.\n"
+                "            }\n"
+                "        }\n"
+                "        define the position<count> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the value<standard:/number/natural>.\n"
+                "            }\n"
+                "        }\n"
+                "        create a particle in position<offset>.\n"
+                '        set the value of position<offset> from literal<standard:/number>"-1".\n'
+                "        create a particle in position<count>.\n"
+                '        set the value of position<count> from literal<standard:/number>"2".\n'
+                "        create a particle in position</final_result>.\n"
+                "        execute the operation</outer_sum> {\n"
+                "            with view<a> looking at position<offset>.\n"
+                "            with view<b> looking at position<count>.\n"
+                "            with view<result> looking at position</final_result>.\n"
+                "        }\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    all_diags = result.program_result.all_diagnostics
+    assert len(all_diags) == 1
+    formatted = all_diags[0].format(result.program_result.source_map)
+    assert formatted == textwrap.dedent("""\
+        File "test.dfn", line 21, column 21
+            execute the operation</outer_sum> {
+                        ^^^^^^^^^^^^^^^^^^^^^
+        no Encoding Operation performs 'logical_operation<standard:/number/add>' for these encodings:
+          view<a>: encoding<standard:/number/integer/ascii>
+          view<b>: encoding<standard:/number/natural/ascii>
+          view<result>: encoding<standard:/number/integer/ascii>
+        so this execution cannot run.
+
+        This error happens because:
+          'action<my.domain.com:my_lib:/test>' executes 'operation</outer_sum>':
+            File "test.dfn", line 21, column 21
+                execute the operation</outer_sum> {
+                            ^^^^^^^^^^^^^^^^^^^^^
+          'operation</outer_sum>' executes 'operation</mixed_sum>':
+            File "outer_sum.dfn", line 22, column 21
+                execute the operation</mixed_sum> {
+                            ^^^^^^^^^^^^^^^^^^^^^
+          'operation</mixed_sum>' executes 'logical_operation<standard:/number/add>':
+            File "mixed_sum.dfn", line 22, column 21
+                execute the logical_operation<standard:/number/add> {
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""")

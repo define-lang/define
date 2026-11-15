@@ -1,0 +1,8 @@
+test.create(count)
+test.set_value(count, 4)
+test.create(first_total)
+test.execute(operation<my.domain.com:my_lib:/difference>, count, 1, first_total)
+test.create(/final_result)
+test.execute(operation<my.domain.com:my_lib:/difference>, first_total, 2, /final_result)
+test.destroy(count)
+test.destroy(first_total)

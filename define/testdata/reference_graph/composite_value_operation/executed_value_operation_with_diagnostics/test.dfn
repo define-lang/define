@@ -1,0 +1,20 @@
+# An action that executes a Value Operation, which executes another that has diagnostics, reports nothing more than that Value Operation's diagnostics.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</final_result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<flag> {
+            it may only contain particles where {
+                it has the value<standard:/boolean>.
+            }
+        }
+        create a particle in position<flag>.
+        set the value of position<flag> from literal<standard:/boolean>"true".
+        create a particle in position</final_result>.
+        execute the operation</outer> {
+            with view<a> looking at position<flag>.
+            with view<result> looking at position</final_result>.
+        }
+    }
+}
