@@ -20,7 +20,6 @@ mod load_failures;
 mod parser_diagnostics;
 
 use node_construction::Node as _;
-use parse_error::ParseError;
 use parser::{ParsedProgram, Parser};
 use pyo3::prelude::*;
 use pyo3::types::{PyList, PyString};

@@ -13,24 +13,24 @@ use wide::u8x32;
 
 /// Whether `byte` may be in the word where a field name belongs, which is
 /// then checked for the rules of field names.
-pub const fn is_field_name_word_character(byte: u8) -> bool {
+pub(crate) const fn is_field_name_word_character(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.')
 }
 
 /// Whether `byte` may be in the word where a number belongs, which is then
 /// checked for the rules of numbers.
-pub const fn is_number_word_character(byte: u8) -> bool {
+pub(crate) const fn is_number_word_character(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'+' | b'.')
 }
 
 /// Whether `byte` may be in an enum value's word.
-pub const fn is_enum_word_character(byte: u8) -> bool {
+pub(crate) const fn is_enum_word_character(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || byte == b'_'
 }
 
 /// What a scan of the word where a field name belongs found.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct FieldNameWord {
+pub(crate) struct FieldNameWord {
     /// The length of the word in bytes.
     pub length: usize,
     /// Whether the word follows the rules for field names.
@@ -45,7 +45,7 @@ pub struct FieldNameWord {
 /// ```
 #[inline]
 #[must_use]
-pub fn field_name_word(source: &[u8]) -> FieldNameWord {
+pub(crate) fn field_name_word(source: &[u8]) -> FieldNameWord {
     // Almost every field name and the byte after it fit in one vector, which
     // then answers both how long the word is and whether it is a field name.
     if let Some(&chunk) = source.first_chunk::<WIDTH>() {
@@ -103,7 +103,7 @@ fn is_field_name(word: &[u8]) -> bool {
 /// other than spaces follows them.
 #[inline]
 #[must_use]
-pub fn line_feed_and_spaces(source: &[u8]) -> Option<(usize, u8)> {
+pub(crate) fn line_feed_and_spaces(source: &[u8]) -> Option<(usize, u8)> {
     if source.first() != Some(&b'\n') {
         return None;
     }
@@ -124,7 +124,7 @@ pub fn line_feed_and_spaces(source: &[u8]) -> Option<(usize, u8)> {
 /// `source`, which starts with a byte that `is_number_word_character` accepts.
 #[inline]
 #[must_use]
-pub fn number_word_length(source: &[u8]) -> usize {
+pub(crate) fn number_word_length(source: &[u8]) -> usize {
     word_length(source, number_word_mask, is_number_word_character)
 }
 
@@ -132,7 +132,7 @@ pub fn number_word_length(source: &[u8]) -> usize {
 /// which starts with a byte that `is_enum_word_character` accepts.
 #[inline]
 #[must_use]
-pub fn enum_word_length(source: &[u8]) -> usize {
+pub(crate) fn enum_word_length(source: &[u8]) -> usize {
     word_length(source, enum_word_mask, is_enum_word_character)
 }
 

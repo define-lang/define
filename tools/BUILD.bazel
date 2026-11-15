@@ -318,6 +318,33 @@ py_test(
     ],
 )
 
+py_library(
+    name = "rustc_lints",
+    srcs = ["rustc_lints.py"],
+)
+
+py_test(
+    name = "rustc_lints_test",
+    size = "small",
+    srcs = ["rustc_lints_test.py"],
+    # rustc reports a lint that only nightly rustc knows as unknown only once it
+    # finds the standard library.
+    data = [
+        "//:Cargo.toml",
+        "@rules_rust//rust/toolchain:current_rust_stdlib_files",
+        "@rules_rust//rust/toolchain:current_rustc_files",
+        "@rules_rust//rust/toolchain:current_rustc_lib_files",
+    ],
+    env = {
+        "CARGO_TOML": "$(rlocationpath //:Cargo.toml)",
+        "RUSTC": "$(rlocationpath @rules_rust//rust/toolchain:current_rustc_files)",
+    },
+    deps = [
+        ":runfiles",
+        ":rustc_lints",
+    ],
+)
+
 py_binary(
     name = "serve_report",
     srcs = ["serve_report.py"],
@@ -479,6 +506,8 @@ pyright_test(
         ":runfiles",
         ":rust_source",
         ":rust_source_test",
+        ":rustc_lints",
+        ":rustc_lints_test",
         ":serve_report",
         ":serve_report_test",
         ":setup_local_dev",

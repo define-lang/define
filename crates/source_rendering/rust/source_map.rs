@@ -13,11 +13,13 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 /// cannot be read, or that changed after it was registered, shows why in place
 /// of its source lines, since a changed file's new text would put the carets
 /// under the wrong code.
+#[derive(Debug)]
 pub struct SourceMap {
     in_memory_lines: Option<SourceLines>,
     files: Mutex<FxHashMap<Box<str>, File>>,
 }
 
+#[derive(Debug)]
 enum File {
     /// A registered file that no location has been shown in yet, with the
     /// digest of its text when it was registered.
@@ -44,7 +46,7 @@ impl std::error::Error for NoInMemorySource {}
 type FileLines = Result<Arc<SourceLines>, SourceUnavailable>;
 
 /// Why a registered file's source lines cannot be shown.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum SourceUnavailable {
     Unreadable(Arc<std::io::Error>),
     Changed,

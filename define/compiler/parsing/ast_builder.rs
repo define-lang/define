@@ -8,7 +8,7 @@ use rustc_hash::FxHashMap;
 use source_rendering::Position;
 
 /// Constructs the Python AST for one parse.
-pub struct AstBuilder<'py> {
+pub(crate) struct AstBuilder<'py> {
     py: Python<'py>,
     classes: &'static AstClasses,
     file_path: Option<Bound<'py, PyString>>,
@@ -18,7 +18,7 @@ pub struct AstBuilder<'py> {
 }
 
 impl<'py> AstBuilder<'py> {
-    pub fn new(py: Python<'py>, file_path: Option<Bound<'py, PyString>>) -> PyResult<Self> {
+    pub(crate) fn new(py: Python<'py>, file_path: Option<Bound<'py, PyString>>) -> PyResult<Self> {
         Ok(Self {
             py,
             classes: AstClasses::get(py)?,
@@ -27,11 +27,11 @@ impl<'py> AstBuilder<'py> {
         })
     }
 
-    pub const fn py(&self) -> Python<'py> {
+    pub(crate) const fn py(&self) -> Python<'py> {
         self.py
     }
 
-    pub const fn classes(&self) -> &'static AstClasses {
+    pub(crate) const fn classes(&self) -> &'static AstClasses {
         self.classes
     }
 
@@ -39,7 +39,7 @@ impl<'py> AstBuilder<'py> {
     /// first time this parse interns that text. CPython's own interning would
     /// create a new string on every call, only to discard it when the text is
     /// already interned.
-    pub fn interned(&mut self, text: SourceText<'_>) -> PyResult<Bound<'py, PyString>> {
+    pub(crate) fn interned(&mut self, text: SourceText<'_>) -> PyResult<Bound<'py, PyString>> {
         if let Some(interned) = self.interned_texts.get(text.bytes) {
             return Ok(interned.clone());
         }
@@ -51,11 +51,11 @@ impl<'py> AstBuilder<'py> {
 
     /// Returns a new Python string for `text`, such as literal content, which
     /// is not interned because it is rarely the same as other text.
-    pub fn string(&self, text: SourceText<'_>) -> PyResult<Bound<'py, PyString>> {
+    pub(crate) fn string(&self, text: SourceText<'_>) -> PyResult<Bound<'py, PyString>> {
         Ok(PyString::new(self.py, utf8(text)?))
     }
 
-    pub fn location(&self, start: Position, end: Position) -> PyResult<SourceLocation<'py>> {
+    pub(crate) fn location(&self, start: Position, end: Position) -> PyResult<SourceLocation<'py>> {
         // `end` is the position after the last character.
         let location = source_rendering::SourceLocation {
             start,

@@ -178,7 +178,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         LineInBlock,
         Position,
     )> {
-        let implications = self.nodes.start::<ast::QualityImplicationStatement>();
+        let implications = self.nodes.start::<ast::QualityImplicationStatement<'_>>();
         let mut content_end = block_open_end;
         let mut line = self.next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
         while matches!(line, LineInBlock::Statement) {
@@ -214,7 +214,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         LineInBlock,
         Position,
     )> {
-        let interface_positions = self.nodes.start::<ast::LocalPositionDefinition>();
+        let interface_positions = self.nodes.start::<ast::LocalPositionDefinition<'_>>();
         let mut named_interface_positions = Vec::new();
         loop {
             if !matches!(line, LineInBlock::Statement) {
@@ -394,7 +394,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             return Err(self.missing_action_statements_block());
         }
         let statements_open_end = self.parse_block_open()?;
-        let statements = self.nodes.start::<ast::ActionStatement>();
+        let statements = self.nodes.start::<ast::ActionStatement<'_>>();
         loop {
             match self.next_line_in_block(
                 ACTION_DEFINITION_BLOCK_INDENTATION,
@@ -484,7 +484,7 @@ impl<'py, 'source> Parser<'py, 'source> {
             return Err(self.invalid_has_a_particle_syntax());
         }
         let end = self.parse_statement_terminator()?;
-        let typed_names = self.nodes.start::<ast::TypedNameReference>();
+        let typed_names = self.nodes.start::<ast::TypedNameReference<'_>>();
         self.nodes.push(&typed_names, typed_name.clone());
         let typed_names = self.nodes.finish_tuple(typed_names)?;
         let canonical_names = self.texts.start();

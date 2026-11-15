@@ -10,13 +10,13 @@ use pyo3::types::PyString;
 
 /// Creates the load failures of one parse, such as its syntax errors, as
 /// instances of classes from `{{ module_name }}`.
-pub struct LoadFailures<'py> {
+pub(crate) struct LoadFailures<'py> {
     py: Python<'py>,
     file_path: Option<Bound<'py, PyString>>,
 }
 
 impl<'py> LoadFailures<'py> {
-    pub const fn new(py: Python<'py>, file_path: Option<Bound<'py, PyString>>) -> Self {
+    pub(crate) const fn new(py: Python<'py>, file_path: Option<Bound<'py, PyString>>) -> Self {
         Self { py, file_path }
     }
 
@@ -41,14 +41,14 @@ impl<'py> LoadFailures<'py> {
     fn load_failure(failure: PyResult<Bound<'py, PyAny>>) -> ParseError {
         match failure {
             Ok(failure) => ParseError::LoadFailure(failure.unbind()),
-            Err(error) => ParseError::Python(error),
+            Err(error) => ParseError::Python(Box::new(error)),
         }
     }
 {% for load_failure in load_failures %}
 {%- if load_failure.has_location %}
     /// Returns a `{{ module_name }}.{{ load_failure.name }}` from `start` through
     /// `end`, the position of its last character.
-    pub fn {{ load_failure.snake_case_name }}(
+    pub(crate) fn {{ load_failure.snake_case_name }}(
         &self,
         start: Position,
         end: Position,
@@ -67,7 +67,7 @@ impl<'py> LoadFailures<'py> {
     }
 {%- else %}
     /// Returns a `{{ module_name }}.{{ load_failure.name }}`.
-    pub fn {{ load_failure.snake_case_name }}(
+    pub(crate) fn {{ load_failure.snake_case_name }}(
         &self,
 {%- for field in load_failure.fields %}
         {{ field.name }}: {{ field.rust_type() }},

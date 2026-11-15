@@ -40,7 +40,7 @@ impl ParsedFile {
     pub fn location_of(
         &self,
         source: &str,
-        path: &[FieldPathElement],
+        path: &[FieldPathElement<'_>],
     ) -> Result<SourceLocation, LocationError> {
         let (&first, rest) = path.split_first().ok_or(LocationError::EmptyPath)?;
         let FieldPathElement::Field(top_level_name) = first else {
@@ -110,7 +110,7 @@ mod tests {
     }
 
     fn location_of(
-        path: &[FieldPathElement],
+        path: &[FieldPathElement<'_>],
     ) -> Result<std::result::Result<SourceLocation, LocationError>> {
         let parsed = parse(SOURCE);
         verify_that!(parsed.errors, is_empty())?;

@@ -16,7 +16,7 @@ use pyo3::types::{PyDict, PyFrozenSet, PyNone, PyString, PyTuple};
 impl<'py> AstBuilder<'py> {
 {%- for class in description.classes %}
 {%- if let Some(constructor) = class.constructor %}
-    pub fn {{ class.snake_case_name }}(
+    pub(crate) fn {{ class.snake_case_name }}(
         &self,
 {%- for parameter in constructor.parameters %}
         {{ parameter.rust_name() }}: {{ parameter.rust_type() }},

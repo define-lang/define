@@ -27,7 +27,79 @@ strum = { version = "=0.28.0", features = ["derive"] }
 wide = "=1.7.1"
 
 [workspace.lints.rust]
+# Every warning is an error. rules_rust's clippy aspect only adds -Dwarnings for
+# targets without a lint_config, and every target here has one.
+warnings = { level = "deny", priority = -1 }
+
+# rustc has no group for the lints it leaves off, so each one is listed.
+# //tools:rustc_lints_test fails when the toolchain has one that this table does
+# not name, so that a new lint is denied or allowed on purpose. It skips lints
+# that only nightly rustc knows, since stable rustc reports them as unknown.
+absolute_paths_not_starting_with_crate = "deny"
+ambiguous_negative_literals = "deny"
+closure_returning_async_block = "deny"
+deprecated_in_future = "deny"
+deprecated_safe_2024 = "deny"
+deref_into_dyn_supertrait = "deny"
+edition_2024_expr_fragment_specifier = "deny"
+elided_lifetimes_in_paths = "deny"
+explicit_outlives_requirements = "deny"
+ffi_unwind_calls = "deny"
+if_let_rescope = "deny"
+impl_trait_overcaptures = "deny"
+impl_trait_redundant_captures = "deny"
+keyword_idents_2018 = "deny"
+keyword_idents_2024 = "deny"
+let_underscore_drop = "deny"
+linker_info = "deny"
+macro_use_extern_crate = "deny"
+meta_variable_misuse = "deny"
+missing_debug_implementations = "deny"
+missing_unsafe_on_extern = "deny"
+non_ascii_idents = "deny"
+raw_borrows_via_references = "deny"
+redundant_imports = "deny"
+redundant_lifetimes = "deny"
+rust_2021_incompatible_closure_captures = "deny"
+rust_2021_incompatible_or_patterns = "deny"
+rust_2021_prefixes_incompatible_syntax = "deny"
+rust_2021_prelude_collisions = "deny"
+rust_2024_guarded_string_incompatible_syntax = "deny"
+rust_2024_incompatible_pat = "deny"
+rust_2024_prelude_collisions = "deny"
+single_use_lifetimes = "deny"
+tail_expr_drop_order = "deny"
+trivial_casts = "deny"
+trivial_numeric_casts = "deny"
+unit_bindings = "deny"
+unnameable_types = "deny"
+unreachable_pub = "deny"
+unsafe_attr_outside_unsafe = "deny"
 unsafe_code = "deny"
+unsafe_op_in_unsafe_fn = "deny"
+unstable_features = "deny"
+unused_crate_dependencies = "deny"
+unused_extern_crates = "deny"
+unused_import_braces = "deny"
+unused_lifetimes = "deny"
+unused_macro_rules = "deny"
+unused_qualifications = "deny"
+variant_size_differences = "deny"
+
+# --- rustc lints that do not fit the code ---
+
+# A type is Copy when its callers need copies, since Copy limits the fields it
+# can gain later.
+missing_copy_implementations = "allow"
+# Items whose names explain them need no doc comment.
+missing_docs = "allow"
+# Results that callers must not ignore are #[must_use], which clippy's
+# must_use_candidate enforces.
+unused_results = "allow"
+# Each rust_test compiles its library's sources as a test binary, where public
+# items that only other crates use look unused. binary_rustc_flags() in
+# //tools/bzl:rust.bzl denies it for rust_binary targets.
+dead_code_pub_in_binary = "allow"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }

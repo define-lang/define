@@ -5,7 +5,7 @@
 
 /// Inclusive ranges of invisible code points, in order, other than the
 /// characters that the rule allows in some contexts.
-pub const INVISIBLE_RANGES: [(u32, u32); 745] = [
+pub(crate) const INVISIBLE_RANGES: [(u32, u32); 745] = [
     (0x0080, 0x00A0),
     (0x00AD, 0x00AD),
     (0x034F, 0x034F),

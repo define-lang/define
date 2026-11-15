@@ -6,19 +6,19 @@ use terminals::{ESCAPE, LINE_FEED, NAME_CONTENT_START, SPACE, TERMINATOR};
 
 /// The bytes that end a word, for errors that cover the word where something
 /// else belongs.
-pub const WORD_ENDS: [u8; 4] = [NAME_CONTENT_START, SPACE, TERMINATOR, LINE_FEED];
+pub(crate) const WORD_ENDS: [u8; 4] = [NAME_CONTENT_START, SPACE, TERMINATOR, LINE_FEED];
 
 /// Text from the source, which is UTF-8 if the source is valid, but
 /// usually is just ASCII.
 #[derive(Clone, Copy)]
-pub struct SourceText<'source> {
+pub(crate) struct SourceText<'source> {
     pub bytes: &'source [u8],
     /// False when the text may contain non-ASCII bytes.
     pub is_known_ascii: bool,
 }
 
 impl SourceText<'_> {
-    pub fn character_count(self) -> usize {
+    pub(crate) fn character_count(self) -> usize {
         if self.is_known_ascii {
             self.bytes.len()
         } else {
@@ -28,7 +28,7 @@ impl SourceText<'_> {
 
     /// Returns the text in the byte `range`, which must start and end on
     /// character boundaries.
-    pub fn slice(self, range: impl SliceIndex<[u8], Output = [u8]>) -> Self {
+    pub(crate) fn slice(self, range: impl SliceIndex<[u8], Output = [u8]>) -> Self {
         Self {
             bytes: &self.bytes[range],
             is_known_ascii: self.is_known_ascii,
@@ -37,7 +37,7 @@ impl SourceText<'_> {
 }
 
 /// Literal content as it is written, with its escapes.
-pub struct LiteralContent<'source> {
+pub(crate) struct LiteralContent<'source> {
     pub written: SourceText<'source>,
     /// Whether the content has a `\`.
     pub has_escape: bool,
@@ -47,7 +47,7 @@ pub struct LiteralContent<'source> {
     clippy::partial_pub_fields,
     reason = "The parser reads the position directly, while the rest of the source changes only through the scanner's methods."
 )]
-pub struct Scanner<'source> {
+pub(crate) struct Scanner<'source> {
     /// The source that has not been consumed yet.
     rest: &'source [u8],
     pub position: Position,
@@ -55,20 +55,20 @@ pub struct Scanner<'source> {
 
 impl<'source> Scanner<'source> {
     /// Returns a scanner for `source`, whose first character is at `start`.
-    pub const fn new(source: &'source [u8], start: Position) -> Self {
+    pub(crate) const fn new(source: &'source [u8], start: Position) -> Self {
         Self {
             rest: source,
             position: start,
         }
     }
 
-    pub const fn is_at_end(&self) -> bool {
+    pub(crate) const fn is_at_end(&self) -> bool {
         self.rest.is_empty()
     }
 
     /// The text before the first of the bytes in `ends`, or before the end of
     /// the source.
-    pub fn text_before_any(&self, ends: &[u8]) -> SourceText<'source> {
+    pub(crate) fn text_before_any(&self, ends: &[u8]) -> SourceText<'source> {
         let length = self
             .rest
             .iter()
@@ -82,7 +82,7 @@ impl<'source> Scanner<'source> {
 
     /// The number of bytes at the start of the remaining text that match the
     /// start of `expected`.
-    pub fn matching_prefix_length(&self, expected: &[u8]) -> usize {
+    pub(crate) fn matching_prefix_length(&self, expected: &[u8]) -> usize {
         self.rest
             .iter()
             .zip(expected)
@@ -91,33 +91,33 @@ impl<'source> Scanner<'source> {
     }
 
     /// The number of spaces at the start of the remaining text.
-    pub fn next_space_count(&self) -> usize {
+    pub(crate) fn next_space_count(&self) -> usize {
         self.rest.iter().take_while(|&&byte| byte == SPACE).count()
     }
 
-    pub fn next_bytes_are(&self, expected: &[u8]) -> bool {
+    pub(crate) fn next_bytes_are(&self, expected: &[u8]) -> bool {
         self.rest.starts_with(expected)
     }
 
     /// The remaining text after `prefix`, if the remaining text starts with
     /// it.
-    pub fn rest_after(&self, prefix: &[u8]) -> Option<&'source [u8]> {
+    pub(crate) fn rest_after(&self, prefix: &[u8]) -> Option<&'source [u8]> {
         self.rest.strip_prefix(prefix)
     }
 
     /// Whether the scanner is at a line feed or the end of the source.
-    pub const fn is_at_line_end(&self) -> bool {
+    pub(crate) const fn is_at_line_end(&self) -> bool {
         matches!(self.rest.first(), None | Some(&LINE_FEED))
     }
 
     /// Whether the next byte is `expected`.
-    pub const fn next_byte_is(&self, expected: u8) -> bool {
+    pub(crate) const fn next_byte_is(&self, expected: u8) -> bool {
         matches!(self.rest.first(), Some(&byte) if byte == expected)
     }
 
     /// Consumes `expected` if the remaining text starts with it. `expected`
     /// must be ASCII without a line feed.
-    pub fn consume(&mut self, expected: &[u8]) -> bool {
+    pub(crate) fn consume(&mut self, expected: &[u8]) -> bool {
         let Some(rest) = self.rest.strip_prefix(expected) else {
             return false;
         };
@@ -129,7 +129,10 @@ impl<'source> Scanner<'source> {
     /// Consumes the first of `keywords` that the remaining text starts with,
     /// and returns the value paired with it. Each keyword must be ASCII
     /// without a line feed.
-    pub fn consume_any<Value: Copy>(&mut self, keywords: &[(&[u8], Value)]) -> Option<Value> {
+    pub(crate) fn consume_any<Value: Copy>(
+        &mut self,
+        keywords: &[(&[u8], Value)],
+    ) -> Option<Value> {
         keywords
             .iter()
             .find(|&&(keyword, _)| self.consume(keyword))
@@ -138,7 +141,7 @@ impl<'source> Scanner<'source> {
 
     /// Consumes `expected` if it is the next byte. `expected` must be ASCII and
     /// not a line feed.
-    pub const fn consume_byte(&mut self, expected: u8) -> bool {
+    pub(crate) const fn consume_byte(&mut self, expected: u8) -> bool {
         let Some((&byte, rest)) = self.rest.split_first() else {
             return false;
         };
@@ -153,13 +156,13 @@ impl<'source> Scanner<'source> {
     // Without this, LLVM inlines the scan into only one of its call sites, and
     // each statement's terminator pays for a call.
     #[inline(always)]
-    pub fn scan_line_end(&self) -> vector_scan::LineEnd {
+    pub(crate) fn scan_line_end(&self) -> vector_scan::LineEnd {
         vector_scan::line_end(self.rest)
     }
 
     /// Consumes the next `count` bytes, which must be ASCII without a line
     /// feed.
-    pub fn consume_bytes(&mut self, count: usize) {
+    pub(crate) fn consume_bytes(&mut self, count: usize) {
         self.rest = &self.rest[count..];
         self.position = self.position.columns_later(count);
     }
@@ -168,7 +171,11 @@ impl<'source> Scanner<'source> {
     /// them, if the remaining text starts with them, and returns the position
     /// of the name type. `words` and `name_type` must be ASCII without a line
     /// feed.
-    pub fn consume_definition_start(&mut self, words: &[u8], name_type: &[u8]) -> Option<Position> {
+    pub(crate) fn consume_definition_start(
+        &mut self,
+        words: &[u8],
+        name_type: &[u8],
+    ) -> Option<Position> {
         let after_words = self.rest.strip_prefix(words)?;
         if !after_words.starts_with(name_type) {
             return None;
@@ -180,7 +187,7 @@ impl<'source> Scanner<'source> {
     }
 
     /// Consumes and returns the next `length` bytes, which have no line feed.
-    pub fn consume_text(&mut self, length: usize) -> SourceText<'source> {
+    pub(crate) fn consume_text(&mut self, length: usize) -> SourceText<'source> {
         let (bytes, rest) = self.rest.split_at(length);
         let text = SourceText {
             bytes,
@@ -191,7 +198,7 @@ impl<'source> Scanner<'source> {
         text
     }
 
-    pub fn consume_line_feed(&mut self) -> bool {
+    pub(crate) fn consume_line_feed(&mut self) -> bool {
         let Some(rest) = self.rest.strip_prefix(&[LINE_FEED]) else {
             return false;
         };
@@ -206,7 +213,7 @@ impl<'source> Scanner<'source> {
     /// Consumes the name content, where only a global name belongs, before the
     /// first `>` or line feed, or all of the remaining text if it contains
     /// neither, and returns it with what the scan found in it.
-    pub fn consume_global_name_content(
+    pub(crate) fn consume_global_name_content(
         &mut self,
     ) -> (SourceText<'source>, vector_scan::GlobalNameContent) {
         let scanned = vector_scan::global_name_content(self.rest);
@@ -222,7 +229,7 @@ impl<'source> Scanner<'source> {
 
     /// Consumes literal content up to its first `"` that is not after a `\`,
     /// or up to the end of the line or the source, and returns it.
-    pub fn consume_literal_content(&mut self) -> LiteralContent<'source> {
+    pub(crate) fn consume_literal_content(&mut self) -> LiteralContent<'source> {
         let mut length = 0;
         let mut character_count = 0;
         let mut is_printable_ascii = true;
@@ -269,7 +276,9 @@ impl<'source> Scanner<'source> {
     /// Consumes the name content, where a local name may belong, before the
     /// first `>` or line feed, or all of the remaining text if it contains
     /// neither, and returns it with what the scan found in it.
-    pub fn consume_name_content(&mut self) -> (SourceText<'source>, vector_scan::NameContent) {
+    pub(crate) fn consume_name_content(
+        &mut self,
+    ) -> (SourceText<'source>, vector_scan::NameContent) {
         let scanned = vector_scan::name_content(self.rest);
         let (bytes, rest) = self.rest.split_at(scanned.length);
         let text = SourceText {
@@ -287,7 +296,7 @@ impl<'source> Scanner<'source> {
     /// The rest of the line before its line feed.
     #[cold]
     #[inline(never)]
-    pub fn rest_of_line(&self) -> SourceText<'source> {
+    pub(crate) fn rest_of_line(&self) -> SourceText<'source> {
         let scanned = source_scanning::rest_of_line(self.rest);
         SourceText {
             bytes: &self.rest[..scanned.length],
@@ -299,7 +308,7 @@ impl<'source> Scanner<'source> {
     /// scanner's position, or the scanner's position if there is no word
     /// there.
     #[cold]
-    pub fn end_of_word(&self) -> Position {
+    pub(crate) fn end_of_word(&self) -> Position {
         let start = self.position;
         let word = self.text_before_any(&WORD_ENDS);
         if word.bytes.is_empty() {

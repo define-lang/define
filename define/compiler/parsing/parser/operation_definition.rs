@@ -114,7 +114,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         LineInBlock,
         Position,
     )> {
-        let views = self.nodes.start::<ast::InterfaceViewDefinition>();
+        let views = self.nodes.start::<ast::InterfaceViewDefinition<'_>>();
         let mut content_end = block_open_end;
         loop {
             let line = self.next_line_in_block(0, &OPERATION_DEFINITION_STATEMENT_STARTS)?;
@@ -293,7 +293,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                 return Err(self.missing_operation_statements_content(kind, block_open_end));
             }
         }
-        let statements = self.nodes.start::<ast::OperationStatement>();
+        let statements = self.nodes.start::<ast::OperationStatement<'_>>();
         let mut statement_count: usize = 0;
         // The start and end of the statement that executes the operation's
         // implementation, if the block has one.

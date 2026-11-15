@@ -8,12 +8,12 @@ use pyo3::types::{PyBool, PyNone, PyString, PyTuple, PyType};
 use std::marker::PhantomData;
 
 /// An AST class or a union of AST classes, as generated in `ast`.
-pub trait Node<'py> {
+pub(crate) trait Node<'py> {
     fn into_object(self) -> Bound<'py, PyAny>;
 }
 
 /// A value that can be a field of an AST node.
-pub trait FieldValue<'py> {
+pub(crate) trait FieldValue<'py> {
     /// Returns the object that the field holds, giving the caller this
     /// value's reference to it.
     fn into_field_object(self, py: Python<'py>, classes: &AstClasses) -> Bound<'py, PyAny>;
@@ -42,10 +42,10 @@ impl<'py, Value> FieldValue<'py> for Bound<'py, Value> {
 
 /// A `crates.source_rendering.python.rendering.SourceLocation`.
 #[derive(Clone)]
-pub struct SourceLocation<'py>(Bound<'py, PyAny>);
+pub(crate) struct SourceLocation<'py>(Bound<'py, PyAny>);
 
 impl<'py> SourceLocation<'py> {
-    pub fn new(
+    pub(crate) fn new(
         py: Python<'py>,
         location: source_rendering::SourceLocation,
         file_path: Option<&Bound<'py, PyString>>,
@@ -68,14 +68,14 @@ impl<'py> FieldValue<'py> for SourceLocation<'py> {
 
 /// A Python tuple whose elements are all `Element`.
 #[repr(transparent)]
-pub struct NodeTuple<'py, Element> {
+pub(crate) struct NodeTuple<'py, Element> {
     tuple: Bound<'py, PyTuple>,
     element: PhantomData<Element>,
 }
 
 impl<'py, Element> NodeTuple<'py, Element> {
     /// Returns `tuple`, whose elements the caller knows are all `Element`.
-    pub const fn new(tuple: Bound<'py, PyTuple>) -> Self {
+    pub(crate) const fn new(tuple: Bound<'py, PyTuple>) -> Self {
         Self {
             tuple,
             element: PhantomData,
@@ -90,7 +90,7 @@ impl<'py, Element> FieldValue<'py> for NodeTuple<'py, Element> {
 }
 
 /// An AST class, and where each of its fields is in its instances.
-pub struct ClassLayout<const FIELD_COUNT: usize> {
+pub(crate) struct ClassLayout<const FIELD_COUNT: usize> {
     class: Py<PyType>,
     allocate: ffi::allocfunc,
     /// The offset of each field's slot from the start of an instance.
@@ -105,7 +105,7 @@ impl<const FIELD_COUNT: usize> ClassLayout<FIELD_COUNT> {
         reason = "Only CPython's C API gives a class's allocator and the \
                   offsets of its fields."
     )]
-    pub fn load(
+    pub(crate) fn load(
         module: &Bound<'_, PyModule>,
         class_name: &str,
         field_names: [&str; FIELD_COUNT],
@@ -161,7 +161,7 @@ impl<const FIELD_COUNT: usize> ClassLayout<FIELD_COUNT> {
         clippy::cast_ptr_alignment,
         reason = "CPython aligns each object slot of an instance for a pointer."
     )]
-    pub fn construct<'py>(
+    pub(crate) fn construct<'py>(
         &self,
         py: Python<'py>,
         fields: [Bound<'py, PyAny>; FIELD_COUNT],

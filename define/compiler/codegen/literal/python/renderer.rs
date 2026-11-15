@@ -5,13 +5,14 @@ use template_context::{ActionDefinition, ClassReference, OperationFunction, Posi
 
 mod template_context;
 
-// askama's filter_fn turns each filter into a builder struct whose
+// askama's filter_fn turns each filter into a public builder struct whose
 // `execute(self, …)` holds the filter's body, and templates apply `?` to its
 // result, so a filter without extra arguments has an unused `self` and returns
 // a Result that is never an error.
 #[expect(
     clippy::unnecessary_wraps,
     clippy::unused_self,
+    unreachable_pub,
     reason = "askama filters must have this signature"
 )]
 mod filters {

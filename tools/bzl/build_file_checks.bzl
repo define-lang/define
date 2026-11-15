@@ -1,6 +1,6 @@
 """Loading-time checks for hand-maintained BUILD file conventions."""
 
-load(":rust.bzl", "lint_config")
+load(":rust.bzl", "binary_rustc_flags", "lint_config")
 
 # Linting, type-checking, and package setup targets live in their own sections
 # of a BUILD file instead of among the ordered targets.
@@ -176,6 +176,13 @@ def _lint_config_violations(rules):
         if rule["kind"] in _CLIPPY_CHECKED_KINDS and str(rule.get("lint_config")) != _LINT_CONFIG
     ]
 
+def _binary_rustc_flags_violations(rules):
+    return [
+        'Rust binary "%s" must set rustc_flags = binary_rustc_flags() from //tools/bzl:rust.bzl' % rule_name
+        for rule_name, rule in rules
+        if rule["kind"] == "rust_binary" and list(rule.get("rustc_flags", [])) != binary_rustc_flags()
+    ]
+
 def _codegen_testdata_violations(calls):
     if [call for call in calls if call.function == "pyright_test"]:
         return []
@@ -203,7 +210,8 @@ def build_file_violations(package_name, rules):
         _codegen_testdata_violations(calls) +
         _clippy_tag_violations(calls) +
         _clippy_coverage_violations(calls, rules) +
-        _lint_config_violations(rules)
+        _lint_config_violations(rules) +
+        _binary_rustc_flags_violations(rules)
     )
 
 def _check_build_file_impl(name, visibility):  # buildifier: disable=unused-variable

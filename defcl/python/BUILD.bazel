@@ -5,7 +5,7 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyo3.bzl", "pyo3_extension")
 load("//tools/bzl:pyright.bzl", "pyright_test")
-load("//tools/bzl:rust.bzl", "lint_config")
+load("//tools/bzl:rust.bzl", "binary_rustc_flags", "lint_config")
 
 py_library(
     name = "error_types",
@@ -48,6 +48,7 @@ rust_binary(
     srcs = ["generate_error_types.rs"],
     lint_config = lint_config(),
     proc_macro_deps = ["@crates//:indoc"],
+    rustc_flags = binary_rustc_flags(),
     deps = [
         "//defcl/rust/parser",
         "//defcl/rust/semantics",

@@ -1,12 +1,13 @@
 load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
 load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
-load("//tools/bzl:rust.bzl", "lint_config")
+load("//tools/bzl:rust.bzl", "binary_rustc_flags", "lint_config")
 
 rust_binary(
     name = "collect_rust_coverage",
     srcs = ["collect_rust_coverage.rs"],
     lint_config = lint_config(),
+    rustc_flags = binary_rustc_flags(),
     visibility = [
         "//tools/bzl:__pkg__",
         "@rules_rust//rust/coverage:__pkg__",

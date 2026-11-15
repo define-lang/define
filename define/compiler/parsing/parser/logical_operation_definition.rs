@@ -52,7 +52,9 @@ impl<'py> Parser<'py, '_> {
                     .missing_logical_operation_view_definition(block_open_end, block_open_end));
             }
         }
-        let views = self.nodes.start::<ast::LogicalOperationViewDefinition>();
+        let views = self
+            .nodes
+            .start::<ast::LogicalOperationViewDefinition<'_>>();
         loop {
             let view_start = self.scanner.position;
             // The statement is not a view definition.

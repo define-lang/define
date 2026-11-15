@@ -55,7 +55,7 @@ pub struct DisallowedCharacter {
 
 /// The characters on either side of a character being checked, where `None`
 /// is something other than a character.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Neighbors {
     pub previous: Option<char>,
     pub next: Option<char>,
@@ -97,6 +97,7 @@ pub fn disallowed_characters(
 }
 
 /// The iterator that `disallowed_characters` returns.
+#[derive(Debug)]
 pub struct DisallowedCharacters<'text> {
     characters: Peekable<Chars<'text>>,
     kind: TextKind,

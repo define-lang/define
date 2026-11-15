@@ -54,7 +54,9 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .missing_logical_operation_support_statement(block_open_end, block_open_end));
             }
         }
-        let statements = self.nodes.start::<ast::LogicalOperationSupportStatement>();
+        let statements = self
+            .nodes
+            .start::<ast::LogicalOperationSupportStatement<'_>>();
         loop {
             let statement = self.parse_logical_operation_support_statement(&fqun)?;
             self.nodes.push(&statements, statement);

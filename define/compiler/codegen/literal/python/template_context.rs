@@ -12,7 +12,7 @@ use rustc_hash::FxHashSet;
 
 /// A reference to a generated class, including its module location.
 #[pyclass(frozen, get_all)]
-pub struct ClassReference {
+pub(crate) struct ClassReference {
     pub class_name: String,
     pub module_name: String,
 }
@@ -43,7 +43,7 @@ impl ClassReference {
 
 /// A reference to a Python function, including its module location.
 #[pyclass(frozen, get_all)]
-pub struct FunctionReference {
+pub(crate) struct FunctionReference {
     function_name: String,
     module_name: String,
 }
@@ -74,7 +74,7 @@ impl FunctionReference {
 #[pyclass(frozen, get_all)]
 #[derive(Template)]
 #[template(path = "position_definition.j2", escape = "none")]
-pub struct PositionDefinition {
+pub(crate) struct PositionDefinition {
     class_name: String,
     module_name: String,
     assigned_qualities: Vec<Py<ClassReference>>,
@@ -106,7 +106,7 @@ impl PositionDefinition {
 /// How a position expression gets from what comes before an element in its
 /// chain to the position or action that the element names.
 #[pyclass(frozen)]
-pub enum ChainElement {
+pub(crate) enum ChainElement {
     PositionFromPosition {
         class_reference: Py<ClassReference>,
     },
@@ -130,7 +130,7 @@ pub enum ChainElement {
 
 /// An expression for a position or action in generated code.
 #[pyclass(frozen)]
-pub struct PositionExpression {
+pub(crate) struct PositionExpression {
     local_position_name: Option<String>,
     chain_elements: Vec<Py<ChainElement>>,
     from_contract_particle: bool,
@@ -154,7 +154,7 @@ impl PositionExpression {
 
 /// A per-invocation contract object and the contributions it forwards.
 #[pyclass(frozen)]
-pub struct DestructionContractArgument {
+pub(crate) struct DestructionContractArgument {
     class_name: String,
     forwarded_methods: Vec<String>,
 }
@@ -172,7 +172,7 @@ impl DestructionContractArgument {
 
 /// A value that an Operation Execution Statement passes to its function.
 #[derive(FromPyObject, IntoPyObject, IntoPyObjectRef)]
-pub enum OperationArgument {
+pub(crate) enum OperationArgument {
     /// A position whose value is read.
     Position(Py<PositionExpression>),
     /// A literal already in the view's encoding.
@@ -183,7 +183,7 @@ pub enum OperationArgument {
 /// `operation_label` is the trace label of the operation that the statement
 /// performs, if the trace records it.
 #[pyclass(frozen)]
-pub enum ActionStatement {
+pub(crate) enum ActionStatement {
     LocalPosition {
         name: String,
         local_typed_name: String,
@@ -278,7 +278,7 @@ impl ActionStatement {
 
 /// An interface position of an action definition.
 #[pyclass(frozen, get_all)]
-pub struct InterfacePosition {
+pub(crate) struct InterfacePosition {
     typed_name: String,
     assigned_qualities: Vec<Py<ClassReference>>,
     value_type: String,
@@ -302,7 +302,7 @@ impl InterfacePosition {
 
 /// A caller contribution applied to its contracted particle.
 #[pyclass(frozen)]
-pub struct ForwardedContribution {
+pub(crate) struct ForwardedContribution {
     method_name: String,
     position: Option<Py<PositionExpression>>,
 }
@@ -320,7 +320,7 @@ impl ForwardedContribution {
 
 /// One named contribution to a callee's destruction.
 #[pyclass(frozen)]
-pub struct DestructionContractMethod {
+pub(crate) struct DestructionContractMethod {
     name: String,
     forwarded: Vec<Py<ForwardedContribution>>,
     statements: Vec<Py<ActionStatement>>,
@@ -344,7 +344,7 @@ impl DestructionContractMethod {
 
 /// Methods implementing caller-contributed destruction work.
 #[pyclass(frozen, get_all)]
-pub struct DestructionContractDefinition {
+pub(crate) struct DestructionContractDefinition {
     class_name: String,
     base: Py<ClassReference>,
     forwarded_methods: Vec<String>,
@@ -372,7 +372,7 @@ impl DestructionContractDefinition {
 /// The method that runs the Destructors for what an action left at and below
 /// one position.
 #[pyclass(frozen)]
-pub struct GuaranteedParticleDestructors {
+pub(crate) struct GuaranteedParticleDestructors {
     method_name: String,
     statements: Vec<Py<ActionStatement>>,
 }
@@ -392,7 +392,7 @@ impl GuaranteedParticleDestructors {
 #[pyclass(frozen, get_all)]
 #[derive(Template)]
 #[template(path = "action_definition.j2", escape = "none")]
-pub struct ActionDefinition {
+pub(crate) struct ActionDefinition {
     class_name: String,
     module_name: String,
     statements: Vec<Py<ActionStatement>>,
@@ -445,7 +445,7 @@ impl ActionDefinition {
 
 /// An operator written between the two values it combines.
 #[pyclass(frozen)]
-pub enum BinaryOperator {
+pub(crate) enum BinaryOperator {
     Add {},
     Subtract {},
     Multiply {},
@@ -460,14 +460,14 @@ pub enum BinaryOperator {
 
 /// An operator written before the one value it applies to.
 #[pyclass(frozen)]
-pub enum PrefixOperator {
+pub(crate) enum PrefixOperator {
     Negate {},
     Not {},
 }
 
 /// An operation written as an expression over its operands.
 #[pyclass(frozen)]
-pub enum ExpressionOperator {
+pub(crate) enum ExpressionOperator {
     SaturatingSubtract {},
 }
 
@@ -475,7 +475,7 @@ pub enum ExpressionOperator {
 /// Operation. Each operand and argument is a local name or a literal already in
 /// its view's encoding.
 #[pyclass(frozen)]
-pub enum OperationStatement {
+pub(crate) enum OperationStatement {
     BinaryOperation {
         operator: Py<BinaryOperator>,
         left: String,
@@ -506,7 +506,7 @@ pub enum OperationStatement {
 
 /// A Python local name and the type of its value.
 #[pyclass(frozen, get_all)]
-pub struct TypedLocalName {
+pub(crate) struct TypedLocalName {
     name: String,
     python_type: String,
 }
@@ -523,7 +523,7 @@ impl TypedLocalName {
 #[pyclass(frozen, get_all)]
 #[derive(Template)]
 #[template(path = "operation_function.j2", escape = "none")]
-pub struct OperationFunction {
+pub(crate) struct OperationFunction {
     function_name: String,
     module_name: String,
     parameters: Vec<Py<TypedLocalName>>,

@@ -3,7 +3,7 @@
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
 load(":build_file_checks.bzl", "build_file_violations")
-load(":rust.bzl", "lint_config")
+load(":rust.bzl", "binary_rustc_flags", "lint_config")
 
 _LINT_CONFIG = str(lint_config())
 
@@ -284,7 +284,11 @@ def _rust_targets_must_use_the_lint_config_impl(ctx):
     env = unittest.begin(ctx)
     rules = [
         ("descriptor_proto", {"kind": "rust_prost_library"}),
-        ("generator", {"kind": "rust_binary", "lint_config": "@crates//:other_lints"}),
+        ("generator", {
+            "kind": "rust_binary",
+            "lint_config": "@crates//:other_lints",
+            "rustc_flags": tuple(binary_rustc_flags()),
+        }),
         ("scanner", {"kind": "rust_library", "lint_config": _LINT_CONFIG}),
         ("scanner_test", {"kind": "rust_test", "size": "small"}),
         ("clippy_test", {
@@ -305,6 +309,42 @@ def _rust_targets_must_use_the_lint_config_impl(ctx):
 
 _rust_targets_must_use_the_lint_config_test = unittest.make(
     _rust_targets_must_use_the_lint_config_impl,
+)
+
+def _rust_binaries_must_use_the_binary_rustc_flags_impl(ctx):
+    env = unittest.begin(ctx)
+    rules = [
+        ("formatter", {"kind": "rust_binary", "lint_config": _LINT_CONFIG}),
+        ("generator", {
+            "kind": "rust_binary",
+            "lint_config": _LINT_CONFIG,
+            "rustc_flags": ("-Ccodegen-units=1",),
+        }),
+        ("scanner", {
+            "kind": "rust_binary",
+            "lint_config": _LINT_CONFIG,
+            "rustc_flags": tuple(binary_rustc_flags()),
+        }),
+        ("scanner_test", {"kind": "rust_test", "lint_config": _LINT_CONFIG, "size": "small"}),
+        ("clippy_test", {
+            "kind": "rust_clippy_test",
+            "tags": ["clippy"],
+            "targets": [
+                "//define/compiler/parsing:formatter",
+                "//define/compiler/parsing:generator",
+                "//define/compiler/parsing:scanner",
+                "//define/compiler/parsing:scanner_test",
+            ],
+        }),
+    ]
+    asserts.equals(env, [
+        'Rust binary "formatter" must set rustc_flags = binary_rustc_flags() from //tools/bzl:rust.bzl',
+        'Rust binary "generator" must set rustc_flags = binary_rustc_flags() from //tools/bzl:rust.bzl',
+    ], build_file_violations("parsing", rules))
+    return unittest.end(env)
+
+_rust_binaries_must_use_the_binary_rustc_flags_test = unittest.make(
+    _rust_binaries_must_use_the_binary_rustc_flags_impl,
 )
 
 def build_file_checks_test_suite(name):
@@ -334,6 +374,7 @@ def build_file_checks_test_suite(name):
                 _clippy_tests_must_have_the_clippy_tag_test,
                 _rust_targets_must_be_in_clippy_test_test,
                 _rust_targets_must_use_the_lint_config_test,
+                _rust_binaries_must_use_the_binary_rustc_flags_test,
             ]
         ]
     )

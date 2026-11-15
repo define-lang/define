@@ -48,6 +48,7 @@ fn violation_list(violations: &[SchemaViolation]) -> String {
 
 /// The message types and enum types of a `FileDescriptorSet`, and which
 /// message type is the type of a whole defcl file.
+#[derive(Debug)]
 pub struct Schema {
     message_types: Vec<MessageType>,
     enum_types: Vec<EnumType>,
@@ -55,6 +56,7 @@ pub struct Schema {
 }
 
 /// A message type's descriptor, with its fields by name.
+#[derive(Debug)]
 pub(crate) struct MessageType {
     /// The full name, without a leading `.`.
     pub(crate) full_name: String,
@@ -65,6 +67,7 @@ pub(crate) struct MessageType {
 }
 
 /// An enum type's full name, and the names of its values.
+#[derive(Debug)]
 pub(crate) struct EnumType {
     /// The full name, without a leading `.`.
     pub(crate) full_name: String,
@@ -129,12 +132,13 @@ pub enum FloatFieldType {
 }
 
 /// A message type or enum type, by its index in the schema.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum NamedType {
     Message(usize),
     Enum(usize),
 }
 
+#[derive(Debug)]
 struct FieldLookup {
     /// The index of the field in its message type's descriptor.
     index: usize,

@@ -59,7 +59,7 @@ fn import_constructor(py: Python<'_>) -> PyResult<NewSourceLocation> {
     // Importing a capsule only imports the top-level package and then looks up
     // each name after it, so a submodule that nothing has imported yet would
     // not be found.
-    let _: Bound<'_, PyModule> = py.import("crates.source_rendering.python.rendering")?;
+    drop(py.import("crates.source_rendering.python.rendering")?);
     let pointer = PyCapsule::import_pointer(py, CAPSULE_NAME)?;
     // SAFETY: The rendering extension's capsule points to a static
     // `NewSourceLocation`.

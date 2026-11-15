@@ -144,7 +144,7 @@ impl<'py, 'source> Parser<'py, 'source> {
                     .missing_quality_assignment_block_content(block_open_end, block_open_end));
             }
         }
-        let statements = self.nodes.start::<ast::QualityAssignmentStatement>();
+        let statements = self.nodes.start::<ast::QualityAssignmentStatement<'_>>();
         let assigned_names = self.texts.start();
         loop {
             let (statement, assigned_name) = self.parse_quality_assignment_statement(fqun)?;

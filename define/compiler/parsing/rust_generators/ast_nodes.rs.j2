@@ -7,7 +7,7 @@ use pyo3::sync::PyOnceLock;
 {% for enum_type in enums %}
 /// `{{ enum_type.module_name }}.{{ enum_type.name }}`.
 #[derive(Clone, Copy)]
-pub enum {{ enum_type.name }} {
+pub(crate) enum {{ enum_type.name }} {
 {%- for member in enum_type.members %}
     {{ member.rust_name }},
 {%- endfor %}
@@ -15,7 +15,7 @@ pub enum {{ enum_type.name }} {
 
 impl {{ enum_type.name }} {
     /// The member's value.
-    pub const fn value(self) -> &'static str {
+    pub(crate) const fn value(self) -> &'static str {
         match self {
 {%- for member in enum_type.members %}
             Self::{{ member.rust_name }} => "{{ member.value }}",
@@ -34,7 +34,7 @@ impl<'py> FieldValue<'py> for {{ enum_type.name }} {
 /// `{{ module_name }}.{{ class.python_name }}`.
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct {{ class.name }}<'py>(pub(crate) Bound<'py, PyAny>);
+pub(crate) struct {{ class.name }}<'py>(pub(crate) Bound<'py, PyAny>);
 
 impl<'py> Node<'py> for {{ class.name }}<'py> {
     fn into_object(self) -> Bound<'py, PyAny> {
@@ -67,7 +67,7 @@ impl<'py> From<{{ class.name }}<'py>> for {{ ancestor }}<'py> {
 {%- endfor %}
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct {{ node_union.name }}<'py>(Bound<'py, PyAny>);
+pub(crate) struct {{ node_union.name }}<'py>(Bound<'py, PyAny>);
 
 impl<'py> Node<'py> for {{ node_union.name }}<'py> {
     fn into_object(self) -> Bound<'py, PyAny> {
@@ -91,7 +91,7 @@ impl<'py> From<{{ member }}<'py>> for {{ node_union.name }}<'py> {
 {% endfor %}
 /// The classes in `{{ module_name }}` that have constructors, and the members of
 /// the enums that they take.
-pub struct AstClasses {
+pub(crate) struct AstClasses {
 {%- for class in classes %}
 {%- if let Some(constructor) = class.constructor %}
     pub(crate) {{ class.snake_case_name }}: ClassLayout<{{ constructor.field_count() }}>,
@@ -105,7 +105,7 @@ pub struct AstClasses {
 static AST_CLASSES: PyOnceLock<AstClasses> = PyOnceLock::new();
 
 impl AstClasses {
-    pub fn get(py: Python<'_>) -> PyResult<&'static Self> {
+    pub(crate) fn get(py: Python<'_>) -> PyResult<&'static Self> {
         AST_CLASSES.get_or_try_init(py, || Self::load(py))
     }
 

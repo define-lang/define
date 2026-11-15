@@ -4,6 +4,7 @@ use crate::SourceLocation;
 
 /// The text of a source file, with where each of its lines starts, so that
 /// showing many locations in it reads it only once.
+#[derive(Debug)]
 pub struct SourceLines {
     source: String,
     // The byte offset of each line's first character.

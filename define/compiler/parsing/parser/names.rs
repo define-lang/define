@@ -53,7 +53,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<ast::PositionReference<'py>> {
         let start = self.scanner.position;
-        let typed_names = self.nodes.start::<ast::TypedNameReference>();
+        let typed_names = self.nodes.start::<ast::TypedNameReference<'_>>();
         let full_typed_names = self.texts.start();
         loop {
             // There is no typed name where the reference or its next part

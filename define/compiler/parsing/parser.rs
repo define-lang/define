@@ -97,10 +97,10 @@ pub(crate) fn parse_file<'py>(
             });
         }
     };
-    let _: Bound<'_, PyAny> = source_map.call_method1(
+    drop(source_map.call_method1(
         "register_file_digest",
         (&file_path, source_rendering::source_digest(&source)),
-    )?;
+    )?);
     parse_source(py, &source, Some(file_path), true)
 }
 
@@ -166,7 +166,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// line_end = newline | comment ;
     /// ```
     pub(crate) fn parse_program(&mut self) -> ParseResult<ast::Program<'py>> {
-        let definitions = self.nodes.start::<ast::GlobalDefinition>();
+        let definitions = self.nodes.start::<ast::GlobalDefinition<'_>>();
         let mut start = None;
         let mut end = self.scanner.position;
         loop {

@@ -129,7 +129,7 @@ fn find_field<'schema, 'source>(
 fn check_field(
     schema: &Schema,
     field: &Field,
-    schema_field: &SchemaField,
+    schema_field: &SchemaField<'_>,
     source: &str,
     errors: &mut Vec<SemanticError>,
 ) {
@@ -161,7 +161,7 @@ fn check_field(
 fn check_value(
     schema: &Schema,
     field: &Field,
-    schema_field: &SchemaField,
+    schema_field: &SchemaField<'_>,
     value: &Value,
     source: &str,
     errors: &mut Vec<SemanticError>,
