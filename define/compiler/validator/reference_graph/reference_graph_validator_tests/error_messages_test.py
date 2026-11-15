@@ -25,6 +25,30 @@ _OUTER = "action<my.domain.com:my_lib:/outer>"
 _MIDDLE = "action<my.domain.com:my_lib:/middle>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
 
+
+def _value_encoding_files(value_quality: str) -> dict[str, str]:
+    return {
+        ".define/project/config.defcl": (
+            "project: {\n"
+            '  universe_name: "my.domain.com:my_lib"\n'
+            "  associations: {\n"
+            "    has_encodings: TRUE\n"
+            "  }\n"
+            "}\n"
+        ),
+        ".define/encodings/encodings.defcl": (
+            "encodings: {\n"
+            "  value_encodings: [\n"
+            "    {\n"
+            f'      value: "{value_quality}"\n'
+            '      encoding: "standard:/number/integer/ascii"\n'
+            "    }\n"
+            "  ]\n"
+            "}\n"
+        ),
+    }
+
+
 # Keep Define source inline in this module so each formatted diagnostic can be
 # reviewed together with the source that produces it.
 
@@ -729,6 +753,7 @@ def test_value_setting_type_mismatch_format(
     result = validate_project(
         {
             "test.dfn": source,
+            **_value_encoding_files("/foo/bar"),
             "foo/bar.dfn": (
                 "define the potential value<my.domain.com:my_lib:/foo/bar> {\n"
                 "    it supports the logical_operation<standard:/number/add> {\n"
@@ -1418,6 +1443,7 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
             "    }\n"
             "}\n"
         ),
+        **_value_encoding_files("/number"),
         "number.dfn": (
             "define the potential value<my.domain.com:my_lib:/number> {\n"
             "    it supports the logical_operation<standard:/number/add> {\n"
@@ -1774,6 +1800,7 @@ def test_local_view_error_messages(
     result = validate_project(
         {
             "negate.dfn": _NEGATE_FILE,
+            **_value_encoding_files("/number"),
             "number.dfn": (
                 "define the potential value<my.domain.com:my_lib:/number> {\n"
                 "    it supports the logical_operation</negate> {\n"
@@ -2018,6 +2045,7 @@ def test_view_setting_written_twice_error_messages(
         {
             "add.dfn": _ADD_FILE,
             "negate.dfn": _NEGATE_FILE,
+            **_value_encoding_files("/number"),
             "number.dfn": _ADD_AND_NEGATE_NUMBER_FILE,
             "test.dfn": (
                 "define the operation<my.domain.com:my_lib:/test> {\n"
@@ -2095,6 +2123,7 @@ def test_view_setting_read_from_written_read_write_view_error_messages(
         {
             "add.dfn": _ADD_FILE,
             "negate.dfn": _NEGATE_FILE,
+            **_value_encoding_files("/number"),
             "number.dfn": _ADD_AND_NEGATE_NUMBER_FILE,
             "test.dfn": (
                 "define the operation<my.domain.com:my_lib:/test> {\n"
@@ -2224,6 +2253,7 @@ def test_logical_operation_read_not_supported_format(
     result = validate_project(
         {
             "negate.dfn": _NEGATE_FILE,
+            **_value_encoding_files("/number"),
             "number.dfn": (
                 "define the potential value<my.domain.com:my_lib:/number> {\n"
                 "    it supports the logical_operation</negate> {\n"
@@ -2253,6 +2283,7 @@ def test_logical_operation_write_not_supported_format(
     result = validate_project(
         {
             "negate.dfn": _NEGATE_FILE,
+            **_value_encoding_files("/number"),
             "number.dfn": (
                 "define the potential value<my.domain.com:my_lib:/number> {\n"
                 "    it supports the logical_operation</negate> {\n"

@@ -56,19 +56,10 @@ class LiteralEncoder:
         # TODO: Translate the literal into any encoding its target requires,
         # instead of always using the value quality's own encoding.
         value_encodings = self._validation_state.get_value_encodings(value_quality)
-        # A missing value quality was already reported when its reference was
-        # resolved.
-        if value_encodings is None:
-            return None, []
+        # A missing value quality, or one without an encoding, was already
+        # reported.
         if not value_encodings:
-            return None, [
-                diagnostics.ValueHasNoEncodingDiagnostic(
-                    location=potential_literal.location,
-                    value_quality=value_quality.source_form_in_universe(
-                        self._enclosing_fqun
-                    ),
-                )
-            ]
+            return None, []
         (value_encoding,) = value_encodings
         parser = literal_parsers.LITERAL_PARSERS.get(
             (literal_encoding.full_typed_name, value_encoding.full_typed_name)

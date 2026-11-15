@@ -76,9 +76,23 @@ def test_literal_value_has_no_encoding(
     assert result.all_diagnostics == [
         diagnostics.ValueHasNoEncodingDiagnostic(
             location=rendering.SourceLocation(
-                line=11, column=42, end_line=11, end_column=66, file_path="double.dfn"
+                line=1, column=22, end_line=1, end_column=55, file_path="count.dfn"
             ),
-            value_quality="value</count>",
+            value_quality="value<my.domain.com:my_lib:/count>",
+        )
+    ]
+
+
+def test_interface_view_value_has_no_encoding(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_result
+    assert result.all_diagnostics == [
+        diagnostics.ValueHasNoEncodingDiagnostic(
+            location=rendering.SourceLocation(
+                line=1, column=22, end_line=1, end_column=59, file_path="unencoded.dfn"
+            ),
+            value_quality="value<my.domain.com:my_lib:/unencoded>",
         )
     ]
 

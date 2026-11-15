@@ -283,12 +283,8 @@ class ActionOperationExecutionValidator:
             if value_quality is None:
                 return None, []
             encoding = self._validation_state.get_value_encoding(value_quality)
-            # TODO: Report an interface view whose value quality has no
-            # encoding when its Value Operation is validated. A position has
-            # the value quality of the view that looks at it, so every
-            # execution would give the same answer. Code generation relies on
-            # every executed Value Operation having its Encoding Operations
-            # chosen.
+            # A value quality without an encoding was already reported at its
+            # definition.
             if encoding is None:
                 return None, []
             view_encodings[view_name] = encoding

@@ -1,0 +1,8 @@
+encodings: {
+  value_encodings: [
+    {
+      value: "/text"
+      encoding: "standard:/number/integer/ascii"
+    }
+  ]
+}

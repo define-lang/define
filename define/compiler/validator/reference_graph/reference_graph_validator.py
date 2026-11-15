@@ -195,11 +195,12 @@ class ReferenceGraphValidator:
     def _validate_value(
         self, definition: ast.ValueDefinition
     ) -> validation_result.ValuePostorderValidationResult:
-        """Find the one encoding associated with a value quality, if it has one."""
-        encodings: list[ast.GlobalTypedNameReference] = []
-        for encoding in self._definition_results[
+        """Find the one encoding associated with a value quality, and report a value quality that has none."""
+        associated_encodings = self._definition_results[
             definition.typed_name
-        ].associated_encodings:
+        ].associated_encodings
+        encodings: list[ast.GlobalTypedNameReference] = []
+        for encoding in associated_encodings:
             # A missing encoding was already reported when its reference was
             # resolved.
             if encoding in self._definition_results:
@@ -212,12 +213,19 @@ class ReferenceGraphValidator:
                 f"{definition.typed_name.source_typed_name} has more than one encoding:"
                 + f" {[encoding.full_typed_name for encoding in encodings]}"
             )
-        # A value quality without an encoding is not an error by itself. It is
-        # an error only when a literal sets the value, so the literal reports
-        # it.
+        value_diagnostics: list[diagnostics.Diagnostic] = []
+        # Only the value quality's own universe can associate it with an
+        # encoding, so without one nothing can ever hold the value.
+        if not associated_encodings:
+            value_diagnostics.append(
+                diagnostics.ValueHasNoEncodingDiagnostic(
+                    location=definition.typed_name.location,
+                    value_quality=definition.typed_name.source_typed_name,
+                )
+            )
         encoding = encodings[0] if encodings else None
         return validation_result.ValuePostorderValidationResult(
-            diagnostics=[],
+            diagnostics=value_diagnostics,
             value_quality=definition.typed_name.full_typed_name,
             encoding=encoding,
         )

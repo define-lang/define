@@ -1,4 +1,4 @@
-# view<source> requires counts, which have no encoding, so no literal can become one.
+# view<source> requires counts, which have no encoding; that is reported only at the count's definition, not at the literal.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</double_result>.
     it happens when {

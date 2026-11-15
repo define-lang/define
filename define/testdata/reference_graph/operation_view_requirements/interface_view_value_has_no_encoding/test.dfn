@@ -1,0 +1,20 @@
+# Executing a Value Operation whose interface view's value quality has no encoding is reported only at the value quality's definition.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</negated>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<number> {
+            it may only contain particles where {
+                it has the value</unencoded>.
+            }
+        }
+        create a particle in position<number>.
+        set the value of position<number> from literal<standard:/number>"1".
+        create a particle in position</negated>.
+        execute the operation</negate_unencoded> {
+            with view<value> looking at position<number>.
+            with view<result> looking at position</negated>.
+        }
+    }
+}

@@ -1,6 +1,7 @@
 project: {
   universe_name: "my.domain.com:my_lib"
   associations: {
+    has_encodings: TRUE
     has_encoding_operations: TRUE
   }
 }

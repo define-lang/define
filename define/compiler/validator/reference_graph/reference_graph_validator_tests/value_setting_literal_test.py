@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from define.compiler import literal_parsers
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import propagation_step
@@ -149,13 +150,14 @@ def test_value_has_no_encoding(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ValueHasNoEncodingDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.value_quality == "value</number>"
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 48
+    assert result.all_diagnostics == [
+        diagnostics.ValueHasNoEncodingDiagnostic(
+            location=rendering.SourceLocation(
+                line=1, column=22, end_line=1, end_column=56, file_path="number.dfn"
+            ),
+            value_quality="value<my.domain.com:my_lib:/number>",
+        )
+    ]
 
 
 def test_missing_potential_literal(

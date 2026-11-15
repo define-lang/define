@@ -2013,11 +2013,12 @@ class LiteralCannotBeConvertedDiagnostic(Diagnostic):
 
 
 class ValueHasNoEncodingDiagnostic(Diagnostic):
-    """A value quality has no encoding, so it can never be set."""
+    """A value quality is not associated with any encoding."""
 
     value_quality: str
     message_format: ClassVar[str] = (
-        "{self.value_quality} has no encoding, so it can never be set"
+        "{self.value_quality} is not associated with any encoding in"
+        " .define/encodings/encodings.defcl"
     )
 
 

@@ -140,9 +140,8 @@ class ValueOperationExecutions:
             match step:
                 case ast.LocalViewDefinition():
                     encoding = self._local_view_encoding(step)
-                    # TODO: Report a local view whose value quality has no
-                    # encoding. Code generation relies on every executed
-                    # Value Operation having its Encoding Operations chosen.
+                    # A missing value quality, or one without an encoding,
+                    # was already reported.
                     if encoding is None:
                         return None, None
                     view_encodings[step.typed_name.source_typed_name] = encoding
