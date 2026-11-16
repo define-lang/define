@@ -259,6 +259,50 @@ to search over all association configurations, and instead only need to look up
 associations when a name from the universe that makes the association gets
 referenced.
 
+### Encoding Operation Associations State Their Encodings
+
+When you execute a logical operation or Value Operation, it is looking at values
+that have a specific encoding. That's how the compiler knows which Encoding
+Operation to choose.
+
+In order to keep that lookup lazy, the association configuration for Encoding
+Operations from
+[DLP 48 (Encoding Operation Associations)](00048-encoding-operation-associations.md)
+needs to be adjusted: it must also let the compiler look up the encoding
+operation by which encodings its views have. Otherwise, the compiler would have
+to load every encoding operation just to read the encodings of their views to
+figure out which one to match.
+
+Thus, each Encoding Operation association also lists the Encoding Operation's
+Interface Views, in order, with the encoding that each one is assigned:
+
+```protocol-buffer-text-format
+encoding_operations: {
+    operation_encodings: [
+        {
+            logical_operation: "standard:/number/add"
+            encoding_operation: {
+                name: "/money/cents/add"
+                views: [
+                    { view: "a", encoding: "/money/cents" },
+                    { view: "b", encoding: "/money/cents" },
+                    { view: "result", encoding: "/money/cents" },
+                ]
+            }
+        },
+    ]
+}
+```
+
+That way, the compiler can load only the encoding operations that it actually
+needs for outputting code during this specific compile.
+
+When the compiler loads that Encoding Operation, it checks that the Encoding
+Operation's Interface Views have exactly those names, in that order, with those
+encodings. If they don't, the compiler reports that the _config_ file is wrong.
+
+This works the same way for Value Operations as it does for logical operations.
+
 ### Conflicts
 
 Currently, this proposal guarantees coherence only because, in Define's
@@ -303,7 +347,14 @@ encoding_operations: {
     operation_encodings: [
         {
             logical_operation: "standard:/number/add"
-            encoding_operation: "/money/cents/add"
+            encoding_operation: {
+                name: "/money/cents/add"
+                views: [
+                    { view: "a", encoding: "/money/cents" },
+                    { view: "b", encoding: "/money/cents" },
+                    { view: "result", encoding: "/money/cents" },
+                ]
+            }
         },
     ]
 }
@@ -348,8 +399,10 @@ define the encoding_operation<mv:example.com:money:/money/cents/add> {
 The compiler finds `encoding</money/cents>` for `value</money>`. When a program
 adds two money values, the compiler looks for an Encoding Operation that
 performs `logical_operation<standard:/number/add>` on `encoding</money/cents>`.
-It looks in this library, which defines the encoding, and finds
-`encoding_operation</money/cents/add>`.
+It looks in this library, which defines the encoding, and finds the association
+whose view encodings are all `encoding</money/cents>`. It loads only
+`encoding_operation</money/cents/add>`, and checks that its views match the
+association.
 
 ### Reusing Another Project's Encodings
 
@@ -465,6 +518,17 @@ can associate with a Logical Operation must involve encodings _you_ define.
 Value Operations actually don't have this restriction---they could be associated
 with an Encoding Operation from one of your dependencies, whereas a Logical
 Operation could not be.
+
+### Why Associations Repeat the Encodings
+
+I originally didn't have the encodings listed in the encoding operation
+association configuration, and the compiler had to load every single encoding
+operation's code that was associated with each logical operation and value
+operation. The annoying part of this is that the compiler, everywhere else, is
+designed to only load the code it actually is going to use. It required special
+hacks to make only the right encoding operations actually get generated as code.
+Plus, it parsed and validated code that we were never going to actually use (the
+one time in the compiler we did that).
 
 ### Allowed Extensions
 
