@@ -1,6 +1,36 @@
 load("@rules_py//py:defs.bzl", "py_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "association_resolver",
+    srcs = ["association_resolver.py"],
+    visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
+    deps = [
+        ":associations",
+        ":concrete_program",
+        ":literal_encoder",
+        ":value_operation_resolver",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/graphs:reference_graph_order",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:abstract_program",
+    ],
+)
+
+py_library(
+    name = "associations",
+    srcs = ["associations.py"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/validator:validation_result",
+    ],
+)
 
 py_library(
     name = "concrete_program",
@@ -26,29 +56,50 @@ py_library(
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:validation_result",
-        "//define/compiler/validator/reference_graph:reference_graph_validation_state",
     ],
 )
 
 py_library(
-    name = "value_operation_executions",
-    srcs = ["value_operation_executions.py"],
+    name = "value_operation_resolver",
+    srcs = ["value_operation_resolver.py"],
     visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
     deps = [
+        ":associations",
         ":concrete_program",
+        ":literal_encoder",
         "//define/compiler:ast",
-        "//define/compiler/validator:validation_result",
-        "//define/compiler/validator/reference_graph:reference_graph_validation_state",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/validator/reference_graph:abstract_program",
         "@pypi//msgspec",
+    ],
+)
+
+py_test(
+    name = "value_operation_resolver_test",
+    size = "small",
+    srcs = ["value_operation_resolver_test.py"],
+    deps = [
+        ":associations",
+        ":concrete_program",
+        ":literal_encoder",
+        ":value_operation_resolver",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/parsing:test_helpers",
+        "//define/compiler/validator:validation_result",
+        "@pypi//pytest",
     ],
 )
 
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":association_resolver",
+        ":associations",
         ":concrete_program",
         ":literal_encoder",
-        ":value_operation_executions",
+        ":value_operation_resolver",
+        ":value_operation_resolver_test",
     ],
 )
 

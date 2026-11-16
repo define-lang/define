@@ -10,10 +10,6 @@ from define.compiler import (
     chained_name,
     name_types,
 )
-from define.compiler.association_resolution import (
-    concrete_program,
-    literal_encoder,
-)
 from define.compiler.errors import diagnostics
 from define.compiler.validator import (
     scope_tracker,
@@ -50,9 +46,6 @@ from define.compiler.validator.reference_graph.particles import (
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from define.compiler.association_resolution import (
-        value_operation_executions,
-    )
     from define.compiler.data_structures import interned_set, typed_name_dict
     from define.compiler.validator.reference_graph import (
         quality_assignment,
@@ -74,7 +67,6 @@ class ActionDefinitionValidator:
         validation_result.DefinitionValidationResult,
     ]
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
-    _value_operation_executions: value_operation_executions.ValueOperationExecutions
     _diagnostics: list[diagnostics.Diagnostic]
     _destruction_contracts: list[action_contract.DestructionContracts]
 
@@ -90,18 +82,16 @@ class ActionDefinitionValidator:
             validation_result.DefinitionValidationResult,
         ],
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
-        value_operation_executions: value_operation_executions.ValueOperationExecutions,
     ):
-        """Initialize with the Action Definition, statement validity, known definitions, and what executing each Value Operation runs, which action validators share."""
+        """Initialize with the Action Definition, statement validity, known definitions, and the state that action validators share."""
         self._definition = definition
         self._particle_statement_validity = particle_statement_validity
         self._looked_at_position_validity = looked_at_position_validity
         self._definition_results = definition_results
         self._validation_state = validation_state
-        self._value_operation_executions = value_operation_executions
         self._diagnostics = []
         self._destruction_contracts = []
-        self._steps: list[concrete_program.ActionStep] = []
+        self._steps: list[abstract_program.ActionStep] = []
 
     @property
     def _enclosing_fqun(self) -> ast.Fqun:
@@ -117,12 +107,6 @@ class ActionDefinitionValidator:
     ) -> particle_operation_validator.ParticleOperationValidator:
         return particle_operation_validator.ParticleOperationValidator(
             self._tracker, self._enclosing_fqun
-        )
-
-    @cached_property
-    def _literal_encoder(self) -> literal_encoder.LiteralEncoder:
-        return literal_encoder.LiteralEncoder(
-            self._definition_results, self._validation_state, self._enclosing_fqun
         )
 
     @cached_property
@@ -188,15 +172,12 @@ class ActionDefinitionValidator:
         return action_operation_execution_validator.ActionOperationExecutionValidator(
             self._definition,
             self._definition_results,
-            self._validation_state,
-            self._value_operation_executions,
             self._tracker,
             self._chained_name_validator,
             self._requirement_validator,
             self._dead_quality_assignment_validator,
             self._dead_value_write_validator,
             self._operation_validator,
-            self._literal_encoder,
         )
 
     @cached_property
@@ -439,22 +420,15 @@ class ActionDefinitionValidator:
         has_errors = bool(value_diagnostics)
         match stmt.source:
             case ast.Literal():
-                # A literal can only be encoded once the value quality it sets is
-                # known.
+                # Validation reports a target without a known value quality.
                 if target_value_quality is not None:
-                    value, literal_diagnostics = self._literal_encoder.encode(
-                        stmt.source, target_value_quality
-                    )
-                    self._diagnostics.extend(literal_diagnostics)
-                    has_errors = has_errors or bool(literal_diagnostics)
-                    if value is not None:
-                        self._steps.append(
-                            concrete_program.LiteralValueSetting(
-                                target_position=stmt.target_position,
-                                value_quality=target_value_quality,
-                                value=value,
-                            )
+                    self._steps.append(
+                        abstract_program.LiteralValueSetting(
+                            target_position=stmt.target_position,
+                            value_quality=target_value_quality,
+                            literal=stmt.source,
                         )
+                    )
             case ast.PositionReference():
                 # Validation reports a target without a known value quality.
                 if target_value_quality is not None:
@@ -619,7 +593,7 @@ class ActionDefinitionValidator:
     def analyze(
         self,
     ) -> validation_result.ActionPostorderValidationResult:
-        """Run post-order validation and return diagnostics, contract, and codegen input."""
+        """Run post-order validation and return diagnostics, contract, and the action's abstract steps."""
         contract, guaranteed_particle_destructors = self._analyze_action_definition()
         destruction_contracts: list[destruction_contract.DestructionContract] = []
         for contracts in contract.destruction_contracts:
@@ -627,7 +601,7 @@ class ActionDefinitionValidator:
         return validation_result.ActionPostorderValidationResult(
             diagnostics=self._diagnostics,
             contract=contract,
-            codegen_input=concrete_program.ConcreteAction(
+            action=abstract_program.AbstractAction(
                 definition=self._definition,
                 steps=self._steps,
                 destruction_contracts=destruction_contracts,

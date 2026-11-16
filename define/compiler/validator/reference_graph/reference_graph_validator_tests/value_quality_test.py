@@ -287,7 +287,7 @@ def test_project_value_encoding(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    value_encodings = result.reference_graph_result.codegen_input.value_encodings
+    value_encodings = result.reference_graph_result.concrete_program.value_encodings
     assert {
         value_quality: encoding.full_typed_name
         for value_quality, encoding in value_encodings.items()
@@ -301,7 +301,7 @@ def test_encoding_from_another_universe(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    value_encodings = result.reference_graph_result.codegen_input.value_encodings
+    value_encodings = result.reference_graph_result.concrete_program.value_encodings
     assert {
         value_quality: encoding.full_typed_name
         for value_quality, encoding in value_encodings.items()
@@ -315,7 +315,7 @@ def test_encoding_from_universe_without_multiverse(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    value_encodings = result.reference_graph_result.codegen_input.value_encodings
+    value_encodings = result.reference_graph_result.concrete_program.value_encodings
     assert {
         value_quality: encoding.full_typed_name
         for value_quality, encoding in value_encodings.items()
@@ -329,7 +329,7 @@ def test_standard_encoding(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    value_encodings = result.reference_graph_result.codegen_input.value_encodings
+    value_encodings = result.reference_graph_result.concrete_program.value_encodings
     assert {
         value_quality: encoding.full_typed_name
         for value_quality, encoding in value_encodings.items()

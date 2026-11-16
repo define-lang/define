@@ -26,7 +26,7 @@ def action_graph(
     reference-graph diamonds that make the order nondeterministic.
     """
     edges: list[tuple[str, str]] = []
-    for definition in result.codegen_input.definition_order.definitions:
+    for definition in result.concrete_program.definition_order.definitions:
         if not isinstance(definition, ast.ActionDefinition):
             continue
         edges.extend(_definition_edges(result, definition))
@@ -38,7 +38,7 @@ def _definition_edges(
     definition: ast.ActionDefinition,
 ) -> Iterator[tuple[str, str]]:
     source = definition.typed_name.source_typed_name
-    for step in result.codegen_input.actions[
+    for step in result.concrete_program.actions[
         definition.typed_name.full_typed_name
     ].steps:
         if isinstance(step, abstract_program.ActionExecution):
@@ -57,7 +57,7 @@ def _guaranteed_particle_destructors(
     reference: destruction_contract.RunGuaranteedParticleDestructors,
 ) -> Iterator[str]:
     """Yield each Destructor that a call to an action's method for what it left behind runs."""
-    for guaranteed in result.codegen_input.actions[
+    for guaranteed in result.concrete_program.actions[
         reference.action.full_typed_name
     ].guaranteed_particle_destructors:
         if guaranteed.position_in_action != reference.position_in_action:

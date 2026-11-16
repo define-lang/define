@@ -10,7 +10,6 @@ if typing.TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from define.compiler import ast, chained_name
-    from define.compiler.validator import validation_result
     from define.compiler.validator.reference_graph import (
         action_contract,
         quality_assignment,
@@ -44,39 +43,6 @@ class ReferenceGraphValidationState:
         self._quality_assignments_by_key: dict[
             chained_name.PositionReferenceTuple, quality_assignment.QualityAssignments
         ] = {}
-        self._value_operation_steps: dict[
-            str, list[validation_result.ValueOperationStep]
-        ] = {}
-        self._encoding_operations_by_logical_operation: dict[
-            str, dict[tuple[str, ...], ast.EncodingOperationDefinition]
-        ] = {}
-        self._encodings_by_value_quality: dict[
-            str, list[ast.GlobalTypedNameReference]
-        ] = {}
-
-    def publish_value_encodings(
-        self,
-        value_quality: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        encodings: list[ast.GlobalTypedNameReference],
-    ):
-        """Publish the loaded encodings associated with a value quality."""
-        self._encodings_by_value_quality[value_quality.full_typed_name] = encodings
-
-    def get_value_encodings(
-        self, value_quality: ast.GlobalTypedNameReference
-    ) -> list[ast.GlobalTypedNameReference] | None:
-        """Return the encodings associated with a value quality, or None if it is not defined."""
-        return self._encodings_by_value_quality.get(value_quality.full_typed_name)
-
-    def get_value_encoding(
-        self, value_quality: ast.GlobalTypedNameReference
-    ) -> ast.GlobalTypedNameReference | None:
-        """Return the one encoding associated with a value quality, or None if it is not defined or has no encoding."""
-        encodings = self._encodings_by_value_quality.get(value_quality.full_typed_name)
-        if not encodings:
-            return None
-        (encoding,) = encodings
-        return encoding
 
     def publish_contract(
         self,
@@ -117,48 +83,6 @@ class ReferenceGraphValidationState:
         """Return a published reference to the implied quality whose full typed name is ``name``."""
         return self._implied_quality_by_name[name]
 
-    def publish_encoding_operations(
-        self,
-        logical_operation_name: ast.GlobalTypedName[
-            ast.GlobalNameContent[ast.Fqun | None]
-        ],
-        encoding_operations: dict[tuple[str, ...], ast.EncodingOperationDefinition],
-    ):
-        """Publish a validated logical operation's Encoding Operations."""
-        self._encoding_operations_by_logical_operation[
-            logical_operation_name.full_typed_name
-        ] = encoding_operations
-
-    def get_encoding_operations(
-        self,
-        logical_operation_name: ast.GlobalTypedName[
-            ast.GlobalNameContent[ast.Fqun | None]
-        ],
-    ) -> dict[tuple[str, ...], ast.EncodingOperationDefinition]:
-        """Return a previously published logical operation's Encoding Operations."""
-        return self._encoding_operations_by_logical_operation[
-            logical_operation_name.full_typed_name
-        ]
-
-    def publish_value_operation_steps(
-        self,
-        value_operation_name: ast.GlobalTypedName[
-            ast.GlobalNameContent[ast.Fqun | None]
-        ],
-        steps: list[validation_result.ValueOperationStep],
-    ):
-        """Publish the steps of a validated Value Operation that has no diagnostics."""
-        self._value_operation_steps[value_operation_name.full_typed_name] = steps
-
-    def get_value_operation_steps(
-        self,
-        value_operation_name: ast.GlobalTypedName[
-            ast.GlobalNameContent[ast.Fqun | None]
-        ],
-    ) -> list[validation_result.ValueOperationStep] | None:
-        """Return a validated Value Operation's steps, or None if it has diagnostics."""
-        return self._value_operation_steps.get(value_operation_name.full_typed_name)
-
     def get_or_build_quality_assignments(
         self,
         cache_key: chained_name.PositionReferenceTuple,
@@ -169,7 +93,7 @@ class ReferenceGraphValidationState:
         if cached is not None:
             return cached
         result = build()
-        # Both supported Python runtimes make setdefault atomic. Concurrent
-        # duplicate builds are harmless, and every caller receives the value
-        # selected for the cache.
+        # CPython's dict.setdefault is atomic, with or without the GIL.
+        # Concurrent duplicate builds are harmless, and every caller receives
+        # the value selected for the cache.
         return self._quality_assignments_by_key.setdefault(cache_key, result)

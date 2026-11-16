@@ -1,4 +1,4 @@
-"""Validate an action's Operation Execution Statements and choose the Encoding Operations they run."""
+"""Validate an action's Operation Execution Statements."""
 
 from __future__ import annotations
 
@@ -7,30 +7,23 @@ import typing
 import msgspec
 
 from define.compiler import ast
-from define.compiler.association_resolution import (
-    concrete_program,
-    value_operation_executions,
-)
-from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import (
+    abstract_program,
     operation_arguments_validator,
     position_occupancy,
 )
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Mapping, Sequence
+    from collections.abc import Collection, Iterator
 
-    from define.compiler.association_resolution import (
-        literal_encoder,
-    )
     from define.compiler.data_structures import typed_name_dict
+    from define.compiler.errors import diagnostics
     from define.compiler.validator import scope_tracker, validation_result
     from define.compiler.validator.reference_graph import (
         action_requirement_validator,
         chained_name_validator,
         particle_operation_validator,
-        reference_graph_validation_state,
     )
     from define.compiler.validator.reference_graph.dead_code import (
         dead_quality_assignment_validator,
@@ -58,7 +51,7 @@ class _LookedAtPositions(msgspec.Struct):
 
 @typing.final
 class ActionOperationExecutionValidator:
-    """Validates the Operation Execution Statements of one action, and chooses the Encoding Operations that they run."""
+    """Validates the Operation Execution Statements of one action."""
 
     def __init__(
         self,
@@ -67,21 +60,15 @@ class ActionOperationExecutionValidator:
             ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
             validation_result.DefinitionValidationResult,
         ],
-        validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
-        value_operation_executions: value_operation_executions.ValueOperationExecutions,
         tracker: particle_tracker.ParticleTracker,
         chained_name_validator: chained_name_validator.ChainedNameValidator,
         requirement_validator: action_requirement_validator.ActionRequirementValidator,
         dead_quality_assignment_validator: dead_quality_assignment_validator.DeadQualityAssignmentValidator,
         dead_value_write_validator: dead_value_write_validator.DeadValueWriteValidator,
         operation_validator: particle_operation_validator.ParticleOperationValidator,
-        literal_encoder: literal_encoder.LiteralEncoder,
     ):
-        """Initialize with the action, the known definitions, the shared validation state, what executing each Value Operation runs, and the action validator's collaborators that every statement of the action shares."""
-        self._action = action.typed_name
+        """Initialize with the action, the known definitions, and the action validator's collaborators that every statement of the action shares."""
         self._enclosing_fqun = action.typed_name.name_content.fqun
-        self._validation_state = validation_state
-        self._value_operation_executions = value_operation_executions
         self._tracker = tracker
         self._chained_name_validator = chained_name_validator
         self._requirement_validator = requirement_validator
@@ -90,7 +77,7 @@ class ActionOperationExecutionValidator:
         self._operation_validator = operation_validator
         self._arguments_validator = (
             operation_arguments_validator.OperationArgumentsValidator(
-                definition_results, self._enclosing_fqun, literal_encoder
+                definition_results, self._enclosing_fqun
             )
         )
 
@@ -100,15 +87,15 @@ class ActionOperationExecutionValidator:
         looked_at_validity: Iterator[bool],
         scope: scope_tracker.PositionScopeTracker,
     ) -> tuple[
-        list[diagnostics.Diagnostic], concrete_program.ActionOperationExecution | None
+        list[diagnostics.Diagnostic], abstract_program.ActionOperationExecution | None
     ]:
-        """Validate an Operation Execution Statement, and return its diagnostics and, if it is valid and its Encoding Operations can be chosen, its code generation step."""
+        """Validate an Operation Execution Statement, and return its diagnostics and, if it is valid, its step."""
         statement_diagnostics: list[diagnostics.Diagnostic] = []
         executed = self._arguments_validator.get_executed_operation(stmt)
         looked_at = self._analyze_looked_at_positions(
             stmt, executed, looked_at_validity, scope, statement_diagnostics
         )
-        argument_diagnostics, literal_values = self._arguments_validator.validate(
+        argument_diagnostics = self._arguments_validator.validate(
             stmt, looked_at.qualities
         )
         statement_diagnostics.extend(argument_diagnostics)
@@ -118,14 +105,19 @@ class ActionOperationExecutionValidator:
         )
         if executed is None or not is_valid:
             return statement_diagnostics, None
-        step, step_diagnostics = self._operation_execution_step(
-            stmt,
-            # Actions can only execute Value Operations.
-            typing.cast("ast.ValueOperationDefinition", executed),
-            literal_values,
-            looked_at.value_qualities,
+        # Actions can only execute Value Operations.
+        value_operation = typing.cast("ast.ValueOperationDefinition", executed)
+        arguments = self._arguments_validator.value_operation_arguments(
+            stmt, value_operation
         )
-        statement_diagnostics.extend(step_diagnostics)
+        if arguments is None:
+            return statement_diagnostics, None
+        step = abstract_program.ActionOperationExecution(
+            operation=stmt.operation,
+            value_operation=value_operation,
+            arguments=arguments,
+            looked_at_value_qualities=looked_at.value_qualities,
+        )
         return statement_diagnostics, step
 
     def _analyze_looked_at_positions(
@@ -233,110 +225,3 @@ class ActionOperationExecutionValidator:
             else:
                 self._tracker.mark_value_error(position)
         return write_diagnostics
-
-    def _operation_execution_step(
-        self,
-        stmt: ast.OperationExecutionStatement[ast.PositionReference | ast.Literal],
-        executed: ast.ValueOperationDefinition,
-        literal_values: Mapping[
-            ast.OperationArgumentStatement[ast.LookedAt],
-            concrete_program.EncodedLiteral,
-        ],
-        looked_at_value_qualities: Mapping[str, ast.GlobalTypedNameReference],
-    ) -> tuple[
-        concrete_program.ActionOperationExecution | None, list[diagnostics.Diagnostic]
-    ]:
-        """Return the code generation step of a valid Operation Execution Statement, if Encoding Operations can be chosen for it, and the diagnostics about choosing them."""
-        arguments = self._arguments_validator.operation_arguments(
-            stmt, executed, literal_values
-        )
-        if arguments is None:
-            return None, []
-        execution, execution_diagnostics = self._choose_encoding_operations(
-            stmt, executed, arguments, looked_at_value_qualities
-        )
-        if execution is None:
-            return None, execution_diagnostics
-        return concrete_program.ActionOperationExecution(
-            operation=stmt.operation,
-            operation_arguments=arguments,
-            runtime_operation=execution.runtime_operation,
-            arguments=execution.arguments_for(arguments),
-        ), execution_diagnostics
-
-    def _choose_encoding_operations(
-        self,
-        stmt: ast.OperationExecutionStatement[ast.PositionReference | ast.Literal],
-        executed: ast.ValueOperationDefinition,
-        arguments: Sequence[concrete_program.OperationArgument[ast.PositionReference]],
-        looked_at_value_qualities: Mapping[str, ast.GlobalTypedNameReference],
-    ) -> tuple[
-        concrete_program.OperationExecution | None,
-        list[diagnostics.Diagnostic],
-    ]:
-        """Choose the Encoding Operations that executing the Value Operation runs for the encodings of what the arguments look at, and return what it runs, with a diagnostic if a logical operation it executes has no Encoding Operation for them."""
-        view_encodings: dict[str, ast.GlobalTypedNameReference] = {}
-        for argument in arguments:
-            looking_at = argument.looking_at
-            view_name = argument.interface_view.typed_name.source_typed_name
-            if isinstance(looking_at, concrete_program.EncodedLiteral):
-                view_encodings[view_name] = looking_at.encoding
-                continue
-            value_quality = looked_at_value_qualities.get(view_name)
-            # A looked-at position whose value quality is unknown was already
-            # reported.
-            if value_quality is None:
-                return None, []
-            encoding = self._validation_state.get_value_encoding(value_quality)
-            # A value quality without an encoding was already reported at its
-            # definition.
-            if encoding is None:
-                return None, []
-            view_encodings[view_name] = encoding
-        result = self._value_operation_executions.choose_encoding_operations(
-            executed, view_encodings
-        )
-        if isinstance(result, value_operation_executions.MissingEncodingOperation):
-            return None, [
-                diagnostics.MissingEncodingOperationDiagnostic(
-                    location=stmt.operation.location,
-                    logical_operation_name=result.logical_operation.source_form_in_universe(
-                        self._enclosing_fqun
-                    ),
-                    view_encodings=self._source_form_view_encodings(result),
-                    execution_stack=self._execution_stack(stmt, result),
-                )
-            ]
-        return result, []
-
-    def _source_form_view_encodings(
-        self, missing: value_operation_executions.MissingEncodingOperation
-    ) -> dict[str, str]:
-        """Return the encoding of each of the logical operation's views as it would be written in the action's universe, keyed by the view's source typed name."""
-        view_encodings: dict[str, str] = {}
-        for view, encoding in missing.view_encodings.items():
-            view_encodings[view] = encoding.source_form_in_universe(
-                self._enclosing_fqun
-            )
-        return view_encodings
-
-    def _execution_stack(
-        self,
-        stmt: ast.OperationExecutionStatement[ast.PositionReference | ast.Literal],
-        missing: value_operation_executions.MissingEncodingOperation,
-    ) -> list[diagnostics.OperationExecutionStep]:
-        """Return the executions from the action down to the Logical Operation Execution Statement that no Encoding Operation performs, in the order they happen."""
-        stack: list[diagnostics.OperationExecutionStep] = []
-        # Each execution is in the operation that the one before it executes.
-        executing_name = self._action.source_typed_name
-        for executed in (stmt.operation, *missing.execution_stack):
-            executed_name = executed.source_form_in_universe(self._enclosing_fqun)
-            stack.append(
-                diagnostics.OperationExecutionStep(
-                    executing_name=executing_name,
-                    executed_name=executed_name,
-                    location=executed.location,
-                )
-            )
-            executing_name = executed_name
-        return stack

@@ -782,23 +782,19 @@ def test_value_setting_type_mismatch_format(
 def test_invalid_literal_content_format(validate_project: ValidateProject):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it also assigns the position</target>.\n"
         "    it happens when {\n"
         "        this particle is created.\n"
         "    } and it does {\n"
-        "        define the position<target> {\n"
-        "            it may only contain particles where {\n"
-        "                it has the value<standard:/number/natural>.\n"
-        "            }\n"
-        "        }\n"
-        "        create a particle in position<target>.\n"
-        '        set the value of position<target> from literal<standard:/number>"1.2.3".\n'
-        "        destroy the particle in position<target>.\n"
+        "        create a particle in position</target>.\n"
+        '        set the value of position</target> from literal<standard:/number>"1.2.3".\n'
         "    }\n"
         "}\n"
     )
     result = validate_project(
         {
             "test.dfn": source,
+            "target.dfn": "define the potential position<my.domain.com:my_lib:/target> {\n    it may only contain particles where {\n        it has the value<standard:/number/natural>.\n    }\n}\n",
         },
     )
     all_diags = result.program_result.all_diagnostics
@@ -807,9 +803,9 @@ def test_invalid_literal_content_format(validate_project: ValidateProject):
     assert (
         formatted
         == textwrap.dedent("""\
-        File "test.dfn", line 11, column 77
-            set the value of position<target> from literal<standard:/number>"1.2.3".
-                                                                                ^
+        File "test.dfn", line 7, column 78
+            set the value of position</target> from literal<standard:/number>"1.2.3".
+                                                                                 ^
         '1.2.3' is not a valid value for 'literal<standard:/number>' here, because it cannot be represented as 'encoding<standard:/number/natural/ascii>': a number may have only one decimal point.""")
     )
 
@@ -817,23 +813,19 @@ def test_invalid_literal_content_format(validate_project: ValidateProject):
 def test_literal_cannot_set_value_format(validate_project: ValidateProject):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it also assigns the position</target>.\n"
         "    it happens when {\n"
         "        this particle is created.\n"
         "    } and it does {\n"
-        "        define the position<target> {\n"
-        "            it may only contain particles where {\n"
-        "                it has the value<standard:/number/natural>.\n"
-        "            }\n"
-        "        }\n"
-        "        create a particle in position<target>.\n"
-        '        set the value of position<target> from literal</text>"5".\n'
-        "        destroy the particle in position<target>.\n"
+        "        create a particle in position</target>.\n"
+        '        set the value of position</target> from literal</text>"5".\n'
         "    }\n"
         "}\n"
     )
     result = validate_project(
         {
             "test.dfn": source,
+            "target.dfn": "define the potential position<my.domain.com:my_lib:/target> {\n    it may only contain particles where {\n        it has the value<standard:/number/natural>.\n    }\n}\n",
             "text.dfn": "define the potential literal<my.domain.com:my_lib:/text> {\n    it has the encoding</text_encoding>.\n}\n",
             "text_encoding.dfn": "define the encoding<my.domain.com:my_lib:/text_encoding>.\n",
         },
@@ -842,9 +834,9 @@ def test_literal_cannot_set_value_format(validate_project: ValidateProject):
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 11, column 48
-            set the value of position<target> from literal</text>"5".
-                                                   ^^^^^^^^^^^^^^
+        File "test.dfn", line 7, column 49
+            set the value of position</target> from literal</text>"5".
+                                                    ^^^^^^^^^^^^^^
         literal</text> cannot set a value<standard:/number/natural>, because literals with the encoding</text_encoding> cannot be read as value<standard:/number/natural>.
         To set a value<standard:/number/natural>, use a literal with one of these encodings:
             encoding<standard:/binary/ascii>

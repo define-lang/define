@@ -138,7 +138,7 @@ def test_invalid_literal_content_in_action(
     assert result.all_diagnostics == [
         diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
-                line=35, column=68, end_line=35, end_column=68, file_path=None
+                line=36, column=68, end_line=36, end_column=68, file_path=None
             ),
             content="x",
             potential_literal="literal<standard:/number>",

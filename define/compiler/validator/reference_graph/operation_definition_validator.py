@@ -6,7 +6,7 @@ import abc
 import typing
 from typing import override
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.association_resolution import (
     concrete_program,
     literal_encoder,
@@ -14,17 +14,15 @@ from define.compiler.association_resolution import (
 from define.compiler.errors import diagnostics
 from define.compiler.validator import scope_tracker, validation_result
 from define.compiler.validator.reference_graph import (
+    abstract_program,
     operation_arguments_validator,
     view_use_tracker,
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Mapping, Sequence
+    from collections.abc import Collection, Iterator, Sequence
 
     from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator.reference_graph import (
-        reference_graph_validation_state,
-    )
 
 
 class _ViewArgument(typing.NamedTuple):
@@ -62,7 +60,6 @@ class OperationDefinitionValidator[
             ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
             validation_result.DefinitionValidationResult,
         ],
-        validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     ):
         """Initialize with the Operation Definition and known definitions."""
         self._definition = definition
@@ -73,14 +70,9 @@ class OperationDefinitionValidator[
         for view in definition.views:
             self._define_view(view)
         self._views.enter_child_scope()
-        enclosing_fqun = definition.typed_name.name_content.fqun
         self._arguments_validator = (
             operation_arguments_validator.OperationArgumentsValidator(
-                definition_results,
-                enclosing_fqun,
-                literal_encoder.LiteralEncoder(
-                    definition_results, validation_state, enclosing_fqun
-                ),
+                definition_results, definition.typed_name.name_content.fqun
             )
         )
 
@@ -116,10 +108,6 @@ class OperationDefinitionValidator[
             ast.LocalTypedNameReference | ast.Literal
         ],
         executed: ast.OperationDefinition,
-        literal_values: Mapping[
-            ast.OperationArgumentStatement[ast.LookedAt],
-            concrete_program.EncodedLiteral,
-        ],
     ): ...
 
     @abc.abstractmethod
@@ -172,13 +160,13 @@ class OperationDefinitionValidator[
             looked_at_qualities[view_argument.argument] = (
                 view_argument.looked_at_view.quality_assignment_block.as_set
             )
-        argument_diagnostics, literal_values = self._arguments_validator.validate(
+        argument_diagnostics = self._arguments_validator.validate(
             statement, looked_at_qualities
         )
         statement_diagnostics.extend(argument_diagnostics)
         self._diagnostics.extend(statement_diagnostics)
         if not statement_diagnostics:
-            self._analyze_valid_execution(statement, executed, literal_values)
+            self._analyze_valid_execution(statement, executed)
 
     def _analyze_logical_operation_execution(
         self, statement: ast.LogicalOperationExecutionStatement
@@ -316,7 +304,7 @@ class ValueOperationDefinitionValidator(
 ):
     """Validates a Value Operation definition and collects its steps, which are independent of the encodings of what an execution of it looks at."""
 
-    _steps: list[validation_result.ValueOperationStep]
+    _steps: list[abstract_program.ValueOperationStep]
 
     def __init__(
         self,
@@ -325,10 +313,9 @@ class ValueOperationDefinitionValidator(
             ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
             validation_result.DefinitionValidationResult,
         ],
-        validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     ):
         """Initialize with the Value Operation Definition and known definitions."""
-        super().__init__(definition, definition_results, validation_state)
+        super().__init__(definition, definition_results)
         self._steps = []
 
     @override
@@ -338,7 +325,7 @@ class ValueOperationDefinitionValidator(
         is_valid = super()._analyze_logical_operation_execution(statement)
         if is_valid:
             self._steps.append(
-                validation_result.LogicalOperationExecution(
+                abstract_program.LogicalOperationExecution(
                     logical_operation=statement.logical_operation,
                     arguments=statement.arguments,
                 )
@@ -352,22 +339,18 @@ class ValueOperationDefinitionValidator(
             ast.LocalTypedNameReference | ast.Literal
         ],
         executed: ast.OperationDefinition,
-        literal_values: Mapping[
-            ast.OperationArgumentStatement[ast.LookedAt],
-            concrete_program.EncodedLiteral,
-        ],
     ):
-        arguments = self._arguments_validator.operation_arguments(
-            statement, executed, literal_values
+        # The grammar allows a Value Operation to execute only Value
+        # Operations, whose literals are encoded during association
+        # resolution.
+        value_operation = typing.cast("ast.ValueOperationDefinition", executed)
+        arguments = self._arguments_validator.value_operation_arguments(
+            statement, value_operation
         )
         if arguments is not None:
             self._steps.append(
-                validation_result.ValueOperationExecution(
-                    # The grammar allows a Value Operation to execute only
-                    # Value Operations.
-                    value_operation=typing.cast(
-                        "ast.ValueOperationDefinition", executed
-                    ),
+                abstract_program.ValueOperationExecution(
+                    value_operation=value_operation,
                     operation=statement.operation,
                     arguments=arguments,
                 )
@@ -406,6 +389,7 @@ class EncodingOperationDefinitionValidator(
 ):
     """Validates an Encoding Operation definition and collects its steps for code generation."""
 
+    _literal_encoder: literal_encoder.LiteralEncoder
     _steps: list[concrete_program.OperationStep]
     _computer_operation: ast.ComputerOperationExecutionStatement | None
 
@@ -416,10 +400,10 @@ class EncodingOperationDefinitionValidator(
             ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
             validation_result.DefinitionValidationResult,
         ],
-        validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     ):
         """Initialize with the Encoding Operation Definition and known definitions."""
-        super().__init__(definition, definition_results, validation_state)
+        super().__init__(definition, definition_results)
+        self._literal_encoder = literal_encoder.LiteralEncoder(definition_results)
         self._steps = []
         self._computer_operation = None
 
@@ -446,20 +430,64 @@ class EncodingOperationDefinitionValidator(
             ast.LocalTypedNameReference | ast.Literal
         ],
         executed: ast.OperationDefinition,
-        literal_values: Mapping[
-            ast.OperationArgumentStatement[ast.LookedAt],
-            concrete_program.EncodedLiteral,
-        ],
     ):
-        arguments = self._arguments_validator.operation_arguments(
-            statement, executed, literal_values
-        )
-        if arguments is not None:
+        # The grammar allows an Encoding Operation to execute only Encoding
+        # Operations.
+        encoding_operation = typing.cast("ast.EncodingOperationDefinition", executed)
+        view_indexes = encoding_operation.view_indexes_by_name()
+        arguments: list[
+            concrete_program.OperationArgument[ast.LocalTypedNameReference]
+        ] = []
+        is_complete = True
+        for argument in statement.arguments:
+            view_index = view_indexes.get(argument.view.source_typed_name)
+            # Structural validation reports a view name with an invalid format.
+            if view_index is None:
+                return
+            interface_view = encoding_operation.views[view_index]
+            looking_at = argument.looking_at
+            if not isinstance(looking_at, ast.Literal):
+                arguments.append(
+                    concrete_program.OperationArgument(
+                        interface_view=interface_view, looking_at=looking_at
+                    )
+                )
+                continue
+            value = self._translate_literal(looking_at, interface_view)
+            # Every literal is translated, so each one that cannot be is
+            # reported.
+            if value is None:
+                is_complete = False
+                continue
+            arguments.append(
+                concrete_program.OperationArgument(
+                    interface_view=interface_view, looking_at=value
+                )
+            )
+        if is_complete:
             self._steps.append(
                 concrete_program.OperationExecution(
                     runtime_operation=statement.operation, arguments=arguments
                 )
             )
+
+    def _translate_literal(
+        self, literal: ast.Literal, interface_view: ast.InterfaceViewDefinition
+    ) -> concrete_program.EncodedLiteral | None:
+        """Return the literal translated into the encoding of the interface view of an executed Encoding Operation, if it can be translated."""
+        translated: concrete_program.EncodedLiteral | None = None
+        for assignment in interface_view.quality_assignment_block.statements:
+            encoding = assignment.typed_global_name
+            if encoding.name_type == name_types.NameType.ENCODING:
+                value, literal_diagnostics = self._literal_encoder.encode_in_encoding(
+                    literal, encoding, self._definition.typed_name.name_content.fqun
+                )
+                self._diagnostics.extend(literal_diagnostics)
+                # Generated code represents a value the same way in every
+                # encoding, so any one translation serves.
+                if translated is None:
+                    translated = value
+        return translated
 
     @override
     def _add_local_statement(
@@ -473,7 +501,7 @@ class EncodingOperationDefinitionValidator(
     ) -> validation_result.EncodingOperationPostorderValidationResult:
         return validation_result.EncodingOperationPostorderValidationResult(
             diagnostics=self._diagnostics,
-            codegen_input=concrete_program.ConcreteEncodingOperation(
+            encoding_operation=concrete_program.ConcreteEncodingOperation(
                 definition=self._definition,
                 body=self._computer_operation or self._steps,
             ),

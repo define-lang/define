@@ -118,7 +118,7 @@ def test_independent_actions_validate_in_parallel():
         ).validate(max_workers=2)
 
     assert_no_errors(structural_result)
-    assert len(result.codegen_input.actions) == 2
+    assert len(result.concrete_program.actions) == 2
 
 
 def test_referenced_action_finishes_before_referencing_action_starts():
@@ -227,9 +227,7 @@ def test_callers_share_the_completed_callee_contract():
         validator: action_definition_validator.ActionDefinitionValidator,
     ) -> validation_result.ActionPostorderValidationResult:
         result = original_analyze(validator)
-        contracts[result.codegen_input.definition.typed_name.full_typed_name] = (
-            result.contract
-        )
+        contracts[result.action.definition.typed_name.full_typed_name] = result.contract
         return result
 
     with mock.patch.object(

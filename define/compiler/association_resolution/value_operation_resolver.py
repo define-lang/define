@@ -1,21 +1,44 @@
-"""Work out what executing a Value Operation runs, which depends on the encodings of the values it is executed on."""
+"""Resolve Value Operations: work out what executing one runs, which depends on the encodings of the values it is executed on."""
 
 from __future__ import annotations
 
+import threading
 import typing
 
 import msgspec
 
 from define.compiler import ast
 from define.compiler.association_resolution import concrete_program
-from define.compiler.validator import validation_result
+from define.compiler.validator.reference_graph import abstract_program
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Collection, Iterable
 
-    from define.compiler.validator.reference_graph import (
-        reference_graph_validation_state,
+    from define.compiler.association_resolution import (
+        associations as associations_module,
     )
+    from define.compiler.association_resolution import literal_encoder
+    from define.compiler.errors import diagnostics
+
+
+class EncodedValueOperationExecution(msgspec.Struct):
+    """An Operation Execution Statement in a Value Operation, with its literals encoded."""
+
+    value_operation: ast.ValueOperationDefinition
+    # The statement's name of the executed Value Operation, where diagnostics
+    # about the execution are reported.
+    operation: ast.GlobalTypedNameReference
+    # In the order of the executed Value Operation's interface views.
+    arguments: list[concrete_program.OperationArgument[ast.LocalTypedNameReference]]
+
+
+# A step of a Value Operation, with its literals encoded.
+type EncodedValueOperationStep = (
+    ast.LocalViewDefinition
+    | ast.ViewSettingStatement
+    | abstract_program.LogicalOperationExecution
+    | EncodedValueOperationExecution
+)
 
 
 class MissingEncodingOperation(msgspec.Struct, frozen=True):
@@ -39,7 +62,7 @@ class MissingEncodingOperation(msgspec.Struct, frozen=True):
 # What executing a Value Operation runs, as an execution whose arguments look
 # at the Value Operation's own interface views. None means it cannot run for a
 # reason that is already reported.
-type ValueOperationExecutionResult = (
+type ResolvedValueOperation = (
     concrete_program.OperationExecution | MissingEncodingOperation | None
 )
 
@@ -56,25 +79,115 @@ def _full_typed_names(
 
 
 @typing.final
-class ValueOperationExecutions:
+class ValueOperationResolver:
     """Works out what executing a Value Operation runs, once for each set of encodings it is executed on.
 
-    The validators of all actions share one, concurrently.
+    Association resolution of all actions shares one, concurrently.
     """
 
     def __init__(
         self,
-        validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
+        associations: associations_module.Associations,
+        encoder: literal_encoder.LiteralEncoder,
     ):
-        """Initialize with the state that holds each Value Operation's steps and each logical operation's Encoding Operations."""
-        self._validation_state = validation_state
-        self._results: dict[
+        """Initialize with the program's associations, the literal encoder, and no Value Operations."""
+        self._associations = associations
+        self._encoder = encoder
+        # The steps of each Value Operation whose literals could be encoded,
+        # by the Value Operation's full typed name.
+        self._value_operation_steps: dict[str, list[EncodedValueOperationStep]] = {}
+        # Each Value Operation's resolution for each set of encodings, with the
+        # composite Value Operation it is, if it is one.
+        self._resolutions: dict[
             _ValueOperationEncodings,
             tuple[
-                ValueOperationExecutionResult,
-                concrete_program.CompositeValueOperation | None,
+                ResolvedValueOperation, concrete_program.CompositeValueOperation | None
             ],
         ] = {}
+        # The lock that one thread holds while it works out the resolution of
+        # each key, so that each is worked out only once.
+        self._resolution_locks: dict[_ValueOperationEncodings, threading.Lock] = {}
+
+    def add_value_operation(
+        self,
+        definition: ast.ValueOperationDefinition,
+        steps: Collection[abstract_program.ValueOperationStep],
+    ) -> list[diagnostics.Diagnostic]:
+        """Add a valid Value Operation, encoding the literals in its steps, and return the diagnostics about the ones that cannot be encoded."""
+        enclosing_fqun = definition.typed_name.name_content.fqun
+        encoded_steps: list[EncodedValueOperationStep] = []
+        literal_diagnostics: list[diagnostics.Diagnostic] = []
+        for step in steps:
+            if not isinstance(step, abstract_program.ValueOperationExecution):
+                encoded_steps.append(step)
+                continue
+            arguments, argument_diagnostics = self.resolve_arguments(
+                step.arguments, enclosing_fqun
+            )
+            literal_diagnostics.extend(argument_diagnostics)
+            if arguments is not None:
+                encoded_steps.append(
+                    EncodedValueOperationExecution(
+                        value_operation=step.value_operation,
+                        operation=step.operation,
+                        arguments=arguments,
+                    )
+                )
+        # A Value Operation with a literal that cannot be encoded has no steps,
+        # so executing it runs nothing.
+        if len(encoded_steps) == len(steps):
+            self._value_operation_steps[definition.typed_name.full_typed_name] = (
+                encoded_steps
+            )
+        return literal_diagnostics
+
+    def resolve_arguments[LookedAtT](
+        self,
+        arguments: Iterable[abstract_program.Argument[LookedAtT]],
+        enclosing_fqun: ast.Fqun,
+    ) -> tuple[
+        list[concrete_program.OperationArgument[LookedAtT]] | None,
+        list[diagnostics.Diagnostic],
+    ]:
+        """Return the arguments of an execution of a Value Operation with each literal in the encoding of the value quality of the view that looks at it, if every literal can be encoded, and the diagnostics explaining why not.
+
+        enclosing_fqun is the FQUN of the definition that contains the
+        execution, from whose universe the diagnostics name things.
+        """
+        encoded: list[concrete_program.OperationArgument[LookedAtT]] = []
+        literal_diagnostics: list[diagnostics.Diagnostic] = []
+        for argument in arguments:
+            looking_at = argument.looking_at
+            if not isinstance(looking_at, ast.Literal):
+                encoded.append(
+                    concrete_program.OperationArgument(
+                        interface_view=argument.interface_view, looking_at=looking_at
+                    )
+                )
+                continue
+            value_quality = (
+                argument.interface_view.quality_assignment_block.value_quality
+            )
+            # Structural validation reports a view without a value quality.
+            if value_quality is None:
+                return None, literal_diagnostics
+            value_encoding = self._associations.value_encoding(value_quality)
+            # A missing value quality, or one without an encoding, was already
+            # reported.
+            if value_encoding is None:
+                return None, literal_diagnostics
+            value, encoding_diagnostics = self._encoder.encode(
+                looking_at, value_quality, value_encoding, enclosing_fqun
+            )
+            literal_diagnostics.extend(encoding_diagnostics)
+            if value is None:
+                return None, literal_diagnostics
+            encoded.append(
+                concrete_program.OperationArgument(
+                    interface_view=argument.interface_view, looking_at=value
+                )
+            )
+        return encoded, literal_diagnostics
 
     def composite_value_operations(
         self,
@@ -83,7 +196,7 @@ class ValueOperationExecutions:
         by_value_operation: dict[
             str, list[concrete_program.CompositeValueOperation]
         ] = {}
-        for _, composite in self._results.values():
+        for _, composite in self._resolutions.values():
             if composite is not None:
                 by_value_operation.setdefault(
                     composite.definition.typed_name.full_typed_name, []
@@ -96,11 +209,11 @@ class ValueOperationExecutions:
             )
         return by_value_operation
 
-    def choose_encoding_operations(
+    def resolve(
         self,
         value_operation: ast.ValueOperationDefinition,
         view_encodings: dict[str, ast.GlobalTypedNameReference],
-    ) -> ValueOperationExecutionResult:
+    ) -> ResolvedValueOperation:
         """Return what executing the Value Operation runs when its interface views have ``view_encodings``, keyed by each view's source typed name."""
         encodings: list[ast.GlobalTypedNameReference] = []
         for view in value_operation.views:
@@ -109,31 +222,44 @@ class ValueOperationExecutions:
             value_operation.typed_name.full_typed_name,
             _full_typed_names(encodings),
         )
-        if key not in self._results:
-            # Both supported Python runtimes make setdefault atomic.
-            # Concurrent duplicate choices are harmless, and every caller
-            # receives the result selected for the memo.
-            _ = self._results.setdefault(
-                key,
-                self._choose_uncached_encoding_operations(
-                    value_operation, view_encodings
-                ),
-            )
-        result, _ = self._results[key]
+        result, _ = self._resolve_once(key, value_operation, view_encodings)
         return result
 
-    def _choose_uncached_encoding_operations(
+    def _resolve_once(
+        self,
+        key: _ValueOperationEncodings,
+        value_operation: ast.ValueOperationDefinition,
+        view_encodings: dict[str, ast.GlobalTypedNameReference],
+    ) -> tuple[ResolvedValueOperation, concrete_program.CompositeValueOperation | None]:
+        """Return the resolution of the Value Operation for the encodings that key names, working it out only if no thread has."""
+        resolution = self._resolutions.get(key)
+        if resolution is not None:
+            return resolution
+        # CPython's dict.setdefault is atomic, with or without the GIL, so
+        # every thread that needs this key gets the same lock.
+        # A thread waits only for the lock of a Value Operation that the one it
+        # is working out executes, directly or through others. Value
+        # Operations cannot execute each other in a cycle, so two threads never
+        # wait for each other.
+        with self._resolution_locks.setdefault(key, threading.Lock()):
+            resolution = self._resolutions.get(key)
+            if resolution is None:
+                resolution = self._resolve_uncached_value_operation(
+                    value_operation, view_encodings
+                )
+                self._resolutions[key] = resolution
+        return resolution
+
+    def _resolve_uncached_value_operation(
         self,
         value_operation: ast.ValueOperationDefinition,
         interface_view_encodings: dict[str, ast.GlobalTypedNameReference],
-    ) -> tuple[
-        ValueOperationExecutionResult, concrete_program.CompositeValueOperation | None
-    ]:
+    ) -> tuple[ResolvedValueOperation, concrete_program.CompositeValueOperation | None]:
         """Work out what executing the Value Operation runs when its interface views have ``interface_view_encodings``, and return it with the composite Value Operation it is, if it is one."""
-        steps = self._validation_state.get_value_operation_steps(
-            value_operation.typed_name
+        steps = self._value_operation_steps.get(
+            value_operation.typed_name.full_typed_name
         )
-        # A Value Operation with diagnostics publishes no steps.
+        # A Value Operation with diagnostics has no steps.
         if steps is None:
             return None, None
         # Local views are added as they are defined.
@@ -151,12 +277,12 @@ class ValueOperationExecutions:
                     composite_steps.append(step)
                 case ast.ViewSettingStatement():
                     composite_steps.append(step)
-                case validation_result.LogicalOperationExecution():
+                case abstract_program.LogicalOperationExecution():
                     execution = self._encoding_operation_execution(step, view_encodings)
                     if isinstance(execution, MissingEncodingOperation):
                         return execution, None
                     composite_steps.append(execution)
-                case validation_result.ValueOperationExecution():
+                case EncodedValueOperationExecution():
                     execution = self._value_operation_execution(step, view_encodings)
                     if not isinstance(execution, concrete_program.OperationExecution):
                         return execution, None
@@ -199,20 +325,20 @@ class ValueOperationExecutions:
         # Structural validation reports a local view without a value quality.
         if value_quality is None:
             return None
-        return self._validation_state.get_value_encoding(value_quality)
+        return self._associations.value_encoding(value_quality)
 
     def _encoding_operation_execution(
         self,
-        execution: validation_result.LogicalOperationExecution,
+        execution: abstract_program.LogicalOperationExecution,
         view_encodings: dict[str, ast.GlobalTypedNameReference],
     ) -> concrete_program.OperationExecution | MissingEncodingOperation:
         """Return the execution of the Encoding Operation that performs a logical operation for the encodings of the views it looks at."""
         encodings: list[ast.GlobalTypedNameReference] = []
         for argument in execution.arguments:
             encodings.append(view_encodings[argument.looking_at.source_typed_name])
-        encoding_operation = self._validation_state.get_encoding_operations(
-            execution.logical_operation
-        ).get(_full_typed_names(encodings))
+        encoding_operation = self._associations.encoding_operation(
+            execution.logical_operation, _full_typed_names(encodings)
+        )
         if encoding_operation is None:
             missing_view_encodings: dict[str, ast.GlobalTypedNameReference] = {}
             for argument in execution.arguments:
@@ -244,7 +370,7 @@ class ValueOperationExecutions:
 
     def _value_operation_execution(
         self,
-        execution: validation_result.ValueOperationExecution,
+        execution: EncodedValueOperationExecution,
         view_encodings: dict[str, ast.GlobalTypedNameReference],
     ) -> concrete_program.OperationExecution | MissingEncodingOperation | None:
         """Return what an execution of another Value Operation runs, for the encodings of what its arguments look at."""
@@ -258,9 +384,7 @@ class ValueOperationExecutions:
                 executed_view_encodings[executed_view] = view_encodings[
                     looking_at.source_typed_name
                 ]
-        executed = self.choose_encoding_operations(
-            execution.value_operation, executed_view_encodings
-        )
+        executed = self.resolve(execution.value_operation, executed_view_encodings)
         if isinstance(executed, MissingEncodingOperation):
             return MissingEncodingOperation(
                 view_encodings=executed.view_encodings,

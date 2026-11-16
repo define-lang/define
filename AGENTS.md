@@ -199,6 +199,8 @@ BUILD file generator.
   raises a defensive exception. Pass one or more workspace-relative files or
   directories as positional arguments to limit analysis to those files and the
   files transitively under those directories.
+- While iterating on a change, run the test command; run coverage only once,
+  when the whole change is ready for review.
 - After you make any significant change to code, use the coverage command once
   for final repository-wide validation. Coverage already runs the tests, so do
   not also run the full test suite immediately before or after it. Inspect the

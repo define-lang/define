@@ -26,7 +26,7 @@ _BUILD = "action<my.domain.com:my_lib:/build>"
 def _destroyed_positions(
     result: conftest.FullValidationResult,
 ) -> list[tuple[str, ...]]:
-    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     return [
         destroyed.position.canonical_chained_name_tuple
@@ -785,7 +785,7 @@ def test_destructor_requirement_inside_what_a_callee_left_holds_without_expandin
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_result)
-    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert step.contribution.work.destructors == []
     (run,) = step.contribution.work.guaranteed_particle_destructors
@@ -872,7 +872,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
             "file_path": "cleanup.dfn",
         },
     )
-    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert [
         destructor.canonical_chained_name_tuple
@@ -958,7 +958,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
             "file_path": "cleanup.dfn",
         },
     )
-    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert [
         destructor.canonical_chained_name_tuple
@@ -1098,7 +1098,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             "file_path": "cleanup.dfn",
         },
     )
-    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert [
         destructor.canonical_chained_name_tuple
@@ -1138,7 +1138,7 @@ def test_destructor_requirement_on_position_a_callee_left_in_error_does_not_prev
     assert diagnostic.occupied_at.line == 9
     assert diagnostic.occupied_at.column == 30
     assert diagnostic.occupied_at.file_path == "make.dfn"
-    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert step.contribution.work.destructors == []
     (run,) = step.contribution.work.guaranteed_particle_destructors
@@ -1217,7 +1217,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
             "file_path": "cleanup.dfn",
         },
     )
-    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert [
         destructor.canonical_chained_name_tuple
@@ -1259,7 +1259,7 @@ def test_destructor_requirement_on_position_the_caller_left_in_error_does_not_pr
     assert diagnostic.occupied_at.line == 9
     assert diagnostic.occupied_at.column == 30
     assert diagnostic.occupied_at.file_path == "make.dfn"
-    step = result.reference_graph_result.codegen_input.actions[_TEST].steps[-1]
+    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert step.contribution.work.destructors == []
     (run,) = step.contribution.work.guaranteed_particle_destructors

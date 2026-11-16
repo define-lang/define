@@ -44,48 +44,34 @@ def test_empty_literal_content(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.content == ""
-    assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
-    assert diagnostic.reason == "there must be at least one digit"
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 74
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLiteralContentDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=75, end_line=8, end_column=75, file_path="test.dfn"
+            ),
+            content="",
+            potential_literal="literal<standard:/number>",
+            value_encoding="encoding<standard:/number/natural/ascii>",
+            reason="there must be at least one digit",
+        )
+    ]
 
 
 def test_invalid_literal_content(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.content == "+5"
-    assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
-    assert diagnostic.reason == "positive numbers are written without a +"
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 74
-
-
-def test_invalid_literal_in_destructor_does_not_report_changed_value(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == "cleanup.dfn"
-    assert diagnostic.content == "+5"
-    assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
-    assert diagnostic.reason == "positive numbers are written without a +"
-    assert diagnostic.location.line == 6
-    assert diagnostic.location.column == 74
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLiteralContentDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=75, end_line=8, end_column=75, file_path="test.dfn"
+            ),
+            content="+5",
+            potential_literal="literal<standard:/number>",
+            value_encoding="encoding<standard:/number/natural/ascii>",
+            reason="positive numbers are written without a +",
+        )
+    ]
 
 
 def test_invalid_literal_content_with_undefined_target(
@@ -105,20 +91,21 @@ def test_no_literal_parser(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.LiteralCannotSetValueDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.potential_literal == "literal</text>"
-    assert diagnostic.literal_encoding == "encoding</text_encoding>"
-    assert diagnostic.value_quality == "value<standard:/number/natural>"
-    assert diagnostic.supported_encodings == [
-        "encoding<standard:/binary/ascii>",
-        "encoding<standard:/number/decimal/ascii>",
-        "encoding<standard:/number/hex/ascii>",
+    assert result.all_diagnostics == [
+        diagnostics.LiteralCannotSetValueDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=49, end_line=8, end_column=62, file_path="test.dfn"
+            ),
+            potential_literal="literal</text>",
+            literal_encoding="encoding</text_encoding>",
+            value_quality="value<standard:/number/natural>",
+            supported_encodings=[
+                "encoding<standard:/binary/ascii>",
+                "encoding<standard:/number/decimal/ascii>",
+                "encoding<standard:/number/hex/ascii>",
+            ],
+        )
     ]
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 48
 
 
 def test_only_matching_encodings_suggested(
@@ -130,20 +117,21 @@ def test_only_matching_encodings_suggested(
         literal_parsers.LITERAL_PARSERS, (text_encoding, text_encoding), str
     )
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.LiteralCannotSetValueDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.potential_literal == "literal</text>"
-    assert diagnostic.literal_encoding == "encoding</text_encoding>"
-    assert diagnostic.value_quality == "value<standard:/number/natural>"
-    assert diagnostic.supported_encodings == [
-        "encoding<standard:/binary/ascii>",
-        "encoding<standard:/number/decimal/ascii>",
-        "encoding<standard:/number/hex/ascii>",
+    assert result.all_diagnostics == [
+        diagnostics.LiteralCannotSetValueDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=49, end_line=8, end_column=62, file_path="test.dfn"
+            ),
+            potential_literal="literal</text>",
+            literal_encoding="encoding</text_encoding>",
+            value_quality="value<standard:/number/natural>",
+            supported_encodings=[
+                "encoding<standard:/binary/ascii>",
+                "encoding<standard:/number/decimal/ascii>",
+                "encoding<standard:/number/hex/ascii>",
+            ],
+        )
     ]
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 48
 
 
 def test_value_has_no_encoding(
@@ -333,36 +321,38 @@ def test_invalid_boolean_literal_content(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.content == "True"
-    assert diagnostic.potential_literal == "literal<standard:/boolean>"
-    assert diagnostic.value_encoding == "encoding<standard:/boolean/ascii>"
-    assert diagnostic.reason == "booleans are written in lowercase"
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 75
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLiteralContentDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=76, end_line=8, end_column=76, file_path="test.dfn"
+            ),
+            content="True",
+            potential_literal="literal<standard:/boolean>",
+            value_encoding="encoding<standard:/boolean/ascii>",
+            reason="booleans are written in lowercase",
+        )
+    ]
 
 
 def test_boolean_literal_sets_natural(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.LiteralCannotSetValueDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.potential_literal == "literal<standard:/boolean>"
-    assert diagnostic.literal_encoding == "encoding<standard:/boolean/ascii>"
-    assert diagnostic.value_quality == "value<standard:/number/natural>"
-    assert diagnostic.supported_encodings == [
-        "encoding<standard:/binary/ascii>",
-        "encoding<standard:/number/decimal/ascii>",
-        "encoding<standard:/number/hex/ascii>",
+    assert result.all_diagnostics == [
+        diagnostics.LiteralCannotSetValueDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=49, end_line=8, end_column=74, file_path="test.dfn"
+            ),
+            potential_literal="literal<standard:/boolean>",
+            literal_encoding="encoding<standard:/boolean/ascii>",
+            value_quality="value<standard:/number/natural>",
+            supported_encodings=[
+                "encoding<standard:/binary/ascii>",
+                "encoding<standard:/number/decimal/ascii>",
+                "encoding<standard:/number/hex/ascii>",
+            ],
+        )
     ]
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 48
 
 
 def test_binary_literal(
@@ -376,32 +366,34 @@ def test_invalid_binary_literal_content(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.content == "1021"
-    assert diagnostic.potential_literal == "literal<standard:/binary>"
-    assert diagnostic.value_encoding == "encoding<standard:/binary/ascii>"
-    assert diagnostic.reason == "only the bits 0 and 1 are allowed"
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 76
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLiteralContentDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=77, end_line=8, end_column=77, file_path="test.dfn"
+            ),
+            content="1021",
+            potential_literal="literal<standard:/binary>",
+            value_encoding="encoding<standard:/binary/ascii>",
+            reason="only the bits 0 and 1 are allowed",
+        )
+    ]
 
 
 def test_binary_literal_sets_boolean(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.LiteralCannotSetValueDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.potential_literal == "literal<standard:/binary>"
-    assert diagnostic.literal_encoding == "encoding<standard:/binary/ascii>"
-    assert diagnostic.value_quality == "value<standard:/boolean>"
-    assert diagnostic.supported_encodings == ["encoding<standard:/boolean/ascii>"]
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 48
+    assert result.all_diagnostics == [
+        diagnostics.LiteralCannotSetValueDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=49, end_line=8, end_column=73, file_path="test.dfn"
+            ),
+            potential_literal="literal<standard:/binary>",
+            literal_encoding="encoding<standard:/binary/ascii>",
+            value_quality="value<standard:/boolean>",
+            supported_encodings=["encoding<standard:/boolean/ascii>"],
+        )
+    ]
 
 
 def test_binary_literal_sets_natural(
@@ -422,16 +414,17 @@ def test_negative_decimal_literal_sets_binary(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.content == "-3"
-    assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/binary/ascii>"
-    assert diagnostic.reason == "negative numbers are not allowed"
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 74
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLiteralContentDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=75, end_line=8, end_column=75, file_path="test.dfn"
+            ),
+            content="-3",
+            potential_literal="literal<standard:/number>",
+            value_encoding="encoding<standard:/binary/ascii>",
+            reason="negative numbers are not allowed",
+        )
+    ]
 
 
 def test_binary_literal_sets_integer(
@@ -445,32 +438,34 @@ def test_negative_decimal_literal_sets_natural(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.content == "-3"
-    assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
-    assert diagnostic.reason == "negative numbers are not allowed"
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 74
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLiteralContentDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=75, end_line=8, end_column=75, file_path="test.dfn"
+            ),
+            content="-3",
+            potential_literal="literal<standard:/number>",
+            value_encoding="encoding<standard:/number/natural/ascii>",
+            reason="negative numbers are not allowed",
+        )
+    ]
 
 
 def test_fractional_decimal_literal_sets_integer(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.content == "2.5"
-    assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/integer/ascii>"
-    assert diagnostic.reason == "only whole numbers are allowed"
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 75
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLiteralContentDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=76, end_line=8, end_column=76, file_path="test.dfn"
+            ),
+            content="2.5",
+            potential_literal="literal<standard:/number>",
+            value_encoding="encoding<standard:/number/integer/ascii>",
+            reason="only whole numbers are allowed",
+        )
+    ]
 
 
 def test_text_literal(
@@ -484,16 +479,17 @@ def test_text_literal_with_two_scalars(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.content == "é"
-    assert diagnostic.potential_literal == "literal<standard:/text>"
-    assert diagnostic.value_encoding == "encoding<standard:/text/unicode/scalar/utf8>"
-    assert diagnostic.reason == "there must be exactly one scalar"
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 73
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLiteralContentDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=74, end_line=8, end_column=74, file_path="test.dfn"
+            ),
+            content="é",
+            potential_literal="literal<standard:/text>",
+            value_encoding="encoding<standard:/text/unicode/scalar/utf8>",
+            reason="there must be exactly one scalar",
+        )
+    ]
 
 
 def test_code_point_literal(
@@ -507,16 +503,17 @@ def test_invalid_code_point_literal_content(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.content == "U+0301"
-    assert diagnostic.potential_literal == "literal<standard:/text/unicode/code_point>"
-    assert diagnostic.value_encoding == "encoding<standard:/text/unicode/scalar/utf8>"
-    assert diagnostic.reason == "'U' is not allowed in a code point"
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 91
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLiteralContentDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=92, end_line=8, end_column=92, file_path="test.dfn"
+            ),
+            content="U+0301",
+            potential_literal="literal<standard:/text/unicode/code_point>",
+            value_encoding="encoding<standard:/text/unicode/scalar/utf8>",
+            reason="'U' is not allowed in a code point",
+        )
+    ]
 
 
 def test_hex_literal_sets_integer(
@@ -530,13 +527,14 @@ def test_invalid_hex_literal_content(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.content == "0x1F"
-    assert diagnostic.potential_literal == "literal<standard:/number/hex>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
-    assert diagnostic.reason == "'x' is not allowed in a hex number"
-    assert diagnostic.location.line == 12
-    assert diagnostic.location.column == 79
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLiteralContentDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=80, end_line=8, end_column=80, file_path="test.dfn"
+            ),
+            content="0x1F",
+            potential_literal="literal<standard:/number/hex>",
+            value_encoding="encoding<standard:/number/natural/ascii>",
+            reason="'x' is not allowed in a hex number",
+        )
+    ]

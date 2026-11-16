@@ -17,7 +17,10 @@ if typing.TYPE_CHECKING:
     from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.errors import diagnostics, syntax_errors
     from define.compiler.graphs import reference_graph, reference_graph_order
-    from define.compiler.validator.reference_graph import action_contract
+    from define.compiler.validator.reference_graph import (
+        abstract_program,
+        action_contract,
+    )
 
 
 class ParticleStatementValidity(msgspec.Struct, frozen=True):
@@ -48,36 +51,7 @@ class ActionPostorderValidationResult(PostorderValidationResult):
     """Result of validating a single action definition during the DFS post-order walk."""
 
     contract: action_contract.ActionContract
-    codegen_input: concrete_program.ConcreteAction
-
-
-class LogicalOperationExecution(msgspec.Struct):
-    """A validated Logical Operation Execution Statement in a Value Operation."""
-
-    logical_operation: ast.GlobalTypedNameReference
-    # The statement's arguments, in the order of the logical operation's views.
-    arguments: tuple[ast.OperationArgumentStatement[ast.LocalTypedNameReference], ...]
-
-
-class ValueOperationExecution(msgspec.Struct):
-    """A validated Operation Execution Statement in a Value Operation."""
-
-    value_operation: ast.ValueOperationDefinition
-    # The statement's name of the executed Value Operation, where diagnostics
-    # about the execution are reported.
-    operation: ast.GlobalTypedNameReference
-    # In the order of the executed Value Operation's interface views.
-    arguments: list[concrete_program.OperationArgument[ast.LocalTypedNameReference]]
-
-
-# What a Value Operation does, independent of the encodings of the views that
-# an execution of it looks at.
-type ValueOperationStep = (
-    ast.LocalViewDefinition
-    | ast.ViewSettingStatement
-    | LogicalOperationExecution
-    | ValueOperationExecution
-)
+    action: abstract_program.AbstractAction
 
 
 class ValueOperationPostorderValidationResult(PostorderValidationResult):
@@ -87,7 +61,7 @@ class ValueOperationPostorderValidationResult(PostorderValidationResult):
     # Operation, because its steps may then be incomplete or refer to views
     # that do not exist, and nothing executing it can choose Encoding
     # Operations from them.
-    steps: list[ValueOperationStep] | None
+    steps: list[abstract_program.ValueOperationStep] | None
 
 
 class LogicalOperationPostorderValidationResult(PostorderValidationResult):
@@ -99,20 +73,10 @@ class LogicalOperationPostorderValidationResult(PostorderValidationResult):
     encoding_operations: dict[tuple[str, ...], ast.EncodingOperationDefinition]
 
 
-class ValuePostorderValidationResult(PostorderValidationResult):
-    """Result of validating a value quality definition during the DFS post-order walk."""
-
-    # The full typed name of the value quality.
-    value_quality: str
-    # The value quality's one associated encoding, or None when it has none or
-    # more than one.
-    encoding: ast.GlobalTypedNameReference | None
-
-
 class EncodingOperationPostorderValidationResult(PostorderValidationResult):
     """Result of validating a single Encoding Operation definition during the DFS post-order walk."""
 
-    codegen_input: concrete_program.ConcreteEncodingOperation
+    encoding_operation: concrete_program.ConcreteEncodingOperation
 
 
 class DefinitionValidationResult(msgspec.Struct):

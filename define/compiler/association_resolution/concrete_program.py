@@ -10,7 +10,7 @@ from define.compiler import ast
 from define.compiler.validator.reference_graph import abstract_program
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from define.compiler.graphs import reference_graph_order
     from define.compiler.validator.reference_graph.destruction import (
@@ -165,7 +165,7 @@ class ConcreteProgram(msgspec.Struct):
     encoding_operations: dict[str, ConcreteEncodingOperation]
     # Each value quality's one associated encoding, keyed by the value quality's
     # full typed name.
-    value_encodings: dict[str, ast.GlobalTypedNameReference]
+    value_encodings: Mapping[str, ast.GlobalTypedNameReference]
     # The composite Value Operations of each Value Operation that has any, one
     # for each set of encodings that executions of it look at, keyed by the
     # Value Operation's full typed name, in the order of their encodings.

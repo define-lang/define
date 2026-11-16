@@ -1,4 +1,4 @@
-"""The parts of a validated program that are the same before and after association resolution."""
+"""The abstract program that reference graph validation produces and association resolution resolves to concrete code, with the step types that the concrete program shares."""
 
 from __future__ import annotations
 
@@ -56,3 +56,82 @@ class PositionValueSetting(ValueSetting):
     """A Value Setting Statement whose source is another position."""
 
     source_position: ast.PositionReference
+
+
+class Argument[LookedAt](msgspec.Struct):
+    """What one interface view of an executed Value Operation looks at."""
+
+    interface_view: ast.InterfaceViewDefinition
+    looking_at: LookedAt | ast.Literal
+
+
+@final
+class ActionOperationExecution(msgspec.Struct):
+    """A validated Operation Execution Statement in an action."""
+
+    operation: ast.GlobalTypedNameReference
+    value_operation: ast.ValueOperationDefinition
+    # In the order of the Value Operation's interface views.
+    arguments: list[Argument[ast.PositionReference]]
+    # The value quality of each position that an argument looks at, keyed by
+    # the source typed name of the interface view that looks at it.
+    looked_at_value_qualities: dict[str, ast.GlobalTypedNameReference]
+
+
+@final
+class LiteralValueSetting(ValueSetting):
+    """A Value Setting Statement whose source is a literal."""
+
+    literal: ast.Literal
+
+
+type ActionStep = (
+    ast.LocalPositionDefinition
+    | ast.CreateParticleStatement
+    | ast.MoveParticleStatement
+    | LiteralValueSetting
+    | PositionValueSetting
+    | ActionExecution
+    | Destruction
+    | ActionOperationExecution
+)
+
+
+class AbstractAction(msgspec.Struct):
+    """An action's source-ordered steps and exposed destruction contracts, before association resolution."""
+
+    definition: ast.ActionDefinition
+    steps: list[ActionStep]
+    destruction_contracts: list[destruction_contract.DestructionContract]
+    # One entry for each of the action's contracted positions where
+    # Destructors run for what it left.
+    guaranteed_particle_destructors: list[GuaranteedParticleDestructors]
+
+
+class LogicalOperationExecution(msgspec.Struct):
+    """A validated Logical Operation Execution Statement in a Value Operation."""
+
+    logical_operation: ast.GlobalTypedNameReference
+    # The statement's arguments, in the order of the logical operation's views.
+    arguments: tuple[ast.OperationArgumentStatement[ast.LocalTypedNameReference], ...]
+
+
+class ValueOperationExecution(msgspec.Struct):
+    """A validated Operation Execution Statement in a Value Operation."""
+
+    value_operation: ast.ValueOperationDefinition
+    # The statement's name of the executed Value Operation, where diagnostics
+    # about the execution are reported.
+    operation: ast.GlobalTypedNameReference
+    # In the order of the executed Value Operation's interface views.
+    arguments: list[Argument[ast.LocalTypedNameReference]]
+
+
+# What a Value Operation does, independent of the encodings of the views that
+# an execution of it looks at.
+type ValueOperationStep = (
+    ast.LocalViewDefinition
+    | ast.ViewSettingStatement
+    | LogicalOperationExecution
+    | ValueOperationExecution
+)

@@ -58,7 +58,7 @@ class CompilerValidationResult(CompilerResult):
     """Result of completing every compiler validation stage."""
 
     program_validation: validation_result.ProgramValidationResult
-    codegen_input: concrete_program.ConcreteProgram
+    concrete_program: concrete_program.ConcreteProgram
 
     @typing.override
     def error_strings(self) -> list[str]:
@@ -129,7 +129,7 @@ class Driver:
         *,
         max_threads: int | None = None,
     ) -> CompilerValidationResult:
-        """Run reference graph validation and produce the compiler result."""
+        """Run reference graph validation and association resolution, and produce the compiler result."""
         # TODO: Make ReferenceGraphValidator return diagnostics instead of
         # adding them to definitions itself?
         validator = reference_graph_validator.ReferenceGraphValidator(
@@ -140,7 +140,7 @@ class Driver:
         reference_graph_result = validator.validate(max_workers=max_threads)
         return CompilerValidationResult(
             program_validation=program_result,
-            codegen_input=reference_graph_result.codegen_input,
+            concrete_program=reference_graph_result.concrete_program,
         )
 
     def compile_program(
@@ -196,7 +196,7 @@ class Driver:
                 )
             )
             return CompilationResult.from_validation_result(compiler_validation)
-        codegen_input = compiler_validation.codegen_input
+        codegen_input = compiler_validation.concrete_program
         compilation_result = CompilationResult.from_validation_result(
             compiler_validation
         )

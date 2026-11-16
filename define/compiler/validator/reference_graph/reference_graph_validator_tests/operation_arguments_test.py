@@ -120,6 +120,21 @@ def test_invalid_argument_view_name(
     ]
 
 
+def test_invalid_argument_view_name_in_encoding_operation(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLocalNameFormatDiagnostic(
+            location=rendering.SourceLocation(
+                line=36, column=23, end_line=36, end_column=23, file_path=None
+            ),
+            chars=("S",),
+            local_name="Source",
+        )
+    ]
+
+
 def test_missing_operation(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

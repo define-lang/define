@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast, name_types
-from define.compiler.association_resolution import concrete_program
+from define.compiler import ast
 from define.compiler.errors import diagnostics
+from define.compiler.validator.reference_graph import abstract_program
 from define.compiler.validator.structural import name_validators
 
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Mapping, Sequence
 
-    from define.compiler.association_resolution import literal_encoder
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
 
@@ -25,7 +24,6 @@ class OperationArgumentsValidator:
         validation_result.DefinitionValidationResult,
     ]
     _enclosing_fqun: ast.Fqun
-    _literal_encoder: literal_encoder.LiteralEncoder
 
     def __init__(
         self,
@@ -34,12 +32,10 @@ class OperationArgumentsValidator:
             validation_result.DefinitionValidationResult,
         ],
         enclosing_fqun: ast.Fqun,
-        literal_encoder: literal_encoder.LiteralEncoder,
     ):
-        """Initialize with the known definitions, the executing definition's FQUN, and its literal encoder."""
+        """Initialize with the known definitions and the executing definition's FQUN."""
         self._definition_results = definition_results
         self._enclosing_fqun = enclosing_fqun
-        self._literal_encoder = literal_encoder
 
     def validate(
         self,
@@ -47,31 +43,18 @@ class OperationArgumentsValidator:
         looked_at_qualities: Mapping[
             ast.OperationArgumentStatement[ast.LookedAt], Collection[str]
         ],
-    ) -> tuple[
-        list[diagnostics.Diagnostic],
-        dict[
-            ast.OperationArgumentStatement[ast.LookedAt],
-            concrete_program.EncodedLiteral,
-        ],
-    ]:
+    ) -> list[diagnostics.Diagnostic]:
         """Validate the statement's arguments against the executed operation's interface views.
 
         looked_at_qualities maps each argument that looks at a position or view
         to the full typed names of the qualities of the particle it looks at.
         Arguments without an entry are not checked against the views looking
         at them.
-
-        Also returns each literal argument that could be translated, in what
-        its interface view requires.
         """
         validation_diagnostics: list[diagnostics.Diagnostic] = []
-        literal_values: dict[
-            ast.OperationArgumentStatement[ast.LookedAt],
-            concrete_program.EncodedLiteral,
-        ] = {}
         executed = self.get_executed_operation(statement)
         if executed is None:
-            return validation_diagnostics, literal_values
+            return validation_diagnostics
         operation_name = statement.operation.source_form_in_universe(
             self._enclosing_fqun
         )
@@ -83,17 +66,14 @@ class OperationArgumentsValidator:
             validation_diagnostics,
         )
         for index, argument in arguments.items():
-            literal_value = self._check_view_requirements(
+            self._check_view_requirements(
                 argument,
-                executed,
                 executed.views[index],
                 operation_name,
                 looked_at_qualities,
                 validation_diagnostics,
             )
-            if literal_value is not None:
-                literal_values[argument] = literal_value
-        return validation_diagnostics, literal_values
+        return validation_diagnostics
 
     def validate_arguments(
         self,
@@ -126,43 +106,26 @@ class OperationArgumentsValidator:
         return arguments_by_index
 
     @staticmethod
-    def operation_arguments[
+    def value_operation_arguments[
         LookedAtT: (ast.PositionReference, ast.LocalTypedNameReference)
     ](
         statement: ast.OperationExecutionStatement[LookedAtT | ast.Literal],
-        executed: ast.OperationDefinition,
-        literal_values: Mapping[
-            ast.OperationArgumentStatement[ast.LookedAt],
-            concrete_program.EncodedLiteral,
-        ],
-    ) -> list[concrete_program.OperationArgument[LookedAtT]] | None:
-        """Describe the statement's arguments for code generation, if all of them could be resolved."""
-        arguments: list[concrete_program.OperationArgument[LookedAtT]] = []
+        executed: ast.ValueOperationDefinition,
+    ) -> list[abstract_program.Argument[LookedAtT]] | None:
+        """Describe the arguments of a statement that executes a Value Operation, if each names one of its views."""
+        arguments: list[abstract_program.Argument[LookedAtT]] = []
         view_indexes = executed.view_indexes_by_name()
         for argument in statement.arguments:
             view_index = view_indexes.get(argument.view.source_typed_name)
-            # Validation reports arguments that name undefined views.
+            # Structural validation reports a view name with an invalid format.
             if view_index is None:
                 return None
-            interface_view = executed.views[view_index]
-            looking_at = argument.looking_at
-            if isinstance(looking_at, ast.Literal):
-                literal_value = literal_values.get(argument)
-                # Validation reports literals that cannot be translated, and
-                # arguments that give a view more than one literal.
-                if literal_value is None:
-                    return None
-                arguments.append(
-                    concrete_program.OperationArgument(
-                        interface_view=interface_view, looking_at=literal_value
-                    )
+            arguments.append(
+                abstract_program.Argument(
+                    interface_view=executed.views[view_index],
+                    looking_at=argument.looking_at,
                 )
-            else:
-                arguments.append(
-                    concrete_program.OperationArgument(
-                        interface_view=interface_view, looking_at=looking_at
-                    )
-                )
+            )
         return arguments
 
     def get_executed_operation(
@@ -275,18 +238,18 @@ class OperationArgumentsValidator:
     def _check_view_requirements(
         self,
         argument: ast.OperationArgumentStatement[ast.LookedAt],
-        executed: ast.OperationDefinition,
         interface_view: ast.InterfaceViewDefinition,
         operation_name: str,
         looked_at_qualities: Mapping[
             ast.OperationArgumentStatement[ast.LookedAt], Collection[str]
         ],
         validation_diagnostics: list[diagnostics.Diagnostic],
-    ) -> concrete_program.EncodedLiteral | None:
+    ):
         """Check that the particle the argument looks at meets the quality assignments of the executed operation's interface view.
 
-        Returns the literal the argument looks at, translated into what the
-        interface view requires, if it can be translated.
+        A literal is translated into whatever its view requires, so it always
+        has the view's qualities. Only that translation can fail, which is
+        checked where the literal's encoding is known.
         """
         looking_at = argument.looking_at
         match looking_at:
@@ -299,10 +262,7 @@ class OperationArgumentsValidator:
                             operation_name=operation_name,
                         )
                     )
-                    return None
-                return self._check_literal_translation(
-                    looking_at, executed, interface_view, validation_diagnostics
-                )
+                return
             case ast.LocalTypedNameReference():
                 looked_at_name = looking_at.source_typed_name
                 looked_at_kind = diagnostics.LookedAtKind.VIEW
@@ -311,7 +271,7 @@ class OperationArgumentsValidator:
                 looked_at_kind = diagnostics.LookedAtKind.POSITION
         qualities = looked_at_qualities.get(argument)
         if qualities is None:
-            return None
+            return
         missing: list[str] = []
         for statement in interface_view.quality_assignment_block.statements:
             quality = statement.typed_global_name
@@ -331,38 +291,3 @@ class OperationArgumentsValidator:
                     missing_qualities=missing,
                 )
             )
-        return None
-
-    def _check_literal_translation(
-        self,
-        literal: ast.Literal,
-        executed: ast.OperationDefinition,
-        interface_view: ast.InterfaceViewDefinition,
-        validation_diagnostics: list[diagnostics.Diagnostic],
-    ) -> concrete_program.EncodedLiteral | None:
-        """Check that the literal can be translated into what the executed operation's interface view requires, and return it translated."""
-        # The literal is translated into whatever the view requires, so it
-        # always has the view's qualities; only that translation can fail.
-        if isinstance(executed, ast.EncodingOperationDefinition):
-            translated: concrete_program.EncodedLiteral | None = None
-            for statement in interface_view.quality_assignment_block.statements:
-                encoding = statement.typed_global_name
-                if encoding.name_type == name_types.NameType.ENCODING:
-                    value, literal_diagnostics = (
-                        self._literal_encoder.encode_in_encoding(literal, encoding)
-                    )
-                    validation_diagnostics.extend(literal_diagnostics)
-                    # Generated code represents a value the same way in every
-                    # encoding, so any one translation serves.
-                    if translated is None:
-                        translated = value
-            return translated
-        value_quality = interface_view.quality_assignment_block.value_quality
-        # Structural validation reports views without a value quality.
-        if value_quality is None:
-            return None
-        value, literal_diagnostics = self._literal_encoder.encode(
-            literal, value_quality
-        )
-        validation_diagnostics.extend(literal_diagnostics)
-        return value

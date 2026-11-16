@@ -8,14 +8,12 @@ import msgspec
 
 from define.compiler import ast
 from define.compiler.association_resolution import (
-    concrete_program,
-    value_operation_executions,
+    association_resolver,
 )
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import (
     reference_graph_executor,
 )
-from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import (
     action_definition_validator,
     logical_operation_definition_validator,
@@ -25,10 +23,14 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
+    from define.compiler.association_resolution import (
+        concrete_program,
+    )
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.graphs import (
         reference_graph_order,
     )
+    from define.compiler.validator import validation_result
 
 
 def _requires_validation(
@@ -51,9 +53,9 @@ def _requires_validation(
 
 
 class ReferenceGraphValidationResult(msgspec.Struct, frozen=True):
-    """What reference graph validation produces, beyond the diagnostics it reports."""
+    """What reference graph validation and association resolution produce, beyond the diagnostics they report."""
 
-    codegen_input: concrete_program.ConcreteProgram
+    concrete_program: concrete_program.ConcreteProgram
 
 
 # TODO: We need a mode that forces a fake caller as the parent of any top-level
@@ -74,7 +76,7 @@ class ReferenceGraphValidator:
     ]
     _entry_action: ast.ActionDefinition | None
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
-    _value_operation_executions: value_operation_executions.ValueOperationExecutions
+    _association_resolver: association_resolver.AssociationResolver
     _allow_entry_action_occupied_implied_position_requirements: bool
 
     def __init__(
@@ -99,8 +101,8 @@ class ReferenceGraphValidator:
         self._validation_state = (
             reference_graph_validation_state.ReferenceGraphValidationState()
         )
-        self._value_operation_executions = (
-            value_operation_executions.ValueOperationExecutions(self._validation_state)
+        self._association_resolver = association_resolver.AssociationResolver(
+            definition_results
         )
         self._allow_entry_action_occupied_implied_position_requirements = (
             allow_entry_action_occupied_implied_position_requirements
@@ -109,35 +111,14 @@ class ReferenceGraphValidator:
     def validate(
         self, max_workers: int | None = None
     ) -> ReferenceGraphValidationResult:
-        """Validate every definition in direct-reference-first order."""
+        """Validate every definition in direct-reference-first order, resolving each to concrete code once it is validated."""
         definition_order = self._definition_order
-        results = reference_graph_executor.process_definitions(
+        _ = reference_graph_executor.process_definitions(
             definition_order,
             _requires_validation,
             self._validate_definition,
             max_workers=max_workers,
         )
-
-        actions: dict[str, concrete_program.ConcreteAction] = {}
-        encoding_operations: dict[str, concrete_program.ConcreteEncodingOperation] = {}
-        value_encodings: dict[str, ast.GlobalTypedNameReference] = {}
-        for result in results:
-            match result:
-                case validation_result.ActionPostorderValidationResult():
-                    definition = result.codegen_input.definition
-                    actions[definition.typed_name.full_typed_name] = (
-                        result.codegen_input
-                    )
-                case validation_result.EncodingOperationPostorderValidationResult():
-                    definition = result.codegen_input.definition
-                    encoding_operations[definition.typed_name.full_typed_name] = (
-                        result.codegen_input
-                    )
-                case validation_result.ValuePostorderValidationResult():
-                    if result.encoding is not None:
-                        value_encodings[result.value_quality] = result.encoding
-                case _:
-                    pass
         entry_action = self._entry_action
         if (
             entry_action is not None
@@ -145,13 +126,9 @@ class ReferenceGraphValidator:
         ):
             self._validate_entry_action_requirements(entry_action)
         return ReferenceGraphValidationResult(
-            codegen_input=concrete_program.ConcreteProgram(
-                definition_order=definition_order,
-                actions=actions,
-                encoding_operations=encoding_operations,
-                value_encodings=value_encodings,
-                composite_value_operations=self._value_operation_executions.composite_value_operations(),
-            ),
+            concrete_program=self._association_resolver.concrete_program(
+                definition_order
+            )
         )
 
     def _validate_definition(
@@ -161,77 +138,52 @@ class ReferenceGraphValidator:
         | ast.EncodingOperationDefinition
         | ast.LogicalOperationDefinition
         | ast.ValueDefinition,
-    ) -> validation_result.PostorderValidationResult:
+    ):
+        """Validate a definition, then resolve it to concrete code."""
+        definition_diagnostics = self._definition_results[
+            definition.typed_name
+        ].diagnostics
+        resolver = self._association_resolver
         match definition:
             case ast.ActionDefinition():
-                result = self._validate_action(definition)
+                action_result = self._validate_action(definition)
+                definition_diagnostics.extend(action_result.diagnostics)
+                definition_diagnostics.extend(
+                    resolver.resolve_action(action_result.action)
+                )
             case ast.ValueOperationDefinition():
-                result = (
+                value_operation_result = (
                     operation_definition_validator.ValueOperationDefinitionValidator(
-                        definition, self._definition_results, self._validation_state
+                        definition, self._definition_results
                     ).analyze()
                 )
-                if result.steps is not None:
-                    self._validation_state.publish_value_operation_steps(
-                        definition.typed_name, result.steps
+                definition_diagnostics.extend(value_operation_result.diagnostics)
+                if value_operation_result.steps is not None:
+                    definition_diagnostics.extend(
+                        resolver.resolve_value_operation(
+                            definition, value_operation_result.steps
+                        )
                     )
             case ast.EncodingOperationDefinition():
-                result = (
+                encoding_operation_result = (
                     operation_definition_validator.EncodingOperationDefinitionValidator(
-                        definition, self._definition_results, self._validation_state
+                        definition, self._definition_results
                     ).analyze()
                 )
+                definition_diagnostics.extend(encoding_operation_result.diagnostics)
+                resolver.add_encoding_operation(
+                    encoding_operation_result.encoding_operation
+                )
             case ast.LogicalOperationDefinition():
-                result = logical_operation_definition_validator.LogicalOperationDefinitionValidator(
+                logical_operation_result = logical_operation_definition_validator.LogicalOperationDefinitionValidator(
                     definition, self._definition_results
                 ).analyze()
-                self._validation_state.publish_encoding_operations(
-                    definition.typed_name, result.encoding_operations
+                definition_diagnostics.extend(logical_operation_result.diagnostics)
+                resolver.resolve_logical_operation(
+                    definition, logical_operation_result.encoding_operations
                 )
             case ast.ValueDefinition():
-                result = self._validate_value(definition)
-        definition_result = self._definition_results[definition.typed_name]
-        for d in result.diagnostics:
-            definition_result.diagnostics.append(d)
-        return result
-
-    def _validate_value(
-        self, definition: ast.ValueDefinition
-    ) -> validation_result.ValuePostorderValidationResult:
-        """Find the one encoding associated with a value quality, and report a value quality that has none."""
-        associated_encodings = self._definition_results[
-            definition.typed_name
-        ].associated_encodings
-        encodings: list[ast.GlobalTypedNameReference] = []
-        for encoding in associated_encodings:
-            # A missing encoding was already reported when its reference was
-            # resolved.
-            if encoding in self._definition_results:
-                encodings.append(encoding)
-        self._validation_state.publish_value_encodings(definition.typed_name, encodings)
-        if len(encodings) > 1:
-            # TODO: Choose between a value quality's encodings when each
-            # particle is created, as the spec allows.
-            raise NotImplementedError(
-                f"{definition.typed_name.source_typed_name} has more than one encoding:"
-                + f" {[encoding.full_typed_name for encoding in encodings]}"
-            )
-        value_diagnostics: list[diagnostics.Diagnostic] = []
-        # Only the value quality's own universe can associate it with an
-        # encoding, so without one nothing can ever hold the value.
-        if not associated_encodings:
-            value_diagnostics.append(
-                diagnostics.ValueHasNoEncodingDiagnostic(
-                    location=definition.typed_name.location,
-                    value_quality=definition.typed_name.source_typed_name,
-                )
-            )
-        encoding = encodings[0] if encodings else None
-        return validation_result.ValuePostorderValidationResult(
-            diagnostics=value_diagnostics,
-            value_quality=definition.typed_name.full_typed_name,
-            encoding=encoding,
-        )
+                definition_diagnostics.extend(resolver.resolve_value(definition))
 
     def _validate_action(
         self, definition: ast.ActionDefinition
@@ -243,7 +195,6 @@ class ReferenceGraphValidator:
             looked_at_position_validity=definition_result.looked_at_position_validity,
             definition_results=self._definition_results,
             validation_state=self._validation_state,
-            value_operation_executions=self._value_operation_executions,
         ).analyze()
         self._validation_state.publish_contract(definition.typed_name, result.contract)
         return result
