@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import shutil
+import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
@@ -15,6 +16,7 @@ import pytest
 from hypothesis import HealthCheck, event, example, given, settings
 from hypothesis import strategies as st
 
+from crates.source_rendering.python import rendering
 from define.compiler import driver
 
 if TYPE_CHECKING:
@@ -1805,6 +1807,47 @@ def _assert_results_are_clean(
             )
 
 
+def _assert_reports_problems_as_diagnostics(entrypoint: Path):
+    """Check that the compiler reports any problem in the project as diagnostics it can format, and otherwise generates code."""
+    with tempfile.TemporaryDirectory() as output_dir:
+        # Code generation runs only when validation reports no diagnostics.
+        result = driver.Driver().compile_program(entrypoint, Path(output_dir))
+    _ = result.error_strings()
+    file_lines: dict[str, list[str]] = {}
+    for diagnostic in result.all_diagnostics:
+        assert isinstance(diagnostic, msgspec.Struct)
+        values: tuple[object, ...] = msgspec.structs.astuple(diagnostic)
+        for value in values:
+            if isinstance(value, rendering.SourceLocation):
+                _assert_location_is_in_its_file(value, file_lines)
+    try:
+        entrypoint.read_bytes().decode("utf-8")
+    except UnicodeDecodeError:
+        assert result.has_errors()
+
+
+def _assert_location_is_in_its_file(
+    location: rendering.SourceLocation, file_lines: dict[str, list[str]]
+):
+    """Check that `location` starts and ends on characters of its file, or just after the last character of a line."""
+    file_path = location.file_path
+    assert file_path is not None
+    if file_path not in file_lines:
+        text = Path(file_path).read_bytes().decode("utf-8", errors="replace")
+        file_lines[file_path] = text.split("\n")
+    lines = file_lines[file_path]
+    for line, column in (
+        (location.line, location.column),
+        (location.end_line, location.end_column),
+    ):
+        assert 1 <= line <= len(lines), location
+        assert 1 <= column <= len(lines[line - 1]) + 1, location
+    assert (location.line, location.column) <= (
+        location.end_line,
+        location.end_column,
+    ), location
+
+
 def _project_case_debug_text(project_case: ProjectCase) -> str:
     lines = [f"entrypoint: {project_case.entrypoint}"]
     for root_case in project_case.roots:
@@ -2198,10 +2241,7 @@ def test_mutated_syntax_reports_problems_as_diagnostics(
     fuzz_project: Path, source: str
 ):
     (fuzz_project / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
-    d = driver.Driver()
-    # The compiler must report any problem in the input as a diagnostic
-    # rather than fail, and the CLI must be able to format each one.
-    _ = d.validate_program(Path("test.dfn")).error_strings()
+    _assert_reports_problems_as_diagnostics(Path("test.dfn"))
 
 
 @settings(
@@ -2216,10 +2256,7 @@ def test_mutated_projects_reports_problems_as_diagnostics(
 ):
     _materialize_project_case(tmp_path, project_case)
     monkeypatch.chdir(tmp_path)
-    d = driver.Driver()
-    # The compiler must report any problem in the input as a diagnostic
-    # rather than fail, and the CLI must be able to format each one.
-    _ = d.validate_program(Path(project_case.entrypoint)).error_strings()
+    _assert_reports_problems_as_diagnostics(Path(project_case.entrypoint))
 
 
 @settings(
@@ -2232,10 +2269,7 @@ def test_mutated_projects_reports_problems_as_diagnostics(
 def test_random_bytes_reports_problems_as_diagnostics(fuzz_project: Path, data: bytes):
     file_path = fuzz_project / "test.dfn"
     file_path.write_bytes(data)
-    d = driver.Driver()
-    # The compiler must report any problem in the input as a diagnostic
-    # rather than fail, and the CLI must be able to format each one.
-    _ = d.validate_program(Path("test.dfn")).error_strings()
+    _assert_reports_problems_as_diagnostics(Path("test.dfn"))
 
 
 @settings(
@@ -2254,10 +2288,7 @@ def test_random_local_name_bytes_reports_problems_as_diagnostics(
     event(f"Name context: {context}")
     template = _local_name_context_template(context)
     (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
-    d = driver.Driver()
-    # The compiler must report any problem in the input as a diagnostic
-    # rather than fail, and the CLI must be able to format each one.
-    _ = d.validate_program(Path("test.dfn")).error_strings()
+    _assert_reports_problems_as_diagnostics(Path("test.dfn"))
 
 
 @settings(
@@ -2276,10 +2307,7 @@ def test_random_global_name_raw_bytes_reports_problems_as_diagnostics(
     event(f"Name context: {context}")
     template = _global_name_context_template(context)
     (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
-    d = driver.Driver()
-    # The compiler must report any problem in the input as a diagnostic
-    # rather than fail, and the CLI must be able to format each one.
-    _ = d.validate_program(Path("test.dfn")).error_strings()
+    _assert_reports_problems_as_diagnostics(Path("test.dfn"))
 
 
 @settings(
@@ -2298,7 +2326,4 @@ def test_random_global_name_structured_bytes_reports_problems_as_diagnostics(
     event(f"Name context: {context}")
     template = _global_name_context_template(context)
     (fuzz_project / "test.dfn").write_bytes(_splice_name_bytes(template, name_bytes))
-    d = driver.Driver()
-    # The compiler must report any problem in the input as a diagnostic
-    # rather than fail, and the CLI must be able to format each one.
-    _ = d.validate_program(Path("test.dfn")).error_strings()
+    _assert_reports_problems_as_diagnostics(Path("test.dfn"))

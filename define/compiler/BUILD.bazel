@@ -103,6 +103,7 @@ py_test(
     tags = ["manual"],
     deps = [
         ":driver",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler/validator:validation_result",
         "@pypi//hypothesis",
         "@pypi//msgspec",
