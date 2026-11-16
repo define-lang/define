@@ -284,9 +284,18 @@ encoding_operations: {
             encoding_operation: {
                 name: "/money/cents/add"
                 views: [
-                    { view: "a", encoding: "/money/cents" },
-                    { view: "b", encoding: "/money/cents" },
-                    { view: "result", encoding: "/money/cents" },
+                    {
+                        view: "a"
+                        encoding: "/money/cents"
+                    },
+                    {
+                        view: "b"
+                        encoding: "/money/cents"
+                    },
+                    {
+                        view: "result"
+                        encoding: "/money/cents"
+                    },
                 ]
             }
         },
@@ -350,9 +359,18 @@ encoding_operations: {
             encoding_operation: {
                 name: "/money/cents/add"
                 views: [
-                    { view: "a", encoding: "/money/cents" },
-                    { view: "b", encoding: "/money/cents" },
-                    { view: "result", encoding: "/money/cents" },
+                    {
+                        view: "a"
+                        encoding: "/money/cents"
+                    },
+                    {
+                        view: "b"
+                        encoding: "/money/cents"
+                    },
+                    {
+                        view: "result"
+                        encoding: "/money/cents"
+                    },
                 ]
             }
         },

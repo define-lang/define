@@ -768,6 +768,65 @@ class AssociatedEncodingOperationViewDirectionDiagnostic(Diagnostic):
         )
 
 
+class AssociationViewCountDiagnostic(Diagnostic):
+    """Diagnostic for an association that lists a different number of Interface Views than its Encoding Operation has."""
+
+    encoding_operation_name: str
+    view_count: int
+    encoding_operation_view_count: int
+    # Where the Encoding Operation is defined.
+    definition_location: rendering.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        return (
+            f"this association lists {self.view_count} views for"
+            + f" '{self.encoding_operation_name}', but it has"
+            + f" {self.encoding_operation_view_count} interface views, defined"
+            + f" here:\n{sources.render_location(self.definition_location)}"
+        )
+
+
+class AssociationViewNameDiagnostic(Diagnostic):
+    """Diagnostic for a view that an association lists under a different name than its Encoding Operation's view at the same place."""
+
+    view_number: int
+    view_name: str
+    encoding_operation_name: str
+    encoding_operation_view_name: str
+    # Where the Encoding Operation's view is defined.
+    definition_location: rendering.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        return (
+            f"this association lists '{self.view_name}' as view"
+            + f" {self.view_number} of '{self.encoding_operation_name}', but its"
+            + f" view {self.view_number} is '{self.encoding_operation_view_name}',"
+            + f" defined here:\n{sources.render_location(self.definition_location)}"
+        )
+
+
+class AssociationViewEncodingDiagnostic(Diagnostic):
+    """Diagnostic for a view that an association lists with a different encoding than its Encoding Operation assigns it."""
+
+    view_name: str
+    encoding_name: str
+    encoding_operation_name: str
+    encoding_operation_encoding_name: str
+    # Where the Encoding Operation assigns the view its encoding.
+    definition_location: rendering.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        return (
+            f"this association says '{self.view_name}' of"
+            + f" '{self.encoding_operation_name}' has '{self.encoding_name}', but"
+            + f" it has '{self.encoding_operation_encoding_name}', assigned"
+            + f" here:\n{sources.render_location(self.definition_location)}"
+        )
+
+
 class DuplicateAssociatedEncodingOperationDiagnostic(Diagnostic):
     """Diagnostic for two Encoding Operations that are associated with the same logical operation and have the same encodings."""
 

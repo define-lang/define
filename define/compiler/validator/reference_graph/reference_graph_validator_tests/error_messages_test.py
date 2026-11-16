@@ -12,6 +12,7 @@ from define.compiler.data_structures import define_path
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
+from define.compiler.validator.test_helpers import standard_library_file
 
 if TYPE_CHECKING:
     from define.compiler.conftest import ValidateProject
@@ -2596,4 +2597,170 @@ def test_view_direction_error_messages(
             define the view<number> {
                        ^^^^^^^^^^^^
         'view<number>' is an output interface view, but nothing in this operation writes to it. Either have an operation write to it or remove 'it is written.'"""),
+    ]
+
+
+def _association_files(encoding_operations: str) -> dict[str, str]:
+    return {
+        ".define/project/config.defcl": (
+            "project: {\n"
+            '  universe_name: "my.domain.com:my_lib"\n'
+            "  associations: {\n"
+            "    has_encodings: TRUE\n"
+            "    has_encoding_operations: TRUE\n"
+            "  }\n"
+            "}\n"
+        ),
+        ".define/encodings/encodings.defcl": (
+            "encodings: {\n"
+            "  value_encodings: [\n"
+            "    {\n"
+            '      value: "/number"\n'
+            '      encoding: "standard:/number/integer/ascii"\n'
+            "    }\n"
+            "  ]\n"
+            "}\n"
+        ),
+        ".define/encodings/encoding_operations.defcl": encoding_operations,
+        "combine.dfn": (
+            "define the logical_operation<my.domain.com:my_lib:/combine> {\n"
+            "    define the view<a> {\n"
+            "        it is read.\n"
+            "    }\n"
+            "    define the view<b> {\n"
+            "        it is read.\n"
+            "    }\n"
+            "    define the view<result> {\n"
+            "        it is written.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "number.dfn": (
+            "define the potential value<my.domain.com:my_lib:/number> {\n"
+            "    it supports the logical_operation</combine> {\n"
+            "        it may be read.\n"
+            "        it may be written.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the operation<my.domain.com:my_lib:/test> {\n"
+            "    define the view<first> {\n"
+            "        it is read.\n"
+            "        it may only contain particles where {\n"
+            "            it has the value</number>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the view<second> {\n"
+            "        it is read.\n"
+            "        it may only contain particles where {\n"
+            "            it has the value</number>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the view<combined> {\n"
+            "        it is written.\n"
+            "        it may only contain particles where {\n"
+            "            it has the value</number>.\n"
+            "        }\n"
+            "    }\n"
+            "\n"
+            "    it does {\n"
+            "        execute the logical_operation</combine> {\n"
+            "            with view<a> looking at view<first>.\n"
+            "            with view<b> looking at view<second>.\n"
+            "            with view<result> looking at view<combined>.\n"
+            "        }\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+
+
+def test_association_view_count_format(validate_project: ValidateProject):
+    encoding_operations = (
+        "encoding_operations: {\n"
+        "  operation_encodings: [\n"
+        "    {\n"
+        '      logical_operation: "/combine"\n'
+        "      encoding_operation: {\n"
+        '        name: "standard:/number/integer/ascii/add"\n'
+        "        views: [\n"
+        "          {\n"
+        '            view: "a"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "b"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          }\n"
+        "        ]\n"
+        "      }\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+    )
+    result = validate_project(_association_files(encoding_operations))
+    assert [
+        diagnostic.format(result.program_result.source_map)
+        for diagnostic in result.program_result.all_diagnostics
+    ] == [
+        f"""\
+File ".define/encodings/encoding_operations.defcl", line 6, column 16
+    name: "standard:/number/integer/ascii/add"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+this association lists 2 views for 'encoding_operation<standard:/number/integer/ascii/add>', but it has 3 interface views, defined here:
+File "{standard_library_file("number/integer/ascii/add.dfn")}", line 1, column 12
+    define the encoding_operation<standard:/number/integer/ascii/add> {{
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""",
+    ]
+
+
+def test_association_view_name_and_encoding_format(validate_project: ValidateProject):
+    encoding_operations = (
+        "encoding_operations: {\n"
+        "  operation_encodings: [\n"
+        "    {\n"
+        '      logical_operation: "/combine"\n'
+        "      encoding_operation: {\n"
+        '        name: "standard:/number/integer/ascii/add"\n'
+        "        views: [\n"
+        "          {\n"
+        '            view: "a"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "c"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "result"\n'
+        '            encoding: "standard:/number/natural/ascii"\n'
+        "          }\n"
+        "        ]\n"
+        "      }\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+    )
+    result = validate_project(_association_files(encoding_operations))
+    assert [
+        diagnostic.format(result.program_result.source_map)
+        for diagnostic in result.program_result.all_diagnostics
+    ] == [
+        f"""\
+File ".define/encodings/encoding_operations.defcl", line 13, column 19
+    view: "c"
+          ^^^
+this association lists 'c' as view 2 of 'encoding_operation<standard:/number/integer/ascii/add>', but its view 2 is 'b', defined here:
+File "{standard_library_file("number/integer/ascii/add.dfn")}", line 8, column 16
+    define the view<b> {{
+               ^^^^^^^""",
+        f"""\
+File ".define/encodings/encoding_operations.defcl", line 18, column 24
+    encoding: "standard:/number/natural/ascii"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+this association says 'view<result>' of 'encoding_operation<standard:/number/integer/ascii/add>' has 'encoding<standard:/number/natural/ascii>', but it has 'encoding<standard:/number/integer/ascii>', assigned here:
+File "{standard_library_file("number/integer/ascii/add.dfn")}", line 17, column 24
+    it has the encoding</number/integer/ascii>.
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""",
     ]

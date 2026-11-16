@@ -97,19 +97,39 @@ def encoding_name(name: str, line: int) -> tuple[str, rendering.SourceLocation]:
     )
 
 
-def encoding_operation_name(
-    name: str, line: int
-) -> tuple[str, rendering.SourceLocation]:
-    """Return an Encoding Operation name that the project's encoding operations config writes on line, as `associated_names` returns it."""
-    # Each test's config writes `encoding_operation: "` at the same
-    # indentation, so the name always starts at the same column.
-    return (
-        name,
-        rendering.SourceLocation(
-            line=line,
-            column=28,
-            end_line=line,
-            end_column=27 + len(name),
-            file_path=str(encoding_operations_config.CONFIG_FILE.path),
-        ),
+def associated_encoding_operations(
+    associations: Mapping[
+        str, list[encoding_operations_config.AssociatedEncodingOperation]
+    ],
+) -> dict[str, list[tuple[str, rendering.SourceLocation, list[tuple[str, str]]]]]:
+    """Return the Encoding Operations associated with each logical operation, as their names' text and locations, and their views' names and encodings' text."""
+    result: dict[
+        str, list[tuple[str, rendering.SourceLocation, list[tuple[str, str]]]]
+    ] = {}
+    for logical_operation, encoding_operations in associations.items():
+        result[logical_operation] = []
+        for encoding_operation in encoding_operations:
+            views: list[tuple[str, str]] = []
+            for view in encoding_operation.views:
+                views.append((view.name, view.encoding.source_name))
+            result[logical_operation].append(
+                (
+                    encoding_operation.name.source_name,
+                    encoding_operation.name.location,
+                    views,
+                )
+            )
+    return result
+
+
+def encoding_operation_name_location(name: str, line: int) -> rendering.SourceLocation:
+    """Return where the project's encoding operations config writes an Encoding Operation's name on line."""
+    # Each test's config writes `name: "` at the same indentation, so the
+    # name always starts at the same column.
+    return rendering.SourceLocation(
+        line=line,
+        column=16,
+        end_line=line,
+        end_column=15 + len(name),
+        file_path=str(encoding_operations_config.CONFIG_FILE.path),
     )

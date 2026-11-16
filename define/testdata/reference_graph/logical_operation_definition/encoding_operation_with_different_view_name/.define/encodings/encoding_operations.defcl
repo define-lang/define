@@ -2,7 +2,19 @@ encoding_operations: {
   operation_encodings: [
     {
       logical_operation: "/negate"
-      encoding_operation: "standard:/number/integer/ascii/negate"
+      encoding_operation: {
+        name: "standard:/number/integer/ascii/negate"
+        views: [
+          {
+            view: "a"
+            encoding: "standard:/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "standard:/number/integer/ascii"
+          }
+        ]
+      }
     }
   ]
 }

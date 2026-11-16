@@ -2,7 +2,23 @@ encoding_operations: {
   operation_encodings: [
     {
       logical_operation: "/number/add"
-      encoding_operation: "test.example.com:my_lib:/number/integer/add"
+      encoding_operation: {
+        name: "test.example.com:my_lib:/number/integer/add"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
     }
   ]
 }

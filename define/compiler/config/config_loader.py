@@ -44,11 +44,11 @@ class Config(msgspec.Struct):
     # value qualities, located inside encodings.defcl, keyed by the value
     # quality's short global name.
     value_encodings: Mapping[str, list[ast.ReferenceGlobalNameContent]]
-    # The global names of the Encoding Operations associated with each of the
-    # project's logical operations, located inside encoding_operations.defcl,
-    # keyed by the logical operation's short global name.
+    # The Encoding Operations associated with each of the project's logical
+    # operations, located inside encoding_operations.defcl, keyed by the
+    # logical operation's short global name.
     logical_operation_encoding_operations: Mapping[
-        str, list[ast.ReferenceGlobalNameContent]
+        str, list[encoding_operations_config.AssociatedEncodingOperation]
     ]
 
 
@@ -189,7 +189,10 @@ class ConfigLoader:
         self,
         project: project_config.ProjectConfig,
         config_diagnostics: list[diagnostics.FormattableDiagnostic],
-    ) -> Mapping[str, list[ast.ReferenceGlobalNameContent]] | None:
+    ) -> (
+        Mapping[str, list[encoding_operations_config.AssociatedEncodingOperation]]
+        | None
+    ):
         """Load the project's Encoding Operation associations with its logical operations, adding their diagnostics to config_diagnostics."""
         encoding_operations, encoding_operations_diagnostics = (
             encoding_operations_config.EncodingOperationsConfigReader(

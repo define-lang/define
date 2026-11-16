@@ -2237,7 +2237,11 @@ associations between logical operations and Encoding Operations.
 
 An association declares that an Encoding Operation can be used to implement a
 logical operation. Each association names a logical operation and an Encoding
-Operation.
+Operation, and lists the Encoding Operation's Interface Views in order, each
+with the encoding that the Encoding Operation assigns it.
+
+When the compiler loads an associated Encoding Operation, its Interface Views
+must have the names, order, and encodings that the association lists.
 
 A logical operation may be associated with several Encoding Operations, and an
 Encoding Operation with several logical operations. Associating the same logical

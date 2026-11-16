@@ -2,75 +2,347 @@ encoding_operations: {
   operation_encodings: [
     {
       logical_operation: "/binary/and"
-      encoding_operation: "/binary/ascii/and"
+      encoding_operation: {
+        name: "/binary/ascii/and"
+        views: [
+          {
+            view: "a"
+            encoding: "/binary/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/binary/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/binary/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/binary/equals"
-      encoding_operation: "/binary/ascii/equals"
+      encoding_operation: {
+        name: "/binary/ascii/equals"
+        views: [
+          {
+            view: "a"
+            encoding: "/binary/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/binary/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/boolean/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/binary/exclusive_or"
-      encoding_operation: "/binary/ascii/exclusive_or"
+      encoding_operation: {
+        name: "/binary/ascii/exclusive_or"
+        views: [
+          {
+            view: "a"
+            encoding: "/binary/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/binary/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/binary/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/boolean/and"
-      encoding_operation: "/boolean/ascii/and"
+      encoding_operation: {
+        name: "/boolean/ascii/and"
+        views: [
+          {
+            view: "a"
+            encoding: "/boolean/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/boolean/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/boolean/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/boolean/not"
-      encoding_operation: "/boolean/ascii/not"
+      encoding_operation: {
+        name: "/boolean/ascii/not"
+        views: [
+          {
+            view: "a"
+            encoding: "/boolean/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/boolean/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/number/absolute_value"
-      encoding_operation: "/number/integer/ascii/absolute_value"
+      encoding_operation: {
+        name: "/number/integer/ascii/absolute_value"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/natural/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/number/add"
-      encoding_operation: "/number/integer/ascii/add"
+      encoding_operation: {
+        name: "/number/integer/ascii/add"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/number/add"
-      encoding_operation: "/number/natural/ascii/add"
+      encoding_operation: {
+        name: "/number/natural/ascii/add"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/natural/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/number/add"
-      encoding_operation: "/number/natural/ascii/add_integer"
+      encoding_operation: {
+        name: "/number/natural/ascii/add_integer"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/number/less_than"
-      encoding_operation: "/number/integer/ascii/less_than"
+      encoding_operation: {
+        name: "/number/integer/ascii/less_than"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/boolean/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/number/less_than"
-      encoding_operation: "/number/natural/ascii/less_than"
+      encoding_operation: {
+        name: "/number/natural/ascii/less_than"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/boolean/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/number/minimum"
-      encoding_operation: "/number/integer/ascii/minimum"
+      encoding_operation: {
+        name: "/number/integer/ascii/minimum"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/number/minimum"
-      encoding_operation: "/number/natural/ascii/minimum"
+      encoding_operation: {
+        name: "/number/natural/ascii/minimum"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/natural/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/number/multiply"
-      encoding_operation: "/number/integer/ascii/multiply"
+      encoding_operation: {
+        name: "/number/integer/ascii/multiply"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/number/multiply"
-      encoding_operation: "/number/natural/ascii/multiply"
+      encoding_operation: {
+        name: "/number/natural/ascii/multiply"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/natural/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/number/negate"
-      encoding_operation: "/number/integer/ascii/negate"
+      encoding_operation: {
+        name: "/number/integer/ascii/negate"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/number/negate"
-      encoding_operation: "/number/natural/ascii/negate"
+      encoding_operation: {
+        name: "/number/natural/ascii/negate"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
     },
     {
       logical_operation: "/text/less_than"
-      encoding_operation: "/text/unicode/scalar/utf8/less_than"
+      encoding_operation: {
+        name: "/text/unicode/scalar/utf8/less_than"
+        views: [
+          {
+            view: "a"
+            encoding: "/text/unicode/scalar/utf8"
+          },
+          {
+            view: "b"
+            encoding: "/text/unicode/scalar/utf8"
+          },
+          {
+            view: "result"
+            encoding: "/boolean/ascii"
+          }
+        ]
+      }
     }
   ]
 }

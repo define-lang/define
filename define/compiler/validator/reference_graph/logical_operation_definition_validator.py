@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast
+from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator import validation_result
 
@@ -47,8 +47,12 @@ class LogicalOperationDefinitionValidator:
         # encoding_operations is written.
         association_locations: dict[tuple[str, ...], rendering.SourceLocation] = {}
         for association, encoding_operation in self._loaded_encoding_operations():
+            reference = association.edge.global_name_reference
             view_diagnostics = self._view_diagnostics(
-                encoding_operation, association.location
+                encoding_operation, reference.location
+            )
+            view_diagnostics.extend(
+                self._association_diagnostics(association, encoding_operation)
             )
             if view_diagnostics:
                 result_diagnostics.extend(view_diagnostics)
@@ -66,13 +70,13 @@ class LogicalOperationDefinitionValidator:
                         encoding_operation_name=encoding_operation.typed_name.source_typed_name,
                         first_encoding_operation_name=first.typed_name.source_typed_name,
                         logical_operation_name=self._definition.typed_name.source_typed_name,
-                        association_location=association.location,
+                        association_location=reference.location,
                         first_association_location=association_locations[encodings],
                     )
                 )
                 continue
             encoding_operations[encodings] = encoding_operation
-            association_locations[encodings] = association.location
+            association_locations[encodings] = reference.location
         return validation_result.LogicalOperationPostorderValidationResult(
             diagnostics=result_diagnostics, encoding_operations=encoding_operations
         )
@@ -135,22 +139,92 @@ class LogicalOperationDefinitionValidator:
                 )
         return view_diagnostics
 
+    def _association_diagnostics(
+        self,
+        association: validation_result.EncodingOperationAssociation,
+        encoding_operation: ast.EncodingOperationDefinition,
+    ) -> list[diagnostics.Diagnostic]:
+        """Return a diagnostic for each way the Interface Views that the association lists differ from the Encoding Operation's, which must match in name, encoding, and order."""
+        encoding_operation_name = encoding_operation.typed_name.source_typed_name
+        encoding_views = encoding_operation.views
+        # Views at the same place cannot be compared meaningfully when the
+        # counts differ.
+        if len(association.views) != len(encoding_views):
+            return [
+                diagnostics.AssociationViewCountDiagnostic(
+                    location=association.edge.global_name_reference.location,
+                    encoding_operation_name=encoding_operation_name,
+                    view_count=len(association.views),
+                    encoding_operation_view_count=len(encoding_views),
+                    definition_location=encoding_operation.typed_name.location,
+                )
+            ]
+        fqun = self._definition.typed_name.name_content.fqun
+        association_diagnostics: list[diagnostics.Diagnostic] = []
+        # ZIP: An association lists its Encoding Operation's views in the same
+        # order, so this compares the two views at each position. A different
+        # number of views was reported above.
+        for number, (associated_view, encoding_view) in enumerate(
+            zip(association.views, encoding_views, strict=True), start=1
+        ):
+            view_name = encoding_view.typed_name.source_typed_name
+            if associated_view.name != encoding_view.typed_name.name_content.name:
+                association_diagnostics.append(
+                    diagnostics.AssociationViewNameDiagnostic(
+                        location=associated_view.name_location,
+                        view_number=number,
+                        view_name=associated_view.name,
+                        encoding_operation_name=encoding_operation_name,
+                        encoding_operation_view_name=encoding_view.typed_name.name_content.name,
+                        definition_location=encoding_view.typed_name.location,
+                    )
+                )
+                continue
+            encoding = encoding_view.quality_assignment_block.encoding
+            # A view without an encoding was already reported when the
+            # Encoding Operation's definition was validated.
+            if encoding is None:
+                continue
+            associated_encoding = ast.GlobalTypedNameReference(
+                name_type=name_types.NameType.ENCODING,
+                name_content=associated_view.encoding,
+                enclosing_fqun=fqun,
+                location=associated_view.encoding.location,
+            )
+            if associated_encoding.full_typed_name != encoding.full_typed_name:
+                association_diagnostics.append(
+                    diagnostics.AssociationViewEncodingDiagnostic(
+                        location=associated_encoding.location,
+                        view_name=view_name,
+                        encoding_name=associated_encoding.full_typed_name,
+                        encoding_operation_name=encoding_operation_name,
+                        encoding_operation_encoding_name=encoding.full_typed_name,
+                        definition_location=encoding.location,
+                    )
+                )
+        return association_diagnostics
+
     def _loaded_encoding_operations(
         self,
-    ) -> Iterator[tuple[ast.GlobalTypedNameReference, ast.EncodingOperationDefinition]]:
-        """Yield each associated Encoding Operation that the program loaded, with the reference that its association makes.
+    ) -> Iterator[
+        tuple[
+            validation_result.EncodingOperationAssociation,
+            ast.EncodingOperationDefinition,
+        ]
+    ]:
+        """Yield each associated Encoding Operation that the program loaded, with its association.
 
         A program loads the Encoding Operations of a logical operation only if
         it executes the logical operation.
         """
-        for edge in self._definition_results[
+        for association in self._definition_results[
             self._definition.typed_name
-        ].encoding_operation_edges:
-            reference = edge.global_name_reference
+        ].encoding_operation_associations:
+            reference = association.edge.global_name_reference
             result = self._definition_results.get(reference)
             # A missing Encoding Operation, or a definition of another type,
             # was already reported when its reference was resolved.
             if result is not None and isinstance(
                 result.definition, ast.EncodingOperationDefinition
             ):
-                yield reference, result.definition
+                yield association, result.definition

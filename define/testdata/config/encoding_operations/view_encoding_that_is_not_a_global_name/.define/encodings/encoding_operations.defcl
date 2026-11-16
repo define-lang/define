@@ -1,0 +1,24 @@
+encoding_operations: {
+  operation_encodings: [
+    {
+      logical_operation: "/number/add"
+      encoding_operation: {
+        name: "/number/integer/add"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "b"
+            encoding: "number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
+    }
+  ]
+}

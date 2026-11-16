@@ -281,7 +281,10 @@ class _ProgramValidationRun:
         self._follow_edges(
             loaded_file,
             definition_result,
-            definition_result.encoding_operation_edges,
+            [
+                association.edge
+                for association in definition_result.encoding_operation_associations
+            ],
             pool,
         )
 

@@ -30,17 +30,39 @@ def test_resolves_encoding_operations(
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert test_helpers.associated_names(result.config.value_encodings) == {}
-    assert test_helpers.associated_names(
+    assert test_helpers.associated_encoding_operations(
         result.config.logical_operation_encoding_operations
     ) == {
         "/number/add": [
-            test_helpers.encoding_operation_name("/number/integer/add", 5),
-            test_helpers.encoding_operation_name(
-                "other.com:lib:/number/natural/add", 9
+            (
+                "/number/integer/add",
+                test_helpers.encoding_operation_name_location("/number/integer/add", 6),
+                [
+                    ("a", "/number/integer/ascii"),
+                    ("b", "/number/integer/ascii"),
+                    ("result", "/number/integer/ascii"),
+                ],
+            ),
+            (
+                "other.com:lib:/number/natural/add",
+                test_helpers.encoding_operation_name_location(
+                    "other.com:lib:/number/natural/add", 26
+                ),
+                [
+                    ("a", "other.com:lib:/number/natural/ascii"),
+                    ("b", "other.com:lib:/number/natural/ascii"),
+                    ("result", "other.com:lib:/number/natural/ascii"),
+                ],
             ),
         ],
         "/number/negate": [
-            test_helpers.encoding_operation_name("/number/integer/negate", 13)
+            (
+                "/number/integer/negate",
+                test_helpers.encoding_operation_name_location(
+                    "/number/integer/negate", 46
+                ),
+                [("a", "/number/integer/ascii"), ("result", "/number/integer/ascii")],
+            ),
         ],
     }
 
@@ -88,12 +110,7 @@ def test_logical_operation_in_another_universe(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert (
-        test_helpers.associated_names(
-            result.config.logical_operation_encoding_operations
-        )
-        == {}
-    )
+    assert result.config.logical_operation_encoding_operations == {}
 
 
 def test_logical_operation_that_is_not_a_global_name(
@@ -115,12 +132,7 @@ def test_logical_operation_that_is_not_a_global_name(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert (
-        test_helpers.associated_names(
-            result.config.logical_operation_encoding_operations
-        )
-        == {}
-    )
+    assert result.config.logical_operation_encoding_operations == {}
 
 
 def test_logical_operation_full_name_in_own_universe(
@@ -143,12 +155,27 @@ def test_logical_operation_full_name_in_own_universe(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert (
-        test_helpers.associated_names(
-            result.config.logical_operation_encoding_operations
+    assert result.config.logical_operation_encoding_operations == {}
+
+
+def test_view_encoding_that_is_not_a_global_name(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    result = test_helpers.load_config()
+    (diagnostic,) = result.diagnostics
+    assert diagnostic == syntax_errors.InvalidGlobalName(
+        location=rendering.SourceLocation(
+            line=14,
+            column=24,
+            end_line=14,
+            end_column=43,
+            file_path=str(encoding_operations_config.CONFIG_FILE.path),
         )
-        == {}
     )
+    assert result.config is not None
+    assert result.config.logical_operation_encoding_operations == {}
 
 
 def test_encoding_operation_that_is_not_a_global_name(
@@ -160,22 +187,17 @@ def test_encoding_operation_that_is_not_a_global_name(
     (diagnostic,) = result.diagnostics
     assert diagnostic == syntax_errors.InvalidGlobalName(
         location=rendering.SourceLocation(
-            line=5,
-            column=28,
-            end_line=5,
-            end_column=45,
+            line=6,
+            column=16,
+            end_line=6,
+            end_column=33,
             file_path=str(encoding_operations_config.CONFIG_FILE.path),
         )
     )
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert (
-        test_helpers.associated_names(
-            result.config.logical_operation_encoding_operations
-        )
-        == {}
-    )
+    assert result.config.logical_operation_encoding_operations == {}
 
 
 def test_encoding_operation_full_name_in_own_universe(
@@ -187,10 +209,10 @@ def test_encoding_operation_full_name_in_own_universe(
     (diagnostic,) = result.diagnostics
     assert diagnostic == diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
         location=rendering.SourceLocation(
-            line=5,
-            column=28,
-            end_line=5,
-            end_column=50,
+            line=6,
+            column=16,
+            end_line=6,
+            end_column=38,
             file_path=str(encoding_operations_config.CONFIG_FILE.path),
         ),
         fqun="test.example.com:my_lib",
@@ -198,12 +220,7 @@ def test_encoding_operation_full_name_in_own_universe(
     assert result.config is not None
     assert result.config.fqun == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert (
-        test_helpers.associated_names(
-            result.config.logical_operation_encoding_operations
-        )
-        == {}
-    )
+    assert result.config.logical_operation_encoding_operations == {}
 
 
 def test_unsorted_logical_operations(
@@ -222,13 +239,31 @@ def test_unsorted_logical_operations(
         previous_logical_operation="/number/negate",
     )
     assert result.config is not None
-    assert test_helpers.associated_names(
+    assert test_helpers.associated_encoding_operations(
         result.config.logical_operation_encoding_operations
     ) == {
         "/number/negate": [
-            test_helpers.encoding_operation_name("/number/integer/negate", 5)
+            (
+                "/number/integer/negate",
+                test_helpers.encoding_operation_name_location(
+                    "/number/integer/negate", 6
+                ),
+                [("a", "/number/integer/ascii"), ("result", "/number/integer/ascii")],
+            ),
         ],
-        "/number/add": [test_helpers.encoding_operation_name("/number/integer/add", 9)],
+        "/number/add": [
+            (
+                "/number/integer/add",
+                test_helpers.encoding_operation_name_location(
+                    "/number/integer/add", 22
+                ),
+                [
+                    ("a", "/number/integer/ascii"),
+                    ("b", "/number/integer/ascii"),
+                    ("result", "/number/integer/ascii"),
+                ],
+            ),
+        ],
     }
 
 
@@ -252,10 +287,20 @@ def test_duplicate_encoding_operation(
         ),
     )
     assert result.config is not None
-    assert test_helpers.associated_names(
+    assert test_helpers.associated_encoding_operations(
         result.config.logical_operation_encoding_operations
     ) == {
-        "/number/add": [test_helpers.encoding_operation_name("/number/integer/add", 5)]
+        "/number/add": [
+            (
+                "/number/integer/add",
+                test_helpers.encoding_operation_name_location("/number/integer/add", 6),
+                [
+                    ("a", "/number/integer/ascii"),
+                    ("b", "/number/integer/ascii"),
+                    ("result", "/number/integer/ascii"),
+                ],
+            ),
+        ],
     }
 
 

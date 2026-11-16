@@ -25,9 +25,34 @@ message OperationEncoding {
   // project. The compiler parses it as Define parses a global name.
   string logical_operation = 1 [(buf.validate.field).required = true];
 
-  // The global name of an Encoding Operation: a short global name for an
+  // The Encoding Operation that potentially performs the logical operation.
+  EncodingOperation encoding_operation = 2 [(buf.validate.field).required = true];
+}
+
+// Which Encoding Operation an association names: its name and the encodings of
+// its Interface Views, so that the compiler can choose it without loading it.
+// The compiler checks the views against the Encoding Operation when it loads
+// it.
+message EncodingOperation {
+  // The global name of the Encoding Operation: a short global name for an
   // Encoding Operation in the project's own universe, or a fully-qualified
   // global name for one in another universe. The compiler parses it as Define
   // parses a global name.
-  string encoding_operation = 2 [(buf.validate.field).required = true];
+  string name = 1 [(buf.validate.field).required = true];
+
+  // The Encoding Operation's Interface Views, in order, with the encoding that
+  // each one is assigned.
+  repeated ViewEncoding views = 2 [(buf.validate.field).repeated.min_items = 1];
+}
+
+// One Interface View of an associated Encoding Operation and its encoding.
+message ViewEncoding {
+  // The local name of the Interface View.
+  string view = 1 [(buf.validate.field).required = true];
+
+  // The global name of the encoding assigned to the view: a short global name
+  // for an encoding in the project's own universe, or a fully-qualified global
+  // name for one in another universe. The compiler parses it as Define parses
+  // a global name.
+  string encoding = 2 [(buf.validate.field).required = true];
 }

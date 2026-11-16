@@ -54,6 +54,7 @@ py_library(
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/config/encodings:encoding_operations_proto_py",
+        "@pypi//msgspec",
     ],
 )
 

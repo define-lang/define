@@ -6,6 +6,8 @@ import types
 import typing
 from pathlib import PurePosixPath
 
+import msgspec
+
 from define.compiler.config import config_file, global_names
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
@@ -26,8 +28,26 @@ CONFIG_FILE = config_file.ConfigFile(
     message_type=encoding_operations_pb2.EncodingOperationsFile,
 )
 
+
+class AssociatedView(msgspec.Struct, frozen=True):
+    """An Interface View that an association lists for its Encoding Operation, with the encoding the association says the view has."""
+
+    # The view's local name, as the association writes it.
+    name: str
+    # Where the association writes the view's name.
+    name_location: rendering.SourceLocation
+    encoding: ast.ReferenceGlobalNameContent
+
+
+class AssociatedEncodingOperation(msgspec.Struct, frozen=True):
+    """The Encoding Operation of an association: its name, located where the association writes it, and its Interface Views in order."""
+
+    name: ast.ReferenceGlobalNameContent
+    views: tuple[AssociatedView, ...]
+
+
 _EMPTY_ENCODING_OPERATIONS: types.MappingProxyType[
-    str, list[ast.ReferenceGlobalNameContent]
+    str, list[AssociatedEncodingOperation]
 ] = types.MappingProxyType({})
 
 
@@ -43,13 +63,13 @@ class EncodingOperationsConfigReader(
     def load(
         self, project: project_config.ProjectConfig
     ) -> tuple[
-        types.MappingProxyType[str, list[ast.ReferenceGlobalNameContent]] | None,
+        types.MappingProxyType[str, list[AssociatedEncodingOperation]] | None,
         list[diagnostics.FormattableDiagnostic],
     ]:
         """Load and validate the project's Encoding Operation associations with its logical operations.
 
         Returns an immutable mapping from each logical operation's short global
-        name to the global names of its associated Encoding Operations, or None
+        name to its associated Encoding Operations, or None
         if a diagnostic keeps the associations from being used, with the
         associations' diagnostics. The mapping is empty when the project config
         does not say that the project has Encoding Operation associations.
@@ -90,7 +110,7 @@ def _encoding_operation(
     association: encoding_operations_pb2.OperationEncoding,
     fqun: str,
 ) -> tuple[
-    tuple[ast.ReferenceGlobalNameContent, ast.ReferenceGlobalNameContent] | None,
+    tuple[ast.ReferenceGlobalNameContent, AssociatedEncodingOperation] | None,
     list[diagnostics.Diagnostic],
 ]:
     """Parse and validate the logical operation and Encoding Operation of the association at field_path.
@@ -113,22 +133,42 @@ def _encoding_operation(
     )
     if universe_diagnostic is not None:
         association_diagnostics.append(universe_diagnostic)
+    encoding_operation_path = (*field_path, "encoding_operation")
     encoding_operation, encoding_operation_diagnostics = (
         global_names.config_global_name(
             file,
-            (*field_path, "encoding_operation"),
-            association.encoding_operation,
+            (*encoding_operation_path, "name"),
+            association.encoding_operation.name,
             fqun,
         )
     )
     association_diagnostics.extend(encoding_operation_diagnostics)
+    views: list[AssociatedView] = []
+    for index, view in enumerate(association.encoding_operation.views):
+        view_path = (*encoding_operation_path, "views", index)
+        encoding, encoding_diagnostics = global_names.config_global_name(
+            file, (*view_path, "encoding"), view.encoding, fqun
+        )
+        association_diagnostics.extend(encoding_diagnostics)
+        if encoding is not None:
+            views.append(
+                AssociatedView(
+                    name=view.view,
+                    name_location=file.location_of((*view_path, "view")),
+                    encoding=encoding,
+                )
+            )
     if (
         logical_operation is None
         or encoding_operation is None
         or universe_diagnostic is not None
+        or len(views) != len(association.encoding_operation.views)
     ):
         return None, association_diagnostics
-    return (logical_operation, encoding_operation), association_diagnostics
+    return (
+        logical_operation,
+        AssociatedEncodingOperation(name=encoding_operation, views=tuple(views)),
+    ), association_diagnostics
 
 
 def _encoding_operations(
@@ -136,7 +176,7 @@ def _encoding_operations(
     file: defcl_validator.ValidatedFile,
     fqun: str,
 ) -> tuple[
-    dict[str, list[ast.ReferenceGlobalNameContent]],
+    dict[str, list[AssociatedEncodingOperation]],
     list[diagnostics.FormattableDiagnostic],
 ]:
     """Return each logical operation's Encoding Operations from the associations, with the diagnostics about the associations.
@@ -145,7 +185,7 @@ def _encoding_operations(
     Operation is not a valid name for it, is ignored. fqun is the project's
     universe.
     """
-    encoding_operations: dict[str, list[ast.ReferenceGlobalNameContent]] = {}
+    encoding_operations: dict[str, list[AssociatedEncodingOperation]] = {}
     association_diagnostics: list[diagnostics.FormattableDiagnostic] = []
     # The index of the first association of each logical operation and
     # Encoding Operation.
@@ -166,14 +206,14 @@ def _encoding_operations(
                 )
             )
         previous_logical_operation = association.logical_operation
-        pair = (association.logical_operation, association.encoding_operation)
+        pair = (association.logical_operation, association.encoding_operation.name)
         first_index = first_indexes.get(pair)
         if first_index is not None:
             association_diagnostics.append(
                 diagnostics.DuplicateEncodingOperationDiagnostic(
                     location=file.location_of(field_path),
                     logical_operation=association.logical_operation,
-                    encoding_operation=association.encoding_operation,
+                    encoding_operation=association.encoding_operation.name,
                     first_location=file.location_of(
                         ("encoding_operations", "operation_encodings", first_index)
                     ),
