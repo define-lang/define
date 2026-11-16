@@ -1,4 +1,4 @@
-"""Reference graph validation of a logical operation definition: checking the Encoding Operations associated with it, and indexing them by the encodings of their views."""
+"""Checks of the loaded Encoding Operations that a logical operation's associations name, and their index by the encodings of their views."""
 
 from __future__ import annotations
 
@@ -24,8 +24,8 @@ def _direction(view: ast.ViewDefinition) -> str:
 
 
 @typing.final
-class LogicalOperationDefinitionValidator:
-    """Validates the Encoding Operations that perform a logical operation and indexes them by the encodings of their views."""
+class AssociatedEncodingOperationChecker:
+    """Checks the loaded Encoding Operations associated with a logical operation against it and against their associations, and indexes them by the encodings of their views."""
 
     def __init__(
         self,

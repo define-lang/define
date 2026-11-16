@@ -130,19 +130,6 @@ py_library(
 )
 
 py_library(
-    name = "logical_operation_definition_validator",
-    srcs = ["logical_operation_definition_validator.py"],
-    deps = [
-        "//crates/source_rendering/python:rendering",
-        "//define/compiler:ast",
-        "//define/compiler:name_types",
-        "//define/compiler/data_structures:typed_name_dict",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:validation_result",
-    ],
-)
-
-py_library(
     name = "operation_arguments_validator",
     srcs = ["operation_arguments_validator.py"],
     deps = [
@@ -158,14 +145,12 @@ py_library(
 py_library(
     name = "operation_definition_validator",
     srcs = ["operation_definition_validator.py"],
+    visibility = ["//define/compiler/association_resolution:__pkg__"],
     deps = [
         ":abstract_program",
         ":operation_arguments_validator",
         ":view_use_tracker",
         "//define/compiler:ast",
-        "//define/compiler:name_types",
-        "//define/compiler/association_resolution:concrete_program",
-        "//define/compiler/association_resolution:literal_encoder",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:scope_tracker",
@@ -290,7 +275,6 @@ py_library(
     ],
     deps = [
         ":action_definition_validator",
-        ":logical_operation_definition_validator",
         ":operation_definition_validator",
         ":position_occupancy",
         ":reference_graph_validation_state",
@@ -356,7 +340,6 @@ pyright_test(
         ":action_operation_execution_validator",
         ":action_requirement_validator",
         ":chained_name_validator",
-        ":logical_operation_definition_validator",
         ":operation_arguments_validator",
         ":operation_definition_validator",
         ":particle_operation_validator",

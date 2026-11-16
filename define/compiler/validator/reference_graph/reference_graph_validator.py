@@ -16,7 +16,6 @@ from define.compiler.graphs import (
 )
 from define.compiler.validator.reference_graph import (
     action_definition_validator,
-    logical_operation_definition_validator,
     operation_definition_validator,
     position_occupancy,
     reference_graph_validation_state,
@@ -165,22 +164,12 @@ class ReferenceGraphValidator:
                         )
                     )
             case ast.EncodingOperationDefinition():
-                encoding_operation_result = (
-                    operation_definition_validator.EncodingOperationDefinitionValidator(
-                        definition, self._definition_results
-                    ).analyze()
-                )
-                definition_diagnostics.extend(encoding_operation_result.diagnostics)
-                resolver.add_encoding_operation(
-                    encoding_operation_result.encoding_operation
+                definition_diagnostics.extend(
+                    resolver.resolve_encoding_operation(definition)
                 )
             case ast.LogicalOperationDefinition():
-                logical_operation_result = logical_operation_definition_validator.LogicalOperationDefinitionValidator(
-                    definition, self._definition_results
-                ).analyze()
-                definition_diagnostics.extend(logical_operation_result.diagnostics)
-                resolver.resolve_logical_operation(
-                    definition, logical_operation_result.encoding_operations
+                definition_diagnostics.extend(
+                    resolver.resolve_logical_operation(definition)
                 )
             case ast.ValueDefinition():
                 definition_diagnostics.extend(resolver.resolve_value(definition))

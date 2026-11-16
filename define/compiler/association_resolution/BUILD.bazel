@@ -4,12 +4,27 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
+    name = "associated_encoding_operation_checks",
+    srcs = ["associated_encoding_operation_checks.py"],
+    deps = [
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler:ast",
+        "//define/compiler:name_types",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/validator:validation_result",
+    ],
+)
+
+py_library(
     name = "association_resolver",
     srcs = ["association_resolver.py"],
     visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
     deps = [
+        ":associated_encoding_operation_checks",
         ":associations",
         ":concrete_program",
+        ":encoding_operation_definition_validator",
         ":literal_encoder",
         ":value_operation_resolver",
         "//define/compiler:ast",
@@ -42,6 +57,20 @@ py_library(
         "//define/compiler/validator/reference_graph:abstract_program",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
         "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "encoding_operation_definition_validator",
+    srcs = ["encoding_operation_definition_validator.py"],
+    deps = [
+        ":concrete_program",
+        ":literal_encoder",
+        "//define/compiler:ast",
+        "//define/compiler:name_types",
+        "//define/compiler/data_structures:typed_name_dict",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:operation_definition_validator",
     ],
 )
 
@@ -94,9 +123,11 @@ py_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":associated_encoding_operation_checks",
         ":association_resolver",
         ":associations",
         ":concrete_program",
+        ":encoding_operation_definition_validator",
         ":literal_encoder",
         ":value_operation_resolver",
         ":value_operation_resolver_test",

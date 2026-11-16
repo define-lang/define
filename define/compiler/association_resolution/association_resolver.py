@@ -5,8 +5,10 @@ from __future__ import annotations
 import typing
 
 from define.compiler.association_resolution import (
+    associated_encoding_operation_checks,
     associations,
     concrete_program,
+    encoding_operation_definition_validator,
     literal_encoder,
     value_operation_resolver,
 )
@@ -38,6 +40,7 @@ class AssociationResolver:
         ],
     ):
         """Initialize with the known definitions."""
+        self._definition_results = definition_results
         self._associations = associations.Associations(definition_results)
         self._literal_encoder = literal_encoder.LiteralEncoder(definition_results)
         self._value_operations = value_operation_resolver.ValueOperationResolver(
@@ -55,12 +58,16 @@ class AssociationResolver:
         return self._associations.add_value(definition)
 
     def resolve_logical_operation(
-        self,
-        definition: ast.LogicalOperationDefinition,
-        encoding_operations: dict[tuple[str, ...], ast.EncodingOperationDefinition],
-    ):
-        """Add a validated logical operation's Encoding Operations, by the full typed names of their views' encodings."""
-        self._associations.add_logical_operation(definition, encoding_operations)
+        self, definition: ast.LogicalOperationDefinition
+    ) -> list[diagnostics.Diagnostic]:
+        """Check the Encoding Operations associated with a logical operation, add them to the associations by the full typed names of their views' encodings, and return the diagnostics about them."""
+        result = (
+            associated_encoding_operation_checks.AssociatedEncodingOperationChecker(
+                definition, self._definition_results
+            ).analyze()
+        )
+        self._associations.add_logical_operation(definition, result.encoding_operations)
+        return result.diagnostics
 
     def resolve_value_operation(
         self,
@@ -105,13 +112,17 @@ class AssociationResolver:
         )
         return action_diagnostics
 
-    def add_encoding_operation(
-        self, encoding_operation: concrete_program.ConcreteEncodingOperation
-    ):
-        """Add a validated Encoding Operation to the concrete program."""
-        self._encoding_operations[
-            encoding_operation.definition.typed_name.full_typed_name
-        ] = encoding_operation
+    def resolve_encoding_operation(
+        self, definition: ast.EncodingOperationDefinition
+    ) -> list[diagnostics.Diagnostic]:
+        """Validate an Encoding Operation, add it to the concrete program, and return the diagnostics about it."""
+        result = encoding_operation_definition_validator.EncodingOperationDefinitionValidator(
+            definition, self._definition_results
+        ).analyze()
+        self._encoding_operations[definition.typed_name.full_typed_name] = (
+            result.encoding_operation
+        )
+        return result.diagnostics
 
     def concrete_program(
         self, definition_order: reference_graph_order.ReferenceGraphOrder
