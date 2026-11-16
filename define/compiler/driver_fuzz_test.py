@@ -9,7 +9,7 @@ from __future__ import annotations
 import shutil
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Literal
 
 import msgspec
 import pytest
@@ -45,6 +45,18 @@ _VALID_GRANDCHILD_UNIVERSES = [
     "mv:define-lang.org:fuzz_grandchild",
     "mv:define-lang.org:fuzz_leafroot",
 ]
+_MULTIVERSE_NAME_STRATEGY = st.sampled_from(_MULTIVERSE_NAMES)
+_AUTHORITY_DOMAIN_STRATEGY = st.sampled_from(_AUTHORITY_DOMAINS)
+_UNIVERSE_NAME_STRATEGY = st.sampled_from(_UNIVERSE_NAMES)
+_PATH_SEGMENT_STRATEGY = st.sampled_from(_PATH_SEGMENTS)
+_LOCAL_NAME_STRATEGY = st.sampled_from(_LOCAL_NAMES)
+_FQUN_FORMAT_STRATEGY = st.sampled_from(["2part", "3part", "4part"])
+_POSITION_OR_ACTION_STRATEGY = st.sampled_from(["position", "action"])
+_REQUIREMENT_TYPE_STRATEGY = st.sampled_from(["position", "action", "value"])
+_TRIGGER_KIND_STRATEGY: st.SearchStrategy[
+    Literal["presence", "constructor", "destructor"]
+] = st.sampled_from(["presence", "constructor", "destructor"])
+_POSITION_DEFINITION_KIND_STRATEGY = st.sampled_from(["position_simple", "position"])
 _EXAMPLES_VALID_SINGLE = 600
 _EXAMPLES_VALID_PROJECTS = 400
 _EXAMPLES_MUTATED_SINGLE = 1200
@@ -162,59 +174,29 @@ def _destroy_particle_statement(position_reference: str, *, indent: str) -> str:
 @st.composite
 def _global_chain_valid_references(draw: st.DrawFn) -> str:
     chain_length = draw(st.integers(min_value=1, max_value=5))
-    segments = [f"position<{draw(global_names())}>"]
+    segments = [f"position<{draw(_GLOBAL_NAME_STRATEGY)}>"]
     for _ in range(chain_length):
-        middle_kind = draw(st.sampled_from(["position", "action"]))
-        segments.append(f"{middle_kind}<{draw(global_names())}>")
-    segments.append(f"position<{draw(global_names())}>")
+        middle_kind = draw(_POSITION_OR_ACTION_STRATEGY)
+        segments.append(f"{middle_kind}<{draw(_GLOBAL_NAME_STRATEGY)}>")
+    segments.append(f"position<{draw(_GLOBAL_NAME_STRATEGY)}>")
     return "::".join(segments)
 
 
 @st.composite
 def _local_start_chain_references(draw: st.DrawFn) -> str:
-    local_name = draw(st.sampled_from(_LOCAL_NAMES))
+    local_name = draw(_LOCAL_NAME_STRATEGY)
     chain_length = draw(st.integers(min_value=1, max_value=3))
     segments = [f"position<{local_name}>"]
     for _ in range(chain_length):
-        middle_kind = draw(st.sampled_from(["position", "action"]))
-        segments.append(f"{middle_kind}<{draw(global_names())}>")
-    segments.append(f"position<{draw(global_names())}>")
+        middle_kind = draw(_POSITION_OR_ACTION_STRATEGY)
+        segments.append(f"{middle_kind}<{draw(_GLOBAL_NAME_STRATEGY)}>")
+    segments.append(f"position<{draw(_GLOBAL_NAME_STRATEGY)}>")
     return "::".join(segments)
 
 
 @st.composite
 def create_particle_references(draw: st.DrawFn) -> str:
-    return cast(
-        "str",
-        draw(
-            st.one_of(
-                global_names().map(lambda n: f"position<{n}>"),
-                st.sampled_from(_LOCAL_NAMES).map(lambda n: f"position<{n}>"),
-                _global_chain_valid_references(),
-                _local_start_chain_references(),
-                global_names().map(lambda n: f"action<{n}>"),
-                st.tuples(global_names(), global_names()).map(
-                    lambda t: f"action<{t[0]}>::position<{t[1]}>"
-                ),
-                st.tuples(global_names(), global_names()).map(
-                    lambda t: f"position<{t[0]}>::action<{t[1]}>"
-                ),
-                st.tuples(global_names(), global_names()).map(
-                    lambda t: f"action<{t[0]}>::action<{t[1]}>"
-                ),
-                st.tuples(global_names(), global_names(), global_names()).map(
-                    lambda t: f"action<{t[0]}>::action<{t[1]}>::position<{t[2]}>"
-                ),
-                st.tuples(
-                    global_names(), global_names(), global_names(), global_names()
-                ).map(
-                    lambda t: (
-                        f"position<{t[0]}>::action<{t[1]}>::action<{t[2]}>::position<{t[3]}>"
-                    )
-                ),
-            )
-        ),
-    )
+    return draw(_CREATE_PARTICLE_REFERENCE_CHOICES)
 
 
 def _action_block_with_name(  # noqa: PLR0913 - Callers name independent syntax variations.
@@ -337,29 +319,29 @@ def _reset_tmp_path(tmp_path: Path):
 
 @st.composite
 def fquns(draw: st.DrawFn) -> str:
-    fmt = draw(st.sampled_from(["2part", "3part", "4part"]))
-    universe = draw(st.sampled_from(_UNIVERSE_NAMES))
+    fmt = draw(_FQUN_FORMAT_STRATEGY)
+    universe = draw(_UNIVERSE_NAME_STRATEGY)
     if fmt == "2part":
         return f"{universe}:"
-    authority = draw(st.sampled_from(_AUTHORITY_DOMAINS))
+    authority = draw(_AUTHORITY_DOMAIN_STRATEGY)
     num_auth_segments = draw(st.integers(min_value=0, max_value=4))
     auth_path = ""
     for _ in range(num_auth_segments):
-        seg = draw(st.sampled_from(_PATH_SEGMENTS))
+        seg = draw(_PATH_SEGMENT_STRATEGY)
         auth_path += f"/{seg}"
     if fmt == "3part":
         return f"{authority}{auth_path}:{universe}:"
-    multiverse = draw(st.sampled_from(_MULTIVERSE_NAMES))
+    multiverse = draw(_MULTIVERSE_NAME_STRATEGY)
     return f"{multiverse}:{authority}{auth_path}:{universe}:"
 
 
 @st.composite
 def long_global_names(draw: st.DrawFn) -> str:
-    fqun = draw(fquns())
+    fqun = draw(_FQUN_STRATEGY)
     num_segments = draw(st.integers(min_value=1, max_value=3))
     path = ""
     for _ in range(num_segments):
-        seg = draw(st.sampled_from(_PATH_SEGMENTS))
+        seg = draw(_PATH_SEGMENT_STRATEGY)
         path += f"/{seg}"
     return f"{fqun}{path}"
 
@@ -369,34 +351,65 @@ def short_global_names(draw: st.DrawFn) -> str:
     num_segments = draw(st.integers(min_value=1, max_value=3))
     path = ""
     for _ in range(num_segments):
-        seg = draw(st.sampled_from(_PATH_SEGMENTS))
+        seg = draw(_PATH_SEGMENT_STRATEGY)
         path += f"/{seg}"
     return path
 
 
 @st.composite
 def global_names(draw: st.DrawFn) -> str:
-    return draw(st.one_of(short_global_names(), long_global_names()))
+    return draw(_SHORT_OR_LONG_GLOBAL_NAME_STRATEGY)
+
+
+# Hypothesis validates each new strategy object when it is first drawn from,
+# so composites draw from strategies built once here instead of rebuilding
+# them on every draw.
+_FQUN_STRATEGY = fquns()
+_SHORT_OR_LONG_GLOBAL_NAME_STRATEGY = st.one_of(
+    short_global_names(), long_global_names()
+)
+_GLOBAL_NAME_STRATEGY = global_names()
+_CREATE_PARTICLE_REFERENCE_CHOICES: st.SearchStrategy[str] = st.one_of(
+    _GLOBAL_NAME_STRATEGY.map(lambda n: f"position<{n}>"),
+    _LOCAL_NAME_STRATEGY.map(lambda n: f"position<{n}>"),
+    _global_chain_valid_references(),
+    _local_start_chain_references(),
+    _GLOBAL_NAME_STRATEGY.map(lambda n: f"action<{n}>"),
+    st.tuples(_GLOBAL_NAME_STRATEGY, _GLOBAL_NAME_STRATEGY).map(
+        lambda t: f"action<{t[0]}>::position<{t[1]}>"
+    ),
+    st.tuples(_GLOBAL_NAME_STRATEGY, _GLOBAL_NAME_STRATEGY).map(
+        lambda t: f"position<{t[0]}>::action<{t[1]}>"
+    ),
+    st.tuples(_GLOBAL_NAME_STRATEGY, _GLOBAL_NAME_STRATEGY).map(
+        lambda t: f"action<{t[0]}>::action<{t[1]}>"
+    ),
+    st.tuples(_GLOBAL_NAME_STRATEGY, _GLOBAL_NAME_STRATEGY, _GLOBAL_NAME_STRATEGY).map(
+        lambda t: f"action<{t[0]}>::action<{t[1]}>::position<{t[2]}>"
+    ),
+    st.tuples(
+        _GLOBAL_NAME_STRATEGY,
+        _GLOBAL_NAME_STRATEGY,
+        _GLOBAL_NAME_STRATEGY,
+        _GLOBAL_NAME_STRATEGY,
+    ).map(
+        lambda t: f"position<{t[0]}>::action<{t[1]}>::action<{t[2]}>::position<{t[3]}>"
+    ),
+)
+_CREATE_PARTICLE_REFERENCE_STRATEGY = create_particle_references()
 
 
 @st.composite
 def position_definitions(draw: st.DrawFn) -> str:
-    name = draw(global_names())
-    definition_kind = draw(
-        st.sampled_from(
-            [
-                "position_simple",
-                "position",
-            ]
-        )
-    )
+    name = draw(_GLOBAL_NAME_STRATEGY)
+    definition_kind = draw(_POSITION_DEFINITION_KIND_STRATEGY)
     if definition_kind == "position_simple":
         return f"define the potential position<{name}>.\n"
     num_requirements = draw(st.integers(min_value=1, max_value=5))
     requirements: list[tuple[str, str]] = []
     for _ in range(num_requirements):
-        child_name = draw(global_names())
-        child_type = draw(st.sampled_from(["position", "action", "value"]))
+        child_name = draw(_GLOBAL_NAME_STRATEGY)
+        child_type = draw(_REQUIREMENT_TYPE_STRATEGY)
         requirements.append((child_type, child_name))
     lines = [
         f"define the potential position<{name}> {{",
@@ -410,10 +423,10 @@ def position_definitions(draw: st.DrawFn) -> str:
 
 @st.composite
 def action_definitions_simple(draw: st.DrawFn) -> str:
-    name = draw(global_names())
+    name = draw(_GLOBAL_NAME_STRATEGY)
     return _action_block_with_name(
         name,
-        trigger_kind=draw(st.sampled_from(["presence", "constructor", "destructor"])),
+        trigger_kind=draw(_TRIGGER_KIND_STRATEGY),
         outer_locals=[],
         inner_locals=[
             _local_position_simple("__noop", indent="        "),
@@ -430,8 +443,8 @@ def _draw_local_positions(
         if draw(st.booleans()):
             locals_.append(_local_position_simple(local_name, indent=indent))
         else:
-            requirement_type = draw(st.sampled_from(["position", "action", "value"]))
-            requirement_name = draw(global_names())
+            requirement_type = draw(_REQUIREMENT_TYPE_STRATEGY)
+            requirement_name = draw(_GLOBAL_NAME_STRATEGY)
             locals_.append(
                 _local_position_with_requirements(
                     local_name,
@@ -446,20 +459,20 @@ def _draw_action_statements(draw: st.DrawFn, indent: str) -> list[str]:
     statements: list[str] = []
     create_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(create_count):
-        position_reference = draw(create_particle_references())
+        position_reference = draw(_CREATE_PARTICLE_REFERENCE_STRATEGY)
         statements.append(_create_particle_statement(position_reference, indent=indent))
     move_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(move_count):
-        from_reference = draw(create_particle_references())
-        to_reference = draw(create_particle_references())
+        from_reference = draw(_CREATE_PARTICLE_REFERENCE_STRATEGY)
+        to_reference = draw(_CREATE_PARTICLE_REFERENCE_STRATEGY)
         statements.append(
             _move_particle_statement(from_reference, to_reference, indent=indent)
         )
     value_setting_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(value_setting_count):
-        target_position = draw(create_particle_references())
+        target_position = draw(_CREATE_PARTICLE_REFERENCE_STRATEGY)
         if draw(st.booleans()):
-            literal_name = draw(global_names())
+            literal_name = draw(_GLOBAL_NAME_STRATEGY)
             content = draw(
                 st.text(alphabet='abc ABC0123 #<>:{}./"\\\n世界', max_size=100)
             )
@@ -468,13 +481,13 @@ def _draw_action_statements(draw: st.DrawFn, indent: str) -> list[str]:
             )
             source = f'literal<{literal_name}>"{escaped}"'
         else:
-            source = draw(create_particle_references())
+            source = draw(_CREATE_PARTICLE_REFERENCE_STRATEGY)
         statements.append(
             f"{indent}set the value of {target_position} from {source}.\n"
         )
     destroy_count = draw(st.integers(min_value=0, max_value=4))
     for _ in range(destroy_count):
-        position_reference = draw(create_particle_references())
+        position_reference = draw(_CREATE_PARTICLE_REFERENCE_STRATEGY)
         statements.append(
             _destroy_particle_statement(position_reference, indent=indent)
         )
@@ -483,7 +496,7 @@ def _draw_action_statements(draw: st.DrawFn, indent: str) -> list[str]:
 
 @st.composite
 def action_definitions_with_block(draw: st.DrawFn) -> str:
-    name = draw(global_names())
+    name = draw(_GLOBAL_NAME_STRATEGY)
     outer_indent = "    "
     inner_indent = "        "
     include_trigger_comment = draw(st.booleans())
@@ -491,7 +504,7 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
     blank_lines_in_blocks = draw(st.booleans())
     all_local_names = draw(
         st.lists(
-            st.sampled_from(_LOCAL_NAMES),
+            _LOCAL_NAME_STRATEGY,
             min_size=0,
             max_size=6,
             unique=True,
@@ -503,7 +516,7 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
     outer_locals = _draw_local_positions(draw, outer_names, outer_indent)
     inner_locals = _draw_local_positions(draw, inner_names, inner_indent)
     inner_locals.extend(_draw_action_statements(draw, inner_indent))
-    trigger_condition_ref = draw(create_particle_references())
+    trigger_condition_ref = draw(_CREATE_PARTICLE_REFERENCE_STRATEGY)
     inner_locals = list(draw(st.permutations(inner_locals)))
     return _action_block_with_name(
         name,
@@ -514,7 +527,7 @@ def action_definitions_with_block(draw: st.DrawFn) -> str:
         include_action_close_comment=include_action_close_comment,
         blank_lines_in_blocks=blank_lines_in_blocks,
         trigger_condition_ref=trigger_condition_ref,
-        trigger_kind=draw(st.sampled_from(["presence", "constructor", "destructor"])),
+        trigger_kind=draw(_TRIGGER_KIND_STRATEGY),
     )
 
 
@@ -524,16 +537,15 @@ _THIRD_VALID_PATH = "/third_test"
 _VALID_REFERENCE_PATHS = [_ANOTHER_VALID_PATH, _THIRD_VALID_PATH]
 
 
-def _valid_reference_options() -> st.SearchStrategy[list[tuple[str, str]]]:
-    return st.lists(
-        st.tuples(
-            st.sampled_from(["position", "action"]),
-            st.sampled_from(_VALID_REFERENCE_PATHS),
-        ),
-        min_size=1,
-        max_size=3,
-        unique=True,
-    )
+_VALID_REFERENCE_OPTIONS_STRATEGY = st.lists(
+    st.tuples(
+        _POSITION_OR_ACTION_STRATEGY,
+        st.sampled_from(_VALID_REFERENCE_PATHS),
+    ),
+    min_size=1,
+    max_size=3,
+    unique=True,
+)
 
 
 _VALID_IMPLICATION_TARGETS = [
@@ -544,13 +556,12 @@ _VALID_IMPLICATION_TARGETS = [
 ]
 
 
-def _valid_implications_strategy() -> st.SearchStrategy[list[tuple[str, str]]]:
-    return st.lists(
-        st.sampled_from(_VALID_IMPLICATION_TARGETS),
-        min_size=0,
-        max_size=len(_VALID_IMPLICATION_TARGETS),
-        unique=True,
-    )
+_VALID_IMPLICATIONS_STRATEGY = st.lists(
+    st.sampled_from(_VALID_IMPLICATION_TARGETS),
+    min_size=0,
+    max_size=len(_VALID_IMPLICATION_TARGETS),
+    unique=True,
+)
 
 
 def _implication_chain_reference(typed_kind: str, name: str) -> str:
@@ -593,6 +604,11 @@ _STANDALONE_COMMENT_TEXTS = [
     "#",
     "# section break",
 ]
+_TRAILING_COMMENT_TAG_STRATEGY = st.sampled_from(_TRAILING_COMMENT_TAGS)
+_STANDALONE_COMMENT_TEXT_STRATEGY = st.sampled_from(_STANDALONE_COMMENT_TEXTS)
+_DECORATION_KIND_STRATEGY = st.sampled_from(["blank", "comment"])
+_LINE_DECORATION_ROLL_STRATEGY = st.integers(min_value=0, max_value=9)
+_TRAILING_COMMENT_ROLL_STRATEGY = st.integers(min_value=0, max_value=7)
 
 
 @st.composite
@@ -603,22 +619,22 @@ def _decorated_source(draw: st.DrawFn, source: str) -> str:
     for line in lines:
         line_content = line.strip()
         stripped = line.lstrip(" ")
-        if line_content and draw(st.integers(min_value=0, max_value=9)) == 0:
+        if line_content and draw(_LINE_DECORATION_ROLL_STRATEGY) == 0:
             line_indent = len(line) - len(stripped)
             inject_indent = line_indent + 4 if stripped.startswith("}") else line_indent
-            choice = draw(st.sampled_from(["blank", "comment"]))
+            choice = draw(_DECORATION_KIND_STRATEGY)
             if choice == "blank":
                 result.append("\n")
             else:
-                text = draw(st.sampled_from(_STANDALONE_COMMENT_TEXTS))
+                text = draw(_STANDALONE_COMMENT_TEXT_STRATEGY)
                 result.append(f"{' ' * inject_indent}{text}\n")
         body = line.rstrip("\n")
         if (
             body
             and body[-1] in {".", "}", "{"}
-            and draw(st.integers(min_value=0, max_value=7)) == 0
+            and draw(_TRAILING_COMMENT_ROLL_STRATEGY) == 0
         ):
-            tag = draw(st.sampled_from(_TRAILING_COMMENT_TAGS))
+            tag = draw(_TRAILING_COMMENT_TAG_STRATEGY)
             result.append(body + tag + "\n")
         else:
             result.append(line)
@@ -683,13 +699,13 @@ def valid_sources(draw: st.DrawFn) -> str:
             )
         )
     if draw(st.booleans()):
-        requirements = draw(_valid_reference_options())
+        requirements = draw(_VALID_REFERENCE_OPTIONS_STRATEGY)
         fragments.append(
             _position_with_requirements(_PROJECT_FQUN, "test.dfn", requirements)
         )
 
     statements: list[str] = []
-    implications = draw(_valid_implications_strategy())
+    implications = draw(_VALID_IMPLICATIONS_STRATEGY)
     for kind, name in implications:
         statements.append(
             _create_particle_statement(
@@ -697,13 +713,15 @@ def valid_sources(draw: st.DrawFn) -> str:
             )
         )
     local_names = draw(
-        st.lists(st.sampled_from(_LOCAL_NAMES), min_size=1, max_size=6, unique=True)
+        st.lists(_LOCAL_NAME_STRATEGY, min_size=1, max_size=6, unique=True)
     )
     for local_name in local_names:
         if draw(st.booleans()):
             statements.append(
                 _local_position_with_used_quality_assignments(
-                    local_name, draw(_valid_reference_options()), indent="        "
+                    local_name,
+                    draw(_VALID_REFERENCE_OPTIONS_STRATEGY),
+                    indent="        ",
                 )
             )
         else:
@@ -742,11 +760,11 @@ def valid_sources(draw: st.DrawFn) -> str:
 
 @st.composite
 def position_definitions_with_implications(draw: st.DrawFn) -> str:
-    name = draw(global_names())
-    impl_name = draw(global_names())
-    impl_kind = draw(st.sampled_from(["position", "action"]))
-    quality_name = draw(global_names())
-    quality_kind = draw(st.sampled_from(["position", "action"]))
+    name = draw(_GLOBAL_NAME_STRATEGY)
+    impl_name = draw(_GLOBAL_NAME_STRATEGY)
+    impl_kind = draw(_POSITION_OR_ACTION_STRATEGY)
+    quality_name = draw(_GLOBAL_NAME_STRATEGY)
+    quality_kind = draw(_POSITION_OR_ACTION_STRATEGY)
     return (
         f"define the potential position<{name}> {{\n"
         f"    it also assigns the {impl_kind}<{impl_name}>.\n"
@@ -759,9 +777,9 @@ def position_definitions_with_implications(draw: st.DrawFn) -> str:
 
 @st.composite
 def action_definitions_with_implications(draw: st.DrawFn) -> str:
-    name = draw(global_names())
-    impl_name = draw(global_names())
-    impl_kind = draw(st.sampled_from(["position", "action"]))
+    name = draw(_GLOBAL_NAME_STRATEGY)
+    impl_name = draw(_GLOBAL_NAME_STRATEGY)
+    impl_kind = draw(_POSITION_OR_ACTION_STRATEGY)
     body_ref = (
         f"position<{impl_name}>"
         if impl_kind == "position"
@@ -769,7 +787,7 @@ def action_definitions_with_implications(draw: st.DrawFn) -> str:
     )
     return _action_block_with_name(
         name,
-        trigger_kind=draw(st.sampled_from(["presence", "constructor", "destructor"])),
+        trigger_kind=draw(_TRIGGER_KIND_STRATEGY),
         quality_implications=[(impl_kind, impl_name)],
         outer_locals=[],
         inner_locals=[_create_particle_statement(body_ref, indent="        ")],
@@ -778,9 +796,9 @@ def action_definitions_with_implications(draw: st.DrawFn) -> str:
 
 @st.composite
 def operation_definitions(draw: st.DrawFn) -> str:
-    name = draw(global_names())
-    value_name = draw(global_names())
-    operation_name = draw(global_names())
+    name = draw(_GLOBAL_NAME_STRATEGY)
+    value_name = draw(_GLOBAL_NAME_STRATEGY)
+    operation_name = draw(_GLOBAL_NAME_STRATEGY)
     return (
         f"define the operation<{name}> {{\n"
         f"    define the view<number> {{\n"
@@ -801,9 +819,9 @@ def operation_definitions(draw: st.DrawFn) -> str:
 
 @st.composite
 def encoding_operation_definitions(draw: st.DrawFn) -> str:
-    name = draw(global_names())
-    encoding_name = draw(global_names())
-    operation_name = draw(global_names())
+    name = draw(_GLOBAL_NAME_STRATEGY)
+    encoding_name = draw(_GLOBAL_NAME_STRATEGY)
+    operation_name = draw(_GLOBAL_NAME_STRATEGY)
     return (
         f"define the encoding_operation<{name}> {{\n"
         f"    define the view<number> {{\n"
@@ -851,18 +869,18 @@ def syntactic_sources(draw: st.DrawFn) -> str:
             defs.append(draw(position_definitions()))
         elif kind == "value":
             defs.append(
-                f"define the potential value<{draw(global_names())}> {{\n"
+                f"define the potential value<{draw(_GLOBAL_NAME_STRATEGY)}> {{\n"
                 + "    it supports the logical_operation<standard:/number/add> {\n"
                 + "        it may be read.\n"
                 + "    }\n"
                 + "}\n"
             )
         elif kind == "encoding":
-            defs.append(f"define the encoding<{draw(global_names())}>.\n")
+            defs.append(f"define the encoding<{draw(_GLOBAL_NAME_STRATEGY)}>.\n")
         elif kind == "potential_literal":
             defs.append(
-                f"define the potential literal<{draw(global_names())}> {{\n"
-                + f"    it has the encoding<{draw(global_names())}>.\n"
+                f"define the potential literal<{draw(_GLOBAL_NAME_STRATEGY)}> {{\n"
+                + f"    it has the encoding<{draw(_GLOBAL_NAME_STRATEGY)}>.\n"
                 + "}\n"
             )
         elif kind == "action_simple":
@@ -900,6 +918,7 @@ _MUTATIONS = [
     "change_indentation",
     "replace_condition",
 ]
+_MUTATION_STRATEGY = st.sampled_from(_MUTATIONS)
 
 _SYNTAX_FRAGMENTS = [
     "define the potential position</p>.\n",
@@ -939,10 +958,11 @@ _SYNTAX_FRAGMENTS = [
     ".\n",
     "# comment\n",
 ]
+_SYNTAX_FRAGMENT_STRATEGY = st.sampled_from(_SYNTAX_FRAGMENTS)
 
 
 def _mutate_source(source: str, draw: st.DrawFn) -> str:
-    mutation = draw(st.sampled_from(_MUTATIONS))
+    mutation = draw(_MUTATION_STRATEGY)
     event(f"Selected mutation: {mutation}")
     mutated = _apply_source_mutation(source, draw, mutation)
     if mutated != source:
@@ -960,7 +980,7 @@ def _mutate_source_span(source: str, draw: st.DrawFn, mutation: str) -> str:
     end = start
     if mutation == "replace_span":
         end = draw(st.integers(min_value=start, max_value=len(source)))
-    fragment = draw(st.sampled_from(_SYNTAX_FRAGMENTS))
+    fragment = draw(_SYNTAX_FRAGMENT_STRATEGY)
     return source[:start] + fragment + source[end:]
 
 
