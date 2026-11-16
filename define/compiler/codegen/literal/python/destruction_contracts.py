@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from define.compiler.codegen.literal.python import (
         position_expression,
     )
-    from define.compiler.validator import codegen_input
+    from define.compiler.validator.reference_graph import abstract_program
     from define.compiler.validator.reference_graph.destruction import (
         destruction_contract,
     )
@@ -60,7 +60,7 @@ class DestructionContractsGenerator:
 
     def generate(
         self,
-        execution: codegen_input.ActionExecution,
+        execution: abstract_program.ActionExecution,
     ) -> renderer.DestructionContractDefinition | None:
         """Generate the contribution class needed by an action execution."""
         connections = execution.destruction_connections

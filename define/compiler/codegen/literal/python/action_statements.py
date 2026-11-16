@@ -17,6 +17,7 @@ from define.compiler.codegen.literal.python import (
     value_types,
 )
 from define.compiler.validator import codegen_input
+from define.compiler.validator.reference_graph import abstract_program
 
 if TYPE_CHECKING:
     from define.compiler.validator.reference_graph.destruction import (
@@ -85,18 +86,18 @@ class ActionStatementsGenerator:
                     modules.update(
                         self._converter.referenced_modules(step.target_position)
                     )
-                case codegen_input.PositionValueSetting():
+                case abstract_program.PositionValueSetting():
                     modules.update(
                         self._converter.referenced_modules(step.target_position)
                     )
                     modules.update(
                         self._converter.referenced_modules(step.source_position)
                     )
-                case codegen_input.ActionExecution():
+                case abstract_program.ActionExecution():
                     modules.update(self._converter.referenced_modules(step.action))
                     for connection in step.destruction_connections:
                         modules.update(contracts.referenced_modules(connection))
-                case codegen_input.Destruction():
+                case abstract_program.Destruction():
                     modules.update(work.referenced_modules(step.contribution.work))
                 case codegen_input.ActionOperationExecution():
                     modules.add(
@@ -184,7 +185,7 @@ class ActionStatementsGenerator:
                             ),
                         )
                     )
-                case codegen_input.Destruction():
+                case abstract_program.Destruction():
                     statements.extend(
                         self._destruction(statement, positions, contract_names, work)
                     )
@@ -226,7 +227,7 @@ class ActionStatementsGenerator:
                             ),
                         )
                     )
-                case codegen_input.PositionValueSetting():
+                case abstract_program.PositionValueSetting():
                     value_type = self._python_value_types.python_value_type(
                         statement.value_quality
                     )
@@ -245,7 +246,7 @@ class ActionStatementsGenerator:
                             ),
                         )
                     )
-                case codegen_input.ActionExecution():
+                case abstract_program.ActionExecution():
                     execution, contract = self._run(statement, positions, contracts)
                     statements.append(execution)
                     if contract is not None:
@@ -296,7 +297,7 @@ class ActionStatementsGenerator:
 
     def _destruction(
         self,
-        destruction: codegen_input.Destruction,
+        destruction: abstract_program.Destruction,
         positions: position_expression.PositionExpressionBuilder,
         contract_names: dict[destruction_contract.DestructionContract, str],
         work: known_destruction_work.KnownDestructionWorkGenerator,
@@ -332,7 +333,7 @@ class ActionStatementsGenerator:
 
     @staticmethod
     def _run(
-        execution: codegen_input.ActionExecution,
+        execution: abstract_program.ActionExecution,
         positions: position_expression.PositionExpressionBuilder,
         contracts: destruction_contracts.DestructionContractsGenerator,
     ) -> tuple[

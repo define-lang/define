@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler import ast
-from define.compiler.validator import codegen_input
+from define.compiler.validator.reference_graph import abstract_program
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -41,10 +41,10 @@ def _definition_edges(
     for step in result.codegen_input.actions[
         definition.typed_name.full_typed_name
     ].steps:
-        if isinstance(step, codegen_input.ActionExecution):
+        if isinstance(step, abstract_program.ActionExecution):
             yield from _destruction_contract_edges(step.destruction_connections)
             yield source, step.action.get_last_action().full_typed_name
-        elif isinstance(step, codegen_input.Destruction):
+        elif isinstance(step, abstract_program.Destruction):
             for destructor in step.contribution.work.destructors:
                 yield source, destructor.get_last_action().full_typed_name
             for reference in step.contribution.work.guaranteed_particle_destructors:

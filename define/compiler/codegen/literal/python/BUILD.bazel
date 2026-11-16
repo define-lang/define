@@ -32,6 +32,7 @@ py_library(
         ":value_types",
         "//define/compiler:ast",
         "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator/reference_graph:abstract_program",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
         "@pypi//msgspec",
     ],
@@ -58,7 +59,7 @@ py_library(
         ":position_expression",
         ":renderer",
         "//define/compiler:ast",
-        "//define/compiler/validator:codegen_input",
+        "//define/compiler/validator/reference_graph:abstract_program",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
     ],
 )

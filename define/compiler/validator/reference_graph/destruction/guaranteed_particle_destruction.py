@@ -7,8 +7,7 @@ import typing
 import msgspec
 
 from define.compiler import ast, chained_name
-from define.compiler.validator import codegen_input
-from define.compiler.validator.reference_graph import action_contract
+from define.compiler.validator.reference_graph import abstract_program, action_contract
 from define.compiler.validator.reference_graph.destruction import (
     destroyed_particles,
     destruction_contract,
@@ -36,7 +35,7 @@ class GuaranteedParticleDestruction(msgspec.Struct):
         chained_name.PositionReferenceTuple, action_contract.OnDestruction
     ] = msgspec.field(default_factory=dict)
     guaranteed_particle_destructors: list[
-        codegen_input.GuaranteedParticleDestructors
+        abstract_program.GuaranteedParticleDestructors
     ] = msgspec.field(default_factory=list)
 
 
@@ -212,7 +211,7 @@ class _GuaranteedParticleDestructionBuilder:
         if on_destruction != action_contract.OnDestruction.RUN_DESTRUCTORS:
             return on_destruction
         destruction.guaranteed_particle_destructors.append(
-            codegen_input.GuaranteedParticleDestructors(
+            abstract_program.GuaranteedParticleDestructors(
                 position_in_action=position_in_action,
                 destructors=published_destructors,
                 for_child_positions=for_child_positions,

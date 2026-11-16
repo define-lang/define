@@ -4,6 +4,18 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
+    name = "abstract_program",
+    srcs = ["abstract_program.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler:chained_name",
+        "//define/compiler/validator/reference_graph/destruction:destruction_contract",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
     name = "action_contract",
     srcs = ["action_contract.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -27,6 +39,7 @@ py_library(
     srcs = ["action_definition_validator.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":abstract_program",
         ":action_contract",
         ":action_operation_execution_validator",
         ":action_requirement_validator",
@@ -336,9 +349,9 @@ py_library(
     srcs = ["test_helpers.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":abstract_program",
         ":reference_graph_validator",
         "//define/compiler:ast",
-        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
     ],
 )
@@ -371,6 +384,7 @@ py_library(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":abstract_program",
         ":action_contract",
         ":action_definition_validator",
         ":action_operation_execution_validator",

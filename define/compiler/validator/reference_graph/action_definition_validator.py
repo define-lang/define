@@ -11,8 +11,13 @@ from define.compiler import (
     name_types,
 )
 from define.compiler.errors import diagnostics
-from define.compiler.validator import codegen_input, scope_tracker, validation_result
+from define.compiler.validator import (
+    codegen_input,
+    scope_tracker,
+    validation_result,
+)
 from define.compiler.validator.reference_graph import (
+    abstract_program,
     action_contract,
     action_operation_execution_validator,
     action_requirement_validator,
@@ -266,7 +271,9 @@ class ActionDefinitionValidator:
         """Record what a destruction this action performs produces."""
         self._diagnostics.extend(result.diagnostics)
         self._destruction_contracts.extend(result.destruction_contracts)
-        self._steps.append(codegen_input.Destruction(contribution=result.contribution))
+        self._steps.append(
+            abstract_program.Destruction(contribution=result.contribution)
+        )
 
     def _process_interface_arrival(
         self,
@@ -325,7 +332,7 @@ class ActionDefinitionValidator:
         self._tracker.apply_guarantees(execution.action_chain, execution.contract)
         self._diagnostics.extend(result.diagnostics)
         self._steps.append(
-            codegen_input.ActionExecution(
+            abstract_program.ActionExecution(
                 action=execution.action_chain,
                 destruction_connections=result.destruction_connections,
             )
@@ -448,7 +455,7 @@ class ActionDefinitionValidator:
                 # Validation reports a target without a known value quality.
                 if target_value_quality is not None:
                     self._steps.append(
-                        codegen_input.PositionValueSetting(
+                        abstract_program.PositionValueSetting(
                             target_position=stmt.target_position,
                             value_quality=target_value_quality,
                             source_position=stmt.source,
@@ -653,7 +660,7 @@ class ActionDefinitionValidator:
         self,
     ) -> tuple[
         action_contract.ActionContract,
-        list[codegen_input.GuaranteedParticleDestructors],
+        list[abstract_program.GuaranteedParticleDestructors],
     ]:
         scope = scope_tracker.PositionScopeTracker()
         self._validation_state.publish_implied_qualities(self._implied_quality_list)

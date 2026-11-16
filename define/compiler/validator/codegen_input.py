@@ -7,45 +7,15 @@ from typing import TYPE_CHECKING, final
 import msgspec
 
 from define.compiler import ast
+from define.compiler.validator.reference_graph import abstract_program
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from define.compiler import chained_name
     from define.compiler.graphs import reference_graph_order
     from define.compiler.validator.reference_graph.destruction import (
         destruction_contract,
     )
-
-
-# Repeated executions of the same action must remain distinct while nested
-# Guarantees move with or disappear with their particles.
-@final
-class ActionExecution(msgspec.Struct, eq=False):
-    """An action execution with its caller's destruction connections."""
-
-    action: ast.ActionReference
-    destruction_connections: list[destruction_contract.DestructionConnection] = (
-        msgspec.field(default_factory=list)
-    )
-
-
-@final
-class Destruction(msgspec.Struct):
-    """A Simultaneous Transitive Destruction the action performs."""
-
-    contribution: destruction_contract.DestructionContribution
-
-
-class GuaranteedParticleDestructors(msgspec.Struct):
-    """What runs when what an action left at and below one of its contracted positions is destroyed without being applied."""
-
-    # Named as action_contract.GuaranteedPosition.position names positions.
-    position_in_action: chained_name.PositionReferenceTuple
-    # Destructors of the particle the action left there.
-    destructors: list[ast.GlobalTypedNameReference]
-    # What also runs for what the action left in its child positions.
-    for_child_positions: list[destruction_contract.RunGuaranteedParticleDestructors]
 
 
 class EncodedLiteral(msgspec.Struct):
@@ -55,26 +25,11 @@ class EncodedLiteral(msgspec.Struct):
     content: str
 
 
-class ValueSetting(msgspec.Struct):
-    """A validated Value Setting Statement."""
-
-    target_position: ast.PositionReference
-    # The value quality of both positions.
-    value_quality: ast.GlobalTypedNameReference
-
-
 @final
-class LiteralValueSetting(ValueSetting):
+class LiteralValueSetting(abstract_program.ValueSetting):
     """A Value Setting Statement whose source is a literal."""
 
     value: EncodedLiteral
-
-
-@final
-class PositionValueSetting(ValueSetting):
-    """A Value Setting Statement whose source is another position."""
-
-    source_position: ast.PositionReference
 
 
 class OperationArgument[LookedAt](msgspec.Struct):
@@ -152,9 +107,9 @@ type ActionStep = (
     | ast.CreateParticleStatement
     | ast.MoveParticleStatement
     | LiteralValueSetting
-    | PositionValueSetting
-    | ActionExecution
-    | Destruction
+    | abstract_program.PositionValueSetting
+    | abstract_program.ActionExecution
+    | abstract_program.Destruction
     | ActionOperationExecution
 )
 
@@ -173,7 +128,9 @@ class ActionCodegenInput(msgspec.Struct):
     destruction_contracts: list[destruction_contract.DestructionContract]
     # One entry for each of the action's contracted positions where
     # Destructors run for what it left.
-    guaranteed_particle_destructors: list[GuaranteedParticleDestructors]
+    guaranteed_particle_destructors: list[
+        abstract_program.GuaranteedParticleDestructors
+    ]
 
 
 class EncodingOperationCodegenInput(msgspec.Struct):
