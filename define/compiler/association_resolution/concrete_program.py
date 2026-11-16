@@ -120,7 +120,7 @@ type OperationStep = (
 )
 
 
-class ActionCodegenInput(msgspec.Struct):
+class ConcreteAction(msgspec.Struct):
     """An action's source-ordered steps and exposed destruction contracts."""
 
     definition: ast.ActionDefinition
@@ -133,7 +133,7 @@ class ActionCodegenInput(msgspec.Struct):
     ]
 
 
-class EncodingOperationCodegenInput(msgspec.Struct):
+class ConcreteEncodingOperation(msgspec.Struct):
     """An Encoding Operation's body: its source-ordered steps, or the computer operation that is its only statement."""
 
     definition: ast.EncodingOperationDefinition
@@ -157,12 +157,12 @@ class CompositeValueOperation(msgspec.Struct):
         return encodings
 
 
-class CodegenInput(msgspec.Struct):
+class ConcreteProgram(msgspec.Struct):
     """Validated definitions and ordered steps for code generation."""
 
     definition_order: reference_graph_order.ReferenceGraphOrder
-    actions: dict[str, ActionCodegenInput]
-    encoding_operations: dict[str, EncodingOperationCodegenInput]
+    actions: dict[str, ConcreteAction]
+    encoding_operations: dict[str, ConcreteEncodingOperation]
     # Each value quality's one associated encoding, keyed by the value quality's
     # full typed name.
     value_encodings: dict[str, ast.GlobalTypedNameReference]

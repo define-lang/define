@@ -10,9 +10,12 @@ from define.compiler import (
     chained_name,
     name_types,
 )
+from define.compiler.association_resolution import (
+    concrete_program,
+    literal_encoder,
+)
 from define.compiler.errors import diagnostics
 from define.compiler.validator import (
-    codegen_input,
     scope_tracker,
     validation_result,
 )
@@ -22,7 +25,6 @@ from define.compiler.validator.reference_graph import (
     action_operation_execution_validator,
     action_requirement_validator,
     chained_name_validator,
-    literal_encoder,
     particle_operation_validator,
     position_occupancy,
     position_quality_resolver,
@@ -48,11 +50,13 @@ from define.compiler.validator.reference_graph.particles import (
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from define.compiler.association_resolution import (
+        value_operation_executions,
+    )
     from define.compiler.data_structures import interned_set, typed_name_dict
     from define.compiler.validator.reference_graph import (
         quality_assignment,
         reference_graph_validation_state,
-        value_operation_executions,
     )
     from define.compiler.validator.reference_graph.destruction import (
         destruction_contract,
@@ -97,7 +101,7 @@ class ActionDefinitionValidator:
         self._value_operation_executions = value_operation_executions
         self._diagnostics = []
         self._destruction_contracts = []
-        self._steps: list[codegen_input.ActionStep] = []
+        self._steps: list[concrete_program.ActionStep] = []
 
     @property
     def _enclosing_fqun(self) -> ast.Fqun:
@@ -445,7 +449,7 @@ class ActionDefinitionValidator:
                     has_errors = has_errors or bool(literal_diagnostics)
                     if value is not None:
                         self._steps.append(
-                            codegen_input.LiteralValueSetting(
+                            concrete_program.LiteralValueSetting(
                                 target_position=stmt.target_position,
                                 value_quality=target_value_quality,
                                 value=value,
@@ -623,7 +627,7 @@ class ActionDefinitionValidator:
         return validation_result.ActionPostorderValidationResult(
             diagnostics=self._diagnostics,
             contract=contract,
-            codegen_input=codegen_input.ActionCodegenInput(
+            codegen_input=concrete_program.ConcreteAction(
                 definition=self._definition,
                 steps=self._steps,
                 destruction_contracts=destruction_contracts,

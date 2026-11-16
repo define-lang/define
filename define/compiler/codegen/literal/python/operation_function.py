@@ -7,8 +7,8 @@ import typing
 import msgspec
 
 from define.compiler import ast
+from define.compiler.association_resolution import concrete_program
 from define.compiler.codegen.literal.python import naming, renderer, value_types
-from define.compiler.validator import codegen_input
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -56,12 +56,12 @@ def generate_step_function(
     function: renderer.FunctionReference,
     views: Sequence[ast.InterfaceViewDefinition],
     view_python_types: Mapping[str, str],
-    steps: Sequence[codegen_input.OperationStep],
+    steps: Sequence[concrete_program.OperationStep],
 ) -> renderer.OperationFunction:
     """Build the template context for a function with the interface views ``views``, whose values have the Python types ``view_python_types``, keyed by each view's source typed name, that performs ``steps``."""
     callees: list[renderer.FunctionReference] = []
     for step in steps:
-        if isinstance(step, codegen_input.OperationExecution):
+        if isinstance(step, concrete_program.OperationExecution):
             callees.append(
                 converter.runtime_operation_function_reference(step.runtime_operation)
             )
@@ -114,7 +114,7 @@ def finish_function(
 
 def _step_statements(
     converter: naming.NameConverter,
-    steps: Sequence[codegen_input.OperationStep],
+    steps: Sequence[concrete_program.OperationStep],
     function_locals: FunctionLocals,
 ) -> tuple[list[renderer.OperationStatement], list[str]]:
     """Return the statements that perform ``steps``, and the local names that the last of them assigns, in order, naming each local view in the function's locals."""
@@ -128,7 +128,7 @@ def _step_statements(
                 view_names[step.typed_name.source_typed_name] = names.allocate(
                     naming.VIEW_PREFIX + step.typed_name.name_content.name
                 )
-            case codegen_input.OperationExecution():
+            case concrete_program.OperationExecution():
                 call = _call(
                     converter.runtime_operation_function_reference(
                         step.runtime_operation
@@ -153,7 +153,7 @@ def _step_statements(
 def _call(
     function: renderer.FunctionReference,
     execution_arguments: Sequence[
-        codegen_input.OperationArgument[ast.LocalTypedNameReference]
+        concrete_program.OperationArgument[ast.LocalTypedNameReference]
     ],
     view_names: Mapping[str, str],
 ) -> renderer.OperationStatement.Call:
@@ -161,7 +161,7 @@ def _call(
     results: list[str] = []
     for argument in execution_arguments:
         looking_at = argument.looking_at
-        if isinstance(looking_at, codegen_input.EncodedLiteral):
+        if isinstance(looking_at, concrete_program.EncodedLiteral):
             looked_at = value_types.python_literal(looking_at)
         else:
             looked_at = view_names[looking_at.source_typed_name]

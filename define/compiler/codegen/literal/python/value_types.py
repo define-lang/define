@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
     from define.compiler import ast
-    from define.compiler.validator import codegen_input
+    from define.compiler.association_resolution import concrete_program
 
 # The type argument of positions whose particles have no value that code
 # looking through them can use.
@@ -74,7 +74,7 @@ _ENCODING_PYTHON_LITERALS: Final[dict[str, Callable[[str], str]]] = {
 }
 
 
-def python_literal(literal: codegen_input.EncodedLiteral) -> str:
+def python_literal(literal: concrete_program.EncodedLiteral) -> str:
     """Return the Python expression for a literal's value."""
     return _ENCODING_PYTHON_LITERALS[literal.encoding.full_typed_name](literal.content)
 

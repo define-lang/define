@@ -5,16 +5,16 @@ from __future__ import annotations
 import typing
 
 from define.compiler import ast, name_types
+from define.compiler.association_resolution import concrete_program
 from define.compiler.errors import diagnostics
-from define.compiler.validator import codegen_input
 from define.compiler.validator.structural import name_validators
 
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Mapping, Sequence
 
+    from define.compiler.association_resolution import literal_encoder
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
-    from define.compiler.validator.reference_graph import literal_encoder
 
 
 class OperationArgumentsValidator:
@@ -50,7 +50,8 @@ class OperationArgumentsValidator:
     ) -> tuple[
         list[diagnostics.Diagnostic],
         dict[
-            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
+            ast.OperationArgumentStatement[ast.LookedAt],
+            concrete_program.EncodedLiteral,
         ],
     ]:
         """Validate the statement's arguments against the executed operation's interface views.
@@ -65,7 +66,8 @@ class OperationArgumentsValidator:
         """
         validation_diagnostics: list[diagnostics.Diagnostic] = []
         literal_values: dict[
-            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
+            ast.OperationArgumentStatement[ast.LookedAt],
+            concrete_program.EncodedLiteral,
         ] = {}
         executed = self.get_executed_operation(statement)
         if executed is None:
@@ -130,11 +132,12 @@ class OperationArgumentsValidator:
         statement: ast.OperationExecutionStatement[LookedAtT | ast.Literal],
         executed: ast.OperationDefinition,
         literal_values: Mapping[
-            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
+            ast.OperationArgumentStatement[ast.LookedAt],
+            concrete_program.EncodedLiteral,
         ],
-    ) -> list[codegen_input.OperationArgument[LookedAtT]] | None:
+    ) -> list[concrete_program.OperationArgument[LookedAtT]] | None:
         """Describe the statement's arguments for code generation, if all of them could be resolved."""
-        arguments: list[codegen_input.OperationArgument[LookedAtT]] = []
+        arguments: list[concrete_program.OperationArgument[LookedAtT]] = []
         view_indexes = executed.view_indexes_by_name()
         for argument in statement.arguments:
             view_index = view_indexes.get(argument.view.source_typed_name)
@@ -150,13 +153,13 @@ class OperationArgumentsValidator:
                 if literal_value is None:
                     return None
                 arguments.append(
-                    codegen_input.OperationArgument(
+                    concrete_program.OperationArgument(
                         interface_view=interface_view, looking_at=literal_value
                     )
                 )
             else:
                 arguments.append(
-                    codegen_input.OperationArgument(
+                    concrete_program.OperationArgument(
                         interface_view=interface_view, looking_at=looking_at
                     )
                 )
@@ -279,7 +282,7 @@ class OperationArgumentsValidator:
             ast.OperationArgumentStatement[ast.LookedAt], Collection[str]
         ],
         validation_diagnostics: list[diagnostics.Diagnostic],
-    ) -> codegen_input.EncodedLiteral | None:
+    ) -> concrete_program.EncodedLiteral | None:
         """Check that the particle the argument looks at meets the quality assignments of the executed operation's interface view.
 
         Returns the literal the argument looks at, translated into what the
@@ -336,12 +339,12 @@ class OperationArgumentsValidator:
         executed: ast.OperationDefinition,
         interface_view: ast.InterfaceViewDefinition,
         validation_diagnostics: list[diagnostics.Diagnostic],
-    ) -> codegen_input.EncodedLiteral | None:
+    ) -> concrete_program.EncodedLiteral | None:
         """Check that the literal can be translated into what the executed operation's interface view requires, and return it translated."""
         # The literal is translated into whatever the view requires, so it
         # always has the view's qualities; only that translation can fail.
         if isinstance(executed, ast.EncodingOperationDefinition):
-            translated: codegen_input.EncodedLiteral | None = None
+            translated: concrete_program.EncodedLiteral | None = None
             for statement in interface_view.quality_assignment_block.statements:
                 encoding = statement.typed_global_name
                 if encoding.name_type == name_types.NameType.ENCODING:

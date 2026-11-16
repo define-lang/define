@@ -7,24 +7,28 @@ import typing
 import msgspec
 
 from define.compiler import ast
+from define.compiler.association_resolution import (
+    concrete_program,
+    value_operation_executions,
+)
 from define.compiler.errors import diagnostics
-from define.compiler.validator import codegen_input
 from define.compiler.validator.reference_graph import (
     operation_arguments_validator,
     position_occupancy,
-    value_operation_executions,
 )
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
 
+    from define.compiler.association_resolution import (
+        literal_encoder,
+    )
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import scope_tracker, validation_result
     from define.compiler.validator.reference_graph import (
         action_requirement_validator,
         chained_name_validator,
-        literal_encoder,
         particle_operation_validator,
         reference_graph_validation_state,
     )
@@ -96,7 +100,7 @@ class ActionOperationExecutionValidator:
         looked_at_validity: Iterator[bool],
         scope: scope_tracker.PositionScopeTracker,
     ) -> tuple[
-        list[diagnostics.Diagnostic], codegen_input.ActionOperationExecution | None
+        list[diagnostics.Diagnostic], concrete_program.ActionOperationExecution | None
     ]:
         """Validate an Operation Execution Statement, and return its diagnostics and, if it is valid and its Encoding Operations can be chosen, its code generation step."""
         statement_diagnostics: list[diagnostics.Diagnostic] = []
@@ -235,11 +239,12 @@ class ActionOperationExecutionValidator:
         stmt: ast.OperationExecutionStatement[ast.PositionReference | ast.Literal],
         executed: ast.ValueOperationDefinition,
         literal_values: Mapping[
-            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
+            ast.OperationArgumentStatement[ast.LookedAt],
+            concrete_program.EncodedLiteral,
         ],
         looked_at_value_qualities: Mapping[str, ast.GlobalTypedNameReference],
     ) -> tuple[
-        codegen_input.ActionOperationExecution | None, list[diagnostics.Diagnostic]
+        concrete_program.ActionOperationExecution | None, list[diagnostics.Diagnostic]
     ]:
         """Return the code generation step of a valid Operation Execution Statement, if Encoding Operations can be chosen for it, and the diagnostics about choosing them."""
         arguments = self._arguments_validator.operation_arguments(
@@ -252,7 +257,7 @@ class ActionOperationExecutionValidator:
         )
         if execution is None:
             return None, execution_diagnostics
-        return codegen_input.ActionOperationExecution(
+        return concrete_program.ActionOperationExecution(
             operation=stmt.operation,
             operation_arguments=arguments,
             runtime_operation=execution.runtime_operation,
@@ -263,10 +268,10 @@ class ActionOperationExecutionValidator:
         self,
         stmt: ast.OperationExecutionStatement[ast.PositionReference | ast.Literal],
         executed: ast.ValueOperationDefinition,
-        arguments: Sequence[codegen_input.OperationArgument[ast.PositionReference]],
+        arguments: Sequence[concrete_program.OperationArgument[ast.PositionReference]],
         looked_at_value_qualities: Mapping[str, ast.GlobalTypedNameReference],
     ) -> tuple[
-        codegen_input.OperationExecution | None,
+        concrete_program.OperationExecution | None,
         list[diagnostics.Diagnostic],
     ]:
         """Choose the Encoding Operations that executing the Value Operation runs for the encodings of what the arguments look at, and return what it runs, with a diagnostic if a logical operation it executes has no Encoding Operation for them."""
@@ -274,7 +279,7 @@ class ActionOperationExecutionValidator:
         for argument in arguments:
             looking_at = argument.looking_at
             view_name = argument.interface_view.typed_name.source_typed_name
-            if isinstance(looking_at, codegen_input.EncodedLiteral):
+            if isinstance(looking_at, concrete_program.EncodedLiteral):
                 view_encodings[view_name] = looking_at.encoding
                 continue
             value_quality = looked_at_value_qualities.get(view_name)

@@ -5,8 +5,8 @@ from __future__ import annotations
 import typing
 
 from define.compiler import literal_parsers
+from define.compiler.association_resolution import concrete_program
 from define.compiler.errors import diagnostics
-from define.compiler.validator import codegen_input
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable
@@ -45,7 +45,7 @@ class LiteralEncoder:
 
     def encode(
         self, literal: ast.Literal, value_quality: ast.GlobalTypedNameReference
-    ) -> tuple[codegen_input.EncodedLiteral | None, list[diagnostics.Diagnostic]]:
+    ) -> tuple[concrete_program.EncodedLiteral | None, list[diagnostics.Diagnostic]]:
         """Return the literal in the value's encoding, if it can be encoded, and the diagnostics explaining why not."""
         potential_literal = literal.potential_literal
         literal_encoding = self._literal_encoding(potential_literal)
@@ -86,7 +86,7 @@ class LiteralEncoder:
 
     def encode_in_encoding(
         self, literal: ast.Literal, encoding: ast.GlobalTypedNameReference
-    ) -> tuple[codegen_input.EncodedLiteral | None, list[diagnostics.Diagnostic]]:
+    ) -> tuple[concrete_program.EncodedLiteral | None, list[diagnostics.Diagnostic]]:
         """Return the literal in the encoding, if it can be translated, and the diagnostics explaining why not."""
         potential_literal = literal.potential_literal
         literal_encoding = self._literal_encoding(potential_literal)
@@ -130,9 +130,9 @@ class LiteralEncoder:
         literal: ast.Literal,
         parser: Callable[[str], str],
         destination_encoding: ast.GlobalTypedNameReference,
-    ) -> tuple[codegen_input.EncodedLiteral | None, list[diagnostics.Diagnostic]]:
+    ) -> tuple[concrete_program.EncodedLiteral | None, list[diagnostics.Diagnostic]]:
         try:
-            return codegen_input.EncodedLiteral(
+            return concrete_program.EncodedLiteral(
                 encoding=destination_encoding, content=parser(literal.content)
             ), []
         except literal_parsers.LiteralParseError as e:

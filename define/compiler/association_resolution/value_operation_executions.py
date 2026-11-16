@@ -7,7 +7,8 @@ import typing
 import msgspec
 
 from define.compiler import ast
-from define.compiler.validator import codegen_input, validation_result
+from define.compiler.association_resolution import concrete_program
+from define.compiler.validator import validation_result
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
@@ -39,7 +40,7 @@ class MissingEncodingOperation(msgspec.Struct, frozen=True):
 # at the Value Operation's own interface views. None means it cannot run for a
 # reason that is already reported.
 type ValueOperationExecutionResult = (
-    codegen_input.OperationExecution | MissingEncodingOperation | None
+    concrete_program.OperationExecution | MissingEncodingOperation | None
 )
 
 # A Value Operation and the encodings of its interface views, in their order,
@@ -71,15 +72,17 @@ class ValueOperationExecutions:
             _ValueOperationEncodings,
             tuple[
                 ValueOperationExecutionResult,
-                codegen_input.CompositeValueOperation | None,
+                concrete_program.CompositeValueOperation | None,
             ],
         ] = {}
 
     def composite_value_operations(
         self,
-    ) -> dict[str, list[codegen_input.CompositeValueOperation]]:
+    ) -> dict[str, list[concrete_program.CompositeValueOperation]]:
         """Return every composite Value Operation worked out, grouped by its Value Operation's full typed name and sorted by its encodings."""
-        by_value_operation: dict[str, list[codegen_input.CompositeValueOperation]] = {}
+        by_value_operation: dict[
+            str, list[concrete_program.CompositeValueOperation]
+        ] = {}
         for _, composite in self._results.values():
             if composite is not None:
                 by_value_operation.setdefault(
@@ -124,7 +127,7 @@ class ValueOperationExecutions:
         value_operation: ast.ValueOperationDefinition,
         interface_view_encodings: dict[str, ast.GlobalTypedNameReference],
     ) -> tuple[
-        ValueOperationExecutionResult, codegen_input.CompositeValueOperation | None
+        ValueOperationExecutionResult, concrete_program.CompositeValueOperation | None
     ]:
         """Work out what executing the Value Operation runs when its interface views have ``interface_view_encodings``, and return it with the composite Value Operation it is, if it is one."""
         steps = self._validation_state.get_value_operation_steps(
@@ -135,7 +138,7 @@ class ValueOperationExecutions:
             return None, None
         # Local views are added as they are defined.
         view_encodings = dict(interface_view_encodings)
-        composite_steps: list[codegen_input.OperationStep] = []
+        composite_steps: list[concrete_program.OperationStep] = []
         for step in steps:
             match step:
                 case ast.LocalViewDefinition():
@@ -155,7 +158,7 @@ class ValueOperationExecutions:
                     composite_steps.append(execution)
                 case validation_result.ValueOperationExecution():
                     execution = self._value_operation_execution(step, view_encodings)
-                    if not isinstance(execution, codegen_input.OperationExecution):
+                    if not isinstance(execution, concrete_program.OperationExecution):
                         return execution, None
                     composite_steps.append(execution)
         # Calling a function that makes a single execution is no smaller than
@@ -164,24 +167,24 @@ class ValueOperationExecutions:
             # Structural validation reports a Value Operation that executes
             # nothing, so its only step is an execution.
             only_step = typing.cast(
-                "codegen_input.OperationExecution", composite_steps[0]
+                "concrete_program.OperationExecution", composite_steps[0]
             )
             return only_step, None
         arguments: list[
-            codegen_input.OperationArgument[ast.LocalTypedNameReference]
+            concrete_program.OperationArgument[ast.LocalTypedNameReference]
         ] = []
         for view in value_operation.views:
             arguments.append(
-                codegen_input.OperationArgument(
+                concrete_program.OperationArgument(
                     interface_view=view, looking_at=view.typed_name
                 )
             )
-        composite = codegen_input.CompositeValueOperation(
+        composite = concrete_program.CompositeValueOperation(
             definition=value_operation,
             view_encodings=interface_view_encodings,
             steps=composite_steps,
         )
-        return codegen_input.OperationExecution(
+        return concrete_program.OperationExecution(
             runtime_operation=composite, arguments=arguments
         ), composite
 
@@ -202,7 +205,7 @@ class ValueOperationExecutions:
         self,
         execution: validation_result.LogicalOperationExecution,
         view_encodings: dict[str, ast.GlobalTypedNameReference],
-    ) -> codegen_input.OperationExecution | MissingEncodingOperation:
+    ) -> concrete_program.OperationExecution | MissingEncodingOperation:
         """Return the execution of the Encoding Operation that performs a logical operation for the encodings of the views it looks at."""
         encodings: list[ast.GlobalTypedNameReference] = []
         for argument in execution.arguments:
@@ -221,7 +224,7 @@ class ValueOperationExecutions:
                 execution_stack=(execution.logical_operation,),
             )
         arguments: list[
-            codegen_input.OperationArgument[ast.LocalTypedNameReference]
+            concrete_program.OperationArgument[ast.LocalTypedNameReference]
         ] = []
         # ZIP: The index holds only Encoding Operations whose views have the
         # names and order of the logical operation's views, and the statement's
@@ -231,11 +234,11 @@ class ValueOperationExecutions:
             encoding_operation.views, execution.arguments, strict=True
         ):
             arguments.append(
-                codegen_input.OperationArgument(
+                concrete_program.OperationArgument(
                     interface_view=interface_view, looking_at=argument.looking_at
                 )
             )
-        return codegen_input.OperationExecution(
+        return concrete_program.OperationExecution(
             runtime_operation=encoding_operation.typed_name, arguments=arguments
         )
 
@@ -243,13 +246,13 @@ class ValueOperationExecutions:
         self,
         execution: validation_result.ValueOperationExecution,
         view_encodings: dict[str, ast.GlobalTypedNameReference],
-    ) -> codegen_input.OperationExecution | MissingEncodingOperation | None:
+    ) -> concrete_program.OperationExecution | MissingEncodingOperation | None:
         """Return what an execution of another Value Operation runs, for the encodings of what its arguments look at."""
         executed_view_encodings: dict[str, ast.GlobalTypedNameReference] = {}
         for argument in execution.arguments:
             looking_at = argument.looking_at
             executed_view = argument.interface_view.typed_name.source_typed_name
-            if isinstance(looking_at, codegen_input.EncodedLiteral):
+            if isinstance(looking_at, concrete_program.EncodedLiteral):
                 executed_view_encodings[executed_view] = looking_at.encoding
             else:
                 executed_view_encodings[executed_view] = view_encodings[
@@ -265,7 +268,7 @@ class ValueOperationExecutions:
             )
         if executed is None:
             return None
-        return codegen_input.OperationExecution(
+        return concrete_program.OperationExecution(
             runtime_operation=executed.runtime_operation,
             arguments=executed.arguments_for(execution.arguments),
         )

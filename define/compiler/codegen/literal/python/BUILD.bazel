@@ -14,7 +14,7 @@ py_library(
         ":naming",
         ":renderer",
         ":value_types",
-        "//define/compiler/validator:codegen_input",
+        "//define/compiler/association_resolution:concrete_program",
     ],
 )
 
@@ -31,7 +31,7 @@ py_library(
         ":renderer",
         ":value_types",
         "//define/compiler:ast",
-        "//define/compiler/validator:codegen_input",
+        "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/validator/reference_graph:abstract_program",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
         "@pypi//msgspec",
@@ -46,7 +46,7 @@ py_library(
         ":operation_function",
         ":renderer",
         ":value_types",
-        "//define/compiler/validator:codegen_input",
+        "//define/compiler/association_resolution:concrete_program",
     ],
 )
 
@@ -75,7 +75,7 @@ py_library(
         ":value_types",
         "//define/compiler:ast",
         "//define/compiler:constants",
-        "//define/compiler/validator:codegen_input",
+        "//define/compiler/association_resolution:concrete_program",
         "@pypi//msgspec",
     ],
 )
@@ -93,8 +93,8 @@ py_library(
         ":renderer",
         ":value_types",
         "//define/compiler:ast",
+        "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/graphs:reference_graph_executor",
-        "//define/compiler/validator:codegen_input",
         "@pypi//msgspec",
     ],
 )
@@ -122,8 +122,8 @@ py_library(
         "//define/compiler:chained_name",
         "//define/compiler:constants",
         "//define/compiler:name_types",
+        "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/data_structures:define_path",
-        "//define/compiler/validator:codegen_input",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
     ],
 )
@@ -149,7 +149,7 @@ py_library(
         ":renderer",
         ":value_types",
         "//define/compiler:ast",
-        "//define/compiler/validator:codegen_input",
+        "//define/compiler/association_resolution:concrete_program",
         "@pypi//msgspec",
     ],
 )
@@ -160,7 +160,7 @@ py_library(
     deps = [
         ":value_types",
         "//define/compiler:ast",
-        "//define/compiler/validator:codegen_input",
+        "//define/compiler/association_resolution:concrete_program",
     ],
 )
 
@@ -225,7 +225,7 @@ py_library(
     deps = [
         "//define/compiler:ast",
         "//define/compiler:constants",
-        "//define/compiler/validator:codegen_input",
+        "//define/compiler/association_resolution:concrete_program",
     ],
 )
 

@@ -17,8 +17,8 @@ from define.compiler.codegen.literal.python import (
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from define.compiler.association_resolution import concrete_program
     from define.compiler.codegen.literal.python import naming
-    from define.compiler.validator import codegen_input
 
 
 class _BinaryOperation(msgspec.Struct, frozen=True):
@@ -213,7 +213,7 @@ class _ComputerOperationStatement:
 
 
 def generate_encoding_operation(
-    operation_input: codegen_input.EncodingOperationCodegenInput,
+    operation_input: concrete_program.ConcreteEncodingOperation,
     converter: naming.NameConverter,
 ) -> renderer.OperationFunction:
     """Build the template context for the function that performs an Encoding Operation."""

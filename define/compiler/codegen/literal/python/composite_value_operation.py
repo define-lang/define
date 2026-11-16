@@ -7,12 +7,12 @@ import typing
 from define.compiler.codegen.literal.python import operation_function, value_types
 
 if typing.TYPE_CHECKING:
+    from define.compiler.association_resolution import concrete_program
     from define.compiler.codegen.literal.python import naming, renderer
-    from define.compiler.validator import codegen_input
 
 
 def generate_composite_value_operation(
-    composite: codegen_input.CompositeValueOperation,
+    composite: concrete_program.CompositeValueOperation,
     converter: naming.NameConverter,
 ) -> renderer.OperationFunction:
     """Build the template context for a composite Value Operation's function for one set of encodings."""

@@ -40,8 +40,8 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         "//define/compiler:ast",
+        "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/codegen/literal/python:generator",
-        "//define/compiler/validator:codegen_input",
     ],
 )
 

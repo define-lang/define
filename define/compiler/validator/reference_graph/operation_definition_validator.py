@@ -7,10 +7,13 @@ import typing
 from typing import override
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics
-from define.compiler.validator import codegen_input, scope_tracker, validation_result
-from define.compiler.validator.reference_graph import (
+from define.compiler.association_resolution import (
+    concrete_program,
     literal_encoder,
+)
+from define.compiler.errors import diagnostics
+from define.compiler.validator import scope_tracker, validation_result
+from define.compiler.validator.reference_graph import (
     operation_arguments_validator,
     view_use_tracker,
 )
@@ -114,7 +117,8 @@ class OperationDefinitionValidator[
         ],
         executed: ast.OperationDefinition,
         literal_values: Mapping[
-            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
+            ast.OperationArgumentStatement[ast.LookedAt],
+            concrete_program.EncodedLiteral,
         ],
     ): ...
 
@@ -349,7 +353,8 @@ class ValueOperationDefinitionValidator(
         ],
         executed: ast.OperationDefinition,
         literal_values: Mapping[
-            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
+            ast.OperationArgumentStatement[ast.LookedAt],
+            concrete_program.EncodedLiteral,
         ],
     ):
         arguments = self._arguments_validator.operation_arguments(
@@ -401,7 +406,7 @@ class EncodingOperationDefinitionValidator(
 ):
     """Validates an Encoding Operation definition and collects its steps for code generation."""
 
-    _steps: list[codegen_input.OperationStep]
+    _steps: list[concrete_program.OperationStep]
     _computer_operation: ast.ComputerOperationExecutionStatement | None
 
     def __init__(
@@ -442,7 +447,8 @@ class EncodingOperationDefinitionValidator(
         ],
         executed: ast.OperationDefinition,
         literal_values: Mapping[
-            ast.OperationArgumentStatement[ast.LookedAt], codegen_input.EncodedLiteral
+            ast.OperationArgumentStatement[ast.LookedAt],
+            concrete_program.EncodedLiteral,
         ],
     ):
         arguments = self._arguments_validator.operation_arguments(
@@ -450,7 +456,7 @@ class EncodingOperationDefinitionValidator(
         )
         if arguments is not None:
             self._steps.append(
-                codegen_input.OperationExecution(
+                concrete_program.OperationExecution(
                     runtime_operation=statement.operation, arguments=arguments
                 )
             )
@@ -467,7 +473,7 @@ class EncodingOperationDefinitionValidator(
     ) -> validation_result.EncodingOperationPostorderValidationResult:
         return validation_result.EncodingOperationPostorderValidationResult(
             diagnostics=self._diagnostics,
-            codegen_input=codegen_input.EncodingOperationCodegenInput(
+            codegen_input=concrete_program.ConcreteEncodingOperation(
                 definition=self._definition,
                 body=self._computer_operation or self._steps,
             ),

@@ -12,11 +12,11 @@ if typing.TYPE_CHECKING:
 
     from crates.source_rendering.python import rendering
     from define.compiler import ast
+    from define.compiler.association_resolution import concrete_program
     from define.compiler.config import encoding_operations_config
     from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.errors import diagnostics, syntax_errors
     from define.compiler.graphs import reference_graph, reference_graph_order
-    from define.compiler.validator import codegen_input
     from define.compiler.validator.reference_graph import action_contract
 
 
@@ -48,7 +48,7 @@ class ActionPostorderValidationResult(PostorderValidationResult):
     """Result of validating a single action definition during the DFS post-order walk."""
 
     contract: action_contract.ActionContract
-    codegen_input: codegen_input.ActionCodegenInput
+    codegen_input: concrete_program.ConcreteAction
 
 
 class LogicalOperationExecution(msgspec.Struct):
@@ -67,7 +67,7 @@ class ValueOperationExecution(msgspec.Struct):
     # about the execution are reported.
     operation: ast.GlobalTypedNameReference
     # In the order of the executed Value Operation's interface views.
-    arguments: list[codegen_input.OperationArgument[ast.LocalTypedNameReference]]
+    arguments: list[concrete_program.OperationArgument[ast.LocalTypedNameReference]]
 
 
 # What a Value Operation does, independent of the encodings of the views that
@@ -112,7 +112,7 @@ class ValuePostorderValidationResult(PostorderValidationResult):
 class EncodingOperationPostorderValidationResult(PostorderValidationResult):
     """Result of validating a single Encoding Operation definition during the DFS post-order walk."""
 
-    codegen_input: codegen_input.EncodingOperationCodegenInput
+    codegen_input: concrete_program.ConcreteEncodingOperation
 
 
 class DefinitionValidationResult(msgspec.Struct):

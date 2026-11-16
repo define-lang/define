@@ -11,10 +11,10 @@ from define.compiler.codegen.literal.python import (
 )
 
 if TYPE_CHECKING:
+    from define.compiler.association_resolution import concrete_program
     from define.compiler.codegen.literal.python import (
         value_types,
     )
-    from define.compiler.validator import codegen_input
 
 
 @final
@@ -23,7 +23,7 @@ class ActionDefinitionGenerator:
 
     def __init__(
         self,
-        action_input: codegen_input.ActionCodegenInput,
+        action_input: concrete_program.ConcreteAction,
         converter: naming.NameConverter,
         python_value_types: value_types.PythonValueTypes,
         *,

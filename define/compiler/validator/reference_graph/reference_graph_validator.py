@@ -7,18 +7,21 @@ import typing
 import msgspec
 
 from define.compiler import ast
+from define.compiler.association_resolution import (
+    concrete_program,
+    value_operation_executions,
+)
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import (
     reference_graph_executor,
 )
-from define.compiler.validator import codegen_input, validation_result
+from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import (
     action_definition_validator,
     logical_operation_definition_validator,
     operation_definition_validator,
     position_occupancy,
     reference_graph_validation_state,
-    value_operation_executions,
 )
 
 if typing.TYPE_CHECKING:
@@ -50,7 +53,7 @@ def _requires_validation(
 class ReferenceGraphValidationResult(msgspec.Struct, frozen=True):
     """What reference graph validation produces, beyond the diagnostics it reports."""
 
-    codegen_input: codegen_input.CodegenInput
+    codegen_input: concrete_program.ConcreteProgram
 
 
 # TODO: We need a mode that forces a fake caller as the parent of any top-level
@@ -115,8 +118,8 @@ class ReferenceGraphValidator:
             max_workers=max_workers,
         )
 
-        actions: dict[str, codegen_input.ActionCodegenInput] = {}
-        encoding_operations: dict[str, codegen_input.EncodingOperationCodegenInput] = {}
+        actions: dict[str, concrete_program.ConcreteAction] = {}
+        encoding_operations: dict[str, concrete_program.ConcreteEncodingOperation] = {}
         value_encodings: dict[str, ast.GlobalTypedNameReference] = {}
         for result in results:
             match result:
@@ -142,7 +145,7 @@ class ReferenceGraphValidator:
         ):
             self._validate_entry_action_requirements(entry_action)
         return ReferenceGraphValidationResult(
-            codegen_input=codegen_input.CodegenInput(
+            codegen_input=concrete_program.ConcreteProgram(
                 definition_order=definition_order,
                 actions=actions,
                 encoding_operations=encoding_operations,

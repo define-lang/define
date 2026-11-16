@@ -27,7 +27,7 @@ if typing.TYPE_CHECKING:
     from pathlib import Path
 
     from define.compiler import ast
-    from define.compiler.validator import codegen_input as codegen_input_types
+    from define.compiler.association_resolution import concrete_program
     from define.compiler.validator import validation_result
 
 
@@ -58,7 +58,7 @@ class CompilerValidationResult(CompilerResult):
     """Result of completing every compiler validation stage."""
 
     program_validation: validation_result.ProgramValidationResult
-    codegen_input: codegen_input_types.CodegenInput
+    codegen_input: concrete_program.ConcreteProgram
 
     @typing.override
     def error_strings(self) -> list[str]:

@@ -4,19 +4,6 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
-    name = "codegen_input",
-    srcs = ["codegen_input.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        "//define/compiler:ast",
-        "//define/compiler/graphs:reference_graph_order",
-        "//define/compiler/validator/reference_graph:abstract_program",
-        "//define/compiler/validator/reference_graph/destruction:destruction_contract",
-        "@pypi//msgspec",
-    ],
-)
-
-py_library(
     name = "scope_tracker",
     srcs = ["scope_tracker.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -56,9 +43,9 @@ py_library(
         "//define/compiler:__subpackages__",
     ],
     deps = [
-        ":codegen_input",
         "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
+        "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/config:encoding_operations_config",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/data_structures:typed_name_dict",
@@ -94,7 +81,6 @@ py_library(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":codegen_input",
         ":scope_tracker",
         ":scope_tracker_test",
         ":test_helpers",

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, final
 import msgspec
 
 from define.compiler import ast
+from define.compiler.association_resolution import concrete_program
 from define.compiler.codegen.literal.python import (
     destruction_contracts,
     known_destruction_work,
@@ -16,7 +17,6 @@ from define.compiler.codegen.literal.python import (
     renderer,
     value_types,
 )
-from define.compiler.validator import codegen_input
 from define.compiler.validator.reference_graph import abstract_program
 
 if TYPE_CHECKING:
@@ -42,7 +42,7 @@ class ActionStatementsGenerator:
 
     def __init__(
         self,
-        action_input: codegen_input.ActionCodegenInput,
+        action_input: concrete_program.ConcreteAction,
         converter: naming.NameConverter,
         python_value_types: value_types.PythonValueTypes,
         *,
@@ -82,7 +82,7 @@ class ActionStatementsGenerator:
                     modules.update(
                         self._converter.referenced_modules(step.target_position)
                     )
-                case codegen_input.LiteralValueSetting():
+                case concrete_program.LiteralValueSetting():
                     modules.update(
                         self._converter.referenced_modules(step.target_position)
                     )
@@ -99,7 +99,7 @@ class ActionStatementsGenerator:
                         modules.update(contracts.referenced_modules(connection))
                 case abstract_program.Destruction():
                     modules.update(work.referenced_modules(step.contribution.work))
-                case codegen_input.ActionOperationExecution():
+                case concrete_program.ActionOperationExecution():
                     modules.add(
                         self._converter.runtime_operation_function_reference(
                             step.runtime_operation
@@ -107,7 +107,7 @@ class ActionStatementsGenerator:
                     )
                     for argument in step.arguments:
                         if not isinstance(
-                            argument.looking_at, codegen_input.EncodedLiteral
+                            argument.looking_at, concrete_program.EncodedLiteral
                         ):
                             modules.update(
                                 self._converter.referenced_modules(argument.looking_at)
@@ -211,7 +211,7 @@ class ActionStatementsGenerator:
                             ),
                         )
                     )
-                case codegen_input.LiteralValueSetting():
+                case concrete_program.LiteralValueSetting():
                     value = value_types.python_literal(statement.value)
                     statements.append(
                         renderer.ActionStatement.SetValue(
@@ -251,7 +251,7 @@ class ActionStatementsGenerator:
                     statements.append(execution)
                     if contract is not None:
                         contract_definitions.append(contract)
-                case codegen_input.ActionOperationExecution():
+                case concrete_program.ActionOperationExecution():
                     statements.append(
                         self._execute_operation(statement, positions, names)
                     )
@@ -355,7 +355,7 @@ class ActionStatementsGenerator:
 
     def _execute_operation(
         self,
-        execution: codegen_input.ActionOperationExecution,
+        execution: concrete_program.ActionOperationExecution,
         positions: position_expression.PositionExpressionBuilder,
         names: naming.LocalNameAllocator,
     ) -> renderer.ActionStatement.ExecuteOperation:
@@ -366,7 +366,7 @@ class ActionStatementsGenerator:
             looking_at = argument.looking_at
             # Validation reports output views that look at literals, so a
             # literal is always an argument and never receives a result.
-            if isinstance(looking_at, codegen_input.EncodedLiteral):
+            if isinstance(looking_at, concrete_program.EncodedLiteral):
                 arguments.append(value_types.python_literal(looking_at))
                 continue
             value_type = self._python_value_types.view_python_value_type(
@@ -410,7 +410,7 @@ class ActionStatementsGenerator:
         return None
 
     def _execution_label(
-        self, execution: codegen_input.ActionOperationExecution
+        self, execution: concrete_program.ActionOperationExecution
     ) -> str | None:
         if self._trace_operations:
             return operation_labels.operation_execution_label(

@@ -5,8 +5,8 @@ from __future__ import annotations
 import enum
 from typing import TYPE_CHECKING
 
+from define.compiler.association_resolution import concrete_program
 from define.compiler.codegen.literal.python import value_types
-from define.compiler.validator import codegen_input
 
 if TYPE_CHECKING:
     from define.compiler import ast
@@ -45,13 +45,13 @@ def literal_value_operation_label(
 
 def operation_execution_label(
     action: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-    execution: codegen_input.ActionOperationExecution,
+    execution: concrete_program.ActionOperationExecution,
 ) -> str:
     """Format the trace label for executing an operation, with what each interface view looks at."""
     arguments: list[str] = [execution.operation.full_typed_name]
     for argument in execution.operation_arguments:
         looking_at = argument.looking_at
-        if isinstance(looking_at, codegen_input.EncodedLiteral):
+        if isinstance(looking_at, concrete_program.EncodedLiteral):
             arguments.append(value_types.python_literal(looking_at))
         else:
             arguments.append(_trace_position_name(looking_at))

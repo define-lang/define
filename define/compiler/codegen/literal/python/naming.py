@@ -9,8 +9,8 @@ import typing
 from pathlib import Path
 
 from define.compiler import ast, constants, name_types
+from define.compiler.association_resolution import concrete_program
 from define.compiler.codegen.literal.python import renderer
-from define.compiler.validator import codegen_input
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
@@ -356,10 +356,10 @@ class NameConverter:
         return function
 
     def runtime_operation_function_reference(
-        self, runtime_operation: codegen_input.RuntimeOperation
+        self, runtime_operation: concrete_program.RuntimeOperation
     ) -> renderer.FunctionReference:
         """Build a reference to a runtime operation's function."""
-        if isinstance(runtime_operation, codegen_input.CompositeValueOperation):
+        if isinstance(runtime_operation, concrete_program.CompositeValueOperation):
             return self.composite_value_operation_function_reference(
                 runtime_operation.definition.typed_name, runtime_operation.encodings()
             )
