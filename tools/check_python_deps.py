@@ -21,6 +21,7 @@ BAZEL_IMPORTS: Final = {"python.runfiles": "@rules_python//python/runfiles"}
 # interpreter startup, so each directory combines them into one py_test.
 COMBINED_TEST_TARGETS: Final = frozenset(
     {
+        "//define/compiler/association_resolution/association_resolver_tests:association_resolver_tests",
         "//define/compiler/parsing/parser_tests:parser_tests",
         "//define/compiler/validator/reference_graph/reference_graph_validator_tests:reference_graph_validator_tests",
         "//define/compiler/validator/structural/program_validator_tests:program_validator_tests",

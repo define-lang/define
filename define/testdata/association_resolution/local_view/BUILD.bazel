@@ -1,11 +1,11 @@
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 
 filegroup(
-    name = "composite_value_operation",
+    name = "local_view",
     testonly = True,
     srcs = glob(["**"]),
     visibility = [
-        "//define/compiler/validator/reference_graph/reference_graph_validator_tests:__pkg__",
+        "//define/compiler/association_resolution/association_resolver_tests:__pkg__",
         "//define/testdata:__pkg__",
     ],
 )

@@ -282,60 +282,6 @@ def test_unused_interface_value_is_dead(
     assert diagnostic.location.column == 24
 
 
-def test_project_value_encoding(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    value_encodings = result.reference_graph_result.concrete_program.value_encodings
-    assert {
-        value_quality: encoding.full_typed_name
-        for value_quality, encoding in value_encodings.items()
-    } == {
-        "value<my.domain.com:my_lib:/test>": "encoding<my.domain.com:my_lib:/test/digits>"
-    }
-
-
-def test_encoding_from_another_universe(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    value_encodings = result.reference_graph_result.concrete_program.value_encodings
-    assert {
-        value_quality: encoding.full_typed_name
-        for value_quality, encoding in value_encodings.items()
-    } == {
-        "value<my.domain.com:my_lib:/test>": "encoding<mv:define-lang.org:numbers:/number/digits>"
-    }
-
-
-def test_encoding_from_universe_without_multiverse(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    value_encodings = result.reference_graph_result.concrete_program.value_encodings
-    assert {
-        value_quality: encoding.full_typed_name
-        for value_quality, encoding in value_encodings.items()
-    } == {
-        "value<my.domain.com:my_lib:/test>": "encoding<define-lang.org:numbers:/number/digits>"
-    }
-
-
-def test_standard_encoding(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    value_encodings = result.reference_graph_result.concrete_program.value_encodings
-    assert {
-        value_quality: encoding.full_typed_name
-        for value_quality, encoding in value_encodings.items()
-    } == {"value<my.domain.com:my_lib:/test>": "encoding<standard:/binary/ascii>"}
-
-
 def test_associated_encoding_not_defined(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

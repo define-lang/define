@@ -1,0 +1,57 @@
+load("@rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+# These test files each run in a fraction of a second, so a separate pytest
+# process for each one spent most of its time starting up. Running them in one
+# py_test is an exception to the one-rule-per-source-file convention.
+py_test(
+    name = "association_resolver_tests",
+    size = "small",
+    srcs = [
+        "composite_value_operation_test.py",
+        "error_messages_test.py",
+        "local_view_test.py",
+        "operation_view_requirements_test.py",
+        "value_quality_test.py",
+        "value_setting_literal_test.py",
+    ],
+    data = [
+        "//define/testdata/association_resolution/composite_value_operation",
+        "//define/testdata/association_resolution/local_view",
+        "//define/testdata/association_resolution/operation_view_requirements",
+        "//define/testdata/association_resolution/value_quality",
+        "//define/testdata/association_resolution/value_setting_literal",
+    ],
+    deps = [
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler:conftest",
+        "//define/compiler:literal_parsers",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "init_py",
+    srcs = ["__init__.py"],
+)
+
+filegroup(
+    name = "test_sources",
+    testonly = True,
+    srcs = glob(["*_test.py"]),
+    visibility = ["//define/testdata:__pkg__"],
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":association_resolver_tests",
+        ":init_py",
+    ],
+)
+
+check_build_file()
