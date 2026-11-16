@@ -110,14 +110,15 @@ def test_invalid_operation_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 5
-    assert diagnostic.location.column == 35
-    assert diagnostic.segment == "bad-name"
-    assert diagnostic.chars == ("-",)
+    assert result.all_diagnostics == [
+        diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
+            location=rendering.SourceLocation(
+                line=11, column=35, end_line=11, end_column=35, file_path=None
+            ),
+            chars=("-",),
+            segment="bad-name",
+        )
+    ]
 
 
 def test_requires_short_operation_name(
@@ -127,7 +128,7 @@ def test_requires_short_operation_name(
     assert result.all_diagnostics == [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
             location=rendering.SourceLocation(
-                line=27, column=31, end_line=27, end_column=50, file_path=None
+                line=39, column=31, end_line=39, end_column=50, file_path=None
             ),
             fqun="my.domain.com:my_lib",
         )
@@ -138,15 +139,16 @@ def test_executes_itself(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.CircularGlobalReferenceDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 5
-    assert diagnostic.location.column == 21
-    assert diagnostic.cycle == [
-        "operation<my.domain.com:my_lib:/double>",
-        "operation<my.domain.com:my_lib:/double>",
+    assert result.all_diagnostics == [
+        diagnostics.CircularGlobalReferenceDiagnostic(
+            location=rendering.SourceLocation(
+                line=11, column=21, end_line=11, end_column=38, file_path=None
+            ),
+            cycle=[
+                "operation<my.domain.com:my_lib:/double>",
+                "operation<my.domain.com:my_lib:/double>",
+            ],
+        )
     ]
 
 

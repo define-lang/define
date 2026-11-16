@@ -548,6 +548,15 @@ class MissingLogicalOperationSupportStatement(DefineTokenError):
     )
 
 
+class MissingInterfaceViewDefinition(DefineTokenError):
+    """Left out the Interface Views of an Operation Definition Block or Encoding Operation Definition Block."""
+
+    message_format: ClassVar[str] = (
+        "Value operation and encoding operation definitions must contain at"
+        " least one 'define the view<...>' definition before 'it does'."
+    )
+
+
 class MissingLogicalOperationViewDefinition(DefineTokenError):
     """Left out the view definitions of a Logical Operation Definition Block."""
 

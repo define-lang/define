@@ -1802,8 +1802,8 @@ Proposals:
 A value operation is defined by `define the ` followed by a global typed name
 with the type `operation`, followed by an Operation Definition Block.
 
-An Operation Definition Block may contain any number of Interface Views (which
-are optional) followed by one other block: the Operation Statements Block.
+An Operation Definition Block contains one or more Interface Views followed by
+one other block: the Operation Statements Block.
 
 The Operation Statements Block creates a new local scope.
 
@@ -1812,6 +1812,7 @@ fully_qualified_operation_name = "operation", "<", fully_qualified_global_name, 
 operation_definition = "define the", " ", fully_qualified_operation_name, operation_definition_block ;
 operation_definition_block =
     block_open,
+    view_definition,
     { view_definition },
     operation_statements_block,
     block_close ;
@@ -1971,13 +1972,12 @@ View Setting Statement.
 ## Executing Value Operations
 
 An Operation Execution Statement has the syntax `execute the` followed by the
-typed global name of a Value Operation, followed by an Operation Arguments Block
-or a terminator.
+typed global name of a Value Operation, followed by an Operation Arguments
+Block.
 
 ```ebnf
 operation_name = "operation", "<", global_name, ">" ;
-operation_execution_statement = "execute the", " ", operation_name, operation_execution_end ;
-operation_execution_end = terminator | operation_arguments_block ;
+operation_execution_statement = "execute the", " ", operation_name, operation_arguments_block ;
 ```
 
 ### Operation Arguments Block
@@ -2114,6 +2114,7 @@ encoding_operation_definition =
     encoding_operation_definition_block ;
 encoding_operation_definition_block =
     block_open,
+    view_definition,
     { view_definition },
     encoding_operation_statements_block,
     block_close ;
@@ -2157,7 +2158,7 @@ encoding_operation_statement =
     | encoding_operation_execution_statement
     | view_setting_statement ;
 encoding_operation_execution_statement =
-    "execute the", " ", encoding_operation_name, operation_execution_end ;
+    "execute the", " ", encoding_operation_name, operation_arguments_block ;
 encoding_operation_name = "encoding_operation", "<", global_name, ">" ;
 computer_operation_execution_statement = "execute the computer operation", terminator ;
 ```

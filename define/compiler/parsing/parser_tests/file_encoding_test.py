@@ -1024,6 +1024,12 @@ def test_invisible_character_in_operation_statement(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute\u200b the operation</other>.\n"
         + "    }\n"
@@ -1031,9 +1037,9 @@ def test_invisible_character_in_operation_statement(
     )
     assert isinstance(error, syntax_errors.InvisibleCharacterError)
     assert error.char == "\u200b"
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 16
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 16
 
 
@@ -1042,6 +1048,12 @@ def test_invisible_character_in_operation_name_type(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the opera\u200btion</other>.\n"
         + "    }\n"
@@ -1049,9 +1061,9 @@ def test_invisible_character_in_operation_name_type(
     )
     assert isinstance(error, syntax_errors.InvisibleCharacterError)
     assert error.char == "\u200b"
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 26
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 26
 
 
@@ -1080,6 +1092,12 @@ def test_invisible_character_in_encoding_operation_name_type(
 ):
     error = parse_syntax_error(
         "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the encoding</e>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the encoding_opera\u200btion</other>.\n"
         + "    }\n"
@@ -1087,9 +1105,9 @@ def test_invisible_character_in_encoding_operation_name_type(
     )
     assert isinstance(error, syntax_errors.InvisibleCharacterError)
     assert error.char == "\u200b"
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 35
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 35
 
 
@@ -1098,6 +1116,12 @@ def test_invisible_character_in_operation_argument_view_name_type(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the operation</other> {\n"
         + "            with vi\u200bew<a> looking at view<left>.\n"
@@ -1107,9 +1131,9 @@ def test_invisible_character_in_operation_argument_view_name_type(
     )
     assert isinstance(error, syntax_errors.InvisibleCharacterError)
     assert error.char == "\u200b"
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 20
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 20
 
 
@@ -1118,6 +1142,12 @@ def test_invisible_character_in_operation_argument_source_name_type(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the operation</other> {\n"
         + "            with view<a> looking at vi\u200bew<p>.\n"
@@ -1127,9 +1157,9 @@ def test_invisible_character_in_operation_argument_source_name_type(
     )
     assert isinstance(error, syntax_errors.InvisibleCharacterError)
     assert error.char == "\u200b"
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 39
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 39
 
 
@@ -1138,6 +1168,12 @@ def test_invisible_character_in_operation_argument_statement(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the operation</other> {\n"
         + "            wi\u200bth view<a> looking at view<left>.\n"
@@ -1147,7 +1183,7 @@ def test_invisible_character_in_operation_argument_statement(
     )
     assert isinstance(error, syntax_errors.InvisibleCharacterError)
     assert error.char == "\u200b"
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 15
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 15

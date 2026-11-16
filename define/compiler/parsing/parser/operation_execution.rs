@@ -10,8 +10,8 @@ use crate::parser::lines::LineInBlock;
 use crate::parser::names::FqunWithCanonicalText;
 use source_rendering::Position;
 use terminals::{
-    BLOCK_OPEN, ENCODING_OPERATION, EXECUTE_THE, LITERAL, LOGICAL_OPERATION, NAME_CONTENT_START,
-    OPERATION, SPACE_LOOKING_AT, VIEW, WITH,
+    ENCODING_OPERATION, EXECUTE_THE, LITERAL, LOGICAL_OPERATION, NAME_CONTENT_START, OPERATION,
+    SPACE_LOOKING_AT, VIEW, WITH,
 };
 
 /// The one name type that a Value Operation Execution Statement allows.
@@ -40,7 +40,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// `fqun`, through the end of its last line.
     ///
     /// ```ebnf
-    /// operation_execution_statement = "execute the", " ", operation_name, operation_execution_end ;
+    /// operation_execution_statement = "execute the", " ", operation_name, operation_arguments_block ;
     /// operation_argument_statement = operation_argument_statement_in_action ;
     /// ```
     pub(crate) fn parse_operation_execution_statement_in_action(
@@ -68,7 +68,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// `fqun`, through the end of its last line.
     ///
     /// ```ebnf
-    /// operation_execution_statement = "execute the", " ", operation_name, operation_execution_end ;
+    /// operation_execution_statement = "execute the", " ", operation_name, operation_arguments_block ;
     /// operation_argument_statement = operation_argument_statement_in_operation ;
     /// ```
     pub(crate) fn parse_operation_execution_statement_in_operation(
@@ -101,8 +101,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// parses each argument.
     ///
     /// ```ebnf
-    /// operation_execution_statement = "execute the", " ", operation_name, operation_execution_end ;
-    /// operation_execution_end = terminator | operation_arguments_block ;
+    /// operation_execution_statement = "execute the", " ", operation_name, operation_arguments_block ;
     /// ```
     fn parse_operation_execution_statement<Argument: Node<'py>>(
         &mut self,
@@ -132,18 +131,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         let (operation, _) =
             self.parse_typed_global_name_reference(fqun, name_type, wrong_name_type)?;
-        if self.scanner.next_bytes_are(BLOCK_OPEN) {
-            let (arguments, end) =
-                self.parse_operation_arguments_block(parse_argument, start, indentation, fqun)?;
-            let location = self.ast.location(start, end)?;
-            return Ok((location, operation, arguments));
-        }
-        // There is no `.` or ` {`.
-        let Some(end) = self.parse_terminator()? else {
-            return Err(self.missing_terminator_or_brace());
-        };
-        let arguments = self.nodes.start::<Argument>();
-        let arguments = self.nodes.finish_tuple(arguments)?;
+        let (arguments, end) =
+            self.parse_operation_arguments_block(parse_argument, start, indentation, fqun)?;
         let location = self.ast.location(start, end)?;
         Ok((location, operation, arguments))
     }

@@ -854,10 +854,17 @@ def test_literal_cannot_set_value_format(validate_project: ValidateProject):
 def test_literal_cannot_be_converted_format(validate_project: ValidateProject):
     source = (
         "define the encoding_operation<my.domain.com:my_lib:/test> {\n"
+        "    define the view<result> {\n"
+        "        it is written.\n"
+        "        it may only contain particles where {\n"
+        "            it has the encoding<standard:/number/decimal/ascii>.\n"
+        "        }\n"
+        "    }\n"
         "\n"
         "    it does {\n"
         "        execute the encoding_operation</increment> {\n"
         '            with view<number> looking at literal</text>"5".\n'
+        "            with view<result> looking at view<result>.\n"
         "        }\n"
         "    }\n"
         "}\n"
@@ -875,6 +882,12 @@ def test_literal_cannot_be_converted_format(validate_project: ValidateProject):
                 "            it has the encoding<standard:/number/decimal/ascii>.\n"
                 "        }\n"
                 "    }\n"
+                "    define the view<result> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the encoding<standard:/number/decimal/ascii>.\n"
+                "        }\n"
+                "    }\n"
                 "\n"
                 "    it does {\n"
                 "        execute the computer operation.\n"
@@ -887,7 +900,7 @@ def test_literal_cannot_be_converted_format(validate_project: ValidateProject):
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 5, column 42
+        File "test.dfn", line 11, column 42
             with view<number> looking at literal</text>"5".
                                          ^^^^^^^^^^^^^^
         literal</text> cannot be looked at as encoding<standard:/number/decimal/ascii>, because literals with the encoding</text_encoding> cannot be translated into encoding<standard:/number/decimal/ascii>.
@@ -901,10 +914,17 @@ def test_literal_cannot_be_converted_to_any_literal_encoding_format(
 ):
     source = (
         "define the encoding_operation<my.domain.com:my_lib:/test> {\n"
+        "    define the view<result> {\n"
+        "        it is written.\n"
+        "        it may only contain particles where {\n"
+        "            it has the encoding</text_encoding>.\n"
+        "        }\n"
+        "    }\n"
         "\n"
         "    it does {\n"
         "        execute the encoding_operation</append> {\n"
         '            with view<text> looking at literal<standard:/number>"5".\n'
+        "            with view<result> looking at view<result>.\n"
         "        }\n"
         "    }\n"
         "}\n"
@@ -921,6 +941,12 @@ def test_literal_cannot_be_converted_to_any_literal_encoding_format(
                 "            it has the encoding</text_encoding>.\n"
                 "        }\n"
                 "    }\n"
+                "    define the view<result> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the encoding</text_encoding>.\n"
+                "        }\n"
+                "    }\n"
                 "\n"
                 "    it does {\n"
                 "        execute the computer operation.\n"
@@ -933,7 +959,7 @@ def test_literal_cannot_be_converted_to_any_literal_encoding_format(
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 5, column 40
+        File "test.dfn", line 11, column 40
             with view<text> looking at literal<standard:/number>"5".
                                        ^^^^^^^^^^^^^^^^^^^^^^^^^
         literal<standard:/number> cannot be looked at as encoding</text_encoding>, because literals with the encoding<standard:/number/decimal/ascii> cannot be translated into encoding</text_encoding>.

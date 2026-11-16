@@ -22,8 +22,23 @@ define the operation<my.domain.com:my_lib:/copy> {
     }
 }
 define the operation<my.domain.com:my_lib:/double> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
 
     it does {
-        execute the operation<my.domain.com:my_lib:/copy>.
+        execute the operation<my.domain.com:my_lib:/copy> {
+            with view<source> looking at view<number>.
+            with view<target> looking at view<result>.
+        }
     }
 }

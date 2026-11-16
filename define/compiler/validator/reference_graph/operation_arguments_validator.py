@@ -106,15 +106,6 @@ class OperationArgumentsValidator:
         Returns the arguments that name a view of the executed definition, by
         view index in source order.
         """
-        if not executed.views:
-            if arguments:
-                validation_diagnostics.append(
-                    diagnostics.ArgumentsForOperationWithoutViewsDiagnostic(
-                        location=arguments[0].location,
-                        operation_name=operation_name,
-                    )
-                )
-            return {}
         view_indexes = executed.view_indexes_by_name()
         arguments_by_index = self._collect_arguments(
             arguments, executed, view_indexes, operation_name, validation_diagnostics

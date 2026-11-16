@@ -18,7 +18,14 @@ if TYPE_CHECKING:
 
 
 _OPERATION_PREFIX = (
-    "define the operation<mv:define-lang.org:parser:/add> {\n" + "    it does {\n"
+    "define the operation<mv:define-lang.org:parser:/add> {\n"
+    + "    define the view<v> {\n"
+    + "        it is read.\n"
+    + "        it may only contain particles where {\n"
+    + "            it has the value</v>.\n"
+    + "        }\n"
+    + "    }\n"
+    + "    it does {\n"
 )
 
 _OPERATION_SUFFIX = "    }\n}\n"
@@ -39,31 +46,25 @@ def test_disallows_encoding_operation_statement(parse_syntax_error: ParseSyntaxE
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedOperationOrLogicalOperation)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 21
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 28
 
 
-def test_operation_execution_without_arguments(parse: Parse):
-    [statement] = _operation_statements(
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the operation</other>.\n"
-            + _OPERATION_SUFFIX
-        )
+def test_operation_execution_requires_arguments_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the operation</other>.\n"
+        + _OPERATION_SUFFIX
     )
-    assert isinstance(statement, ast.OperationExecutionStatement)
-    assert statement.operation.name_type == name_types.NameType.OPERATION
-    assert statement.operation.name_content.fqun is None
-    assert statement.operation.name_content.path.name == "/other"
-    assert statement.operation.location == rendering.SourceLocation(
-        line=3, column=21, end_line=3, end_column=37
-    )
-    assert statement.arguments == ()
-    assert statement.location == rendering.SourceLocation(
-        line=3, column=9, end_line=3, end_column=38
-    )
+    assert isinstance(error, syntax_errors.MissingOpenBrace)
+    assert error.location.line == 9
+    assert error.location.column == 38
+    assert error.location.end_line == 9
+    assert error.location.end_column == 38
 
 
 def test_operation_execution_with_arguments(parse: Parse):
@@ -83,30 +84,30 @@ def test_operation_execution_with_arguments(parse: Parse):
     assert view_argument.view.name_type == name_types.NameType.VIEW
     assert view_argument.view.name_content.name == "a"
     assert view_argument.view.location == rendering.SourceLocation(
-        line=4, column=18, end_line=4, end_column=24
+        line=10, column=18, end_line=10, end_column=24
     )
     looking_at_view = view_argument.looking_at
     assert isinstance(looking_at_view, ast.LocalTypedNameReference)
     assert looking_at_view.name_type == name_types.NameType.VIEW
     assert looking_at_view.name_content.name == "left"
     assert looking_at_view.location == rendering.SourceLocation(
-        line=4, column=37, end_line=4, end_column=46
+        line=10, column=37, end_line=10, end_column=46
     )
     assert view_argument.location == rendering.SourceLocation(
-        line=4, column=13, end_line=4, end_column=47
+        line=10, column=13, end_line=10, end_column=47
     )
     assert literal_argument.view.name_content.name == "b"
     looking_at_literal = literal_argument.looking_at
     assert isinstance(looking_at_literal, ast.Literal)
     assert looking_at_literal.content == "12"
     assert looking_at_literal.location == rendering.SourceLocation(
-        line=5, column=37, end_line=5, end_column=56
+        line=11, column=37, end_line=11, end_column=56
     )
     assert literal_argument.location == rendering.SourceLocation(
-        line=5, column=13, end_line=5, end_column=57
+        line=11, column=13, end_line=11, end_column=57
     )
     assert statement.location == rendering.SourceLocation(
-        line=3, column=9, end_line=6, end_column=9
+        line=9, column=9, end_line=12, end_column=9
     )
 
 
@@ -176,9 +177,9 @@ def test_operation_argument_cannot_look_at_position(
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 37
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 44
 
 
@@ -191,9 +192,9 @@ def test_operation_argument_cannot_look_at_action(parse_syntax_error: ParseSynta
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 37
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 42
 
 
@@ -208,9 +209,9 @@ def test_operation_argument_cannot_look_at_chained_position(
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 37
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 44
 
 
@@ -225,9 +226,9 @@ def test_operation_argument_cannot_look_at_position_with_space_before_angle_brac
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 37
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 44
 
 
@@ -284,9 +285,9 @@ def test_operation_argument_looking_at_position_stops_before_the_next_argument(
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 37
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 44
 
 
@@ -324,18 +325,16 @@ def test_operation_arguments_looking_at_same_position_stop_at_the_first(
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 37
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 44
 
 
 def test_multiple_statements_comments_and_blank_lines(parse: Parse):
-    [first, second, third] = _operation_statements(
+    [second, third] = _operation_statements(
         parse(
             _OPERATION_PREFIX
-            + "\n"
-            + "        execute the operation</first>. # comment\n"
             + "\n"
             + "        execute the operation</second> { # comment\n"
             + "\n"
@@ -348,32 +347,27 @@ def test_multiple_statements_comments_and_blank_lines(parse: Parse):
             + _OPERATION_SUFFIX
         )
     )
-    assert isinstance(first, ast.OperationExecutionStatement)
-    assert first.operation.name_content.path.name == "/first"
-    assert first.location == rendering.SourceLocation(
-        line=4, column=9, end_line=4, end_column=38
-    )
     assert isinstance(second, ast.OperationExecutionStatement)
     assert second.operation.name_content.path.name == "/second"
     [argument] = second.arguments
     assert argument.location == rendering.SourceLocation(
-        line=8, column=13, end_line=8, end_column=44
+        line=12, column=13, end_line=12, end_column=44
     )
     assert second.location == rendering.SourceLocation(
-        line=6, column=9, end_line=10, end_column=9
+        line=10, column=9, end_line=14, end_column=9
     )
     assert isinstance(third, ast.ViewSettingStatement)
     assert third.location == rendering.SourceLocation(
-        line=12, column=9, end_line=12, end_column=46
+        line=16, column=9, end_line=16, end_column=46
     )
 
 
 def test_requires_statement(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(_OPERATION_PREFIX + _OPERATION_SUFFIX)
     assert isinstance(error, syntax_errors.MissingOperationStatementsContent)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 5
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 5
 
 
@@ -384,9 +378,9 @@ def test_disallows_action_statement(parse_syntax_error: ParseSyntaxError):
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.InvalidOperationStatementsBlock)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 9
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 41
 
 
@@ -400,13 +394,13 @@ def test_disallows_action_statement_after_first_statement(
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.InvalidOperationStatementsBlock)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 9
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 41
 
 
-def test_operation_execution_requires_terminator_or_block(
+def test_operation_execution_requires_open_brace(
     parse_syntax_error: ParseSyntaxError,
 ):
     error = parse_syntax_error(
@@ -414,23 +408,25 @@ def test_operation_execution_requires_terminator_or_block(
         + "        execute the operation</other>\n"
         + _OPERATION_SUFFIX
     )
-    assert isinstance(error, syntax_errors.MissingTerminatorOrBrace)
-    assert error.location.line == 3
+    assert isinstance(error, syntax_errors.MissingOpenBrace)
+    assert error.location.line == 9
     assert error.location.column == 38
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 38
 
 
 def test_operation_requires_global_name(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
         _OPERATION_PREFIX
-        + "        execute the operation<other>.\n"
+        + "        execute the operation<other> {\n"
+        + "            with view<a> looking at view<v>.\n"
+        + "        }\n"
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.InvalidGlobalName)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 31
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 35
 
 
@@ -441,9 +437,9 @@ def test_operation_requires_open_angle_bracket(parse_syntax_error: ParseSyntaxEr
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.MissingOpenAngleBracket)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 30
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 30
 
 
@@ -454,9 +450,9 @@ def test_operation_name_type_cannot_be_position(parse_syntax_error: ParseSyntaxE
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedOperationOrLogicalOperation)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 21
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 28
 
 
@@ -465,9 +461,9 @@ def test_operation_name_type_cannot_be_action(parse_syntax_error: ParseSyntaxErr
         _OPERATION_PREFIX + "        execute the action</other>.\n" + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedOperationOrLogicalOperation)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 21
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 26
 
 
@@ -479,9 +475,9 @@ def test_arguments_block_requires_argument(parse_syntax_error: ParseSyntaxError)
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.MissingOperationArgumentsContent)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 9
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 9
 
 
@@ -499,7 +495,7 @@ def test_argument_without_terminator_gets_a_diagnostic(
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
-                line=4, column=44, end_line=4, end_column=44
+                line=10, column=44, end_line=10, end_column=44
             )
         )
     ]
@@ -508,7 +504,7 @@ def test_argument_without_terminator_gets_a_diagnostic(
     assert isinstance(statement, ast.OperationExecutionStatement)
     [argument] = statement.arguments
     assert argument.location == rendering.SourceLocation(
-        line=4, column=13, end_line=4, end_column=43
+        line=10, column=13, end_line=10, end_column=43
     )
 
 
@@ -521,9 +517,9 @@ def test_argument_requires_local_view_name(parse_syntax_error: ParseSyntaxError)
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.GlobalNameWhereLocalNameExpected)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 23
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 24
 
 
@@ -536,9 +532,9 @@ def test_argument_requires_view_name_type(parse_syntax_error: ParseSyntaxError):
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedView)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 18
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 25
 
 
@@ -551,9 +547,9 @@ def test_argument_requires_looking_at(parse_syntax_error: ParseSyntaxError):
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.InvalidOperationArgumentSyntax)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 26
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 33
 
 
@@ -566,9 +562,9 @@ def test_operation_missing_space_after_execute_the(
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.MissingWhitespace)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 20
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 28
 
 
@@ -579,9 +575,9 @@ def test_operation_extra_space_after_execute_the(parse_syntax_error: ParseSyntax
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExtraWhitespace)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 20
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 21
 
 
@@ -594,9 +590,9 @@ def test_argument_missing_space_after_with(parse_syntax_error: ParseSyntaxError)
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.MissingWhitespace)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 17
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 20
 
 
@@ -609,9 +605,9 @@ def test_argument_extra_space_after_with(parse_syntax_error: ParseSyntaxError):
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExtraWhitespace)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 17
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 18
 
 
@@ -624,9 +620,9 @@ def test_argument_missing_space_before_looking_at(parse_syntax_error: ParseSynta
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.MissingWhitespace)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 25
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 31
 
 
@@ -639,9 +635,9 @@ def test_argument_extra_space_before_looking_at(parse_syntax_error: ParseSyntaxE
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExtraWhitespace)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 25
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 26
 
 
@@ -654,9 +650,9 @@ def test_argument_missing_space_after_looking_at(parse_syntax_error: ParseSyntax
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.MissingWhitespace)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 36
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 39
 
 
@@ -669,9 +665,9 @@ def test_argument_extra_space_after_looking_at(parse_syntax_error: ParseSyntaxEr
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExtraWhitespace)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 36
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 37
 
 
@@ -684,9 +680,9 @@ def test_argument_view_cannot_be_chained(parse_syntax_error: ParseSyntaxError):
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.MissingTerminator)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 44
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 44
 
 
@@ -699,24 +695,30 @@ def test_argument_cannot_look_at_value(parse_syntax_error: ParseSyntaxError):
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 37
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 41
 
 
 def test_disallows_quality_implication(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        it also assigns the position</a>.\n"
         + "    }\n"
         + "}\n"
     )
     assert isinstance(error, syntax_errors.InvalidOperationStatementsBlock)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 9
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 41
 
 
@@ -725,6 +727,12 @@ def test_arguments_block_disallows_quality_implication(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the operation</other> {\n"
         + "            it also assigns the position</a>.\n"
@@ -733,15 +741,21 @@ def test_arguments_block_disallows_quality_implication(
         + "}\n"
     )
     assert isinstance(error, syntax_errors.InvalidOperationArgumentsBlock)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 13
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 45
 
 
 def test_argument_source_requires_local_view_name(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the operation</other> {\n"
         + "            with view<a> looking at view</p>.\n"
@@ -750,9 +764,9 @@ def test_argument_source_requires_local_view_name(parse_syntax_error: ParseSynta
         + "}\n"
     )
     assert isinstance(error, syntax_errors.GlobalNameWhereLocalNameExpected)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 42
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 43
 
 
@@ -767,9 +781,9 @@ def test_operation_argument_cannot_look_at_position_with_empty_name(
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 37
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 44
 
 
@@ -784,9 +798,9 @@ def test_operation_argument_cannot_look_at_position_without_terminator(
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 37
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 44
 
 
@@ -801,9 +815,9 @@ def test_operation_argument_literal_missing_open_quote(
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.MissingLiteralContentStart)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 53
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 53
 
 
@@ -818,7 +832,7 @@ def test_operation_argument_literal_followed_by_text(
         + _OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.MissingTerminator)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 56
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 56

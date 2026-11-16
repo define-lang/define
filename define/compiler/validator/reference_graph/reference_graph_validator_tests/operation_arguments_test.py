@@ -90,28 +90,6 @@ def test_missing_argument(
     ]
 
 
-def test_no_arguments_block(
-    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
-):
-    result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
-        diagnostics.MissingOperationArgumentDiagnostic(
-            location=rendering.SourceLocation(
-                line=27, column=21, end_line=27, end_column=36, file_path=None
-            ),
-            view_name="view<source>",
-            operation_name="operation</copy>",
-        ),
-        diagnostics.MissingOperationArgumentDiagnostic(
-            location=rendering.SourceLocation(
-                line=27, column=21, end_line=27, end_column=36, file_path=None
-            ),
-            view_name="view<target>",
-            operation_name="operation</copy>",
-        ),
-    ]
-
-
 def test_duplicate_argument(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):

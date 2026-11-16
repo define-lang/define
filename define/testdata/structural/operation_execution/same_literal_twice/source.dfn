@@ -1,12 +1,6 @@
 # Two views may look at the same literal.
-define the operation<my.domain.com:my_lib:/copy> {
-    define the view<source> {
-        it is read.
-        it may only contain particles where {
-            it has the value<standard:/number/natural>.
-        }
-    }
-    define the view<target> {
+define the operation<my.domain.com:my_lib:/double> {
+    define the view<result> {
         it is written.
         it may only contain particles where {
             it has the value<standard:/number/natural>.
@@ -15,18 +9,9 @@ define the operation<my.domain.com:my_lib:/copy> {
 
     it does {
         execute the operation<standard:/number/natural/add> {
-            with view<a> looking at view<source>.
-            with view<b> looking at literal<standard:/number>"0".
-            with view<result> looking at view<target>.
-        }
-    }
-}
-define the operation<my.domain.com:my_lib:/double> {
-
-    it does {
-        execute the operation</copy> {
-            with view<source> looking at literal<standard:/number>"2".
-            with view<target> looking at literal<standard:/number>"2".
+            with view<a> looking at literal<standard:/number>"2".
+            with view<b> looking at literal<standard:/number>"2".
+            with view<result> looking at view<result>.
         }
     }
 }

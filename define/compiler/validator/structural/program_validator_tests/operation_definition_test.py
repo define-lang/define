@@ -184,14 +184,20 @@ def test_without_execution(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.all_diagnostics == [
+        diagnostics.UnreferencedViewDiagnostic(
+            location=rendering.SourceLocation(
+                line=4, column=16, end_line=4, end_column=27, file_path=None
+            ),
+            view_name="view<number>",
+        ),
         diagnostics.OperationWithoutExecutionDiagnostic(
             location=rendering.SourceLocation(
-                line=4, column=5, end_line=10, end_column=5
+                line=11, column=5, end_line=17, end_column=5, file_path=None
             )
         ),
         diagnostics.UnreferencedLocalViewDiagnostic(
             location=rendering.SourceLocation(
-                line=5, column=20, end_line=5, end_column=31
+                line=12, column=20, end_line=12, end_column=31, file_path=None
             ),
             view_name="view<unused>",
         ),

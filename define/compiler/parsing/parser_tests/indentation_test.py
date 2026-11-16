@@ -730,6 +730,12 @@ def test_operation_argument_under_indented(
 ):
     result = parse_with_diagnostics(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the operation</other> {\n"
         + "        with view<a> looking at view<left>.\n"
@@ -741,7 +747,7 @@ def test_operation_argument_under_indented(
     assert result.diagnostics == [
         diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
-                line=4, column=1, end_line=4, end_column=8
+                line=10, column=1, end_line=10, end_column=8
             ),
             expected_indent=12,
             actual_indent=8,

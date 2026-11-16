@@ -305,18 +305,26 @@ def test_text_after_value_setting_literal_terminator(
     assert error.location.end_column == 64
 
 
-def test_text_after_operation_execution_terminator(
+def test_text_after_operation_argument_terminator(
     parse_syntax_error: ParseSyntaxError,
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
-        + "        execute the operation</other>.x\n"
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at view<v>.x\n"
+        + "        }\n"
         + "    }\n"
         + "}\n"
     )
     assert isinstance(error, syntax_errors.MissingNewlineAfterTerminator)
-    assert error.location.line == 3
-    assert error.location.column == 39
-    assert error.location.end_line == 3
-    assert error.location.end_column == 39
+    assert error.location.line == 10
+    assert error.location.column == 45
+    assert error.location.end_line == 10
+    assert error.location.end_column == 45

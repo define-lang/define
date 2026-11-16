@@ -1648,12 +1648,19 @@ def test_operation_statements_block_truncated_after_open(
     parse_syntax_error: ParseSyntaxError,
 ):
     error = parse_syntax_error(
-        "define the operation<mv:define-lang.org:parser:/add> {\n" + "    it does {\n"
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    it does {\n"
     )
     assert isinstance(error, syntax_errors.MissingOperationStatementsContent)
-    assert error.location.line == 2
+    assert error.location.line == 8
     assert error.location.column == 14
-    assert error.location.end_line == 2
+    assert error.location.end_line == 8
     assert error.location.end_column == 14
 
 
@@ -1662,13 +1669,19 @@ def test_operation_statements_block_truncated_after_statement(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        set the value of view<a> from view<b>.\n"
     )
     assert isinstance(error, syntax_errors.MissingCloseBrace)
-    assert error.location.line == 2
+    assert error.location.line == 8
     assert error.location.column == 5
-    assert error.location.end_line == 2
+    assert error.location.end_line == 8
     assert error.location.end_column == 13
 
 
@@ -1677,13 +1690,19 @@ def test_operation_arguments_block_truncated_after_open(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the operation</other> {\n"
     )
     assert isinstance(error, syntax_errors.MissingOperationArgumentsContent)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 40
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 40
 
 
@@ -1692,14 +1711,20 @@ def test_operation_arguments_block_truncated_after_argument(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the operation</other> {\n"
         + "            with view<a> looking at view<left>.\n"
     )
     assert isinstance(error, syntax_errors.MissingCloseBrace)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 9
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 39
 
 
@@ -1708,15 +1733,21 @@ def test_operation_execution_ends_after_execute_the(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the\n"
         + "    }\n"
         + "}\n"
     )
     assert isinstance(error, syntax_errors.ExpectedOperationOrLogicalOperation)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 20
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 20
 
 
@@ -1725,21 +1756,33 @@ def test_encoding_operation_execution_ends_after_execute_the(
 ):
     error = parse_syntax_error(
         "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the encoding</e>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the\n"
         + "    }\n"
         + "}\n"
     )
     assert isinstance(error, syntax_errors.ExpectedEncodingOperation)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 20
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 20
 
 
 def test_operation_argument_ends_after_with(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the operation</other> {\n"
         + "            with\n"
@@ -1748,9 +1791,9 @@ def test_operation_argument_ends_after_with(parse_syntax_error: ParseSyntaxError
         + "}\n"
     )
     assert isinstance(error, syntax_errors.ExpectedView)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 17
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 17
 
 
@@ -1778,6 +1821,12 @@ def test_action_operation_argument_ends_after_looking_at(
 def test_operation_argument_ends_after_looking_at(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the operation</other> {\n"
         + "            with view<a> looking at\n"
@@ -1786,7 +1835,7 @@ def test_operation_argument_ends_after_looking_at(parse_syntax_error: ParseSynta
         + "}\n"
     )
     assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 36
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 36

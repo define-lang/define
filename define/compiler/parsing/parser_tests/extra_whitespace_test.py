@@ -492,13 +492,19 @@ def test_extra_space_in_view_definition(parse_syntax_error: ParseSyntaxError):
 def test_extra_space_in_operation_statement(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute  the operation</other>.\n"
         + "    }\n"
         + "}\n"
     )
     assert isinstance(error, syntax_errors.ExtraWhitespace)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 16
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 17

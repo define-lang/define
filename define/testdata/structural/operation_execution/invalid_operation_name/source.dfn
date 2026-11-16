@@ -1,7 +1,15 @@
 # Executed operation names follow the global name format.
 define the operation<my.domain.com:my_lib:/double> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
 
     it does {
-        execute the operation</bad-name>.
+        execute the operation</bad-name> {
+            with view<a> looking at view<number>.
+        }
     }
 }

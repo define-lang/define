@@ -19,6 +19,12 @@ if TYPE_CHECKING:
 
 _ENCODING_OPERATION_PREFIX = (
     "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+    + "    define the view<v> {\n"
+    + "        it is read.\n"
+    + "        it may only contain particles where {\n"
+    + "            it has the encoding</e>.\n"
+    + "        }\n"
+    + "    }\n"
     + "    it does {\n"
 )
 
@@ -35,6 +41,12 @@ def test_encoding_operation_definition(parse: Parse):
     definition = _only_encoding_operation(
         parse(
             "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+            + "    define the view<v> {\n"
+            + "        it is read.\n"
+            + "        it may only contain particles where {\n"
+            + "            it has the encoding</e>.\n"
+            + "        }\n"
+            + "    }\n"
             + "    it does {\n"
             + "        execute the computer operation.\n"
             + "    }\n"
@@ -46,14 +58,17 @@ def test_encoding_operation_definition(parse: Parse):
     assert definition.typed_name.location == rendering.SourceLocation(
         line=1, column=12, end_line=1, end_column=61
     )
-    assert definition.views == ()
+    [view] = definition.views
+    assert view.location == rendering.SourceLocation(
+        line=2, column=5, end_line=7, end_column=5
+    )
     [statement] = definition.operation_statements.statements
     assert isinstance(statement, ast.ComputerOperationExecutionStatement)
     assert statement.location == rendering.SourceLocation(
-        line=3, column=9, end_line=3, end_column=39
+        line=9, column=9, end_line=9, end_column=39
     )
     assert definition.location == rendering.SourceLocation(
-        line=1, column=1, end_line=5, end_column=1
+        line=1, column=1, end_line=11, end_column=1
     )
 
 
@@ -90,26 +105,19 @@ def test_encoding_operation_definition_with_views(parse: Parse):
     )
 
 
-def test_encoding_operation_execution_without_arguments(parse: Parse):
-    definition = _only_encoding_operation(
-        parse(
-            _ENCODING_OPERATION_PREFIX
-            + "        execute the encoding_operation</other>.\n"
-            + _ENCODING_OPERATION_SUFFIX
-        )
+def test_encoding_operation_execution_requires_arguments_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _ENCODING_OPERATION_PREFIX
+        + "        execute the encoding_operation</other>.\n"
+        + _ENCODING_OPERATION_SUFFIX
     )
-    [statement] = definition.operation_statements.statements
-    assert isinstance(statement, ast.OperationExecutionStatement)
-    assert statement.operation.name_type == name_types.NameType.ENCODING_OPERATION
-    assert statement.operation.name_content.fqun is None
-    assert statement.operation.name_content.path.name == "/other"
-    assert statement.operation.location == rendering.SourceLocation(
-        line=3, column=21, end_line=3, end_column=46
-    )
-    assert statement.arguments == ()
-    assert statement.location == rendering.SourceLocation(
-        line=3, column=9, end_line=3, end_column=47
-    )
+    assert isinstance(error, syntax_errors.MissingOpenBrace)
+    assert error.location.line == 9
+    assert error.location.column == 47
+    assert error.location.end_line == 9
+    assert error.location.end_column == 47
 
 
 def test_encoding_operation_execution_with_arguments(parse: Parse):
@@ -140,17 +148,17 @@ def test_encoding_operation_execution_with_arguments(parse: Parse):
     assert isinstance(looking_at_view, ast.LocalTypedNameReference)
     assert looking_at_view.name_content.name == "left"
     assert view_argument.location == rendering.SourceLocation(
-        line=4, column=13, end_line=4, end_column=47
+        line=10, column=13, end_line=10, end_column=47
     )
     assert literal_argument.view.name_content.name == "b"
     looking_at_literal = literal_argument.looking_at
     assert isinstance(looking_at_literal, ast.Literal)
     assert looking_at_literal.content == "12"
     assert literal_argument.location == rendering.SourceLocation(
-        line=5, column=13, end_line=5, end_column=57
+        line=11, column=13, end_line=11, end_column=57
     )
     assert statement.location == rendering.SourceLocation(
-        line=3, column=9, end_line=6, end_column=9
+        line=9, column=9, end_line=12, end_column=9
     )
 
 
@@ -165,9 +173,9 @@ def test_encoding_operation_argument_cannot_look_at_position(
         + _ENCODING_OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedViewOrLiteral)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 37
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 44
 
 
@@ -191,8 +199,6 @@ def test_multiple_statements_comments_and_blank_lines(parse: Parse):
             + "\n"
             + "    it does { # comment\n"
             + "\n"
-            + "        execute the encoding_operation</first>. # comment\n"
-            + "\n"
             + "        execute the encoding_operation</second> { # comment\n"
             + "\n"
             + "            with view<a> looking at view<left>. # comment\n"
@@ -208,34 +214,41 @@ def test_multiple_statements_comments_and_blank_lines(parse: Parse):
     assert view.location == rendering.SourceLocation(
         line=4, column=5, end_line=14, end_column=5
     )
-    [first, second] = definition.operation_statements.statements
-    assert isinstance(first, ast.OperationExecutionStatement)
-    assert first.operation.name_content.path.name == "/first"
-    assert first.location == rendering.SourceLocation(
-        line=18, column=9, end_line=18, end_column=47
-    )
+    [second] = definition.operation_statements.statements
     assert isinstance(second, ast.OperationExecutionStatement)
     assert second.operation.name_content.path.name == "/second"
     [argument] = second.arguments
     assert argument.location == rendering.SourceLocation(
-        line=22, column=13, end_line=22, end_column=47
+        line=20, column=13, end_line=20, end_column=47
     )
     assert second.location == rendering.SourceLocation(
-        line=20, column=9, end_line=24, end_column=9
+        line=18, column=9, end_line=22, end_column=9
     )
     assert definition.location == rendering.SourceLocation(
-        line=1, column=1, end_line=28, end_column=1
+        line=1, column=1, end_line=26, end_column=1
     )
 
 
 def test_between_other_definitions(parse: Parse):
     program = parse(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
         + "define the encoding_operation<mv:define-lang.org:parser:/add_decimal> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the encoding</e>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the computer operation.\n"
         + "    }\n"
@@ -247,7 +260,7 @@ def test_between_other_definitions(parse: Parse):
     assert isinstance(encoding_operation, ast.EncodingOperationDefinition)
     assert encoding_operation.typed_name.name_content.path.name == "/add_decimal"
     assert encoding_operation.location == rendering.SourceLocation(
-        line=6, column=1, end_line=10, end_column=1
+        line=12, column=1, end_line=22, end_column=1
     )
     assert isinstance(encoding, ast.EncodingDefinition)
 
@@ -280,13 +293,48 @@ def test_requires_block(parse_syntax_error: ParseSyntaxError):
 
 def test_requires_operation_statements_block(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
-        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n}\n"
+        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the encoding</e>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
     )
     assert isinstance(error, syntax_errors.MissingOperationStatementsBlock)
+    assert error.location.line == 8
+    assert error.location.column == 1
+    assert error.location.end_line == 8
+    assert error.location.end_column == 1
+
+
+def test_requires_interface_view(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingInterfaceViewDefinition)
     assert error.location.line == 2
     assert error.location.column == 1
     assert error.location.end_line == 2
     assert error.location.end_column == 1
+
+
+def test_requires_interface_view_before_operation_statements_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        set the value of view<a> from view<b>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingInterfaceViewDefinition)
+    assert error.location.line == 2
+    assert error.location.column == 5
+    assert error.location.end_line == 2
+    assert error.location.end_column == 5
 
 
 def test_disallows_local_position_definition(parse_syntax_error: ParseSyntaxError):
@@ -308,9 +356,9 @@ def test_disallows_local_position_definition(parse_syntax_error: ParseSyntaxErro
 def test_requires_statement(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(_ENCODING_OPERATION_PREFIX + _ENCODING_OPERATION_SUFFIX)
     assert isinstance(error, syntax_errors.MissingEncodingOperationStatementsContent)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 5
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 5
 
 
@@ -321,9 +369,9 @@ def test_disallows_action_statement(parse_syntax_error: ParseSyntaxError):
         + _ENCODING_OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.InvalidEncodingOperationStatementsBlock)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 9
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 41
 
 
@@ -337,9 +385,9 @@ def test_disallows_action_statement_after_first_statement(
         + _ENCODING_OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.InvalidEncodingOperationStatementsBlock)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 9
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 41
 
 
@@ -350,22 +398,24 @@ def test_disallows_encoding_operation_statement(parse_syntax_error: ParseSyntaxE
         + _ENCODING_OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedEncodingOperation)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 21
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 28
 
 
 def test_disallows_value_operation_execution(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
         _ENCODING_OPERATION_PREFIX
-        + "        execute the operation</other>.\n"
+        + "        execute the operation</other> {\n"
+        + "            with view<a> looking at view<v>.\n"
+        + "        }\n"
         + _ENCODING_OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedEncodingOperation)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 21
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 29
 
 
@@ -378,9 +428,9 @@ def test_encoding_operation_name_type_cannot_be_position(
         + _ENCODING_OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExpectedEncodingOperation)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 21
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 28
 
 
@@ -393,9 +443,9 @@ def test_encoding_operation_extra_space_after_execute_the(
         + _ENCODING_OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.ExtraWhitespace)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 20
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 21
 
 
@@ -411,7 +461,7 @@ def test_computer_operation_without_terminator_gets_a_diagnostic(
     assert result.diagnostics == [
         diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
-                line=3, column=39, end_line=3, end_column=39
+                line=9, column=39, end_line=9, end_column=39
             )
         )
     ]
@@ -420,11 +470,11 @@ def test_computer_operation_without_terminator_gets_a_diagnostic(
     [statement] = definition.operation_statements.statements
     assert isinstance(statement, ast.ComputerOperationExecutionStatement)
     assert statement.location == rendering.SourceLocation(
-        line=3, column=9, end_line=3, end_column=38
+        line=9, column=9, end_line=9, end_column=38
     )
 
 
-def test_encoding_operation_execution_requires_terminator_or_block(
+def test_encoding_operation_execution_requires_open_brace(
     parse_syntax_error: ParseSyntaxError,
 ):
     error = parse_syntax_error(
@@ -432,10 +482,10 @@ def test_encoding_operation_execution_requires_terminator_or_block(
         + "        execute the encoding_operation</other>\n"
         + _ENCODING_OPERATION_SUFFIX
     )
-    assert isinstance(error, syntax_errors.MissingTerminatorOrBrace)
-    assert error.location.line == 3
+    assert isinstance(error, syntax_errors.MissingOpenBrace)
+    assert error.location.line == 9
     assert error.location.column == 47
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 47
 
 
@@ -444,13 +494,15 @@ def test_encoding_operation_execution_requires_global_name(
 ):
     error = parse_syntax_error(
         _ENCODING_OPERATION_PREFIX
-        + "        execute the encoding_operation<other>.\n"
+        + "        execute the encoding_operation<other> {\n"
+        + "            with view<a> looking at view<v>.\n"
+        + "        }\n"
         + _ENCODING_OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.InvalidGlobalName)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 40
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 44
 
 
@@ -462,9 +514,9 @@ def test_arguments_block_requires_argument(parse_syntax_error: ParseSyntaxError)
         + _ENCODING_OPERATION_SUFFIX
     )
     assert isinstance(error, syntax_errors.MissingOperationArgumentsContent)
-    assert error.location.line == 4
+    assert error.location.line == 10
     assert error.location.column == 9
-    assert error.location.end_line == 4
+    assert error.location.end_line == 10
     assert error.location.end_column == 9
 
 
@@ -473,15 +525,21 @@ def test_value_operation_disallows_computer_operation(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the computer operation.\n"
         + "    }\n"
         + "}\n"
     )
     assert isinstance(error, syntax_errors.ExpectedOperationOrLogicalOperation)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 21
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 28
 
 
@@ -490,15 +548,23 @@ def test_value_operation_disallows_encoding_operation_execution(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding_operation</other>.\n"
+        + "        execute the encoding_operation</other> {\n"
+        + "            with view<a> looking at view<v>.\n"
+        + "        }\n"
         + "    }\n"
         + "}\n"
     )
     assert isinstance(error, syntax_errors.ExpectedOperationOrLogicalOperation)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 21
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 38
 
 
@@ -510,7 +576,9 @@ def test_action_disallows_encoding_operation_execution(
         + "    it happens when {\n"
         + "        this particle is created.\n"
         + "    } and it does {\n"
-        + "        execute the encoding_operation</other>.\n"
+        + "        execute the encoding_operation</other> {\n"
+        + "            with view<a> looking at view<v>.\n"
+        + "        }\n"
         + "    }\n"
         + "}\n"
     )
@@ -558,16 +626,24 @@ def test_computer_operation_before_another_statement(
 ):
     error = parse_syntax_error(
         "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the encoding</e>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the computer operation.\n"
-        + "        execute the encoding_operation</other>.\n"
+        + "        execute the encoding_operation</other> {\n"
+        + "            with view<a> looking at view<v>.\n"
+        + "        }\n"
         + "    }\n"
         + "}\n"
     )
     assert isinstance(error, syntax_errors.ComputerOperationWithOtherStatements)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 9
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 39
 
 
@@ -576,29 +652,43 @@ def test_computer_operation_after_another_statement(
 ):
     error = parse_syntax_error(
         "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the encoding</e>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding_operation</other>.\n"
+        + "        execute the encoding_operation</other> {\n"
+        + "            with view<a> looking at view<v>.\n"
+        + "        }\n"
         + "        execute the computer operation.\n"
         + "    }\n"
         + "}\n"
     )
     assert isinstance(error, syntax_errors.ComputerOperationWithOtherStatements)
-    assert error.location.line == 4
+    assert error.location.line == 12
     assert error.location.column == 9
-    assert error.location.end_line == 4
+    assert error.location.end_line == 12
     assert error.location.end_column == 39
 
 
 def test_computer_operation_followed_by_text(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
         "define the encoding_operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the encoding</e>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the computer operation extra.\n"
         + "    }\n"
         + "}\n"
     )
     assert isinstance(error, syntax_errors.MissingTerminator)
-    assert error.location.line == 3
+    assert error.location.line == 9
     assert error.location.column == 39
-    assert error.location.end_line == 3
+    assert error.location.end_line == 9
     assert error.location.end_column == 39

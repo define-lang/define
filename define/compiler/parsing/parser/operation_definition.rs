@@ -54,6 +54,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// operation_definition = "define the", " ", fully_qualified_operation_name, operation_definition_block ;
     /// operation_definition_block =
     ///     block_open,
+    ///     view_definition,
     ///     { view_definition },
     ///     operation_statements_block,
     ///     block_close ;
@@ -99,7 +100,7 @@ impl<'py, 'source> Parser<'py, 'source> {
     /// them and where the block's content ends before that line.
     ///
     /// ```ebnf
-    /// { view_definition }
+    /// view_definition, { view_definition }
     /// ```
     fn parse_interface_views(
         &mut self,
@@ -112,16 +113,21 @@ impl<'py, 'source> Parser<'py, 'source> {
     )> {
         let views = self.nodes.start::<ast::InterfaceViewDefinition<'_>>();
         let mut content_end = block_open_end;
+        let mut has_view = false;
         loop {
             let line = self.next_line_in_block(0, &OPERATION_DEFINITION_STATEMENT_STARTS)?;
-            if !matches!(line, LineInBlock::Statement) {
-                return Ok((self.nodes.finish_tuple(views)?, line, content_end));
-            }
             let start = self.scanner.position;
-            let Some(typed_name_start) = self.scanner.consume_definition_start(DEFINE_THE, VIEW)
-            else {
+            let typed_name_start = match line {
+                LineInBlock::Statement => self.scanner.consume_definition_start(DEFINE_THE, VIEW),
+                LineInBlock::Close | LineInBlock::Unclosed => None,
+            };
+            let Some(typed_name_start) = typed_name_start else {
+                if !has_view {
+                    return Err(self.missing_interface_view_definition(line, block_open_end));
+                }
                 return Ok((self.nodes.finish_tuple(views)?, line, content_end));
             };
+            has_view = true;
             let (view, end) = self.parse_view_definition(start, typed_name_start, fqun)?;
             self.nodes.push(&views, view);
             content_end = end;
@@ -527,6 +533,31 @@ impl<'py> Parser<'py, '_> {
                 }
                 missing(&self.errors, start, self.end_of_line())
             }
+        }
+    }
+
+    /// Returns the error for an operation definition block, whose `{` ends at
+    /// `block_open_end`, that has no Interface View where `line` is.
+    #[cold]
+    #[inline(never)]
+    fn missing_interface_view_definition(
+        &self,
+        line: LineInBlock,
+        block_open_end: Position,
+    ) -> ParseError {
+        let start = self.scanner.position;
+        match line {
+            // The block's first statement is its operation statements block.
+            LineInBlock::Statement if self.scanner.next_bytes_are(IT_DOES) => {
+                self.errors.missing_interface_view_definition(start, start)
+            }
+            LineInBlock::Statement => self.invalid_operation_definition_statement(),
+            // The block closes where its first view definition belongs.
+            LineInBlock::Close => self.errors.missing_interface_view_definition(start, start),
+            // The block ends where its first view definition belongs.
+            LineInBlock::Unclosed => self
+                .errors
+                .missing_interface_view_definition(block_open_end, block_open_end),
         }
     }
 

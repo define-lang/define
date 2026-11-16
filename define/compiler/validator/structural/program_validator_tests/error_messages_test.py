@@ -393,6 +393,12 @@ def test_logical_operation_support_order_format():
 def test_local_view_error_messages():
     source = (
         "define the operation<my.domain.com:my_lib:/test> {\n"
+        "    define the view<number> {\n"
+        "        it is read.\n"
+        "        it may only contain particles where {\n"
+        "            it has the value<standard:/number/natural>.\n"
+        "        }\n"
+        "    }\n"
         "    it does {\n"
         "        define the view<unused> {\n"
         "            it may only contain particles where {\n"
@@ -409,22 +415,27 @@ def test_local_view_error_messages():
     ]
     assert formatted == [
         textwrap.dedent("""\
-        line 2, column 5
+        line 2, column 16
+            define the view<number> {
+                       ^^^^^^^^^^^^
+        'view<number>' is defined here, but it is never referenced within this definition; either remove the definition or reference 'view<number>'."""),
+        textwrap.dedent("""\
+        line 8, column 5
             it does {
             ^^^^^^^^^
         a value operation must execute at least one logical operation or value operation"""),
         textwrap.dedent("""\
-        line 3, column 20
+        line 9, column 20
             define the view<unused> {
                        ^^^^^^^^^^^^
         'view<unused>' must have a value quality, because every local view must have one"""),
         textwrap.dedent("""\
-        line 3, column 20
+        line 9, column 20
             define the view<unused> {
                        ^^^^^^^^^^^^
         'view<unused>' is defined here, but it is never referenced within this definition; either remove the definition or reference 'view<unused>'."""),
         textwrap.dedent("""\
-        line 5, column 28
+        line 11, column 28
             it has the encoding<standard:/number/decimal/ascii>.
                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         local views may only be assigned a value quality. However, 'encoding<standard:/number/decimal/ascii>' is not a value quality"""),

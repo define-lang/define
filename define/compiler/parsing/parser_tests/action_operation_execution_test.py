@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler import ast, name_types
+from define.compiler import ast
 from define.compiler.errors import syntax_errors
 
 if TYPE_CHECKING:
@@ -33,19 +33,17 @@ def _action_statements(program: ast.Program) -> tuple[ast.ActionStatement, ...]:
     return definition.action_statements.statements
 
 
-def test_operation_execution_without_arguments(parse: Parse):
-    [statement] = _action_statements(
-        parse(
-            _ACTION_PREFIX + "        execute the operation</add>.\n" + _ACTION_SUFFIX
-        )
+def test_operation_execution_requires_arguments_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        _ACTION_PREFIX + "        execute the operation</add>.\n" + _ACTION_SUFFIX
     )
-    assert isinstance(statement, ast.OperationExecutionStatement)
-    assert statement.operation.name_type == name_types.NameType.OPERATION
-    assert statement.operation.name_content.path.name == "/add"
-    assert statement.arguments == ()
-    assert statement.location == rendering.SourceLocation(
-        line=6, column=9, end_line=6, end_column=36
-    )
+    assert isinstance(error, syntax_errors.MissingOpenBrace)
+    assert error.location.line == 6
+    assert error.location.column == 36
+    assert error.location.end_line == 6
+    assert error.location.end_column == 36
 
 
 def test_operation_execution_with_arguments(parse: Parse):
@@ -108,7 +106,9 @@ def test_operation_execution_among_action_statements(parse: Parse):
             + "\n"
             + "        } # comment\n"
             + "\n"
-            + "        execute the operation</clear>. # comment\n"
+            + "        execute the operation</clear> {\n"
+            + "            with view<a> looking at position<q>.\n"
+            + "        } # comment\n"
             + "        destroy the particle in position<q>.\n"
             + _ACTION_SUFFIX
         )
@@ -127,7 +127,7 @@ def test_operation_execution_among_action_statements(parse: Parse):
     assert isinstance(clear, ast.OperationExecutionStatement)
     assert clear.operation.name_content.path.name == "/clear"
     assert clear.location == rendering.SourceLocation(
-        line=15, column=9, end_line=15, end_column=38
+        line=15, column=9, end_line=17, end_column=9
     )
     assert isinstance(destroy, ast.DestroyParticleStatement)
 
@@ -143,13 +143,13 @@ def test_disallows_encoding_operation_execution(parse_syntax_error: ParseSyntaxE
     assert error.location.end_column == 28
 
 
-def test_operation_execution_requires_terminator_or_block(
+def test_operation_execution_requires_open_brace(
     parse_syntax_error: ParseSyntaxError,
 ):
     error = parse_syntax_error(
         _ACTION_PREFIX + "        execute the operation</add>\n" + _ACTION_SUFFIX
     )
-    assert isinstance(error, syntax_errors.MissingTerminatorOrBrace)
+    assert isinstance(error, syntax_errors.MissingOpenBrace)
     assert error.location.line == 6
     assert error.location.column == 36
     assert error.location.end_line == 6

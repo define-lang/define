@@ -19,6 +19,12 @@ if TYPE_CHECKING:
 def test_operation_definition(parse: Parse):
     program = parse(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
@@ -31,14 +37,17 @@ def test_operation_definition(parse: Parse):
     assert definition.typed_name.location == rendering.SourceLocation(
         line=1, column=12, end_line=1, end_column=52
     )
-    assert definition.views == ()
+    [view] = definition.views
+    assert view.location == rendering.SourceLocation(
+        line=2, column=5, end_line=7, end_column=5
+    )
     [statement] = definition.operation_statements.statements
     assert isinstance(statement, ast.ViewSettingStatement)
     assert definition.operation_statements.location == rendering.SourceLocation(
-        line=2, column=5, end_line=4, end_column=5
+        line=8, column=5, end_line=10, end_column=5
     )
     assert definition.location == rendering.SourceLocation(
-        line=1, column=1, end_line=5, end_column=1
+        line=1, column=1, end_line=11, end_column=1
     )
 
 
@@ -133,6 +142,12 @@ def test_between_other_definitions(parse: Parse):
         + "    }\n"
         + "}\n"
         + "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
@@ -144,7 +159,7 @@ def test_between_other_definitions(parse: Parse):
     assert isinstance(operation, ast.ValueOperationDefinition)
     assert operation.typed_name.name_content.path.name == "/add"
     assert operation.location == rendering.SourceLocation(
-        line=6, column=1, end_line=10, end_column=1
+        line=6, column=1, end_line=16, end_column=1
     )
     assert isinstance(encoding, ast.EncodingDefinition)
 
@@ -177,13 +192,48 @@ def test_requires_block(parse_syntax_error: ParseSyntaxError):
 
 def test_requires_operation_statements_block(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
-        "define the operation<mv:define-lang.org:parser:/add> {\n}\n"
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "}\n"
     )
     assert isinstance(error, syntax_errors.MissingOperationStatementsBlock)
+    assert error.location.line == 8
+    assert error.location.column == 1
+    assert error.location.end_line == 8
+    assert error.location.end_column == 1
+
+
+def test_requires_interface_view(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingInterfaceViewDefinition)
     assert error.location.line == 2
     assert error.location.column == 1
     assert error.location.end_line == 2
     assert error.location.end_column == 1
+
+
+def test_requires_interface_view_before_operation_statements_block(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    it does {\n"
+        + "        set the value of view<a> from view<b>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.MissingInterfaceViewDefinition)
+    assert error.location.line == 2
+    assert error.location.column == 5
+    assert error.location.end_line == 2
+    assert error.location.end_column == 5
 
 
 def test_requires_operation_statements_block_after_views(
@@ -222,11 +272,54 @@ def test_disallows_local_position_definition(parse_syntax_error: ParseSyntaxErro
     assert error.location.end_column == 27
 
 
+def test_disallows_local_position_definition_after_views(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
+        + "    define the position<p>.\n"
+        + "    it does {\n"
+        + "        set the value of view<a> from view<b>.\n"
+        + "    }\n"
+        + "}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidOperationDefinitionBlock)
+    assert error.location.line == 8
+    assert error.location.column == 5
+    assert error.location.end_line == 8
+    assert error.location.end_column == 27
+
+
+def test_requires_interface_view_before_end_of_file(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the operation<mv:define-lang.org:parser:/add> {\n"
+    )
+    assert isinstance(error, syntax_errors.MissingInterfaceViewDefinition)
+    assert error.location.line == 1
+    assert error.location.column == 55
+    assert error.location.end_line == 1
+    assert error.location.end_column == 55
+
+
 def test_disallows_view_after_operation_statements_block(
     parse_syntax_error: ParseSyntaxError,
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
@@ -239,9 +332,9 @@ def test_disallows_view_after_operation_statements_block(
         + "}\n"
     )
     assert isinstance(error, syntax_errors.MissingCloseBrace)
-    assert error.location.line == 5
+    assert error.location.line == 11
     assert error.location.column == 5
-    assert error.location.end_line == 5
+    assert error.location.end_line == 11
     assert error.location.end_column == 27
 
 
@@ -250,6 +343,12 @@ def test_disallows_second_operation_statements_block(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
@@ -259,15 +358,21 @@ def test_disallows_second_operation_statements_block(
         + "}\n"
     )
     assert isinstance(error, syntax_errors.MissingCloseBrace)
-    assert error.location.line == 5
+    assert error.location.line == 11
     assert error.location.column == 5
-    assert error.location.end_line == 5
+    assert error.location.end_line == 11
     assert error.location.end_column == 13
 
 
 def test_missing_close_brace_at_eof(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
@@ -284,15 +389,21 @@ def test_operation_statements_block_extra_whitespace(
 ):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does  {\n"
         + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
     assert isinstance(error, syntax_errors.ExtraWhitespace)
-    assert error.location.line == 2
+    assert error.location.line == 8
     assert error.location.column == 12
-    assert error.location.end_line == 2
+    assert error.location.end_line == 8
     assert error.location.end_column == 13
 
 

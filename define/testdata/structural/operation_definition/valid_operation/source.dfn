@@ -44,6 +44,5 @@ define the operation<my.domain.com:my_lib:/double> {
             with view<source> looking at literal<standard:/number>"2".
             with view<target> looking at view<result>.
         }
-        execute the operation</copy>.
     }
 }

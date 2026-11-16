@@ -443,16 +443,6 @@ class UndefinedOperationViewDiagnostic(Diagnostic):
     )
 
 
-class ArgumentsForOperationWithoutViewsDiagnostic(Diagnostic):
-    """Diagnostic for an Operation Arguments Block executing an operation that has no interface views."""
-
-    operation_name: str
-    message_format: ClassVar[str] = (
-        "'{self.operation_name}' has no interface views, so it must end with "
-        "a '.' instead of having a block here"
-    )
-
-
 class OperationArgumentOrderDiagnostic(Diagnostic):
     """Diagnostic for Operation Argument Statements out of the order of the executed operation's interface views."""
 

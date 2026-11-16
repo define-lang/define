@@ -433,6 +433,12 @@ def test_comment_with_trailing_whitespace_before_operation_statements_block(
     result = parse_with_diagnostics(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    # note \n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
@@ -457,6 +463,12 @@ def test_comment_with_trailing_whitespace_after_operation_statements_block(
 ):
     result = parse_with_diagnostics(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
@@ -468,9 +480,9 @@ def test_comment_with_trailing_whitespace_after_operation_statements_block(
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
-                line=5,
+                line=11,
                 column=11,
-                end_line=5,
+                end_line=11,
                 end_column=11,
             )
         )
@@ -482,6 +494,12 @@ def test_comment_with_trailing_whitespace_before_operation_statement(
 ):
     result = parse_with_diagnostics(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        # note \n"
         + "        set the value of view<a> from view<b>.\n"
@@ -493,9 +511,9 @@ def test_comment_with_trailing_whitespace_before_operation_statement(
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
-                line=3,
+                line=9,
                 column=15,
-                end_line=3,
+                end_line=9,
                 end_column=15,
             )
         )
@@ -507,6 +525,12 @@ def test_comment_with_trailing_whitespace_after_operation_statement(
 ):
     result = parse_with_diagnostics(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        set the value of view<a> from view<b>.\n"
         + "        # note \n"
@@ -518,9 +542,9 @@ def test_comment_with_trailing_whitespace_after_operation_statement(
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
-                line=4,
+                line=10,
                 column=15,
-                end_line=4,
+                end_line=10,
                 end_column=15,
             )
         )
@@ -532,6 +556,12 @@ def test_comment_with_trailing_whitespace_before_operation_argument(
 ):
     result = parse_with_diagnostics(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the operation</other> {\n"
         + "            # note \n"
@@ -545,9 +575,9 @@ def test_comment_with_trailing_whitespace_before_operation_argument(
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
-                line=4,
+                line=10,
                 column=19,
-                end_line=4,
+                end_line=10,
                 end_column=19,
             )
         )
@@ -559,6 +589,12 @@ def test_comment_with_trailing_whitespace_after_operation_argument(
 ):
     result = parse_with_diagnostics(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
+        + "    define the view<v> {\n"
+        + "        it is read.\n"
+        + "        it may only contain particles where {\n"
+        + "            it has the value</v>.\n"
+        + "        }\n"
+        + "    }\n"
         + "    it does {\n"
         + "        execute the operation</other> {\n"
         + "            with view<a> looking at view<left>.\n"
@@ -572,9 +608,9 @@ def test_comment_with_trailing_whitespace_after_operation_argument(
     assert result.diagnostics == [
         diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
-                line=5,
+                line=11,
                 column=19,
-                end_line=5,
+                end_line=11,
                 end_column=19,
             )
         )
