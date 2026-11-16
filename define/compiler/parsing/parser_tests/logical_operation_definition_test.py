@@ -153,7 +153,7 @@ def test_between_other_definitions(parse: Parse):
         + "}\n"
         + "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -248,7 +248,7 @@ def test_disallows_operation_statements_block(parse_syntax_error: ParseSyntaxErr
         + "        it is written.\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )

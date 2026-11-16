@@ -104,7 +104,6 @@ py_test(
         "//defcl/python:errors",
         "//define/compiler:ast",
         "//define/compiler:conftest",
-        "//define/compiler:name_types",
         "//define/compiler/config:local_deps_config",
         "//define/compiler/config:project_config",
         "//define/compiler/config_tests:test_helpers",

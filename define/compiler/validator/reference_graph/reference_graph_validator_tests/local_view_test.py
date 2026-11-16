@@ -175,13 +175,6 @@ def test_unreferenced(
     ]
 
 
-def test_encoding_operation_with_local_view(
-    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
-):
-    result = validate_testdata_project_with_reference_graph().program_result
-    assert_no_errors(result)
-
-
 def test_missing_logical_operation_looks_at_undefined_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

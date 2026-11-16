@@ -434,7 +434,7 @@ def test_comment_with_trailing_whitespace_before_operation_statements_block(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    # note \n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -458,7 +458,7 @@ def test_comment_with_trailing_whitespace_after_operation_statements_block(
     result = parse_with_diagnostics(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "    # note \n"
         + "}\n"
@@ -484,7 +484,7 @@ def test_comment_with_trailing_whitespace_before_operation_statement(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
         + "        # note \n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -508,7 +508,7 @@ def test_comment_with_trailing_whitespace_after_operation_statement(
     result = parse_with_diagnostics(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "        # note \n"
         + "    }\n"
         + "}\n"
@@ -594,7 +594,7 @@ def test_comment_with_trailing_whitespace_before_view_direction_statement(
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -625,7 +625,7 @@ def test_comment_with_trailing_whitespace_after_view_read_statement(
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -657,7 +657,7 @@ def test_comment_with_trailing_whitespace_after_view_written_statement(
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -688,7 +688,7 @@ def test_comment_with_trailing_whitespace_before_view_close(
         + "        # note \n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )

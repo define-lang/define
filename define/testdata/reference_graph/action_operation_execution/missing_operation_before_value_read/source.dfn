@@ -8,12 +8,28 @@ define the operation<my.domain.com:my_lib:/show> {
             it has the value<standard:/number/natural>.
         }
     }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
 
     it does {
-        execute the encoding operation.
+        execute the operation<standard:/number/natural/add> {
+            with view<a> looking at view<value>.
+            with view<b> looking at literal<standard:/number>"0".
+            with view<result> looking at view<result>.
+        }
+    }
+}
+define the potential position<my.domain.com:my_lib:/result> {
+    it may only contain particles where {
+        it has the value<standard:/number/natural>.
     }
 }
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</result>.
     it happens when {
         this particle is created.
     } and it does {
@@ -26,8 +42,10 @@ define the potential action<my.domain.com:my_lib:/test> {
         execute the operation<standard:/number/missing> {
             with view<result> looking at position<first>.
         }
+        create a particle in position</result>.
         execute the operation</show> {
             with view<value> looking at position<first>.
+            with view<result> looking at position</result>.
         }
     }
 }

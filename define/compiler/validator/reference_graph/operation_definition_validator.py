@@ -66,9 +66,7 @@ class OperationDefinitionValidator[
         self._definition_results = definition_results
         self._diagnostics = []
         self._views = scope_tracker.ScopeTracker()
-        self._view_uses = view_use_tracker.ViewUseTracker(
-            definition.typed_name.name_type
-        )
+        self._view_uses = view_use_tracker.ViewUseTracker()
         for view in definition.views:
             self._define_view(view)
         self._views.enter_child_scope()
@@ -100,20 +98,13 @@ class OperationDefinitionValidator[
                         self._view_uses.record_view_setting(statement)
                     )
                     self._add_local_statement(statement)
-                case (
-                    ast.EncodingOperationExecutionStatement()
-                    | ast.ComputerOperationExecutionStatement()
-                ):
-                    self._analyze_encoding_or_computer_operation_execution(statement)
+                case ast.ComputerOperationExecutionStatement():
+                    raise TypeError(
+                        "Only an Encoding Operation's only statement may "
+                        + "execute the computer operation"
+                    )
         self._diagnostics.extend(self._view_uses.check_operation_end())
         return self._build_result()
-
-    @abc.abstractmethod
-    def _analyze_encoding_or_computer_operation_execution(
-        self,
-        statement: ast.EncodingOperationExecutionStatement
-        | ast.ComputerOperationExecutionStatement,
-    ): ...
 
     @abc.abstractmethod
     def _analyze_valid_execution(
@@ -337,21 +328,6 @@ class ValueOperationDefinitionValidator(
         self._steps = []
 
     @override
-    def _analyze_encoding_or_computer_operation_execution(
-        self,
-        statement: ast.EncodingOperationExecutionStatement
-        | ast.ComputerOperationExecutionStatement,
-    ):
-        self._diagnostics.extend(
-            self._view_uses.fulfill_every_interface_view_direction(statement.location)
-        )
-        # The grammar allows only `execute the encoding operation.` in a Value
-        # Operation.
-        self._steps.append(
-            typing.cast("ast.EncodingOperationExecutionStatement", statement)
-        )
-
-    @override
     def _analyze_logical_operation_execution(
         self, statement: ast.LogicalOperationExecutionStatement
     ) -> bool:
@@ -443,22 +419,20 @@ class EncodingOperationDefinitionValidator(
         self._computer_operation = None
 
     @override
-    def _analyze_encoding_or_computer_operation_execution(
-        self,
-        statement: ast.EncodingOperationExecutionStatement
-        | ast.ComputerOperationExecutionStatement,
-    ):
-        # TODO: Once users can define Encoding Operations that associate with
-        # Value Operations, report a computer operation that the compiler
-        # cannot perform. Code generation relies on performing every one.
-        self._diagnostics.extend(
-            self._view_uses.fulfill_every_interface_view_direction(statement.location)
-        )
-        # The grammar allows only computer operations in an Encoding
-        # Operation.
-        self._computer_operation = typing.cast(
-            "ast.ComputerOperationExecutionStatement", statement
-        )
+    def analyze(self) -> validation_result.EncodingOperationPostorderValidationResult:
+        # The parser allows `execute the computer operation.` only as the one
+        # statement of an Encoding Operation. It reads and writes every
+        # interface view, so there are no view uses to check.
+        match self._definition.operation_statements.statements:
+            case [ast.ComputerOperationExecutionStatement() as statement]:
+                # TODO: Once users can define Encoding Operations that
+                # associate with Value Operations, report a computer operation
+                # that the compiler cannot perform. Code generation relies on
+                # performing every one.
+                self._computer_operation = statement
+                return self._build_result()
+            case _:
+                return super().analyze()
 
     @override
     def _analyze_valid_execution(
@@ -495,8 +469,6 @@ class EncodingOperationDefinitionValidator(
             diagnostics=self._diagnostics,
             codegen_input=codegen_input.EncodingOperationCodegenInput(
                 definition=self._definition,
-                # The parser allows `execute the computer operation.` only as
-                # the one statement of an Encoding Operation.
                 body=self._computer_operation or self._steps,
             ),
         )

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -43,13 +44,14 @@ def test_unused_operation_output_is_dead(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 39
-    assert diagnostic.location.column == 42
-    assert diagnostic.position_name == "position<second>"
+    assert result.all_diagnostics == [
+        diagnostics.DeadValueWriteDiagnostic(
+            location=rendering.SourceLocation(
+                line=48, column=42, end_line=48, end_column=57, file_path=None
+            ),
+            position_name="position<second>",
+        )
+    ]
 
 
 def test_value_read_by_value_setting_is_used(

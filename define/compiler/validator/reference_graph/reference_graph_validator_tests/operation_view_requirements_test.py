@@ -57,16 +57,17 @@ def test_invalid_literal_content(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 30
-    assert diagnostic.location.column == 68
-    assert diagnostic.content == "abc"
-    assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
-    assert diagnostic.reason == "'a' is not allowed in a number"
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLiteralContentDiagnostic(
+            location=rendering.SourceLocation(
+                line=34, column=68, end_line=34, end_column=68, file_path=None
+            ),
+            content="abc",
+            potential_literal="literal<standard:/number>",
+            value_encoding="encoding<standard:/number/natural/ascii>",
+            reason="'a' is not allowed in a number",
+        )
+    ]
 
 
 def test_literal_value_has_no_encoding(
@@ -120,47 +121,48 @@ def test_looks_at_undefined_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 30
-    assert diagnostic.location.column == 42
-    assert diagnostic.local_name == "view<missing>"
+    assert result.all_diagnostics == [
+        diagnostics.UndefinedLocalNameDiagnostic(
+            location=rendering.SourceLocation(
+                line=34, column=42, end_line=34, end_column=54, file_path=None
+            ),
+            local_name="view<missing>",
+        )
+    ]
 
 
 def test_invalid_literal_content_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 31
-    assert diagnostic.location.column == 68
-    assert diagnostic.content == "x"
-    assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/natural/ascii>"
-    assert diagnostic.reason == "'x' is not allowed in a number"
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLiteralContentDiagnostic(
+            location=rendering.SourceLocation(
+                line=35, column=68, end_line=35, end_column=68, file_path=None
+            ),
+            content="x",
+            potential_literal="literal<standard:/number>",
+            value_encoding="encoding<standard:/number/natural/ascii>",
+            reason="'x' is not allowed in a number",
+        )
+    ]
 
 
 def test_position_missing_value_quality(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(
-        diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
-    )
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 35
-    assert diagnostic.location.column == 42
-    assert diagnostic.view_name == "view<target>"
-    assert diagnostic.looked_at_name == "position<second>"
-    assert diagnostic.looked_at_kind == diagnostics.LookedAtKind.POSITION
-    assert diagnostic.missing_qualities == ["value<standard:/number/natural>"]
+    assert result.all_diagnostics == [
+        diagnostics.OperationArgumentMissingQualitiesDiagnostic(
+            location=rendering.SourceLocation(
+                line=39, column=42, end_line=39, end_column=57, file_path=None
+            ),
+            view_name="view<target>",
+            looked_at_name="position<second>",
+            looked_at_kind=diagnostics.LookedAtKind.POSITION,
+            missing_qualities=["value<standard:/number/natural>"],
+        )
+    ]
 
 
 def test_position_value_mismatch(

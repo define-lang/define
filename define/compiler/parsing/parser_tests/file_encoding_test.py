@@ -961,7 +961,7 @@ def test_invisible_character_in_view_direction_statement(
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -985,7 +985,7 @@ def test_invisible_character_in_view_quality_assignment_block(
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -1007,7 +1007,7 @@ def test_invisible_character_in_view_definition(parse_syntax_error: ParseSyntaxE
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )

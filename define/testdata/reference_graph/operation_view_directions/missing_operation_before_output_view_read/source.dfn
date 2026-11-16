@@ -15,7 +15,11 @@ define the operation<my.domain.com:my_lib:/negate> {
     }
 
     it does {
-        execute the encoding operation.
+        execute the operation<standard:/number/natural/add> {
+            with view<a> looking at view<value>.
+            with view<b> looking at literal<standard:/number>"0".
+            with view<result> looking at view<result>.
+        }
     }
 }
 define the operation<my.domain.com:my_lib:/double_then_negate> {

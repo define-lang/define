@@ -591,7 +591,7 @@ def test_text_after_operation_definition_block_close(
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}x\n"
     )
@@ -612,7 +612,7 @@ def test_text_after_view_definition_block_close(parse_syntax_error: ParseSyntaxE
         + "        }\n"
         + "    }x\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -629,7 +629,7 @@ def test_text_after_operation_statements_block_close(
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }x\n"
         + "}\n"
     )

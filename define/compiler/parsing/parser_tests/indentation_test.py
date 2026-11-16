@@ -709,7 +709,7 @@ def test_view_direction_statement_under_indented(
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )

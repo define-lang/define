@@ -94,7 +94,7 @@ def test_among_other_operation_statements(parse: Parse):
             + "\n"
             + "            with view<a> looking at view<p>. # comment\n"
             + "        } # comment\n"
-            + "        execute the encoding operation.\n"
+            + "        set the value of view<a> from view<b>.\n"
             + _OPERATION_SUFFIX
         )
     )
@@ -108,7 +108,7 @@ def test_among_other_operation_statements(parse: Parse):
     assert second.location == rendering.SourceLocation(
         line=4, column=9, end_line=7, end_column=9
     )
-    assert isinstance(third, ast.EncodingOperationExecutionStatement)
+    assert isinstance(third, ast.ViewSettingStatement)
 
 
 def test_argument_cannot_look_at_position(parse_syntax_error: ParseSyntaxError):

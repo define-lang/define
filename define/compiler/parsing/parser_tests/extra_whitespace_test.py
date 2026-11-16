@@ -434,7 +434,7 @@ def test_extra_space_in_view_direction_statement(parse_syntax_error: ParseSyntax
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -457,7 +457,7 @@ def test_extra_space_in_view_quality_assignment_block(
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -478,7 +478,7 @@ def test_extra_space_in_view_definition(parse_syntax_error: ParseSyntaxError):
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )

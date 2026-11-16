@@ -20,7 +20,10 @@ if TYPE_CHECKING:
 _OPERATION_PREFIX = "define the operation<mv:define-lang.org:parser:/add> {\n"
 
 _OPERATION_SUFFIX = (
-    "    it does {\n" + "        execute the encoding operation.\n" + "    }\n" + "}\n"
+    "    it does {\n"
+    + "        set the value of view<a> from view<b>.\n"
+    + "    }\n"
+    + "}\n"
 )
 
 
@@ -522,7 +525,7 @@ def test_read_without_terminator_gets_a_diagnostic(
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -552,7 +555,7 @@ def test_written_without_terminator_gets_a_diagnostic(
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -582,7 +585,7 @@ def test_requires_direction_statement_instead_of_other_text(
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -606,7 +609,7 @@ def test_disallows_quality_implication_after_direction_statements(
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -630,7 +633,7 @@ def test_disallows_statement_after_quality_assignment_block(
         + "        it has the value</number>.\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )

@@ -1663,7 +1663,7 @@ def test_operation_statements_block_truncated_after_statement(
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
     )
     assert isinstance(error, syntax_errors.MissingCloseBrace)
     assert error.location.line == 2

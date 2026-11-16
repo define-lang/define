@@ -383,8 +383,8 @@ class InvalidOperationStatementsBlock(DefineTokenError):
     message_format: ClassVar[str] = (
         "Operation statements blocks must contain one or more"
         " 'define the view<...>', 'execute the operation<...>',"
-        " 'execute the logical_operation<...>', 'set the value of view<...>',"
-        " or 'execute the encoding operation.' statements."
+        " 'execute the logical_operation<...>', or 'set the value of view<...>'"
+        " statements."
     )
 
 
@@ -642,8 +642,8 @@ class MissingOperationStatementsContent(DefineTokenError):
     message_format: ClassVar[str] = (
         "Operation statements blocks must contain at least one"
         " 'define the view<...>', 'execute the operation<...>',"
-        " 'execute the logical_operation<...>', 'set the value of view<...>',"
-        " or 'execute the encoding operation.' statement."
+        " 'execute the logical_operation<...>', or 'set the value of view<...>'"
+        " statement."
     )
 
 

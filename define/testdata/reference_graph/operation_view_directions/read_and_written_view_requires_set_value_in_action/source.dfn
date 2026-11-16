@@ -15,7 +15,17 @@ define the operation<my.domain.com:my_lib:/increment_by> {
     }
 
     it does {
-        execute the encoding operation.
+        define the view<new_total> {
+            it may only contain particles where {
+                it has the value<standard:/number/natural>.
+            }
+        }
+        execute the operation<standard:/number/natural/add> {
+            with view<a> looking at view<total>.
+            with view<b> looking at view<amount>.
+            with view<result> looking at view<new_total>.
+        }
+        set the value of view<total> from view<new_total>.
     }
 }
 define the potential action<my.domain.com:my_lib:/test> {

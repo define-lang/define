@@ -737,10 +737,6 @@ class ViewSettingStatement(ASTNode):
     source: LocalTypedNameReference
 
 
-class EncodingOperationExecutionStatement(ASTNode):
-    """Represents the 'execute the encoding operation' statement."""
-
-
 class ComputerOperationExecutionStatement(ASTNode):
     """Represents the 'execute the computer operation' statement."""
 
@@ -750,7 +746,6 @@ type OperationStatement = (
     | OperationExecutionStatement[LocalTypedNameReference | Literal]
     | LogicalOperationExecutionStatement
     | ViewSettingStatement
-    | EncodingOperationExecutionStatement
     | ComputerOperationExecutionStatement
 )
 

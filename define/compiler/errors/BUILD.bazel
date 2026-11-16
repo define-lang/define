@@ -15,7 +15,6 @@ py_library(
         ":invisible_characters",
         "//crates/source_rendering/python:rendering",
         "//define/compiler:constants",
-        "//define/compiler:name_types",
         "//define/compiler/validator/reference_graph:propagation_step",
         "@pypi//msgspec",
     ],

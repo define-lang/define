@@ -20,7 +20,7 @@ def test_operation_definition(parse: Parse):
     program = parse(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -33,7 +33,7 @@ def test_operation_definition(parse: Parse):
     )
     assert definition.views == ()
     [statement] = definition.operation_statements.statements
-    assert isinstance(statement, ast.EncodingOperationExecutionStatement)
+    assert isinstance(statement, ast.ViewSettingStatement)
     assert definition.operation_statements.location == rendering.SourceLocation(
         line=2, column=5, end_line=4, end_column=5
     )
@@ -58,7 +58,7 @@ def test_operation_definition_with_views(parse: Parse):
         + "        }\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -102,7 +102,7 @@ def test_comments_and_blank_lines(parse: Parse):
         + "\n"
         + "    it does { # comment\n"
         + "\n"
-        + "        execute the encoding operation. # comment\n"
+        + "        set the value of view<a> from view<b>. # comment\n"
         + "\n"
         + "    } # comment\n"
         + "\n"
@@ -116,9 +116,9 @@ def test_comments_and_blank_lines(parse: Parse):
         line=4, column=5, end_line=14, end_column=5
     )
     [statement] = definition.operation_statements.statements
-    assert isinstance(statement, ast.EncodingOperationExecutionStatement)
+    assert isinstance(statement, ast.ViewSettingStatement)
     assert statement.location == rendering.SourceLocation(
-        line=18, column=9, end_line=18, end_column=39
+        line=18, column=9, end_line=18, end_column=46
     )
     assert definition.location == rendering.SourceLocation(
         line=1, column=1, end_line=22, end_column=1
@@ -134,7 +134,7 @@ def test_between_other_definitions(parse: Parse):
         + "}\n"
         + "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
         + "define the encoding<mv:define-lang.org:parser:/decimal>.\n"
@@ -153,7 +153,7 @@ def test_requires_global_name(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
         "define the operation<add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -211,7 +211,7 @@ def test_disallows_local_position_definition(parse_syntax_error: ParseSyntaxErro
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    define the position<p>.\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -228,7 +228,7 @@ def test_disallows_view_after_operation_statements_block(
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "    define the view<left> {\n"
         + "        it is read.\n"
@@ -251,10 +251,10 @@ def test_disallows_second_operation_statements_block(
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -269,7 +269,7 @@ def test_missing_close_brace_at_eof(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
     )
     assert isinstance(error, syntax_errors.MissingCloseBrace)
@@ -285,7 +285,7 @@ def test_operation_statements_block_extra_whitespace(
     error = parse_syntax_error(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does  {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )
@@ -304,7 +304,7 @@ def test_disallows_local_context(parse_syntax_error: ParseSyntaxError):
         + "    } and it does {\n"
         + "        define the operation<mv:define-lang.org:parser:/add> {\n"
         + "            it does {\n"
-        + "                execute the encoding operation.\n"
+        + "                set the value of view<a> from view<b>.\n"
         + "            }\n"
         + "        }\n"
         + "    }\n"
@@ -322,7 +322,7 @@ def test_disallows_quality_implication(parse_syntax_error: ParseSyntaxError):
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it also assigns the position</a>.\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
     )

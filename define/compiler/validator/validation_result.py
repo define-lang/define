@@ -66,8 +66,6 @@ type ValueOperationStep = (
     | ast.ViewSettingStatement
     | LogicalOperationExecution
     | ValueOperationExecution
-    # TODO: Remove this once `execute the encoding operation.` is deleted.
-    | ast.EncodingOperationExecutionStatement
 )
 
 

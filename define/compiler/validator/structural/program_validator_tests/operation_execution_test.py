@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -21,41 +22,44 @@ def test_looks_at_undefined_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 37
-    assert diagnostic.location.column == 42
-    assert diagnostic.local_name == "view<missing>"
+    assert result.all_diagnostics == [
+        diagnostics.UndefinedLocalNameDiagnostic(
+            location=rendering.SourceLocation(
+                line=41, column=42, end_line=41, end_column=54, file_path=None
+            ),
+            local_name="view<missing>",
+        )
+    ]
 
 
 def test_looks_at_invalid_view_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLocalNameFormatDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 37
-    assert diagnostic.location.column == 47
-    assert diagnostic.local_name == "Result"
-    assert diagnostic.chars == ("R",)
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLocalNameFormatDiagnostic(
+            location=rendering.SourceLocation(
+                line=41, column=47, end_line=41, end_column=47, file_path=None
+            ),
+            chars=("R",),
+            local_name="Result",
+        )
+    ]
 
 
 def test_aliased_views(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.AliasedViewDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 31
-    assert diagnostic.location.column == 42
-    assert diagnostic.looked_at_name == "view<number>"
-    assert diagnostic.first_argument_line == 30
+    assert result.all_diagnostics == [
+        diagnostics.AliasedViewDiagnostic(
+            location=rendering.SourceLocation(
+                line=35, column=42, end_line=35, end_column=53, file_path=None
+            ),
+            looked_at_name="view<number>",
+            first_argument_line=34,
+        )
+    ]
 
 
 def test_same_view_in_separate_executions(
@@ -76,28 +80,30 @@ def test_invalid_argument_view_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLocalNameFormatDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 36
-    assert diagnostic.location.column == 23
-    assert diagnostic.local_name == "Source"
-    assert diagnostic.chars == ("S",)
+    assert result.all_diagnostics == [
+        diagnostics.InvalidLocalNameFormatDiagnostic(
+            location=rendering.SourceLocation(
+                line=40, column=23, end_line=40, end_column=23, file_path=None
+            ),
+            chars=("S",),
+            local_name="Source",
+        )
+    ]
 
 
 def test_invalid_literal_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 30
-    assert diagnostic.location.column == 63
-    assert diagnostic.segment == "bad-name"
-    assert diagnostic.chars == ("-",)
+    assert result.all_diagnostics == [
+        diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
+            location=rendering.SourceLocation(
+                line=34, column=63, end_line=34, end_column=63, file_path=None
+            ),
+            chars=("-",),
+            segment="bad-name",
+        )
+    ]
 
 
 def test_invalid_operation_name(
@@ -118,13 +124,14 @@ def test_requires_short_operation_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 23
-    assert diagnostic.location.column == 31
-    assert diagnostic.fqun == "my.domain.com:my_lib"
+    assert result.all_diagnostics == [
+        diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
+            location=rendering.SourceLocation(
+                line=27, column=31, end_line=27, end_column=50, file_path=None
+            ),
+            fqun="my.domain.com:my_lib",
+        )
+    ]
 
 
 def test_executes_itself(
@@ -181,11 +188,12 @@ def test_duplicate_argument(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DuplicateOperationArgumentDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 37
-    assert diagnostic.location.column == 18
-    assert diagnostic.view_name == "view<source>"
-    assert diagnostic.first_argument_line == 36
+    assert result.all_diagnostics == [
+        diagnostics.DuplicateOperationArgumentDiagnostic(
+            location=rendering.SourceLocation(
+                line=41, column=18, end_line=41, end_column=29, file_path=None
+            ),
+            view_name="view<source>",
+            first_argument_line=40,
+        )
+    ]

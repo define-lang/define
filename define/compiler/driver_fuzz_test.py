@@ -792,7 +792,6 @@ def operation_definitions(draw: st.DrawFn) -> str:
         f"        execute the operation<{operation_name}> {{\n"
         f"            with view<number> looking at view<number>.\n"
         f"        }}\n"
-        f"        execute the encoding operation.\n"
         f"    }}\n"
         f"}}\n"
     )
@@ -926,7 +925,6 @@ _SYNTAX_FRAGMENTS = [
     "it does {\n",
     "execute the operation</o>.\n",
     "execute the operation</o> {\n",
-    "execute the encoding operation.\n",
     "define the encoding_operation</o> {\n",
     "execute the encoding_operation</o>.\n",
     "execute the encoding_operation</o> {\n",

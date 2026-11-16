@@ -8,7 +8,11 @@ define the operation<my.domain.com:my_lib:/store> {
     }
 
     it does {
-        execute the encoding operation.
+        execute the operation<standard:/number/natural/add> {
+            with view<a> looking at literal<standard:/number>"0".
+            with view<b> looking at literal<standard:/number>"0".
+            with view<result> looking at view<result>.
+        }
     }
 }
 define the operation<my.domain.com:my_lib:/bump> {

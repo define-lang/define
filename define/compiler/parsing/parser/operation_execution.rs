@@ -10,9 +10,8 @@ use crate::parser::lines::LineInBlock;
 use crate::parser::names::FqunWithCanonicalText;
 use source_rendering::Position;
 use terminals::{
-    BLOCK_OPEN, ENCODING_OPERATION, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
-    EXECUTE_THE_ENCODING_OPERATION, LITERAL, LOGICAL_OPERATION, NAME_CONTENT_START, OPERATION,
-    SPACE_LOOKING_AT, VIEW, WITH,
+    BLOCK_OPEN, ENCODING_OPERATION, EXECUTE_THE, LITERAL, LOGICAL_OPERATION, NAME_CONTENT_START,
+    OPERATION, SPACE_LOOKING_AT, VIEW, WITH,
 };
 
 /// The one name type that a Value Operation Execution Statement allows.
@@ -33,18 +32,6 @@ type ArgumentParser<'py, 'source, Argument> =
 pub(crate) enum OperationKind {
     Value,
     Encoding,
-}
-
-impl OperationKind {
-    /// The words of the statement that executes the implementation of an
-    /// operation of this kind: `execute the encoding operation` or
-    /// `execute the computer operation`.
-    pub(crate) const fn implementation_execution_statement(self) -> &'static [u8] {
-        match self {
-            Self::Value => EXECUTE_THE_ENCODING_OPERATION,
-            Self::Encoding => EXECUTE_THE_COMPUTER_OPERATION,
-        }
-    }
 }
 
 impl<'py, 'source> Parser<'py, 'source> {

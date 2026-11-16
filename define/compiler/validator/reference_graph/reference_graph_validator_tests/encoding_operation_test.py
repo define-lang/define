@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler import name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -41,7 +40,6 @@ def test_unread_input_view(
     assert diagnostic.location.line == 21
     assert diagnostic.location.column == 16
     assert diagnostic.view_name == "view<number>"
-    assert diagnostic.operation_name_type == name_types.NameType.ENCODING_OPERATION
 
 
 def test_unwritten_output_view(
@@ -55,7 +53,6 @@ def test_unwritten_output_view(
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 16
     assert diagnostic.view_name == "view<number>"
-    assert diagnostic.operation_name_type == name_types.NameType.ENCODING_OPERATION
 
 
 def test_executes_read_write_operation_with_input_only_view(

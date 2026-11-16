@@ -232,7 +232,7 @@ def test_between_other_definitions(parse: Parse):
     program = parse(
         "define the operation<mv:define-lang.org:parser:/add> {\n"
         + "    it does {\n"
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "    }\n"
         + "}\n"
         + "define the encoding_operation<mv:define-lang.org:parser:/add_decimal> {\n"

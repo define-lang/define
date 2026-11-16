@@ -129,7 +129,6 @@ pub const DEFINE_THE_VIEW: &[u8] = b"define the view";
 pub const IT_IS_READ: &[u8] = b"it is read";
 pub const IT_IS_WRITTEN: &[u8] = b"it is written";
 pub const IT_DOES: &[u8] = b"it does";
-pub const EXECUTE_THE_ENCODING_OPERATION: &[u8] = b"execute the encoding operation";
 
 // Executing Value Operations
 

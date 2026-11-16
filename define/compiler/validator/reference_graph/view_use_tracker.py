@@ -11,7 +11,6 @@ from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
-    from define.compiler import name_types
 
 
 class _ViewUse(msgspec.Struct):
@@ -214,37 +213,8 @@ class _ViewUse(msgspec.Struct):
             )
         ]
 
-    def fulfill_interface_view_direction(
-        self,
-        location: rendering.SourceLocation,
-        operation_name_type: name_types.NameType,
-    ) -> list[diagnostics.Diagnostic]:
-        """Record a statement at `location` that reads the view if it is an input interface view and writes it if it is an output interface view, and return a diagnostic if an earlier statement already wrote it."""
-        view = self.definition
-        if isinstance(view, ast.LocalViewDefinition):
-            return []
-        # The statement reads a read/write view before it writes it, so a
-        # read/write view written earlier is reported only as written twice.
-        if view.is_input:
-            self.is_read = True
-        if not view.is_output:
-            return []
-        first_write = self._record_write(location)
-        if first_write is None:
-            return []
-        return [
-            diagnostics.InterfaceViewWrittenTwiceByAllViewsStatementDiagnostic(
-                location=location,
-                view_name=view.typed_name.source_typed_name,
-                operation_name_type=operation_name_type,
-                first_write=first_write,
-            )
-        ]
-
-    def check_operation_end(
-        self, operation_name_type: name_types.NameType
-    ) -> list[diagnostics.Diagnostic]:
-        """Return a diagnostic if the whole operation, of `operation_name_type`, leaves the view unread or unwritten."""
+    def check_operation_end(self) -> list[diagnostics.Diagnostic]:
+        """Return a diagnostic if the whole operation leaves the view unread or unwritten."""
         if self.has_unknown_use or self.has_reported_read_or_write_violation:
             return []
         # Structural validation reports views that are never referenced.
@@ -266,7 +236,6 @@ class _ViewUse(msgspec.Struct):
                 diagnostics.UnreadInputViewDiagnostic(
                     location=view.typed_name.location,
                     view_name=view_name,
-                    operation_name_type=operation_name_type,
                 )
             )
         if view.is_output and self.first_write is None:
@@ -274,7 +243,6 @@ class _ViewUse(msgspec.Struct):
                 diagnostics.UnwrittenOutputViewDiagnostic(
                     location=view.typed_name.location,
                     view_name=view_name,
-                    operation_name_type=operation_name_type,
                 )
             )
         return end_diagnostics
@@ -308,7 +276,6 @@ class ViewUseTracker:
     Is mutable and not thread-safe.
     """
 
-    _operation_name_type: name_types.NameType
     _uses: dict[str, _ViewUse]
     # The views that the last execution statement read and wrote.
     _last_execution: _ExecutionViewUses
@@ -317,9 +284,8 @@ class ViewUseTracker:
     # interface view must come after one.
     _is_after_execution: bool
 
-    def __init__(self, operation_name_type: name_types.NameType):
-        """Initialize with the name type of the operation whose views are tracked."""
-        self._operation_name_type = operation_name_type
+    def __init__(self):
+        """Initialize with no views."""
         self._uses = {}
         self._last_execution = _ExecutionViewUses()
         self._is_after_execution = False
@@ -430,22 +396,9 @@ class ViewUseTracker:
         )
         return setting_diagnostics
 
-    def fulfill_every_interface_view_direction(
-        self, location: rendering.SourceLocation
-    ) -> list[diagnostics.Diagnostic]:
-        """Record a statement at `location` that reads every input view and writes every output view of the operation, and return a diagnostic for each output view that an earlier statement already wrote."""
-        write_diagnostics: list[diagnostics.Diagnostic] = []
-        for use in self._uses.values():
-            write_diagnostics.extend(
-                use.fulfill_interface_view_direction(
-                    location, self._operation_name_type
-                )
-            )
-        return write_diagnostics
-
     def check_operation_end(self) -> list[diagnostics.Diagnostic]:
         """Return a diagnostic for each view that the whole operation leaves unread or unwritten."""
         end_diagnostics: list[diagnostics.Diagnostic] = []
         for use in self._uses.values():
-            end_diagnostics.extend(use.check_operation_end(self._operation_name_type))
+            end_diagnostics.extend(use.check_operation_end())
         return end_diagnostics

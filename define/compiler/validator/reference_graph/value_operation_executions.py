@@ -158,10 +158,6 @@ class ValueOperationExecutions:
                     if not isinstance(execution, codegen_input.OperationExecution):
                         return execution, None
                     composite_steps.append(execution)
-                case ast.EncodingOperationExecutionStatement():
-                    # TODO: Remove this once `execute the encoding operation.`
-                    # is deleted. Nothing performs it any more.
-                    return None, None
         # Calling a function that makes a single execution is no smaller than
         # making that execution where the Value Operation is executed.
         if len(composite_steps) == 1:

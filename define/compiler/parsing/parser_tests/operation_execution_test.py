@@ -32,18 +32,17 @@ def _operation_statements(
     return definition.operation_statements.statements
 
 
-def test_encoding_operation_execution(parse: Parse):
-    [statement] = _operation_statements(
-        parse(
-            _OPERATION_PREFIX
-            + "        execute the encoding operation.\n"
-            + _OPERATION_SUFFIX
-        )
+def test_disallows_encoding_operation_statement(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        _OPERATION_PREFIX
+        + "        execute the encoding operation.\n"
+        + _OPERATION_SUFFIX
     )
-    assert isinstance(statement, ast.EncodingOperationExecutionStatement)
-    assert statement.location == rendering.SourceLocation(
-        line=3, column=9, end_line=3, end_column=39
-    )
+    assert isinstance(error, syntax_errors.ExpectedOperationOrLogicalOperation)
+    assert error.location.line == 3
+    assert error.location.column == 21
+    assert error.location.end_line == 3
+    assert error.location.end_column == 28
 
 
 def test_operation_execution_without_arguments(parse: Parse):
@@ -344,7 +343,7 @@ def test_multiple_statements_comments_and_blank_lines(parse: Parse):
             + "\n"
             + "        } # comment\n"
             + "\n"
-            + "        execute the encoding operation. # comment\n"
+            + "        set the value of view<a> from view<b>. # comment\n"
             + "\n"
             + _OPERATION_SUFFIX
         )
@@ -363,9 +362,9 @@ def test_multiple_statements_comments_and_blank_lines(parse: Parse):
     assert second.location == rendering.SourceLocation(
         line=6, column=9, end_line=10, end_column=9
     )
-    assert isinstance(third, ast.EncodingOperationExecutionStatement)
+    assert isinstance(third, ast.ViewSettingStatement)
     assert third.location == rendering.SourceLocation(
-        line=12, column=9, end_line=12, end_column=39
+        line=12, column=9, end_line=12, end_column=46
     )
 
 
@@ -396,7 +395,7 @@ def test_disallows_action_statement_after_first_statement(
 ):
     error = parse_syntax_error(
         _OPERATION_PREFIX
-        + "        execute the encoding operation.\n"
+        + "        set the value of view<a> from view<b>.\n"
         + "        create a particle in position<p>.\n"
         + _OPERATION_SUFFIX
     )
@@ -405,30 +404,6 @@ def test_disallows_action_statement_after_first_statement(
     assert error.location.column == 9
     assert error.location.end_line == 4
     assert error.location.end_column == 41
-
-
-def test_encoding_operation_without_terminator_gets_a_diagnostic(
-    parse_with_diagnostics: ParseWithDiagnostics,
-):
-    result = parse_with_diagnostics(
-        _OPERATION_PREFIX
-        + "        execute the encoding operation\n"
-        + _OPERATION_SUFFIX
-    )
-    assert result.load_failure is None
-    assert result.diagnostics == [
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
-            location=rendering.SourceLocation(
-                line=3, column=39, end_line=3, end_column=39
-            )
-        )
-    ]
-    assert result.program is not None
-    [statement] = _operation_statements(result.program)
-    assert isinstance(statement, ast.EncodingOperationExecutionStatement)
-    assert statement.location == rendering.SourceLocation(
-        line=3, column=9, end_line=3, end_column=38
-    )
 
 
 def test_operation_execution_requires_terminator_or_block(

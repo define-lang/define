@@ -12,9 +12,19 @@ define the operation<my.domain.com:my_lib:/compare> {
             it has the value<standard:/number/natural>.
         }
     }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
 
     it does {
-        execute the encoding operation.
+        execute the operation<standard:/number/natural/add> {
+            with view<a> looking at view<left>.
+            with view<b> looking at view<right>.
+            with view<result> looking at view<result>.
+        }
     }
 }
 define the potential position<my.domain.com:my_lib:/first> {
@@ -22,7 +32,13 @@ define the potential position<my.domain.com:my_lib:/first> {
         it has the value<standard:/number/natural>.
     }
 }
+define the potential position<my.domain.com:my_lib:/result> {
+    it may only contain particles where {
+        it has the value<standard:/number/natural>.
+    }
+}
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</result>.
     it also assigns the position</first>.
     it happens when {
         this particle is created.
@@ -35,9 +51,11 @@ define the potential action<my.domain.com:my_lib:/test> {
         create a particle in position</first>.
         create a particle in position<second>.
         set the value of position</first> from literal<standard:/number>"1".
+        create a particle in position</result>.
         execute the operation</compare> {
             with view<left> looking at position</first>.
             with view<right> looking at position<second>.
+            with view<result> looking at position</result>.
         }
         set the value of position</first> from position<second>.
     }

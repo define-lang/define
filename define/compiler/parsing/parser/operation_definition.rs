@@ -12,8 +12,8 @@ use crate::parser::operation_execution::OperationKind;
 use source_rendering::Position;
 use terminals::{
     DEFINE_THE, DEFINE_THE_VIEW, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
-    EXECUTE_THE_ENCODING_OPERATION, EXECUTE_THE_LOGICAL_OPERATION, IT_DOES, IT_IS_READ,
-    IT_IS_WRITTEN, IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE, SET_THE_VALUE_OF, SPACE_FROM, VIEW,
+    EXECUTE_THE_LOGICAL_OPERATION, IT_DOES, IT_IS_READ, IT_IS_WRITTEN,
+    IT_MAY_ONLY_CONTAIN_PARTICLES_WHERE, SET_THE_VALUE_OF, SPACE_FROM, VIEW,
 };
 
 /// How far the lines of an operation definition block, which is always at
@@ -26,12 +26,8 @@ const OPERATION_DEFINITION_STATEMENT_STARTS: [&[u8]; 2] = [DEFINE_THE_VIEW, IT_D
 pub(crate) const VIEW_DIRECTION_STATEMENT_STARTS: [&[u8]; 2] = [IT_IS_READ, IT_IS_WRITTEN];
 /// The words that begin each statement a Value Operation's operation
 /// statements block may have.
-const VALUE_OPERATION_STATEMENT_STARTS: [&[u8]; 4] = [
-    DEFINE_THE_VIEW,
-    EXECUTE_THE,
-    SET_THE_VALUE_OF,
-    EXECUTE_THE_ENCODING_OPERATION,
-];
+const VALUE_OPERATION_STATEMENT_STARTS: [&[u8]; 3] =
+    [DEFINE_THE_VIEW, EXECUTE_THE, SET_THE_VALUE_OF];
 /// The words that begin each statement an Encoding Operation's operation
 /// statements block may have.
 const ENCODING_OPERATION_STATEMENT_STARTS: [&[u8]; 4] = [
@@ -295,23 +291,20 @@ impl<'py, 'source> Parser<'py, 'source> {
         }
         let statements = self.nodes.start::<ast::OperationStatement<'_>>();
         let mut statement_count: usize = 0;
-        // The start and end of the statement that executes the operation's
-        // implementation, if the block has one.
-        let mut implementation_execution = None;
+        // The start and end of the Computer Operation Execution Statement, if
+        // the block has one.
+        let mut computer_operation_execution = None;
         loop {
             let statement_start = self.scanner.position;
-            // TODO: Remove `execute the encoding operation.` from Value
-            // Operations, which DLP 55 replaced with Logical Operation
-            // Execution Statements, once codegen compiles a Value Operation's
-            // statements.
-            let statement = if self
-                .scanner
-                .consume(kind.implementation_execution_statement())
+            let statement = if matches!(kind, OperationKind::Encoding)
+                && self.scanner.consume(EXECUTE_THE_COMPUTER_OPERATION)
             {
-                let (statement, end) =
-                    self.parse_implementation_execution_statement(kind, statement_start)?;
-                implementation_execution = Some((statement_start, end));
-                statement
+                let end = self.parse_statement_terminator()?;
+                let location = self.ast.location(statement_start, end)?;
+                computer_operation_execution = Some((statement_start, end));
+                self.ast
+                    .computer_operation_execution_statement(location)?
+                    .into()
             } else {
                 self.parse_operation_statement(
                     kind,
@@ -335,9 +328,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         // `execute the computer operation.` reads every input view and writes
         // every output view, so no other statement could write a view that
         // anything reads.
-        if matches!(kind, OperationKind::Encoding)
-            && statement_count > 1
-            && let Some((statement_start, end)) = implementation_execution
+        if statement_count > 1
+            && let Some((statement_start, end)) = computer_operation_execution
         {
             return Err(self
                 .errors
@@ -347,34 +339,6 @@ impl<'py, 'source> Parser<'py, 'source> {
         let statements = self.nodes.finish_tuple(statements)?;
         let location = self.ast.location(start, end)?;
         Ok(self.ast.operation_statements_block(location, statements)?)
-    }
-
-    /// Parses the rest of the statement that executes the implementation of
-    /// an operation of `kind` after its words, given the position of the
-    /// statement's start, and returns it with the position after its `.`.
-    ///
-    /// ```ebnf
-    /// encoding_operation_execution_statement = "execute the encoding operation", terminator ;
-    /// computer_operation_execution_statement = "execute the computer operation", terminator ;
-    /// ```
-    fn parse_implementation_execution_statement(
-        &mut self,
-        kind: OperationKind,
-        start: Position,
-    ) -> ParseResult<(ast::OperationStatement<'py>, Position)> {
-        let end = self.parse_statement_terminator()?;
-        let location = self.ast.location(start, end)?;
-        let statement = match kind {
-            OperationKind::Value => self
-                .ast
-                .encoding_operation_execution_statement(location)?
-                .into(),
-            OperationKind::Encoding => self
-                .ast
-                .computer_operation_execution_statement(location)?
-                .into(),
-        };
-        Ok((statement, end))
     }
 
     /// Parses a statement in the operation statements block of an operation

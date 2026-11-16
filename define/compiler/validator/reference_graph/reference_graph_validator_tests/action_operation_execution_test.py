@@ -23,13 +23,14 @@ def test_empty_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.OperationArgumentEmptyPositionDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 34
-    assert diagnostic.location.column == 42
-    assert diagnostic.position_name == "position<second>"
+    assert result.all_diagnostics == [
+        diagnostics.OperationArgumentEmptyPositionDiagnostic(
+            location=rendering.SourceLocation(
+                line=38, column=42, end_line=38, end_column=57, file_path=None
+            ),
+            position_name="position<second>",
+        )
+    ]
 
 
 def test_missing_operation_after_value_write(
@@ -53,7 +54,7 @@ def test_missing_operation_before_value_read(
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
-                line=26, column=21, end_line=26, end_column=55
+                line=42, column=21, end_line=42, end_column=55, file_path=None
             ),
             definition_name="operation<standard:/number/missing>",
         )
@@ -67,11 +68,11 @@ def test_undefined_interface_view_after_value_write(
     assert result.all_diagnostics == [
         diagnostics.UndefinedOperationViewDiagnostic(
             location=rendering.SourceLocation(
-                line=35, column=18, end_line=35, end_column=28
+                line=52, column=18, end_line=52, end_column=28, file_path=None
             ),
             view_name="view<extra>",
             operation_name="operation</show>",
-            interface_view_names=["view<value>"],
+            interface_view_names=["view<value>", "view<result>"],
         )
     ]
 
@@ -80,73 +81,79 @@ def test_empty_parent(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.ParentPositionNotOccupiedDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 43
-    assert diagnostic.location.column == 42
-    assert diagnostic.position_name == "position<box>::position</child>"
-    assert diagnostic.parent_position_name == "position<box>"
+    assert result.all_diagnostics == [
+        diagnostics.ParentPositionNotOccupiedDiagnostic(
+            location=rendering.SourceLocation(
+                line=47, column=42, end_line=47, end_column=72, file_path=None
+            ),
+            position_name="position<box>::position</child>",
+            parent_position_name="position<box>",
+        )
+    ]
 
 
 def test_unset_value(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 39
-    assert diagnostic.location.column == 41
-    assert diagnostic.position_name == "position<second>"
+    assert result.all_diagnostics == [
+        diagnostics.UnsetValueDiagnostic(
+            location=rendering.SourceLocation(
+                line=56, column=41, end_line=56, end_column=56, file_path=None
+            ),
+            position_name="position<second>",
+        )
+    ]
 
 
 def test_unset_value_reported_once(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 40
-    assert diagnostic.location.column == 41
-    assert diagnostic.position_name == "position<second>"
+    assert result.all_diagnostics == [
+        diagnostics.UnsetValueDiagnostic(
+            location=rendering.SourceLocation(
+                line=57, column=41, end_line=57, end_column=56, file_path=None
+            ),
+            position_name="position<second>",
+        )
+    ]
 
 
 def test_invalid_looked_at_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 2
-    first, second = result.all_diagnostics
-    assert isinstance(first, diagnostics.UndefinedLocalNameDiagnostic)
-    assert first.location.file_path is None
-    assert first.location.line == 26
-    assert first.location.column == 42
-    assert first.local_name == "position<missing>"
-    assert isinstance(second, diagnostics.OperationArgumentEmptyPositionDiagnostic)
-    assert second.location.file_path is None
-    assert second.location.line == 27
-    assert second.location.column == 42
-    assert second.position_name == "position<second>"
+    assert result.all_diagnostics == [
+        diagnostics.UndefinedLocalNameDiagnostic(
+            location=rendering.SourceLocation(
+                line=30, column=42, end_line=30, end_column=58, file_path=None
+            ),
+            local_name="position<missing>",
+        ),
+        diagnostics.OperationArgumentEmptyPositionDiagnostic(
+            location=rendering.SourceLocation(
+                line=31, column=42, end_line=31, end_column=57, file_path=None
+            ),
+            position_name="position<second>",
+        ),
+    ]
 
 
 def test_prior_error(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 33
-    assert diagnostic.location.column == 30
-    assert diagnostic.position_name == "position<empty>"
-    assert diagnostic.is_action_interface_position is False
-    assert diagnostic.inferred_at is None
+    assert result.all_diagnostics == [
+        diagnostics.MoveFromEmptyPositionDiagnostic(
+            location=rendering.SourceLocation(
+                line=37, column=30, end_line=37, end_column=44, file_path=None
+            ),
+            position_name="position<empty>",
+            is_action_interface_position=False,
+            inferred_at=None,
+        )
+    ]
 
 
 def test_requires_set_value_set(
@@ -160,45 +167,55 @@ def test_requires_set_value_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_result
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
-    assert diagnostic.location.file_path == "test.dfn"
-    assert diagnostic.location.line == 13
-    assert diagnostic.location.column == 30
-    assert (
-        diagnostic.position_name == "position<worker>::action</run>::position<number>"
-    )
-    assert diagnostic.required_value is True
-    assert diagnostic.required_empty is False
-    assert diagnostic.action_name == "action<my.domain.com:my_lib:/run>"
-    assert_propagation_chain(
-        diagnostic,
-        {
-            "kind": propagation_step.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<worker>::action</run>::position<number>",
-            "triggered_quality_name": None,
-            "line": 12,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/run>",
-            "line": 13,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/run>",
-            "triggered_quality_name": None,
-            "line": 13,
-            "column": 41,
-            "file_path": "run.dfn",
-        },
-    )
+    assert result.all_diagnostics == [
+        diagnostics.InferredRequirementViolationDiagnostic(
+            location=rendering.SourceLocation(
+                line=13, column=30, end_line=13, end_column=78, file_path="test.dfn"
+            ),
+            position_name="position<worker>::action</run>::position<number>",
+            propagation_chain=[
+                propagation_step.PropagationStep(
+                    location=rendering.SourceLocation(
+                        line=12,
+                        column=30,
+                        end_line=12,
+                        end_column=77,
+                        file_path="test.dfn",
+                    ),
+                    kind=propagation_step.PropagationKind.FILL_SITE,
+                    enclosing_quality_name="position<worker>::action</run>::position<number>",
+                    triggered_quality_name=None,
+                ),
+                propagation_step.PropagationStep(
+                    location=rendering.SourceLocation(
+                        line=13,
+                        column=30,
+                        end_line=13,
+                        end_column=78,
+                        file_path="test.dfn",
+                    ),
+                    kind=propagation_step.PropagationKind.ACTION_TRIGGER,
+                    enclosing_quality_name="action<my.domain.com:my_lib:/test>",
+                    triggered_quality_name="action<my.domain.com:my_lib:/run>",
+                ),
+                propagation_step.PropagationStep(
+                    location=rendering.SourceLocation(
+                        line=15,
+                        column=41,
+                        end_line=15,
+                        end_column=56,
+                        file_path="run.dfn",
+                    ),
+                    kind=propagation_step.PropagationKind.DIRECT_INFERENCE,
+                    enclosing_quality_name="action<my.domain.com:my_lib:/run>",
+                    triggered_quality_name=None,
+                ),
+            ],
+            required_empty=False,
+            action_name="action<my.domain.com:my_lib:/run>",
+            required_value=True,
+        )
+    ]
 
 
 def test_requires_occupied(

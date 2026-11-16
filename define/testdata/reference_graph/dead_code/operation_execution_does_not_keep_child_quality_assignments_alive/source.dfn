@@ -15,12 +15,28 @@ define the operation<my.domain.com:my_lib:/read> {
             it has the value<standard:/number/natural>.
         }
     }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
 
     it does {
-        execute the encoding operation.
+        execute the operation<standard:/number/natural/add> {
+            with view<a> looking at view<source>.
+            with view<b> looking at literal<standard:/number>"0".
+            with view<result> looking at view<result>.
+        }
+    }
+}
+define the potential position<my.domain.com:my_lib:/result> {
+    it may only contain particles where {
+        it has the value<standard:/number/natural>.
     }
 }
 define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</result>.
     it happens when {
         this particle is created.
     } and it does {
@@ -33,8 +49,10 @@ define the potential action<my.domain.com:my_lib:/test> {
         }
         create a particle in position<box>.
         set the value of position<box> from literal<standard:/number>"1".
+        create a particle in position</result>.
         execute the operation</read> {
             with view<source> looking at position<box>.
+            with view<result> looking at position</result>.
         }
     }
 }

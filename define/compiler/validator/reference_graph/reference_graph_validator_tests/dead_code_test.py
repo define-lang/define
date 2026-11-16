@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
@@ -1273,20 +1274,22 @@ def test_operation_execution_does_not_keep_child_quality_assignments_alive(
     validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 2
-    dead_child, untriggered_action = result.all_diagnostics
-    assert isinstance(dead_child, diagnostics.DeadChildPositionDiagnostic)
-    assert dead_child.location.file_path is None
-    assert dead_child.location.line == 30
-    assert dead_child.location.column == 28
-    assert dead_child.quality_name == "position</child>"
-    assert dead_child.position_name == "position<box>"
-    assert isinstance(untriggered_action, diagnostics.UntriggeredActionDiagnostic)
-    assert untriggered_action.location.file_path is None
-    assert untriggered_action.location.line == 31
-    assert untriggered_action.location.column == 28
-    assert untriggered_action.quality_name == "action</poke>"
-    assert untriggered_action.position_name == "position<box>"
+    assert result.all_diagnostics == [
+        diagnostics.DeadChildPositionDiagnostic(
+            location=rendering.SourceLocation(
+                line=46, column=28, end_line=46, end_column=43, file_path=None
+            ),
+            quality_name="position</child>",
+            position_name="position<box>",
+        ),
+        diagnostics.UntriggeredActionDiagnostic(
+            location=rendering.SourceLocation(
+                line=47, column=28, end_line=47, end_column=40, file_path=None
+            ),
+            quality_name="action</poke>",
+            position_name="position<box>",
+        ),
+    ]
 
 
 def test_operation_execution_on_child_position_keeps_child_position_alive(

@@ -234,10 +234,7 @@ class DefinitionStructuralValidator:
                         views,
                         view_setting_order,
                     )
-                case (
-                    ast.EncodingOperationExecutionStatement()
-                    | ast.ComputerOperationExecutionStatement()
-                ):
+                case ast.ComputerOperationExecutionStatement():
                     has_execution = True
                     executes_all_views = True
         self._diagnostics.extend(view_setting_order.check_operation_end())
@@ -262,7 +259,6 @@ class DefinitionStructuralValidator:
                     diagnostics.UnreferencedViewDiagnostic(
                         location=view.typed_name.location,
                         view_name=view.typed_name.source_typed_name,
-                        operation_name_type=definition.typed_name.name_type,
                     )
                 )
 

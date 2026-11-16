@@ -1539,6 +1539,12 @@ def test_undefined_operation_view_format(
 ):
     source = (
         "define the operation<my.domain.com:my_lib:/test> {\n"
+        "    define the view<total> {\n"
+        "        it is written.\n"
+        "        it may only contain particles where {\n"
+        "            it has the value<standard:/number/natural>.\n"
+        "        }\n"
+        "    }\n"
         "\n"
         "    it does {\n"
         "        execute the operation</sum> {\n"
@@ -1546,6 +1552,7 @@ def test_undefined_operation_view_format(
         '            with view<second> looking at literal<standard:/number>"2".\n'
         '            with view<third> looking at literal<standard:/number>"3".\n'
         '            with view<extra> looking at literal<standard:/number>"4".\n'
+        "            with view<result> looking at view<total>.\n"
         "        }\n"
         "    }\n"
         "}\n"
@@ -1573,9 +1580,29 @@ def test_undefined_operation_view_format(
                 "            it has the value<standard:/number/natural>.\n"
                 "        }\n"
                 "    }\n"
+                "    define the view<result> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
                 "\n"
                 "    it does {\n"
-                "        execute the encoding operation.\n"
+                "        define the view<partial> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the value<standard:/number/natural>.\n"
+                "            }\n"
+                "        }\n"
+                "        execute the operation<standard:/number/natural/add> {\n"
+                "            with view<a> looking at view<first>.\n"
+                "            with view<b> looking at view<second>.\n"
+                "            with view<result> looking at view<partial>.\n"
+                "        }\n"
+                "        execute the operation<standard:/number/natural/add> {\n"
+                "            with view<a> looking at view<partial>.\n"
+                "            with view<b> looking at view<third>.\n"
+                "            with view<result> looking at view<result>.\n"
+                "        }\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1585,13 +1612,14 @@ def test_undefined_operation_view_format(
     assert len(diags) == 1
     formatted = diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 8, column 18
+        File "test.dfn", line 14, column 18
             with view<extra> looking at literal<standard:/number>"4".
                  ^^^^^^^^^^^
         'view<extra>' is not an interface view of 'operation</sum>'; its interface views are:
           view<first>
           view<second>
-          view<third>""")
+          view<third>
+          view<result>""")
 
 
 def test_operation_argument_missing_qualities_format(
@@ -1649,13 +1677,16 @@ def test_operation_argument_position_missing_qualities_format(
 ):
     source = (
         "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it also assigns the position</result>.\n"
         "    it happens when {\n"
         "        this particle is created.\n"
         "    } and it does {\n"
         "        define the position<number>.\n"
         "        create a particle in position<number>.\n"
+        "        create a particle in position</result>.\n"
         "        execute the operation</read> {\n"
         "            with view<source> looking at position<number>.\n"
+        "            with view<result> looking at position</result>.\n"
         "        }\n"
         "    }\n"
         "}\n"
@@ -1663,6 +1694,13 @@ def test_operation_argument_position_missing_qualities_format(
     result = validate_project(
         {
             "test.dfn": source,
+            "result.dfn": (
+                "define the potential position<my.domain.com:my_lib:/result> {\n"
+                "    it may only contain particles where {\n"
+                "        it has the value<standard:/number/natural>.\n"
+                "    }\n"
+                "}\n"
+            ),
             "read.dfn": (
                 "define the operation<my.domain.com:my_lib:/read> {\n"
                 "    define the view<source> {\n"
@@ -1671,9 +1709,19 @@ def test_operation_argument_position_missing_qualities_format(
                 "            it has the value<standard:/number/natural>.\n"
                 "        }\n"
                 "    }\n"
+                "    define the view<result> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
                 "\n"
                 "    it does {\n"
-                "        execute the encoding operation.\n"
+                "        execute the operation<standard:/number/natural/add> {\n"
+                "            with view<a> looking at view<source>.\n"
+                '            with view<b> looking at literal<standard:/number>"0".\n'
+                "            with view<result> looking at view<result>.\n"
+                "        }\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1683,7 +1731,7 @@ def test_operation_argument_position_missing_qualities_format(
     assert len(diags) == 1
     formatted = diags[0].format(result.program_result.source_map)
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 8, column 42
+        File "test.dfn", line 10, column 42
             with view<source> looking at position<number>.
                                          ^^^^^^^^^^^^^^^^
         'view<source>' cannot look at 'position<number>' because the particle in 'position<number>' does not have the required qualities:
@@ -1908,7 +1956,11 @@ def test_interface_view_single_assignment_error_messages(
                 "    }\n"
                 "\n"
                 "    it does {\n"
-                "        execute the encoding operation.\n"
+                "        execute the operation<standard:/number/natural/add> {\n"
+                "            with view<a> looking at view<source>.\n"
+                '            with view<b> looking at literal<standard:/number>"0".\n'
+                "            with view<result> looking at view<target>.\n"
+                "        }\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1920,9 +1972,19 @@ def test_interface_view_single_assignment_error_messages(
                 "            it has the value<standard:/number/natural>.\n"
                 "        }\n"
                 "    }\n"
+                "    define the view<result> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
                 "\n"
                 "    it does {\n"
-                "        execute the encoding operation.\n"
+                "        execute the operation<standard:/number/natural/add> {\n"
+                "            with view<a> looking at view<value>.\n"
+                '            with view<b> looking at literal<standard:/number>"0".\n'
+                "            with view<result> looking at view<result>.\n"
+                "        }\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1947,6 +2009,12 @@ def test_interface_view_single_assignment_error_messages(
                 "            it has the value<standard:/number/natural>.\n"
                 "        }\n"
                 "    }\n"
+                "    define the view<inspected> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
                 "\n"
                 "    it does {\n"
                 "        execute the operation</copy> {\n"
@@ -1963,8 +2031,8 @@ def test_interface_view_single_assignment_error_messages(
                 "        }\n"
                 "        execute the operation</inspect> {\n"
                 "            with view<value> looking at view<count>.\n"
+                "            with view<result> looking at view<inspected>.\n"
                 "        }\n"
-                "        execute the encoding operation.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -1976,37 +2044,21 @@ def test_interface_view_single_assignment_error_messages(
     ]
     assert formatted == [
         textwrap.dedent("""\
-        File "test.dfn", line 29, column 42
+        File "test.dfn", line 35, column 42
             with view<target> looking at view<result>.
                                          ^^^^^^^^^^^^
         'view<result>' is an output interface view, so only one statement may write to it. However, 'view<target>' of 'operation</copy>' writes to it again on this line. It was already written here:
-        File "test.dfn", line 25, column 42
+        File "test.dfn", line 31, column 42
             with view<target> looking at view<result>.
                                          ^^^^^^^^^^^^"""),
         textwrap.dedent("""\
-        File "test.dfn", line 36, column 41
+        File "test.dfn", line 42, column 41
             with view<value> looking at view<count>.
                                         ^^^^^^^^^^^
         'view<count>' is a read/write interface view, so it may only be read before the statement that writes to it. However, 'view<value>' of 'operation</inspect>' reads it on this line, after it was written here:
-        File "test.dfn", line 33, column 42
+        File "test.dfn", line 39, column 42
             with view<target> looking at view<count>.
                                          ^^^^^^^^^^^"""),
-        textwrap.dedent("""\
-        File "test.dfn", line 38, column 9
-            execute the encoding operation.
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        'view<count>' is an output interface view, so only one statement may write to it. However, 'execute the encoding operation.' writes to every output view on this line, and 'view<count>' was already written here:
-        File "test.dfn", line 33, column 42
-            with view<target> looking at view<count>.
-                                         ^^^^^^^^^^^"""),
-        textwrap.dedent("""\
-        File "test.dfn", line 38, column 9
-            execute the encoding operation.
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        'view<result>' is an output interface view, so only one statement may write to it. However, 'execute the encoding operation.' writes to every output view on this line, and 'view<result>' was already written here:
-        File "test.dfn", line 25, column 42
-            with view<target> looking at view<result>.
-                                         ^^^^^^^^^^^^"""),
     ]
 
 
@@ -2211,7 +2263,17 @@ def test_executed_operation_has_read_write_view_error_messages(
                 "    }\n"
                 "\n"
                 "    it does {\n"
-                "        execute the encoding operation.\n"
+                "        define the view<sum> {\n"
+                "            it may only contain particles where {\n"
+                "                it has the value<standard:/number/natural>.\n"
+                "            }\n"
+                "        }\n"
+                "        execute the operation<standard:/number/natural/add> {\n"
+                "            with view<a> looking at view<value>.\n"
+                '            with view<b> looking at literal<standard:/number>"0".\n'
+                "            with view<result> looking at view<sum>.\n"
+                "        }\n"
+                "        set the value of view<value> from view<sum>.\n"
                 "    }\n"
                 "}\n"
             ),
@@ -2436,3 +2498,76 @@ def test_missing_encoding_operation_format(
             File "mixed_sum.dfn", line 22, column 21
                 execute the logical_operation<standard:/number/add> {
                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""")
+
+
+def test_view_direction_error_messages(
+    validate_project: ValidateProject,
+):
+    result = validate_project(
+        {
+            "test.dfn": (
+                "define the operation<my.domain.com:my_lib:/test> {\n"
+                "    define the view<unused> {\n"
+                "        it is read.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<count> {\n"
+                "        it is read.\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<number> {\n"
+                "        it is read.\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<result> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the value<standard:/number/natural>.\n"
+                "        }\n"
+                "    }\n"
+                "\n"
+                "    it does {\n"
+                "        execute the operation<standard:/number/natural/add> {\n"
+                '            with view<a> looking at literal<standard:/number>"1".\n'
+                '            with view<b> looking at literal<standard:/number>"2".\n'
+                "            with view<result> looking at view<count>.\n"
+                "        }\n"
+                "        execute the operation<standard:/number/natural/add> {\n"
+                "            with view<a> looking at view<number>.\n"
+                '            with view<b> looking at literal<standard:/number>"0".\n'
+                "            with view<result> looking at view<result>.\n"
+                "        }\n"
+                "    }\n"
+                "}\n"
+            ),
+        },
+    )
+    formatted = [
+        diagnostic.format(result.program_result.source_map)
+        for diagnostic in result.program_result.all_diagnostics
+    ]
+    assert formatted == [
+        textwrap.dedent("""\
+        File "test.dfn", line 2, column 16
+            define the view<unused> {
+                       ^^^^^^^^^^^^
+        'view<unused>' is defined here, but it is never referenced within this definition; either remove the definition or reference 'view<unused>'."""),
+        textwrap.dedent("""\
+        File "test.dfn", line 8, column 16
+            define the view<count> {
+                       ^^^^^^^^^^^
+        'view<count>' is an input interface view, but nothing in this operation reads it. Either have an operation read it or remove 'it is read.'"""),
+        textwrap.dedent("""\
+        File "test.dfn", line 15, column 16
+            define the view<number> {
+                       ^^^^^^^^^^^^
+        'view<number>' is an output interface view, but nothing in this operation writes to it. Either have an operation write to it or remove 'it is written.'"""),
+    ]

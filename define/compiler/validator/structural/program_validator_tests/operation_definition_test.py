@@ -8,7 +8,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler import name_types
 from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -23,32 +22,24 @@ def test_valid_operation(
     assert_no_errors(result)
 
 
-def test_encoding_operation_references_every_view(
-    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
-):
-    result = validate_testdata_structural_non_filesystem()
-    assert_no_errors(result)
-
-
 def test_unreferenced_views(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 2
-    first = result.all_diagnostics[0]
-    assert isinstance(first, diagnostics.UnreferencedViewDiagnostic)
-    assert first.location.file_path is None
-    assert first.location.line == 27
-    assert first.location.column == 16
-    assert first.view_name == "view<unused>"
-    assert first.operation_name_type == name_types.NameType.OPERATION
-    second = result.all_diagnostics[1]
-    assert isinstance(second, diagnostics.UnreferencedViewDiagnostic)
-    assert second.location.file_path is None
-    assert second.location.line == 33
-    assert second.location.column == 16
-    assert second.view_name == "view<also_unused>"
-    assert second.operation_name_type == name_types.NameType.OPERATION
+    assert result.all_diagnostics == [
+        diagnostics.UnreferencedViewDiagnostic(
+            location=rendering.SourceLocation(
+                line=31, column=16, end_line=31, end_column=27, file_path=None
+            ),
+            view_name="view<unused>",
+        ),
+        diagnostics.UnreferencedViewDiagnostic(
+            location=rendering.SourceLocation(
+                line=37, column=16, end_line=37, end_column=32, file_path=None
+            ),
+            view_name="view<also_unused>",
+        ),
+    ]
 
 
 def test_duplicate_view(
@@ -69,14 +60,21 @@ def test_invalid_view_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLocalNameFormatDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 3
-    assert diagnostic.location.column == 21
-    assert diagnostic.local_name == "Number"
-    assert diagnostic.chars == ("N",)
+    assert result.all_diagnostics == [
+        diagnostics.UnreferencedViewDiagnostic(
+            location=rendering.SourceLocation(
+                line=3, column=16, end_line=3, end_column=27, file_path=None
+            ),
+            view_name="view<Number>",
+        ),
+        diagnostics.InvalidLocalNameFormatDiagnostic(
+            location=rendering.SourceLocation(
+                line=3, column=21, end_line=3, end_column=21, file_path=None
+            ),
+            chars=("N",),
+            local_name="Number",
+        ),
+    ]
 
 
 def test_view_position_quality(
@@ -169,15 +167,16 @@ def test_duplicate_operation(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 20
-    assert diagnostic.location.column == 1
-    assert diagnostic.definition_type == "operation"
-    assert diagnostic.path == "/copy"
-    assert diagnostic.first_definition_line == 2
+    assert result.all_diagnostics == [
+        diagnostics.DuplicateDefinitionDiagnostic(
+            location=rendering.SourceLocation(
+                line=24, column=1, end_line=45, end_column=1, file_path=None
+            ),
+            definition_type="operation",
+            path="/copy",
+            first_definition_line=2,
+        )
+    ]
 
 
 def test_without_execution(
