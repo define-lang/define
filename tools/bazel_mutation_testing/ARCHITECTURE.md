@@ -79,6 +79,12 @@ section. Started 2026-11-16.
 - **Run mutants in parallel with a fixed pool of worktrees, one Bazel server
   each,** created once per run and reused across mutants. All workers execute on
   the local RBE service, which also shares cached results between them.
+- **Rely on the RBE service to reuse action directories between mutants.**
+  Staging each test's inputs from scratch, and deleting them afterwards, was a
+  quarter of a test run's time. The service reuses the directory of an earlier
+  action that ran the same command, which is what each mutant's reruns are. Its
+  limit on idle directories must cover the commands one mutant reruns, once for
+  each worker.
 - **Rejected: one Bazel invocation running many mutants**, each with its own
   copies of the test targets. It multiplies the build graph by the number of
   mutants and is much harder to build than a worker pool.
