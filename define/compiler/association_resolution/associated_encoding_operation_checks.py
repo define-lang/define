@@ -1,4 +1,4 @@
-"""Checks of the loaded Encoding Operations that a logical operation's associations name, and their index by the encodings of their views."""
+"""Checks of the loaded Encoding Operations that a logical operation's associations name, against those associations and against the logical operation."""
 
 from __future__ import annotations
 
@@ -6,13 +6,13 @@ import typing
 
 from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics
-from define.compiler.validator import validation_result
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterable, Iterator
 
     from crates.source_rendering.python import rendering
     from define.compiler.data_structures import typed_name_dict
+    from define.compiler.validator import validation_result
 
 
 def _direction(view: ast.ViewDefinition) -> str:
@@ -25,7 +25,7 @@ def _direction(view: ast.ViewDefinition) -> str:
 
 @typing.final
 class AssociatedEncodingOperationChecker:
-    """Checks the loaded Encoding Operations associated with a logical operation against it and against their associations, and indexes them by the encodings of their views."""
+    """Checks the loaded Encoding Operations associated with a logical operation against their associations and against it."""
 
     def __init__(
         self,
@@ -39,105 +39,54 @@ class AssociatedEncodingOperationChecker:
         self._definition = definition
         self._definition_results = definition_results
 
-    def analyze(self) -> validation_result.LogicalOperationPostorderValidationResult:
-        """Validate the definition and return its validation result."""
-        result_diagnostics: list[diagnostics.Diagnostic] = []
-        encoding_operations: dict[tuple[str, ...], ast.EncodingOperationDefinition] = {}
-        # Where the association of each Encoding Operation in
-        # encoding_operations is written.
-        association_locations: dict[tuple[str, ...], rendering.SourceLocation] = {}
-        for association, encoding_operation in self._loaded_encoding_operations():
-            reference = association.edge.global_name_reference
-            view_diagnostics = self._view_diagnostics(
-                encoding_operation, reference.location
-            )
-            view_diagnostics.extend(
+    def check(
+        self, associations: Iterable[validation_result.EncodingOperationAssociation]
+    ) -> list[diagnostics.Diagnostic]:
+        """Return a diagnostic for each way a loaded Encoding Operation that one of the associations names differs from that association, or from the logical operation in the direction of a view."""
+        check_diagnostics: list[diagnostics.Diagnostic] = []
+        for association, encoding_operation in self._loaded_encoding_operations(
+            associations
+        ):
+            check_diagnostics.extend(
                 self._association_diagnostics(association, encoding_operation)
             )
-            if view_diagnostics:
-                result_diagnostics.extend(view_diagnostics)
-                continue
-            encodings = encoding_operation.view_encodings()
-            # A view without an encoding was already reported when the
-            # Encoding Operation's definition was validated.
-            if encodings is None:
-                continue
-            first = encoding_operations.get(encodings)
-            if first is not None:
-                result_diagnostics.append(
-                    diagnostics.DuplicateAssociatedEncodingOperationDiagnostic(
-                        location=encoding_operation.typed_name.location,
-                        encoding_operation_name=encoding_operation.typed_name.source_typed_name,
-                        first_encoding_operation_name=first.typed_name.source_typed_name,
-                        logical_operation_name=self._definition.typed_name.source_typed_name,
-                        association_location=reference.location,
-                        first_association_location=association_locations[encodings],
-                    )
+            check_diagnostics.extend(
+                self._direction_diagnostics(
+                    encoding_operation, association.edge.global_name_reference.location
                 )
-                continue
-            encoding_operations[encodings] = encoding_operation
-            association_locations[encodings] = reference.location
-        return validation_result.LogicalOperationPostorderValidationResult(
-            diagnostics=result_diagnostics, encoding_operations=encoding_operations
-        )
+            )
+        return check_diagnostics
 
-    def _view_diagnostics(
+    def _direction_diagnostics(
         self,
         encoding_operation: ast.EncodingOperationDefinition,
         association_location: rendering.SourceLocation,
     ) -> list[diagnostics.Diagnostic]:
-        """Return a diagnostic for each way the Encoding Operation's views differ from the logical operation's, which must match in name, direction, and order."""
-        encoding_operation_name = encoding_operation.typed_name.source_typed_name
-        logical_operation_name = self._definition.typed_name.source_typed_name
-        logical_views = self._definition.views
-        encoding_views = encoding_operation.views
-        # Views at the same place cannot be compared meaningfully when the
-        # counts differ.
-        if len(logical_views) != len(encoding_views):
-            return [
-                diagnostics.AssociatedEncodingOperationViewCountDiagnostic(
-                    location=encoding_operation.typed_name.location,
-                    encoding_operation_name=encoding_operation_name,
-                    view_count=len(encoding_views),
-                    logical_operation_name=logical_operation_name,
-                    logical_operation_view_count=len(logical_views),
-                    association_location=association_location,
-                )
-            ]
-        view_diagnostics: list[diagnostics.Diagnostic] = []
-        # ZIP: An associated Encoding Operation must have the logical
-        # operation's views in the same order, so this compares the two views
-        # at each position. A different number of views was reported above.
-        for number, (logical_view, encoding_view) in enumerate(
-            zip(logical_views, encoding_views, strict=True), start=1
-        ):
+        """Return a diagnostic for each view of the Encoding Operation whose direction differs from the logical operation's view of the same name."""
+        logical_view_indexes = self._definition.view_indexes_by_name()
+        direction_diagnostics: list[diagnostics.Diagnostic] = []
+        for encoding_view in encoding_operation.views:
             view_name = encoding_view.typed_name.source_typed_name
-            logical_view_name = logical_view.typed_name.source_typed_name
-            if view_name != logical_view_name:
-                view_diagnostics.append(
-                    diagnostics.AssociatedEncodingOperationViewNameDiagnostic(
-                        location=encoding_view.typed_name.location,
-                        view_number=number,
-                        encoding_operation_name=encoding_operation_name,
-                        view_name=view_name,
-                        logical_operation_name=logical_operation_name,
-                        logical_operation_view_name=logical_view_name,
-                        association_location=association_location,
-                    )
-                )
-            elif _direction(encoding_view) != _direction(logical_view):
-                view_diagnostics.append(
+            logical_view_index = logical_view_indexes.get(view_name)
+            # A view that the logical operation does not have is reported
+            # where the association lists it, or where it differs from the
+            # Encoding Operation.
+            if logical_view_index is None:
+                continue
+            logical_view = self._definition.views[logical_view_index]
+            if _direction(encoding_view) != _direction(logical_view):
+                direction_diagnostics.append(
                     diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
                         location=encoding_view.typed_name.location,
                         view_name=view_name,
                         direction=_direction(encoding_view),
-                        encoding_operation_name=encoding_operation_name,
+                        encoding_operation_name=encoding_operation.typed_name.source_typed_name,
                         logical_operation_direction=_direction(logical_view),
-                        logical_operation_name=logical_operation_name,
+                        logical_operation_name=self._definition.typed_name.source_typed_name,
                         association_location=association_location,
                     )
                 )
-        return view_diagnostics
+        return direction_diagnostics
 
     def _association_diagnostics(
         self,
@@ -205,21 +154,19 @@ class AssociatedEncodingOperationChecker:
         return association_diagnostics
 
     def _loaded_encoding_operations(
-        self,
+        self, associations: Iterable[validation_result.EncodingOperationAssociation]
     ) -> Iterator[
         tuple[
             validation_result.EncodingOperationAssociation,
             ast.EncodingOperationDefinition,
         ]
     ]:
-        """Yield each associated Encoding Operation that the program loaded, with its association.
+        """Yield the Encoding Operation of each of the associations that the program loaded, with its association.
 
         A program loads the Encoding Operations of a logical operation only if
         it executes the logical operation.
         """
-        for association in self._definition_results[
-            self._definition.typed_name
-        ].encoding_operation_associations:
+        for association in associations:
             reference = association.edge.global_name_reference
             result = self._definition_results.get(reference)
             # A missing Encoding Operation, or a definition of another type,

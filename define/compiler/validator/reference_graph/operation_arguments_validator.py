@@ -75,14 +75,14 @@ class OperationArgumentsValidator:
             )
         return validation_diagnostics
 
-    def validate_arguments(
+    def validate_arguments[LookedAtT: ast.LookedAt](
         self,
         executed_name: ast.GlobalTypedNameReference,
-        arguments: Sequence[ast.OperationArgumentStatement[ast.LookedAt]],
+        arguments: Sequence[ast.OperationArgumentStatement[LookedAtT]],
         executed: ast.ExecutableDefinition[ast.ViewDefinition],
         operation_name: str,
         validation_diagnostics: list[diagnostics.Diagnostic],
-    ) -> dict[int, ast.OperationArgumentStatement[ast.LookedAt]]:
+    ) -> dict[int, ast.OperationArgumentStatement[LookedAtT]]:
         """Check that the arguments name each of the executed definition's views once, in order.
 
         Returns the arguments that name a view of the executed definition, by
@@ -111,9 +111,20 @@ class OperationArgumentsValidator:
     ](
         statement: ast.OperationExecutionStatement[LookedAtT | ast.Literal],
         executed: ast.ValueOperationDefinition,
-    ) -> list[abstract_program.Argument[LookedAtT]] | None:
+    ) -> (
+        list[
+            abstract_program.Argument[
+                ast.InterfaceViewDefinition, LookedAtT | ast.Literal
+            ]
+        ]
+        | None
+    ):
         """Describe the arguments of a statement that executes a Value Operation, if each names one of its views."""
-        arguments: list[abstract_program.Argument[LookedAtT]] = []
+        arguments: list[
+            abstract_program.Argument[
+                ast.InterfaceViewDefinition, LookedAtT | ast.Literal
+            ]
+        ] = []
         view_indexes = executed.view_indexes_by_name()
         for argument in statement.arguments:
             view_index = view_indexes.get(argument.view.source_typed_name)
@@ -154,15 +165,15 @@ class OperationArgumentsValidator:
         )
 
     @staticmethod
-    def _collect_arguments(
-        arguments: Sequence[ast.OperationArgumentStatement[ast.LookedAt]],
+    def _collect_arguments[LookedAtT: ast.LookedAt](
+        arguments: Sequence[ast.OperationArgumentStatement[LookedAtT]],
         executed: ast.ExecutableDefinition[ast.ViewDefinition],
         view_indexes: Mapping[str, int],
         operation_name: str,
         validation_diagnostics: list[diagnostics.Diagnostic],
-    ) -> dict[int, ast.OperationArgumentStatement[ast.LookedAt]]:
+    ) -> dict[int, ast.OperationArgumentStatement[LookedAtT]]:
         """Return the arguments that name a view of the executed definition, by view index in source order."""
-        arguments_by_index: dict[int, ast.OperationArgumentStatement[ast.LookedAt]] = {}
+        arguments_by_index: dict[int, ast.OperationArgumentStatement[LookedAtT]] = {}
         for argument in arguments:
             # Structural validation reports malformed view names.
             if name_validators.validate_local_name_format(argument.view.name_content):
@@ -189,7 +200,7 @@ class OperationArgumentsValidator:
 
     @staticmethod
     def _check_argument_order(
-        arguments: dict[int, ast.OperationArgumentStatement[ast.LookedAt]],
+        arguments: Mapping[int, ast.OperationArgumentStatement[ast.LookedAt]],
         executed: ast.ExecutableDefinition[ast.ViewDefinition],
         operation_name: str,
         validation_diagnostics: list[diagnostics.Diagnostic],
@@ -217,7 +228,7 @@ class OperationArgumentsValidator:
     @staticmethod
     def _check_missing_arguments(
         executed_name: ast.GlobalTypedNameReference,
-        arguments: dict[int, ast.OperationArgumentStatement[ast.LookedAt]],
+        arguments: Mapping[int, ast.OperationArgumentStatement[ast.LookedAt]],
         executed: ast.ExecutableDefinition[ast.ViewDefinition],
         view_indexes: Mapping[str, int],
         operation_name: str,

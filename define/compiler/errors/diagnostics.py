@@ -704,45 +704,46 @@ class ViewSettingReadWriteTargetNotFromExecutionDiagnostic(Diagnostic):
     )
 
 
-class AssociatedEncodingOperationViewCountDiagnostic(Diagnostic):
-    """Diagnostic for an Encoding Operation associated with a logical operation that has a different number of views."""
+class AssociationLogicalOperationViewCountDiagnostic(Diagnostic):
+    """Diagnostic for an association that lists a different number of Interface Views than its logical operation has."""
 
     encoding_operation_name: str
     view_count: int
     logical_operation_name: str
     logical_operation_view_count: int
-    # Where the association is written.
-    association_location: rendering.SourceLocation
+    # Where the logical operation is defined.
+    definition_location: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: rendering.SourceMap, /) -> str:
         return (
-            f"'{self.encoding_operation_name}' has {self.view_count} views, but"
+            f"this association lists {self.view_count} views for"
+            + f" '{self.encoding_operation_name}', but"
             + f" '{self.logical_operation_name}' has"
-            + f" {self.logical_operation_view_count}, and they are associated"
-            + f" here:\n{sources.render_location(self.association_location)}"
+            + f" {self.logical_operation_view_count}, defined"
+            + f" here:\n{sources.render_location(self.definition_location)}"
         )
 
 
-class AssociatedEncodingOperationViewNameDiagnostic(Diagnostic):
-    """Diagnostic for a view of an associated Encoding Operation whose name differs from the logical operation's view at the same place."""
+class AssociationLogicalOperationViewNameDiagnostic(Diagnostic):
+    """Diagnostic for a view that an association lists under a different name than its logical operation's view at the same place."""
 
     view_number: int
-    encoding_operation_name: str
     view_name: str
+    encoding_operation_name: str
     logical_operation_name: str
     logical_operation_view_name: str
-    # Where the association is written.
-    association_location: rendering.SourceLocation
+    # Where the logical operation's view is defined.
+    definition_location: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: rendering.SourceMap, /) -> str:
         return (
-            f"view {self.view_number} of '{self.encoding_operation_name}' is"
-            + f" '{self.view_name}', but view {self.view_number} of"
-            + f" '{self.logical_operation_name}' is"
-            + f" '{self.logical_operation_view_name}', and they are associated"
-            + f" here:\n{sources.render_location(self.association_location)}"
+            f"this association lists '{self.view_name}' as view"
+            + f" {self.view_number} of '{self.encoding_operation_name}', but view"
+            + f" {self.view_number} of '{self.logical_operation_name}' is"
+            + f" '{self.logical_operation_view_name}', defined"
+            + f" here:\n{sources.render_location(self.definition_location)}"
         )
 
 
@@ -828,24 +829,22 @@ class AssociationViewEncodingDiagnostic(Diagnostic):
 
 
 class DuplicateAssociatedEncodingOperationDiagnostic(Diagnostic):
-    """Diagnostic for two Encoding Operations that are associated with the same logical operation and have the same encodings."""
+    """Diagnostic for an association that lists the same encodings as an earlier association of the same logical operation."""
 
     encoding_operation_name: str
     first_encoding_operation_name: str
     logical_operation_name: str
-    # Where each Encoding Operation's association is written.
-    association_location: rendering.SourceLocation
+    # Where the earlier association is written.
     first_association_location: rendering.SourceLocation
 
     @typing.override
     def render_message(self, sources: rendering.SourceMap, /) -> str:
         return (
-            f"'{self.encoding_operation_name}' and"
-            + f" '{self.first_encoding_operation_name}' are both associated with"
-            + f" '{self.logical_operation_name}', and their views have the same"
-            + " encodings, so the compiler cannot choose between them. They are"
-            + f" associated here:\n{sources.render_location(self.association_location)}"
-            + f"\n{sources.render_location(self.first_association_location)}"
+            f"this association of '{self.encoding_operation_name}' with"
+            + f" '{self.logical_operation_name}' lists the same encodings as the"
+            + f" association of '{self.first_encoding_operation_name}', so the"
+            + " compiler cannot choose between them. That association is written"
+            + f" here:\n{sources.render_location(self.first_association_location)}"
         )
 
 

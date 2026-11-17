@@ -60,14 +60,19 @@ class AssociationResolver:
     def resolve_logical_operation(
         self, definition: ast.LogicalOperationDefinition
     ) -> list[diagnostics.Diagnostic]:
-        """Check the Encoding Operations associated with a logical operation, add them to the associations by the full typed names of their views' encodings, and return the diagnostics about them."""
-        result = (
+        """Add a logical operation's associations with Encoding Operations, check the loaded Encoding Operations that they name, and return the diagnostics about them."""
+        matching_associations, logical_operation_diagnostics = (
+            self._associations.add_logical_operation(definition)
+        )
+        # An association whose views differ from the logical operation's is
+        # already reported, so its Encoding Operation is not also checked
+        # against that association.
+        logical_operation_diagnostics.extend(
             associated_encoding_operation_checks.AssociatedEncodingOperationChecker(
                 definition, self._definition_results
-            ).analyze()
+            ).check(matching_associations)
         )
-        self._associations.add_logical_operation(definition, result.encoding_operations)
-        return result.diagnostics
+        return logical_operation_diagnostics
 
     def resolve_value_operation(
         self,

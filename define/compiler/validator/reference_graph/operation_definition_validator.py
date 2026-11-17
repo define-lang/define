@@ -166,12 +166,12 @@ class OperationDefinitionValidator[
 
     def _analyze_logical_operation_execution(
         self, statement: ast.LogicalOperationExecutionStatement
-    ) -> bool:
-        """Validate a Logical Operation Execution Statement, and return whether it is valid."""
+    ) -> abstract_program.LogicalOperationExecution | None:
+        """Validate a Logical Operation Execution Statement, and return the execution if it is valid."""
         executed = self._arguments_validator.get_executed_logical_operation(statement)
         if executed is None:
             self._mark_views_with_unknown_use(statement.arguments)
-            return False
+            return None
         statement_diagnostics: list[diagnostics.Diagnostic] = []
         operation_name = statement.logical_operation.source_form_in_universe(
             self._definition.typed_name.name_content.fqun
@@ -184,7 +184,7 @@ class OperationDefinitionValidator[
                     statement.logical_operation, operation_name, view_argument
                 )
             )
-        _ = self._arguments_validator.validate_arguments(
+        arguments_by_index = self._arguments_validator.validate_arguments(
             statement.logical_operation,
             statement.arguments,
             executed,
@@ -192,7 +192,25 @@ class OperationDefinitionValidator[
             statement_diagnostics,
         )
         self._diagnostics.extend(statement_diagnostics)
-        return not statement_diagnostics
+        if statement_diagnostics:
+            return None
+        # Valid arguments name each of the logical operation's views once, in
+        # order.
+        arguments: list[
+            abstract_program.Argument[
+                ast.LogicalOperationViewDefinition, ast.LocalTypedNameReference
+            ]
+        ] = []
+        for index, argument in arguments_by_index.items():
+            arguments.append(
+                abstract_program.Argument(
+                    interface_view=executed.views[index],
+                    looking_at=argument.looking_at,
+                )
+            )
+        return abstract_program.LogicalOperationExecution(
+            logical_operation=statement.logical_operation, arguments=arguments
+        )
 
     def _record_view_arguments(
         self,
@@ -317,16 +335,11 @@ class ValueOperationDefinitionValidator(
     @override
     def _analyze_logical_operation_execution(
         self, statement: ast.LogicalOperationExecutionStatement
-    ) -> bool:
-        is_valid = super()._analyze_logical_operation_execution(statement)
-        if is_valid:
-            self._steps.append(
-                abstract_program.LogicalOperationExecution(
-                    logical_operation=statement.logical_operation,
-                    arguments=statement.arguments,
-                )
-            )
-        return is_valid
+    ) -> abstract_program.LogicalOperationExecution | None:
+        execution = super()._analyze_logical_operation_execution(statement)
+        if execution is not None:
+            self._steps.append(execution)
+        return execution
 
     @override
     def _analyze_valid_execution(

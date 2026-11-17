@@ -1,4 +1,4 @@
-# An Encoding Operation associated with a logical operation must have views with the same names. The project associates /number/integer/ascii/negate, whose first view is view<a>, with /negate.
+# An association must list its logical operation's Interface Views by their names, which its Encoding Operation must have. The project associates /number/integer/ascii/negate with /negate, and lists its first view, view<a>, where /negate's first view is view<value>.
 define the operation<my.domain.com:my_lib:/test> {
     define the view<first> {
         it is read.

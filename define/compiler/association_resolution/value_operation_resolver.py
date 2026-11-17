@@ -143,7 +143,11 @@ class ValueOperationResolver:
 
     def resolve_arguments[LookedAtT](
         self,
-        arguments: Iterable[abstract_program.Argument[LookedAtT]],
+        arguments: Iterable[
+            abstract_program.Argument[
+                ast.InterfaceViewDefinition, LookedAtT | ast.Literal
+            ]
+        ],
         enclosing_fqun: ast.Fqun,
     ) -> tuple[
         list[concrete_program.OperationArgument[LookedAtT]] | None,
@@ -342,9 +346,9 @@ class ValueOperationResolver:
         if encoding_operation is None:
             missing_view_encodings: dict[str, ast.GlobalTypedNameReference] = {}
             for argument in execution.arguments:
-                missing_view_encodings[argument.view.source_typed_name] = (
-                    view_encodings[argument.looking_at.source_typed_name]
-                )
+                missing_view_encodings[
+                    argument.interface_view.typed_name.source_typed_name
+                ] = view_encodings[argument.looking_at.source_typed_name]
             return MissingEncodingOperation(
                 view_encodings=missing_view_encodings,
                 execution_stack=(execution.logical_operation,),
@@ -352,20 +356,15 @@ class ValueOperationResolver:
         arguments: list[
             concrete_program.OperationArgument[ast.LocalTypedNameReference]
         ] = []
-        # ZIP: The index holds only Encoding Operations whose views have the
-        # names and order of the logical operation's views, and the statement's
-        # arguments are in the logical operation's view order. So each argument
-        # is for the Encoding Operation's view at its position.
-        for interface_view, argument in zip(
-            encoding_operation.views, execution.arguments, strict=True
-        ):
+        for argument in execution.arguments:
             arguments.append(
                 concrete_program.OperationArgument(
-                    interface_view=interface_view, looking_at=argument.looking_at
+                    interface_view=argument.interface_view,
+                    looking_at=argument.looking_at,
                 )
             )
         return concrete_program.OperationExecution(
-            runtime_operation=encoding_operation.typed_name, arguments=arguments
+            runtime_operation=encoding_operation, arguments=arguments
         )
 
     def _value_operation_execution(

@@ -32,11 +32,14 @@ class LiteralValueSetting(abstract_program.ValueSetting):
     value: EncodedLiteral
 
 
-class OperationArgument[LookedAt](msgspec.Struct):
+class OperationArgument[LookedAtT](msgspec.Struct):
     """What one interface view of an executed operation looks at."""
 
-    interface_view: ast.InterfaceViewDefinition
-    looking_at: LookedAt | EncodedLiteral
+    # The view of the executed operation, or, for an Encoding Operation that
+    # performs a logical operation, the logical operation's view, which has the
+    # same name and direction.
+    interface_view: ast.ViewDefinition
+    looking_at: LookedAtT | EncodedLiteral
 
 
 # What runs when the program runs: an Encoding Operation, by its name, or a

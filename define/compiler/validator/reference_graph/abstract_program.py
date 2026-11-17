@@ -58,11 +58,11 @@ class PositionValueSetting(ValueSetting):
     source_position: ast.PositionReference
 
 
-class Argument[LookedAt](msgspec.Struct):
-    """What one interface view of an executed Value Operation looks at."""
+class Argument[ViewT: ast.ViewDefinition, LookedAtT](msgspec.Struct):
+    """What one view of an executed Value Operation or logical operation looks at."""
 
-    interface_view: ast.InterfaceViewDefinition
-    looking_at: LookedAt | ast.Literal
+    interface_view: ViewT
+    looking_at: LookedAtT
 
 
 @final
@@ -72,7 +72,9 @@ class ActionOperationExecution(msgspec.Struct):
     operation: ast.GlobalTypedNameReference
     value_operation: ast.ValueOperationDefinition
     # In the order of the Value Operation's interface views.
-    arguments: list[Argument[ast.PositionReference]]
+    arguments: list[
+        Argument[ast.InterfaceViewDefinition, ast.PositionReference | ast.Literal]
+    ]
     # The value quality of each position that an argument looks at, keyed by
     # the source typed name of the interface view that looks at it.
     looked_at_value_qualities: dict[str, ast.GlobalTypedNameReference]
@@ -112,8 +114,10 @@ class LogicalOperationExecution(msgspec.Struct):
     """A validated Logical Operation Execution Statement in a Value Operation."""
 
     logical_operation: ast.GlobalTypedNameReference
-    # The statement's arguments, in the order of the logical operation's views.
-    arguments: tuple[ast.OperationArgumentStatement[ast.LocalTypedNameReference], ...]
+    # In the order of the logical operation's views.
+    arguments: list[
+        Argument[ast.LogicalOperationViewDefinition, ast.LocalTypedNameReference]
+    ]
 
 
 class ValueOperationExecution(msgspec.Struct):
@@ -124,7 +128,9 @@ class ValueOperationExecution(msgspec.Struct):
     # about the execution are reported.
     operation: ast.GlobalTypedNameReference
     # In the order of the executed Value Operation's interface views.
-    arguments: list[Argument[ast.LocalTypedNameReference]]
+    arguments: list[
+        Argument[ast.InterfaceViewDefinition, ast.LocalTypedNameReference | ast.Literal]
+    ]
 
 
 # What a Value Operation does, independent of the encodings of the views that

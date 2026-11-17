@@ -198,7 +198,7 @@ class _DefinitionGenerator:
         self._trace_operations = trace_operations
         self._output_dir = output_dir
         self._python_value_types = value_types.PythonValueTypes(
-            codegen_input.value_encodings
+            codegen_input.value_encodings, codegen_input.encoding_operations
         )
         self._entry_definition: renderer.ActionDefinition
 

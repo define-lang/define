@@ -1,4 +1,4 @@
-# An association must list every Interface View of its Encoding Operation. The project's association of /number/integer/ascii/add with /combine leaves out view<result>.
+# An association must list each Interface View of its logical operation. The project's association of /number/integer/ascii/add with /combine leaves out view<result>.
 define the operation<my.domain.com:my_lib:/test> {
     define the view<first> {
         it is read.

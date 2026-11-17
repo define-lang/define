@@ -5,12 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Final
 
 from define.compiler import constants
+from define.compiler.association_resolution import concrete_program
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
     from define.compiler import ast
-    from define.compiler.association_resolution import concrete_program
 
 # The type argument of positions whose particles have no value that code
 # looking through them can use.
@@ -96,10 +96,16 @@ class PythonValueTypes:
     """The Python types of values in generated code, by their value qualities."""
 
     _value_encodings: Mapping[str, ast.GlobalTypedNameReference]
+    _encoding_operations: Mapping[str, concrete_program.ConcreteEncodingOperation]
 
-    def __init__(self, value_encodings: Mapping[str, ast.GlobalTypedNameReference]):
-        """Initialize with each value quality's encoding, keyed by the value quality's full typed name."""
+    def __init__(
+        self,
+        value_encodings: Mapping[str, ast.GlobalTypedNameReference],
+        encoding_operations: Mapping[str, concrete_program.ConcreteEncodingOperation],
+    ):
+        """Initialize with each value quality's encoding and each Encoding Operation, both keyed by full typed name."""
         self._value_encodings = value_encodings
+        self._encoding_operations = encoding_operations
 
     def python_value_type(self, value_quality: ast.GlobalTypedNameReference) -> str:
         """Return the Python type that generated code uses for values of a value quality."""
@@ -107,12 +113,23 @@ class PythonValueTypes:
             self._value_encodings[value_quality.full_typed_name]
         )
 
-    def view_python_value_type(self, view: ast.InterfaceViewDefinition) -> str:
-        """Return the Python type of the values an interface view holds, whether it has a value quality, as on a Value Operation, or an encoding, as on an Encoding Operation."""
-        value_quality = view.quality_assignment_block.value_quality
-        if value_quality is not None:
-            return self.python_value_type(value_quality)
-        return encoded_python_value_type(view.quality_assignment_block)
+    def view_python_value_types(
+        self, runtime_operation: concrete_program.RuntimeOperation
+    ) -> dict[str, str]:
+        """Return the Python type of the values that each interface view of the runtime operation holds, by the view's source typed name."""
+        python_value_types: dict[str, str] = {}
+        if isinstance(runtime_operation, concrete_program.CompositeValueOperation):
+            for view_name, encoding in runtime_operation.view_encodings.items():
+                python_value_types[view_name] = encoding_python_value_type(encoding)
+            return python_value_types
+        definition = self._encoding_operations[
+            runtime_operation.full_typed_name
+        ].definition
+        for view in definition.views:
+            python_value_types[view.typed_name.source_typed_name] = (
+                encoded_python_value_type(view.quality_assignment_block)
+            )
+        return python_value_types
 
     def assigned_python_value_type(
         self, block: ast.QualityAssignmentBlock | None

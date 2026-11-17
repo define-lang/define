@@ -1,4 +1,4 @@
-# Two Encoding Operations associated with one logical operation must not have the same encodings. The project associates /number/integer/ascii/add and /number/integer/ascii/multiply with /combine.
+# Two associations of one logical operation must not list the same encodings. The project associates /number/integer/ascii/add and /number/integer/ascii/multiply with /combine.
 define the operation<my.domain.com:my_lib:/test> {
     define the view<first> {
         it is read.

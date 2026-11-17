@@ -1,0 +1,29 @@
+# An associated Encoding Operation's Interface Views must have the names that its association lists. The project's association of /combine/integer with /combine lists view<b> where /combine/integer has view<c>.
+define the operation<my.domain.com:my_lib:/test> {
+    define the view<first> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<second> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<combined> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        execute the logical_operation</combine> {
+            with view<a> looking at view<first>.
+            with view<b> looking at view<second>.
+            with view<result> looking at view<combined>.
+        }
+    }
+}
