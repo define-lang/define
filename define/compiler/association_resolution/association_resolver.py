@@ -68,9 +68,9 @@ class AssociationResolver:
         # already reported, so its Encoding Operation is not also checked
         # against that association.
         logical_operation_diagnostics.extend(
-            associated_encoding_operation_checks.AssociatedEncodingOperationChecker(
-                definition, self._definition_results
-            ).check(matching_associations)
+            associated_encoding_operation_checks.check(
+                definition, self._definition_results, matching_associations
+            )
         )
         return logical_operation_diagnostics
 
