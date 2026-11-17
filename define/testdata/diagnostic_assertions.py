@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 import ast
-import copy
 import functools
 import inspect
-from typing import TYPE_CHECKING, cast, override
+from typing import TYPE_CHECKING, cast
 
 from defcl.python import errors
 from define.compiler.errors import diagnostics, syntax_errors
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
 
 # The names that tests import the modules of diagnostic classes as. Importing
 # syntax_errors here also registers its classes as subclasses of
@@ -76,15 +75,37 @@ def _is_not_none_check(test: ast.Compare) -> bool:
     )
 
 
-class _AliasExpander(ast.NodeTransformer):
-    _aliases: dict[str, ast.expr]
-
-    def __init__(self, aliases: dict[str, ast.expr]):
-        self._aliases = aliases
-
-    @override
-    def visit_Name(self, node: ast.Name) -> ast.expr:
-        return copy.deepcopy(self._aliases.get(node.id, node))
+def _expand_aliases[Node: ast.AST](
+    node: Node, aliases: dict[str, ast.expr]
+) -> Node | ast.expr:
+    # Expanded trees share their unchanged parts and the alias trees with the
+    # trees they come from, so nothing may change a tree after it is built.
+    if isinstance(node, ast.Name):
+        return aliases.get(node.id, node)
+    changed = False
+    fields: dict[str, object] = {}
+    node_fields = cast("Iterator[tuple[str, object]]", ast.iter_fields(node))
+    for name, value in node_fields:
+        if isinstance(value, ast.AST):
+            expanded = _expand_aliases(value, aliases)
+            changed = changed or expanded is not value
+            fields[name] = expanded
+        elif isinstance(value, list):
+            expanded_list: list[object] = []
+            for element in cast("list[object]", value):
+                expanded = (
+                    _expand_aliases(element, aliases)
+                    if isinstance(element, ast.AST)
+                    else element
+                )
+                changed = changed or expanded is not element
+                expanded_list.append(expanded)
+            fields[name] = expanded_list
+        else:
+            fields[name] = value
+    if not changed:
+        return node
+    return type(node)(**fields)
 
 
 class _TestFunctionAssertions:
@@ -98,9 +119,7 @@ class _TestFunctionAssertions:
         self._message_uses: dict[str, int] = {}
 
     def _expand(self, node: ast.expr) -> ast.expr:
-        return cast(
-            "ast.expr", _AliasExpander(self._aliases).visit(copy.deepcopy(node))
-        )
+        return _expand_aliases(node, self._aliases)
 
     def _key(self, node: ast.expr) -> str:
         return ast.unparse(self._expand(node))
@@ -274,19 +293,25 @@ def _missing_fields(class_name: str, paths: set[FieldPath]) -> list[str]:
     return missing
 
 
+# Both checks read the same analysis of each test function.
+@functools.cache
+def _assertions(
+    function: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> _TestFunctionAssertions:
+    assertions = _TestFunctionAssertions()
+    assertions.visit_statements(function.body)
+    return assertions
+
+
 def unasserted_diagnostic_fields(
     function: ast.FunctionDef | ast.AsyncFunctionDef,
 ) -> list[str]:
     """Describe each diagnostic checked by `function` that it does not fully assert on."""
-    assertions = _TestFunctionAssertions()
-    assertions.visit_statements(function.body)
-    return assertions.field_problems()
+    return _assertions(function).field_problems()
 
 
 def diagnostic_message_assertions(
     function: ast.FunctionDef | ast.AsyncFunctionDef,
 ) -> list[str]:
     """Describe each assertion in `function` on a diagnostic's message."""
-    assertions = _TestFunctionAssertions()
-    assertions.visit_statements(function.body)
-    return assertions.message_problems()
+    return _assertions(function).message_problems()
