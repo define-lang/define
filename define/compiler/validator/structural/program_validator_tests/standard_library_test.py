@@ -13,7 +13,11 @@ from define.compiler.validator.test_helpers import (
 )
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
+    from define.compiler.test_fixtures.structural_validation import (
+        ValidateTestdataStructuralNonFilesystem,
+    )
+
+pytest_plugins = ["define.compiler.test_fixtures.structural_validation"]
 
 
 def test_referenced_definition_loads_only_its_file(

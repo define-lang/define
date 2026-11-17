@@ -6,10 +6,12 @@ from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.structural_validation import (
         ValidateTestdataStructural,
         ValidateTestdataStructuralNonFilesystem,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.structural_validation"]
 
 
 def test_move_from_a_position_to_itself(

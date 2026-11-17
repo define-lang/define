@@ -7,6 +7,7 @@ import ast
 import importlib.metadata
 import re
 import sys
+import typing
 from pathlib import Path
 from typing import TYPE_CHECKING, Final, cast
 
@@ -381,25 +382,18 @@ def _is_unresolved_module(
 
 
 def analyze_imports(
-    tree: ast.AST,
+    tree: ast.Module,
     module_owners: dict[str, str],
     external_module_owners: dict[str, str],
 ) -> ImportAnalysis:
-    """Resolve import owners and report imports with no known owner."""
+    """Resolve import owners, including the modules that a test module loads as pytest plugins, and report imports with no known owner."""
     dependencies: set[str] = set()
     unresolved: set[str] = set()
+    imported_modules = _pytest_plugin_modules(tree)
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                owner = _resolve_import(
-                    alias.name, module_owners, external_module_owners
-                )
-                if owner is not None:
-                    dependencies.add(owner)
-                elif _is_unresolved_module(
-                    alias.name, module_owners, external_module_owners
-                ):
-                    unresolved.add(alias.name)
+                imported_modules.append(alias.name)
         elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
             package_owner_required = False
             for alias in node.names:
@@ -409,16 +403,35 @@ def analyze_imports(
                 else:
                     package_owner_required = True
             if package_owner_required:
-                owner = _resolve_import(
-                    node.module, module_owners, external_module_owners
-                )
-                if owner is not None:
-                    dependencies.add(owner)
-                elif _is_unresolved_module(
-                    node.module, module_owners, external_module_owners
-                ):
-                    unresolved.add(node.module)
+                imported_modules.append(node.module)
+    for module in imported_modules:
+        owner = _resolve_import(module, module_owners, external_module_owners)
+        if owner is not None:
+            dependencies.add(owner)
+        elif _is_unresolved_module(module, module_owners, external_module_owners):
+            unresolved.add(module)
     return ImportAnalysis(frozenset(dependencies), frozenset(unresolved))
+
+
+def _pytest_plugin_modules(tree: ast.Module) -> list[str]:
+    """Return the modules that a module's top-level `pytest_plugins` names, which pytest imports for it."""
+    modules: list[str] = []
+    for node in tree.body:
+        if not (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == "pytest_plugins"
+        ):
+            continue
+        values = (
+            node.value.elts
+            if isinstance(node.value, ast.List | ast.Tuple)
+            else [node.value]
+        )
+        for value in values:
+            modules.append(typing.cast("str", ast.literal_eval(value)))
+    return modules
 
 
 def _pytest_fixture_name(

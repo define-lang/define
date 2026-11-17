@@ -28,11 +28,11 @@ py_test(
         ":resource_cases",
         "//defcl/python:error_types",
         "//defcl/python:errors",
-        "//define/compiler:conftest",
         "//define/compiler:driver",
         "//define/compiler/codegen:test_helpers",
         "//define/compiler/codegen:testdata_cases",
         "//define/compiler/errors:syntax_errors",
+        "//define/compiler/test_fixtures:testdata",
         "@pypi//pytest",
     ],
 )

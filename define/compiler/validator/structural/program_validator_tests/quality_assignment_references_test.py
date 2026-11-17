@@ -12,10 +12,12 @@ from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.structural_validation import (
         ValidateTestdataStructural,
         ValidateTestdataStructuralNonFilesystem,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.structural_validation"]
 
 
 def test_action_local_position_requires_missing_global(

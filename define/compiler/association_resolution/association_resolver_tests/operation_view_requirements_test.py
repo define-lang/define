@@ -8,10 +8,12 @@ from crates.source_rendering.python import rendering
 from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.validation_pipeline import (
         ValidateTestdataNonFilesystemWithReferenceGraph,
         ValidateTestdataProjectWithReferenceGraph,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 
 def test_invalid_literal_content(

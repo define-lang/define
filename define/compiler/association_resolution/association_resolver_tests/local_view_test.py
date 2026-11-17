@@ -8,9 +8,11 @@ from crates.source_rendering.python import rendering
 from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.validation_pipeline import (
         ValidateTestdataProjectWithReferenceGraph,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 
 def test_value_has_no_encoding(

@@ -1,0 +1,61 @@
+load("@rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "structural_validation",
+    testonly = True,
+    srcs = ["structural_validation.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":testdata",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "test_fixtures",
+    testonly = True,
+    srcs = ["__init__.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+)
+
+py_library(
+    name = "testdata",
+    testonly = True,
+    srcs = ["testdata.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        "//define/testdata:path_resolver",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "validation_pipeline",
+    testonly = True,
+    srcs = ["validation_pipeline.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":testdata",
+        "//define/compiler:validation_pipeline",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":structural_validation",
+        ":test_fixtures",
+        ":testdata",
+        ":validation_pipeline",
+    ],
+)
+
+check_build_file()

@@ -152,6 +152,10 @@ See [define/spec/spec.md] for the language specification.
   directly on the full list.
 - **Never break one line of Define source code across two Python lines**, even
   if it creates a very long Python string.
+- The compiler's shared test fixtures live in modules in
+  `define/compiler/test_fixtures/`, grouped by what they need. A test module
+  loads the ones it uses with `pytest_plugins`, so its test target depends only
+  on them.
 
 ## Bazel
 

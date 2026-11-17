@@ -13,7 +13,11 @@ from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
-    from define.compiler import conftest
+    from define.compiler.test_fixtures.validation_pipeline import (
+        ValidateTestdataProjectWithReferenceGraph,
+    )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 _IMPLIED_DFN = "define the potential position<my.domain.com:my_lib:/implied>.\n"
 
@@ -23,14 +27,14 @@ _TRANSITIVE_IMPLIED_DFN = (
 
 
 def test_create_in_implied_position(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_duplicate_direct_quality_assignment_triggers_action_once(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -85,14 +89,14 @@ def test_duplicate_direct_quality_assignment_triggers_action_once(
 
 
 def test_move_between_implied_positions(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_child_of_locally_created_implied_particle_is_known_empty(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -108,14 +112,14 @@ def test_child_of_locally_created_implied_particle_is_known_empty(
 
 
 def test_destroy_after_create_in_implied_position(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_move_into_implied_position_missing_quality(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -132,7 +136,7 @@ def test_move_into_implied_position_missing_quality(
 
 
 def test_create_in_occupied_implied_position(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -148,7 +152,7 @@ def test_create_in_occupied_implied_position(
 
 
 def test_destroy_in_empty_implied_position_infers_created(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_occupied_implied_position_requirements=True
@@ -157,7 +161,7 @@ def test_destroy_in_empty_implied_position_infers_created(
 
 
 def test_move_from_empty_implied_position_infers_occupied(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_occupied_implied_position_requirements=True
@@ -166,21 +170,21 @@ def test_move_from_empty_implied_position_infers_occupied(
 
 
 def test_round_trip_local_to_implied_back_to_local_preserves_quality(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_round_trip_implied_to_local_back_to_implied_preserves_quality(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_move_from_local_to_implied_marks_local_empty(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -193,7 +197,7 @@ def test_move_from_local_to_implied_marks_local_empty(
 
 
 def test_move_from_implied_to_local_marks_implied_empty(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -206,21 +210,21 @@ def test_move_from_implied_to_local_marks_implied_empty(
 
 
 def test_move_respects_direct_implied_qualities(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_move_respects_transitively_constructed_occupancy(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_two_different_implier_constructors_conflict(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -274,14 +278,14 @@ def test_two_different_implier_constructors_conflict(
 
 
 def test_three_level_chain_create_destroy_create_constructors(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -327,7 +331,7 @@ def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement
 
 
 def test_destroy_in_emptied_interface_child_after_constructor_fills_it(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics

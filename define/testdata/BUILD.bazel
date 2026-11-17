@@ -45,7 +45,7 @@ py_library(
     name = "path_resolver",
     testonly = True,
     srcs = ["path_resolver.py"],
-    visibility = ["//define/compiler:__pkg__"],
+    visibility = ["//define/compiler/test_fixtures:__pkg__"],
 )
 
 py_test(

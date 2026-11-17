@@ -8,14 +8,16 @@ from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
-    from define.compiler import conftest
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.validation_pipeline import (
         ValidateTestdataNonFilesystemWithReferenceGraph,
+        ValidateTestdataProjectWithReferenceGraph,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 
 def test_move_to_chained_dest_missing_qualities(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -32,21 +34,21 @@ def test_move_to_chained_dest_missing_qualities(
 
 
 def test_move_to_chained_dest_has_qualities(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_move_to_chained_dest_without_qualities(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_move_from_chained_to_local_missing_qualities(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -63,14 +65,14 @@ def test_move_from_chained_to_local_missing_qualities(
 
 
 def test_move_from_chained_to_local_has_qualities(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_move_from_local_without_qualities_to_chained_position_with_qualities(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -87,7 +89,7 @@ def test_move_from_local_without_qualities_to_chained_position_with_qualities(
 
 
 def test_definition_local_to_chained_violates(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -106,7 +108,7 @@ def test_definition_local_to_chained_violates(
 
 
 def test_definition_local_to_chained_satisfies(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -115,7 +117,7 @@ def test_definition_local_to_chained_satisfies(
 
 
 def test_chained_to_definition_local_violates(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -134,7 +136,7 @@ def test_chained_to_definition_local_violates(
 
 
 def test_chained_to_definition_local_satisfies(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -143,28 +145,28 @@ def test_chained_to_definition_local_satisfies(
 
 
 def test_move_from_multi_element_chain_to_local_without_qualities(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_move_from_multi_element_chain_to_local_with_qualities(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_move_three_element_chain_to_three_element_chain_satisfies(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_move_three_element_chain_to_three_element_chain_violates(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics

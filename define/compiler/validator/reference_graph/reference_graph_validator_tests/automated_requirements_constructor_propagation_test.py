@@ -17,9 +17,11 @@ from define.compiler.validator.reference_graph.reference_graph_validator_tests.t
 )
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.validation_pipeline import (
         ValidateTestdataProjectWithReferenceGraph,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _IMPLIED_ACTION = "action<my.domain.com:my_lib:/implied_action>"

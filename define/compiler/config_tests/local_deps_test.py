@@ -17,6 +17,8 @@ if typing.TYPE_CHECKING:
 
     import pytest
 
+pytest_plugins = ["define.compiler.test_fixtures.testdata"]
+
 
 def test_missing_universe_name(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch

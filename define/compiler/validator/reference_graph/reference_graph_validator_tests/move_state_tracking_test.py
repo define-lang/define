@@ -8,10 +8,12 @@ from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
-    from define.compiler import conftest
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.validation_pipeline import (
         ValidateTestdataNonFilesystemWithReferenceGraph,
+        ValidateTestdataProjectWithReferenceGraph,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 
 def test_move_from_empty_position(
@@ -261,7 +263,7 @@ def test_single_error_position_marks_both_error(
 
 
 def test_move_from_chained_to_occupied_local_position(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -278,7 +280,7 @@ def test_move_from_chained_to_occupied_local_position(
 
 
 def test_move_from_empty_local_chained(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -293,7 +295,7 @@ def test_move_from_empty_local_chained(
 
 
 def test_move_to_occupied_local_chained(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -310,7 +312,7 @@ def test_move_to_occupied_local_chained(
 
 
 def test_double_move_from_local_chained_fails(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -325,28 +327,28 @@ def test_double_move_from_local_chained_fails(
 
 
 def test_move_from_local_chained_to_local(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_move_from_local_to_local_chained(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_move_between_local_chained(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_error_state_on_child_position_moves_with_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -359,7 +361,7 @@ def test_error_state_on_child_position_moves_with_particle(
 
 
 def test_error_state_on_child_position_does_not_stay_at_move_source(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -377,7 +379,7 @@ def test_error_state_on_child_position_does_not_stay_at_move_source(
 
 
 def test_move_clears_error_state_below_target(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics

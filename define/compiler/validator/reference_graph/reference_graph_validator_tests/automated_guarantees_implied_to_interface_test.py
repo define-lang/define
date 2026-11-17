@@ -7,9 +7,11 @@ from typing import TYPE_CHECKING
 from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.validation_pipeline import (
         ValidateTestdataProjectWithReferenceGraph,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 _PARENT = "my.domain.com:parent_lib"
 _CHILD = "my.domain.com:child_lib"

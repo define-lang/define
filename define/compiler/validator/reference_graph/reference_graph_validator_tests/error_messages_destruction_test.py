@@ -13,7 +13,9 @@ import textwrap
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import ValidateProject
+    from define.compiler.test_fixtures.validation_pipeline import ValidateProject
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 # Keep Define source inline in this module because these tests compare rendered
 # diagnostics against the exact source lines supplied to the formatter.

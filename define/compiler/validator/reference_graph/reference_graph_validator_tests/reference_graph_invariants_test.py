@@ -7,11 +7,15 @@ from typing import TYPE_CHECKING
 from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
-    from define.compiler import conftest
+    from define.compiler.test_fixtures.validation_pipeline import (
+        ValidateTestdataProjectWithReferenceGraph,
+    )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 
 def test_multiple_pending_depth_updates_do_not_hide_cycle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
     diagnostics_found = result.program_validation.all_diagnostics
@@ -32,7 +36,7 @@ def test_multiple_pending_depth_updates_do_not_hide_cycle(
 
 
 def test_rejected_cycle_restores_depths_for_later_edge(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
     diagnostics_found = result.program_validation.all_diagnostics
@@ -67,7 +71,7 @@ def test_rejected_cycle_restores_depths_for_later_edge(
 
 
 def test_visited_reference_does_not_skip_independent_definition(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
     diagnostics_found = result.program_validation.all_diagnostics

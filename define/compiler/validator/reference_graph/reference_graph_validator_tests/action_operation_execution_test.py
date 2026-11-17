@@ -13,10 +13,12 @@ from define.compiler.validator.reference_graph.reference_graph_validator_tests.t
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.validation_pipeline import (
         ValidateTestdataNonFilesystemWithReferenceGraph,
         ValidateTestdataProjectWithReferenceGraph,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 
 def test_empty_position(

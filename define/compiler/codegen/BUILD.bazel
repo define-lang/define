@@ -75,8 +75,8 @@ py_test(
         ":generator",
         ":test_helpers",
         "//define/compiler:ast",
-        "//define/compiler:conftest",
         "//define/compiler/association_resolution:concrete_program",
+        "//define/compiler/test_fixtures:validation_pipeline",
         "//define/compiler/validator:test_helpers",
     ],
 )

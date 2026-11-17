@@ -10,9 +10,11 @@ from define.compiler.validator.test_helpers import (
 )
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.validation_pipeline import (
         ValidateTestdataNonFilesystemWithReferenceGraph,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 
 def test_every_definition_is_valid(

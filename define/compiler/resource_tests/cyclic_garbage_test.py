@@ -24,6 +24,8 @@ from define.compiler.resource_tests import resource_cases
 if typing.TYPE_CHECKING:
     from collections.abc import Callable
 
+pytest_plugins = ["define.compiler.test_fixtures.testdata"]
+
 # The defcl validator extension imports these modules when it first reads a defcl
 # file. Importing a module leaves a fixed amount of cyclic garbage, so they are
 # imported here instead of during the first measured compile.

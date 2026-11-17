@@ -11,7 +11,11 @@ from crates.source_rendering.python import rendering
 from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
+    from define.compiler.test_fixtures.structural_validation import (
+        ValidateTestdataStructuralNonFilesystem,
+    )
+
+pytest_plugins = ["define.compiler.test_fixtures.structural_validation"]
 
 
 def test_multiple_diagnostics_collected(

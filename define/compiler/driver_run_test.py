@@ -15,6 +15,8 @@ import pytest
 
 from define.compiler import constants, driver
 
+pytest_plugins = ["define.compiler.test_fixtures.testdata"]
+
 
 def _write_valid_position_project(project_root: Path, universe_name: str):
     config_dir = project_root / ".define" / "project"

@@ -15,6 +15,8 @@ if typing.TYPE_CHECKING:
 
     import pytest
 
+pytest_plugins = ["define.compiler.test_fixtures.testdata"]
+
 
 def test_each_schema_error_is_a_diagnostic(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch

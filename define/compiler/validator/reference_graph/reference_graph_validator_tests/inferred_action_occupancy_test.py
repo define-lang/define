@@ -8,10 +8,12 @@ from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
-    from define.compiler import conftest
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.validation_pipeline import (
         ValidateTestdataNonFilesystemWithReferenceGraph,
+        ValidateTestdataProjectWithReferenceGraph,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 
 def test_move_source_requirement_satisfied_no_error(
@@ -43,7 +45,7 @@ def test_interface_position_first_used_as_create_then_move_is_valid(
 
 
 def test_move_from_interface_chained_to_local(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -52,7 +54,7 @@ def test_move_from_interface_chained_to_local(
 
 
 def test_move_from_local_to_interface_chained(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -61,7 +63,7 @@ def test_move_from_local_to_interface_chained(
 
 
 def test_move_between_interface_chained(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -70,7 +72,7 @@ def test_move_between_interface_chained(
 
 
 def test_move_to_occupied_interface_chained(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -89,7 +91,7 @@ def test_move_to_occupied_interface_chained(
 
 
 def test_create_in_interface_chained(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -98,7 +100,7 @@ def test_create_in_interface_chained(
 
 
 def test_create_twice_in_interface_chained(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -116,7 +118,7 @@ def test_create_twice_in_interface_chained(
 
 
 def test_move_then_create_in_interface_chained(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -125,7 +127,7 @@ def test_move_then_create_in_interface_chained(
 
 
 def test_move_from_trigger_chained_to_local(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -134,7 +136,7 @@ def test_move_from_trigger_chained_to_local(
 
 
 def test_create_in_trigger_chained(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -143,7 +145,7 @@ def test_create_in_trigger_chained(
 
 
 def test_create_twice_in_trigger_chained(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -161,7 +163,7 @@ def test_create_twice_in_trigger_chained(
 
 
 def test_move_from_trigger_chained_then_create(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -170,7 +172,7 @@ def test_move_from_trigger_chained_then_create(
 
 
 def test_3_item_position_chain_via_moved_local_infers_occupied(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True

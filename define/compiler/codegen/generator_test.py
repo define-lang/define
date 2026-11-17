@@ -12,7 +12,11 @@ if TYPE_CHECKING:
 
     from define.compiler import ast
     from define.compiler.association_resolution import concrete_program
-    from define.compiler.conftest import ValidateTestdataProjectWithReferenceGraph
+    from define.compiler.test_fixtures.validation_pipeline import (
+        ValidateTestdataProjectWithReferenceGraph,
+    )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 
 def _generate(

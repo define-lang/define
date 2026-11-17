@@ -15,6 +15,8 @@ if typing.TYPE_CHECKING:
 
     import pytest
 
+pytest_plugins = ["define.compiler.test_fixtures.testdata"]
+
 _SUB_ROOT = define_path.DefinePath("subroot")
 
 

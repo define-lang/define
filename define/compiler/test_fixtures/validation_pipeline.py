@@ -1,18 +1,18 @@
 # pyright: reportUnusedCallResult=false
 # pyright: reportImplicitStringConcatenation=false
-"""Shared test fixtures for the Define compiler."""
+"""Test fixtures that run a program through the whole validation pipeline."""
 
 from __future__ import annotations
 
 from pathlib import PurePosixPath
-from typing import TYPE_CHECKING, Protocol, cast
+from typing import TYPE_CHECKING, Protocol
 
 import pytest
 
 from define.compiler import validation_pipeline
+from define.compiler.test_fixtures import testdata
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
-from define.testdata import path_resolver
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -108,114 +108,13 @@ class ValidateTestdataNonFilesystemWithReferenceGraph(Protocol):
         ...
 
 
-class ValidateTestdataStructuralNonFilesystem(Protocol):
-    """Validate the convention-derived non-filesystem source structurally."""
-
-    def __call__(
-        self,
-        *,
-        max_workers: int | None = ...,
-        allow_entry_action_interface_positions: bool = ...,
-    ) -> validation_result.ProgramValidationResult:
-        """Run structural validation."""
-        ...
-
-
-class ValidateTestdataStructural(Protocol):
-    """Validate the convention-derived filesystem project structurally."""
-
-    def __call__(
-        self,
-        *,
-        max_workers: int | None = ...,
-        # Pass this only when the entry path itself is the behavior under test,
-        # such as a test of path mismatches or of a missing entry file. Every
-        # other test lets test.dfn define /test.
-        entry_file: str = ...,
-        allow_entry_action_interface_positions: bool = ...,
-    ) -> validation_result.ProgramValidationResult:
-        """Run structural validation."""
-        ...
-
-
-def _testdata_directory(request: pytest.FixtureRequest) -> Path:
-    test_function = cast("pytest.Function", request.node)
-    test_class = test_function.parent
-    test_class_name = test_class.name if isinstance(test_class, pytest.Class) else None
-    return path_resolver.directory_for(
-        request.path,
-        test_function.originalname,
-        test_class_name,
-    )
-
-
-@pytest.fixture
-def testdata_project_directory(
-    request: pytest.FixtureRequest,
-) -> Path:
-    """Return the current test's convention-derived project directory."""
-    return _testdata_directory(request)
-
-
-@pytest.fixture
-def validate_testdata_structural_non_filesystem(
-    request: pytest.FixtureRequest,
-    monkeypatch: pytest.MonkeyPatch,
-) -> ValidateTestdataStructuralNonFilesystem:
-    """Structurally validate source.dfn from the derived testdata directory."""
-    directory = _testdata_directory(request)
-    source = (directory / "source.dfn").read_text(encoding="utf-8")
-
-    def _run(
-        *,
-        max_workers: int | None = None,
-        # Pass True only when a validation test specifically requires an entry
-        # action with interface positions.
-        allow_entry_action_interface_positions: bool = False,
-    ) -> validation_result.ProgramValidationResult:
-        monkeypatch.chdir(directory)
-        return program_validator.validate_program_non_filesystem(
-            source,
-            max_workers=max_workers,
-            allow_entry_action_interface_positions=allow_entry_action_interface_positions,
-        ).result
-
-    return _run
-
-
-@pytest.fixture
-def validate_testdata_structural(
-    request: pytest.FixtureRequest,
-    monkeypatch: pytest.MonkeyPatch,
-) -> ValidateTestdataStructural:
-    """Validate the current test's convention-derived filesystem project."""
-    directory = _testdata_directory(request)
-
-    def _run(
-        *,
-        max_workers: int | None = None,
-        entry_file: str = "test.dfn",
-        # Pass True only when a validation test specifically requires an entry
-        # action with interface positions.
-        allow_entry_action_interface_positions: bool = False,
-    ) -> validation_result.ProgramValidationResult:
-        monkeypatch.chdir(directory)
-        return program_validator.validate_program(
-            PurePosixPath(entry_file),
-            max_workers=max_workers,
-            allow_entry_action_interface_positions=allow_entry_action_interface_positions,
-        ).result
-
-    return _run
-
-
 @pytest.fixture
 def validate_testdata_non_filesystem_with_reference_graph(
     request: pytest.FixtureRequest,
     monkeypatch: pytest.MonkeyPatch,
 ) -> ValidateTestdataNonFilesystemWithReferenceGraph:
     """Validate source.dfn from the current test's derived testdata directory."""
-    directory = _testdata_directory(request)
+    directory = testdata.testdata_directory(request)
     source = (directory / "source.dfn").read_text(encoding="utf-8")
 
     def _run(
@@ -264,7 +163,7 @@ def validate_testdata_project_with_reference_graph(
     monkeypatch: pytest.MonkeyPatch,
 ) -> ValidateTestdataProjectWithReferenceGraph:
     """Validate the current test's convention-derived project."""
-    directory = _testdata_directory(request)
+    directory = testdata.testdata_directory(request)
 
     def _run(
         *,

@@ -17,10 +17,16 @@ from define.compiler.validator.test_helpers import assert_no_errors
 if typing.TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from define.compiler import ast, conftest
+    from define.compiler import ast
+    from define.compiler.test_fixtures.validation_pipeline import (
+        ValidateProject,
+        ValidateTestdataProjectWithReferenceGraph,
+    )
     from define.compiler.validator.reference_graph import (
         action_contract,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 
 def _chain(*names: str) -> chained_name.ChainedNameTuple:
@@ -52,7 +58,7 @@ def published_contracts() -> Iterator[dict[str, action_contract.ActionContract]]
 
 
 def test_particles_share_destroyer_state_but_have_independent_facts(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
@@ -63,7 +69,7 @@ def test_particles_share_destroyer_state_but_have_independent_facts(
 
 
 def test_particles_share_caller_state_but_have_independent_facts(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
@@ -99,7 +105,7 @@ def _assert_shared_state_with_independent_facts(
 
 
 def test_automatic_destruction_snapshots_each_target_before_destructors(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
@@ -132,7 +138,7 @@ def test_automatic_destruction_snapshots_each_target_before_destructors(
 
 
 def test_automatic_destruction_with_unrelated_pending_guarantees(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
@@ -168,7 +174,7 @@ def test_automatic_destruction_with_unrelated_pending_guarantees(
 
 
 def test_large_child_states_share_extend_and_compact_from_source(
-    validate_project: conftest.ValidateProject,
+    validate_project: ValidateProject,
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     # All six Actions pass the same particle toward stage0, which destroys it.
@@ -296,7 +302,7 @@ def test_large_child_states_share_extend_and_compact_from_source(
 
 
 def test_caller_passed_child_of_local_parent_keeps_its_contract(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
@@ -322,7 +328,7 @@ def test_caller_passed_child_of_local_parent_keeps_its_contract(
 
 
 def test_shared_state_uses_each_moved_particles_own_origin(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
@@ -369,7 +375,7 @@ def test_shared_state_uses_each_moved_particles_own_origin(
 
 
 def test_repeated_executions_keep_distinct_shared_histories(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)

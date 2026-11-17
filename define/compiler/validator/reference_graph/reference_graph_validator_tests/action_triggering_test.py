@@ -10,7 +10,12 @@ from define.compiler.validator.reference_graph.test_helpers import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
-    from define.compiler import conftest
+    from define.compiler.test_fixtures.validation_pipeline import (
+        ValidateTestdataNonFilesystemWithReferenceGraph,
+        ValidateTestdataProjectWithReferenceGraph,
+    )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
@@ -22,7 +27,7 @@ _SHARED = "action<my.domain.com:my_lib:/shared>"
 
 
 def test_self_constructor_reference_reports_circular_reference(
-    validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph(max_workers=1)
     all_diagnostics = result.all_diagnostics
@@ -35,7 +40,7 @@ def test_self_constructor_reference_reports_circular_reference(
 
 
 def test_destroy_with_unresolved_action_quality_reports_reference_error(
-    validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph,
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph(max_workers=1)
     all_diagnostics = result.all_diagnostics
@@ -52,7 +57,7 @@ def test_destroy_with_unresolved_action_quality_reports_reference_error(
 
 
 def test_action_chain_cascade(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -60,7 +65,7 @@ def test_action_chain_cascade(
 
 
 def test_action_with_body(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -68,7 +73,7 @@ def test_action_with_body(
 
 
 def test_quality_assignments_and_init(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -76,7 +81,7 @@ def test_quality_assignments_and_init(
 
 
 def test_empty_action(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -84,7 +89,7 @@ def test_empty_action(
 
 
 def test_multi_interface_positions(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -92,7 +97,7 @@ def test_multi_interface_positions(
 
 
 def test_basic_cross_action_trigger(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -100,7 +105,7 @@ def test_basic_cross_action_trigger(
 
 
 def test_create_and_move_trigger_other_action(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -108,7 +113,7 @@ def test_create_and_move_trigger_other_action(
 
 
 def test_refilling_destroyed_trigger_position_retriggers(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -119,7 +124,7 @@ def test_refilling_destroyed_trigger_position_retriggers(
 
 
 def test_moving_between_two_trigger_positions_fires_both(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -130,7 +135,7 @@ def test_moving_between_two_trigger_positions_fires_both(
 
 
 def test_move_from_trigger_position_to_itself_does_not_retrigger(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -147,7 +152,7 @@ def test_move_from_trigger_position_to_itself_does_not_retrigger(
 
 
 def test_cross_file_triggering(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -155,7 +160,7 @@ def test_cross_file_triggering(
 
 
 def test_trigger_chain(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -166,7 +171,7 @@ def test_trigger_chain(
 
 
 def test_diamond_trigger_graph_preserves_both_paths(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -179,7 +184,7 @@ def test_diamond_trigger_graph_preserves_both_paths(
 
 
 def test_same_local_position_name_in_unrelated_action_does_not_trigger_it(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -187,7 +192,7 @@ def test_same_local_position_name_in_unrelated_action_does_not_trigger_it(
 
 
 def test_self_trigger(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -211,7 +216,7 @@ def test_self_trigger(
 
 
 def test_duplicate_action_does_not_add_trigger_edges(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert len(result.program_validation.all_diagnostics) == 1
@@ -229,7 +234,7 @@ def test_duplicate_action_does_not_add_trigger_edges(
 
 
 def test_local_prefix_before_action_trigger(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -237,7 +242,7 @@ def test_local_prefix_before_action_trigger(
 
 
 def test_no_body_effect_when_create_target_has_error_state(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert len(result.program_validation.all_diagnostics) == 1
@@ -257,7 +262,7 @@ def test_no_body_effect_when_create_target_has_error_state(
 
 
 def test_no_body_effect_when_move_target_has_error_state(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert len(result.program_validation.all_diagnostics) == 1
@@ -277,7 +282,7 @@ def test_no_body_effect_when_move_target_has_error_state(
 
 
 def test_no_trigger_edge_on_unknown_global_chain_start(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -294,7 +299,7 @@ def test_no_trigger_edge_on_unknown_global_chain_start(
 class TestConstructorTriggering:
     def test_constructor_create_triggers_action(
         self,
-        validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
         assert_no_errors(result.program_validation)
@@ -302,7 +307,7 @@ class TestConstructorTriggering:
 
     def test_constructor_move_triggers_action(
         self,
-        validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
         assert_no_errors(result.program_validation)
@@ -310,7 +315,7 @@ class TestConstructorTriggering:
 
     def test_constructor_fired_via_quality_assignment_records_edge(
         self,
-        validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+        validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
         assert_no_errors(result.program_validation)
@@ -318,7 +323,7 @@ class TestConstructorTriggering:
 
 
 def test_action_interface_reference_with_circular_contract_reports_circular_references(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -354,7 +359,7 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
 
 
 def test_records_statement_triggers_including_constructors(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -367,7 +372,7 @@ def test_records_statement_triggers_including_constructors(
 
 
 def test_action_requirement_for_unparseable_child_position_reports_errors(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diagnostics = result.program_validation.all_diagnostics

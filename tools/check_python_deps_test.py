@@ -30,6 +30,18 @@ def test_analyze_imports_prefers_imported_module_to_package():
     )
 
 
+def test_analyze_imports_includes_pytest_plugin_modules():
+    tree = ast.parse(
+        'pytest_plugins = ["define.compiler.fixtures", "unknown.fixtures"]\n'
+    )
+
+    assert check_python_deps.analyze_imports(
+        tree, {"define.compiler.fixtures": "//define/compiler:fixtures"}, {}
+    ) == check_python_deps.ImportAnalysis(
+        frozenset({"//define/compiler:fixtures"}), frozenset({"unknown.fixtures"})
+    )
+
+
 def test_analyze_imports_includes_package_for_exported_symbol():
     tree = ast.parse("from package import owned_module, exported_symbol\n")
 

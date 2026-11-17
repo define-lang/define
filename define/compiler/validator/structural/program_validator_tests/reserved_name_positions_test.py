@@ -10,10 +10,12 @@ from typing import TYPE_CHECKING
 from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.structural_validation import (
         ValidateTestdataStructural,
         ValidateTestdataStructuralNonFilesystem,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.structural_validation"]
 
 
 def test_case_insensitive_reserved_universe_position(

@@ -14,7 +14,11 @@ from define.compiler.validator.reference_graph.test_helpers import (
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
-    from define.compiler import conftest
+    from define.compiler.test_fixtures.validation_pipeline import (
+        ValidateTestdataProjectWithReferenceGraph,
+    )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _IMPLIED = "action<my.domain.com:my_lib:/implied_action>"
@@ -38,7 +42,7 @@ _IMPLIED_ACTION_NOOP = (
 
 
 def test_action_triggers_implied_action_directly(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -46,7 +50,7 @@ def test_action_triggers_implied_action_directly(
 
 
 def test_action_triggers_implied_action_via_move(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -54,7 +58,7 @@ def test_action_triggers_implied_action_via_move(
 
 
 def test_constructor_triggers_implied_action(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -62,7 +66,7 @@ def test_constructor_triggers_implied_action(
 
 
 def test_implied_action_iface_requirement_does_not_propagate_to_caller(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -102,7 +106,7 @@ def test_implied_action_iface_requirement_does_not_propagate_to_caller(
 
 
 def test_implied_action_with_iface_routing_to_inner_action_propagates(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -154,7 +158,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
 
 
 def test_caller_triggers_action_implied_by_quality_assignment(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -166,7 +170,7 @@ def test_caller_triggers_action_implied_by_quality_assignment(
 
 
 def test_implied_action_guarantees_propagate_to_caller(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -174,7 +178,7 @@ def test_implied_action_guarantees_propagate_to_caller(
 
 
 def test_transitive_implication_triggers_action(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)

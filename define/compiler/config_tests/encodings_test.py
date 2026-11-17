@@ -19,6 +19,8 @@ if typing.TYPE_CHECKING:
 
     import pytest
 
+pytest_plugins = ["define.compiler.test_fixtures.testdata"]
+
 
 def test_resolves_value_encodings(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch

@@ -9,9 +9,11 @@ from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import standard_library_file
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import (
+    from define.compiler.test_fixtures.validation_pipeline import (
         ValidateTestdataProjectWithReferenceGraph,
     )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 
 def test_encoding_operation_with_fewer_views(

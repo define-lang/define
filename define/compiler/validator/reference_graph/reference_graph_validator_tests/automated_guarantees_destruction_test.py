@@ -11,8 +11,12 @@ from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if typing.TYPE_CHECKING:
-    from define.compiler import conftest
     from define.compiler.association_resolution import concrete_program
+    from define.compiler.test_fixtures.validation_pipeline import (
+        ValidateTestdataProjectWithReferenceGraph,
+    )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _HOLDER = "position<holder>"
@@ -36,7 +40,7 @@ def _destroyed_positions(
 
 
 def test_discardable_callee_guarantees_are_dropped_for_destroyed_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -47,7 +51,7 @@ def test_discardable_callee_guarantees_are_dropped_for_destroyed_particle(
 
 
 def test_callee_guarantees_moving_particles_are_dropped_for_destroyed_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -58,7 +62,7 @@ def test_callee_guarantees_moving_particles_are_dropped_for_destroyed_particle(
 
 
 def test_callee_guarantees_on_received_particle_are_destroyed_individually(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -80,7 +84,7 @@ def test_callee_guarantees_on_received_particle_are_destroyed_individually(
 
 
 def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -145,7 +149,7 @@ def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particl
 
 
 def test_unrelated_callee_error_does_not_hide_destructor_requirement(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -217,7 +221,7 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
 
 
 def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_destroyed_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -282,7 +286,7 @@ def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_des
 
 
 def test_deep_callee_creating_destructor_on_same_particle_is_applied_for_destroyed_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -347,7 +351,7 @@ def test_deep_callee_creating_destructor_on_same_particle_is_applied_for_destroy
 
 
 def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -412,7 +416,7 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
 
 
 def test_callee_guarantee_over_recorded_state_is_applied_for_destroyed_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -477,7 +481,7 @@ def test_callee_guarantee_over_recorded_state_is_applied_for_destroyed_particle(
 
 
 def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -550,7 +554,7 @@ def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_par
 
 
 def test_unresolved_quality_does_not_prevent_dropping_for_destroyed_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -570,7 +574,7 @@ def test_unresolved_quality_does_not_prevent_dropping_for_destroyed_particle(
 
 
 def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -635,7 +639,7 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
 
 
 def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_for_destroyed_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -700,7 +704,7 @@ def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_f
 
 
 def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
     all_diags = result.program_validation.all_diagnostics
@@ -731,7 +735,7 @@ def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
 
 
 def test_callee_particle_whose_destructor_requirements_hold_is_not_expanded_when_destroyed(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -748,7 +752,7 @@ def test_callee_particle_whose_destructor_requirements_hold_is_not_expanded_when
 
 
 def test_destroying_guaranteed_particles_runs_every_destructor_of_each(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -762,7 +766,7 @@ def test_destroying_guaranteed_particles_runs_every_destructor_of_each(
 
 
 def test_destroying_guaranteed_particle_runs_destructors_of_particles_its_callee_guarantees_in_child_positions(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -782,7 +786,7 @@ def test_destroying_guaranteed_particle_runs_destructors_of_particles_its_callee
 
 
 def test_destructor_requirement_inside_what_a_callee_left_holds_without_expanding(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
@@ -807,7 +811,7 @@ def test_destructor_requirement_inside_what_a_callee_left_holds_without_expandin
 
 
 def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destroyed(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     (diagnostic,) = result.program_validation.all_diagnostics
@@ -901,7 +905,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
 
 
 def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_destroyed(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     (diagnostic,) = result.program_validation.all_diagnostics
@@ -987,7 +991,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
 
 
 def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_destroyed(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     inner, value = result.program_validation.all_diagnostics
@@ -1127,7 +1131,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
 
 
 def test_destructor_requirement_on_position_a_callee_left_in_error_does_not_prevent_running_it(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     (diagnostic,) = result.program_validation.all_diagnostics
@@ -1160,7 +1164,7 @@ def test_destructor_requirement_on_position_a_callee_left_in_error_does_not_prev
 
 
 def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destroyed(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     (diagnostic,) = result.program_validation.all_diagnostics
@@ -1246,7 +1250,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
 
 
 def test_destructor_requirement_on_position_the_caller_left_in_error_does_not_prevent_running_it(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     (diagnostic,) = result.program_validation.all_diagnostics

@@ -12,11 +12,15 @@ from define.compiler.validator.reference_graph.reference_graph_validator_tests.t
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
-    from define.compiler import conftest
+    from define.compiler.test_fixtures.validation_pipeline import (
+        ValidateTestdataProjectWithReferenceGraph,
+    )
+
+pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 
 def test_action_implies_action(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -24,7 +28,7 @@ def test_action_implies_action(
 
 
 def test_action_implies_position(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -32,7 +36,7 @@ def test_action_implies_position(
 
 
 def test_action_with_implied_qualities_and_multiple_interface_positions(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -40,7 +44,7 @@ def test_action_with_implied_qualities_and_multiple_interface_positions(
 
 
 def test_action_with_multiple_implications(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -48,7 +52,7 @@ def test_action_with_multiple_implications(
 
 
 def test_multiple_implications_one_definition(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -56,7 +60,7 @@ def test_multiple_implications_one_definition(
 
 
 def test_position_implies_action(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -64,7 +68,7 @@ def test_position_implies_action(
 
 
 def test_diamond_transitivity(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -72,7 +76,7 @@ def test_diamond_transitivity(
 
 
 def test_multi_level_action_transitivity(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -80,7 +84,7 @@ def test_multi_level_action_transitivity(
 
 
 def test_propagated_particle(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
@@ -88,7 +92,7 @@ def test_propagated_particle(
 
 
 def test_single_level_transitivity_satisfies_move(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -97,7 +101,7 @@ def test_single_level_transitivity_satisfies_move(
 
 
 def test_single_level_transitivity_does_not_include_unrelated(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -114,7 +118,7 @@ def test_single_level_transitivity_does_not_include_unrelated(
 
 
 def test_multi_level_transitivity(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -123,7 +127,7 @@ def test_multi_level_transitivity(
 
 
 def test_diamond_transitivity_create_conflict_detected(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -177,7 +181,7 @@ def test_diamond_transitivity_create_conflict_detected(
 
 
 def test_diamond_transitivity_with_create_destroy_succeeds(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -186,7 +190,7 @@ def test_diamond_transitivity_with_create_destroy_succeeds(
 
 
 def test_action_interface_position_has_quality_with_implication_move_succeeds(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -195,7 +199,7 @@ def test_action_interface_position_has_quality_with_implication_move_succeeds(
 
 
 def test_matching_implied_but_not_matching_impliers_for_move(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -212,21 +216,21 @@ def test_matching_implied_but_not_matching_impliers_for_move(
 
 
 def test_action_guarantee_preserves_transitive_qualities(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_action_creates_particle_in_interface_position_with_implying_quality(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_constructor_quality_with_implication_carried_into_move(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -235,7 +239,7 @@ def test_constructor_quality_with_implication_carried_into_move(
 
 
 def test_inferred_occupied_interface_position_has_implication_implied(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -244,7 +248,7 @@ def test_inferred_occupied_interface_position_has_implication_implied(
 
 
 def test_propagated_requirement_particle_has_implication_implied(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
@@ -253,7 +257,7 @@ def test_propagated_requirement_particle_has_implication_implied(
 
 
 def test_same_path_in_different_fquns_are_distinct_qualities(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     b_fqun = "mv:define-lang.org:cross_implication_lib_b"
     result = validate_testdata_project_with_reference_graph()
@@ -271,14 +275,14 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
 
 
 def test_constructor_fills_implied_position_for_move(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     assert_no_errors(result.program_validation)
 
 
 def test_constructor_filled_position_blocks_caller_create(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -298,7 +302,7 @@ def test_constructor_filled_position_blocks_caller_create(
 
 
 def test_unresolved_implication_target_is_skipped(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.all_diagnostics
@@ -311,7 +315,7 @@ def test_unresolved_implication_target_is_skipped(
 
 
 def test_circular_implication_with_particle_left_in_implied_position(
-    validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
     assert result.program_validation.all_diagnostics == [

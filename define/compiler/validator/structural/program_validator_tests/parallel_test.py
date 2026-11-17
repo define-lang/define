@@ -13,7 +13,11 @@ from define.compiler.errors import diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import ValidateTestdataStructural
+    from define.compiler.test_fixtures.structural_validation import (
+        ValidateTestdataStructural,
+    )
+
+pytest_plugins = ["define.compiler.test_fixtures.structural_validation"]
 
 
 def test_fan_out(validate_testdata_structural: ValidateTestdataStructural):

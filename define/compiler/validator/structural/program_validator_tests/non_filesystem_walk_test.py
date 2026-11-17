@@ -19,7 +19,11 @@ from define.compiler.validator.test_helpers import (
 )
 
 if TYPE_CHECKING:
-    from define.compiler.conftest import ValidateTestdataStructuralNonFilesystem
+    from define.compiler.test_fixtures.structural_validation import (
+        ValidateTestdataStructuralNonFilesystem,
+    )
+
+pytest_plugins = ["define.compiler.test_fixtures.structural_validation"]
 
 
 def test_external_universe_no_project_config(
