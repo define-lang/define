@@ -16,9 +16,12 @@ if typing.TYPE_CHECKING:
 
 
 def _write_config(
-    pyproject: Path, import_paths: Iterable[str], directory: Path
+    pyproject: Path,
+    import_paths: Iterable[str],
+    sources: Iterable[str],
+    directory: Path,
 ) -> Path:
-    """Write a config that extends pyproject and imports from import_paths."""
+    """Write a config that checks sources, extends pyproject and imports from import_paths."""
     # Only a venv's .pth files can add import paths to every execution
     # environment in pyproject at once, so import_paths go in a stand-in venv.
     site_packages = directory / "venv" / "lib" / "site-packages"
@@ -33,6 +36,11 @@ def _write_config(
         json.dumps(
             {
                 "extends": str(pyproject),
+                # The config lists the files to check, since a command line
+                # listing every file in a large package could exceed what
+                # Windows allows. resolve() would follow the runfiles links
+                # out of the runfiles tree, where imports don't resolve.
+                "include": [str(Path(source).absolute()) for source in sources],
                 # The project root is this config's directory, so imports from the
                 # workspace would otherwise resolve only through import_paths, as
                 # third-party imports.
@@ -59,9 +67,11 @@ def main():
     # venv's .pth file, which basedpyright reads without starting anything.
     # sys.path[0] is this script's directory, which the interpreter wouldn't
     # report to basedpyright.
+    sources = runfiles.resolve(sys.argv[3]).read_text(encoding="utf-8").splitlines()
     config = _write_config(
         runfiles.resolve(sys.argv[2]),
         sys.path[1:],
+        sources,
         Path(os.environ["TEST_TMPDIR"]),
     )
     # basedpyright would also start the interpreter to find the Python version,
@@ -74,7 +84,7 @@ def main():
             config,
             "--pythonversion",
             version,
-            *sys.argv[3:],
+            *sys.argv[4:],
         ],
         check=False,
     )

@@ -38,6 +38,39 @@ _native_extensions_collector_aspect = aspect(
     attr_aspects = ["deps", "venv"],
 )
 
+def _pyright_sources_impl(ctx):
+    # A pyright_test checks its own package, and the packages below it whose
+    # targets it lists. The rest of the transitive sources, including targets
+    # it lists from other packages, only resolve imports, and each of their
+    # packages has its own pyright_test. A source's owner, rather than its
+    # directory, gives its package, since a package can have files in
+    # subdirectories, and a rule can generate stubs, such as a PyO3
+    # extension's, that no target lists in srcs.
+    packages = {ctx.label.package: None}
+    for dep in ctx.attr.deps:
+        if dep.label.package.startswith(ctx.label.package + "/"):
+            packages[dep.label.package] = None
+    files = depset(
+        ctx.files.srcs,
+        transitive = [dep[PyInfo].transitive_sources for dep in ctx.attr.deps] +
+                     [dep[PyInfo].transitive_pyi_files for dep in ctx.attr.deps],
+    )
+    paths = []
+    for file in files.to_list():
+        if file.owner.package in packages and file.extension in ["py", "pyi"]:
+            paths.append(file.short_path)
+    sources_file = ctx.actions.declare_file(ctx.label.name + ".txt")
+    ctx.actions.write(sources_file, "".join([path + "\n" for path in sorted(paths)]))
+    return [DefaultInfo(files = depset([sources_file]))]
+
+_pyright_sources = rule(
+    implementation = _pyright_sources_impl,
+    attrs = {
+        "deps": attr.label_list(providers = [PyInfo]),
+        "srcs": attr.label_list(allow_files = [".py", ".pyi"]),
+    },
+)
+
 # RulesPyInfo fields propagate through Python targets, so this rule reads them
 # directly from deps and avoids the cost of each dep creating its own runfiles
 # tree.
@@ -109,6 +142,13 @@ def pyright_test(name, deps = [], srcs = [], **kwargs):
         deps = deps,
     )
 
+    _pyright_sources(
+        name = name + "_sources",
+        testonly = True,
+        deps = deps,
+        srcs = srcs,
+    )
+
     env = dict(kwargs.pop("env", {}))
     env["FORCE_COLOR"] = "1"
 
@@ -121,9 +161,10 @@ def pyright_test(name, deps = [], srcs = [], **kwargs):
         args = [
             "$(rlocationpath //:basedpyright)",
             "$(rlocationpath //:pyproject.toml)",
-            native.package_name(),
+            "$(rlocationpath :" + name + "_sources)",
         ],
         data = [
+            ":" + name + "_sources",
             "//:basedpyright",
             "//:pyproject.toml",
             "//typestubs:typestubs",
