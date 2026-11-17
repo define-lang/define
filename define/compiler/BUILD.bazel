@@ -97,10 +97,12 @@ py_library(
 
 py_test(
     name = "driver_fuzz_test",
-    size = "medium",
+    size = "small",
     srcs = ["driver_fuzz_test.py"],
     shard_count = 8,
-    tags = ["manual"],
+    # This test finds cases that the other tests miss, which those tests must
+    # then cover, so its own coverage must not count.
+    tags = ["no-coverage"],
     deps = [
         ":driver",
         "//crates/source_rendering/python:rendering",
