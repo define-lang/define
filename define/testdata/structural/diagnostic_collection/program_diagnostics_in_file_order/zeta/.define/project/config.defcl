@@ -1,0 +1,3 @@
+project: {
+  universe_name: "zeta.com:wrong_lib"
+}

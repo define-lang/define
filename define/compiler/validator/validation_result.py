@@ -7,6 +7,8 @@ from dataclasses import dataclass
 
 import msgspec
 
+from define.compiler.errors import diagnostics
+
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -15,7 +17,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.association_resolution import concrete_program
     from define.compiler.config import encoding_operations_config
     from define.compiler.data_structures import define_path, typed_name_dict
-    from define.compiler.errors import diagnostics, syntax_errors
+    from define.compiler.errors import syntax_errors
     from define.compiler.graphs import reference_graph, reference_graph_order
     from define.compiler.validator.reference_graph import (
         abstract_program,
@@ -141,8 +143,10 @@ class ProgramValidationResult(msgspec.Struct):
 
     @property
     def all_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
-        """The program diagnostics, then all diagnostics from all file results."""
-        all_diagnostics = list(self.program_diagnostics)
+        """The program diagnostics sorted by file and location, then all diagnostics from all file results."""
+        all_diagnostics = sorted(
+            self.program_diagnostics, key=_program_diagnostic_order
+        )
         for result in self.file_results:
             all_diagnostics.extend(result.diagnostics)
         return all_diagnostics
@@ -159,3 +163,19 @@ class ProgramValidationResult(msgspec.Struct):
         # running on a file whose comments have characters the spec does not
         # allow, such as the bidi controls of a Trojan Source attack.
         return bool(self.all_diagnostics)
+
+
+def _program_diagnostic_order(
+    diagnostic: diagnostics.FormattableDiagnostic,
+) -> tuple[str, int, int]:
+    """Return a program diagnostic's file and its line and column in that file, by which program diagnostics are sorted."""
+    if isinstance(diagnostic, diagnostics.Diagnostic):
+        location = diagnostic.location
+        return (location.file_path or "", location.line, location.column)
+    # A diagnostic about a whole config file comes before the diagnostics at
+    # places in it.
+    if isinstance(diagnostic, diagnostics.ConfigDiagnostic):
+        return (diagnostic.config_path, 0, 0)
+    # The rest are about the whole program, such as its entry path, and come
+    # first, in the order they were found.
+    return ("", 0, 0)

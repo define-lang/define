@@ -1,0 +1,12 @@
+deps: {
+  local: [
+    {
+      universe_name: "alpha.com:alpha_lib"
+      path: "alpha"
+    },
+    {
+      universe_name: "zeta.com:zeta_lib"
+      path: "zeta"
+    }
+  ]
+}

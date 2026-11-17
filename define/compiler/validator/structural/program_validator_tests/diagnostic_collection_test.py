@@ -12,6 +12,7 @@ from define.compiler.errors import diagnostics
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.structural_validation import (
+        ValidateTestdataStructural,
         ValidateTestdataStructuralNonFilesystem,
     )
 
@@ -63,4 +64,36 @@ def test_non_filesystem_source_reports_trailing_space_but_not_indentation(
                 line=9, column=60, end_line=9, end_column=61
             )
         )
+    ]
+
+
+def test_program_diagnostics_in_file_order(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural(max_workers=1)
+    assert result.all_diagnostics == [
+        diagnostics.SubRootFqunMismatchDiagnostic(
+            location=rendering.SourceLocation(
+                line=2,
+                column=18,
+                end_line=2,
+                end_column=38,
+                file_path="alpha/.define/project/config.defcl",
+            ),
+            expected_fqun="alpha.com:alpha_lib",
+            actual_fqun="alpha.com:wrong_lib",
+            sub_root_path="alpha",
+        ),
+        diagnostics.SubRootFqunMismatchDiagnostic(
+            location=rendering.SourceLocation(
+                line=2,
+                column=18,
+                end_line=2,
+                end_column=37,
+                file_path="zeta/.define/project/config.defcl",
+            ),
+            expected_fqun="zeta.com:zeta_lib",
+            actual_fqun="zeta.com:wrong_lib",
+            sub_root_path="zeta",
+        ),
     ]

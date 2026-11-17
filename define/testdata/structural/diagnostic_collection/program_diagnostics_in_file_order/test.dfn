@@ -1,0 +1,7 @@
+# Program diagnostics are reported in file and location order, not in the order the compiler finds them. This position reaches the zeta universe before the alpha universe, so the error in zeta's project config is found first, but the error in alpha's is reported first.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the position<zeta.com:zeta_lib:/thing>.
+        it has the position<alpha.com:alpha_lib:/thing>.
+    }
+}
