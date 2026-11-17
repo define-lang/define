@@ -1,26 +1,33 @@
 id: zip-explains-correspondence
 valid:
   - |
-    # ZIP: Both keys are paths, compared segment by segment.
+    # ZIP: This relationship can only be created here because the keys
+    # are separate paths, compared segment by segment.
     for first, second in zip(first_key, second_key, strict=False):
         pass
   - |
     def pairs(views, types):
-        # ZIP: The caller builds the types from the views, in their order,
-        # so each type is at its view's position.
+        # ZIP: This relationship can only be created here because the
+        # caller builds the types from the views, in their order.
         for view, python_type in zip(views, types, strict=True):
             print(view, python_type)
   - |
-    # ZIP: The parameters and the arguments are both in declaration order.
+    # ZIP: This relationship can only be created here because Python
+    # gives the parameters and the arguments separately, in declaration order.
     values.update(zip(parameters, arguments, strict=True))
   - |
     for view in views:
         print(view)
-        # ZIP: Later statements in a block take their comment from the block.
+        # ZIP: This relationship can only be created here because
+        # later statements in a block take their comment from the block.
         pairs = list(zip(first, second, strict=True))
   - |
     zipped = "zip"
 invalid:
+  - |
+    # ZIP: Both keys are paths, compared segment by segment.
+    for first, second in zip(first_key, second_key, strict=False):
+        pass
   - |
     for first, second in zip(first_key, second_key, strict=False):
         pass
@@ -29,16 +36,19 @@ invalid:
     for view, python_type in zip(views, types, strict=True):
         pass
   - |
-    # ZIP: An enclosing statement's comment does not explain this one.
+    # ZIP: This relationship can only be created here because an
+    # enclosing statement's comment does not explain this one.
     for item in items:
         for view, python_type in zip(views, types, strict=True):
             pass
   - |
-    # ZIP: A comment separated by a statement does not count.
+    # ZIP: This relationship can only be created here because a
+    # comment separated by a statement does not count.
     pairs = []
     pairs.extend(zip(first, second, strict=True))
   - |
     def pairs(views, types):
-        # ZIP: A comment before the first statement does not cover the second.
+        # ZIP: This relationship can only be created here because a
+        # comment before the first statement does not cover the second.
         print(views)
         return list(zip(views, types, strict=True))

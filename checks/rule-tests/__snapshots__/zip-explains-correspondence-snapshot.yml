@@ -6,24 +6,30 @@ snapshots:
       style: primary
       start: 74
       end: 104
-  "# ZIP: A comment separated by a statement does not count.\npairs = []\npairs.extend(zip(first, second, strict=True))\n":
+  "# ZIP: Both keys are paths, compared segment by segment.\nfor first, second in zip(first_key, second_key, strict=False):\n    pass\n":
+    labels:
+    - source: zip(first_key, second_key, strict=False)
+      style: primary
+      start: 78
+      end: 118
+  "# ZIP: This relationship can only be created here because a\n# comment separated by a statement does not count.\npairs = []\npairs.extend(zip(first, second, strict=True))\n":
     labels:
     - source: zip(first, second, strict=True)
       style: primary
-      start: 82
-      end: 113
-  "# ZIP: An enclosing statement's comment does not explain this one.\nfor item in items:\n    for view, python_type in zip(views, types, strict=True):\n        pass\n":
+      start: 135
+      end: 166
+  "# ZIP: This relationship can only be created here because an\n# enclosing statement's comment does not explain this one.\nfor item in items:\n    for view, python_type in zip(views, types, strict=True):\n        pass\n":
     labels:
     - source: zip(views, types, strict=True)
       style: primary
-      start: 115
-      end: 145
-  "def pairs(views, types):\n    # ZIP: A comment before the first statement does not cover the second.\n    print(views)\n    return list(zip(views, types, strict=True))\n":
+      start: 168
+      end: 198
+  "def pairs(views, types):\n    # ZIP: This relationship can only be created here because a\n    # comment before the first statement does not cover the second.\n    print(views)\n    return list(zip(views, types, strict=True))\n":
     labels:
     - source: zip(views, types, strict=True)
       style: primary
-      start: 133
-      end: 163
+      start: 190
+      end: 220
   "for first, second in zip(first_key, second_key, strict=False):\n    pass\n":
     labels:
     - source: zip(first_key, second_key, strict=False)

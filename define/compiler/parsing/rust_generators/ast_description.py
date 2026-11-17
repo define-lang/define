@@ -120,9 +120,10 @@ def _node_type_variable_values(
         parameters = typing.cast(
             "tuple[typing.TypeVar, ...]", getattr(cls, "__parameters__", ())
         )
-        # ZIP: Python gives a generic class's type parameters and the types
-        # filled in for them as two tuples in the same order, so each type is
-        # for the parameter at its position.
+        # ZIP: This relationship can only be created here because Python
+        # gives a generic class's type parameters and the types filled in for
+        # them as two tuples in the same order, so each type is for the
+        # parameter at its position.
         values.update(zip(parameters, _type_arguments(node_type), strict=True))
     return values
 
@@ -158,9 +159,10 @@ def _type_variable_values(
         parameters = typing.cast(
             "tuple[typing.TypeVar, ...]", getattr(generic_class, "__parameters__", ())
         )
-        # ZIP: Python gives a generic base class's type parameters and the types
-        # filled in for them as two tuples in the same order, so each type is
-        # for the parameter at its position.
+        # ZIP: This relationship can only be created here because Python
+        # gives a generic base class's type parameters and the types filled in
+        # for them as two tuples in the same order, so each type is for the
+        # parameter at its position.
         for parameter, argument in zip(parameters, _type_arguments(base), strict=True):
             if isinstance(argument, typing.ForwardRef):
                 base_values[parameter] = typing.evaluate_forward_ref(

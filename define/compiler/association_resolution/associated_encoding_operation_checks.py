@@ -110,9 +110,11 @@ class AssociatedEncodingOperationChecker:
             ]
         fqun = self._definition.typed_name.name_content.fqun
         association_diagnostics: list[diagnostics.Diagnostic] = []
-        # ZIP: An association lists its Encoding Operation's views in the same
-        # order, so this compares the two views at each position. A different
-        # number of views was reported above.
+        # ZIP: This relationship can only be created here because the
+        # association and the Encoding Operation are separate definitions, and
+        # this checks the rule that the association lists the Encoding
+        # Operation's views in the same order, so it compares the two views at
+        # each position. A different number of views was reported above.
         for number, (associated_view, encoding_view) in enumerate(
             zip(association.views, encoding_views, strict=True), start=1
         ):

@@ -3,29 +3,30 @@ language: python
 severity: error
 message: >-
   Every statement that calls `zip(...)` needs a comment immediately before it
-  that starts with `# ZIP:` and says why the zipped sequences correspond
-  position for position. Before writing one, find out why the values are in
+  whose first line starts with `# ZIP: This relationship can only be created
+  here because`, and that says why the pairing could not have been kept where
+  the values were made. Before writing one, find out why the values are in
   separate sequences at all. Trace where each sequence is built: if they were
-  built together, or from things that were already associated (a caller that
-  had each pair, a loop that derived one value from the other, a data structure
-  or command line that splits pairs into parallel lists), fix the association
-  where it is lost, for example by passing pairs, a mapping by name, or an
-  object that holds both, so that nothing has to be zipped. Keep a zip only
-  when the sequences really are independent and their positions are what
-  matters, such as comparing two sequences element by element, checking a rule
-  that two definitions match in order, or pairing what an API outside this
-  repository returns separately.
+  built together, or from things that were already associated (a caller that had
+  each pair, a loop that derived one value from the other, a data structure or
+  command line that splits pairs into parallel lists), fix the association where
+  it is lost, for example by passing pairs, a mapping by name, or an object that
+  holds both, so that nothing has to be zipped. Keep a zip only when the
+  sequences really are independent and their positions are what matters, such as
+  comparing two sequences element by element, checking a rule that two
+  definitions match in order, or pairing what an API outside this repository
+  returns separately.
 files:
   - "**/*.py"
 ignores:
   - vendored/**
 utils:
   # The comment lines directly before a node, one of which starts with
-  # `# ZIP:`.
+  # `# ZIP: This relationship can only be created here because`.
   after-zip-comment:
     follows:
       kind: comment
-      regex: "^# ZIP:"
+      regex: "^# ZIP: This relationship can only be created here because"
       stopBy:
         not:
           kind: comment

@@ -882,8 +882,10 @@ class DefinitionStructuralValidator:
         to_pos = stmt.target_position
         if len(from_pos.typed_names) > len(to_pos.typed_names):
             return False
-        # ZIP: This checks whether the source's chained name is a prefix of the
-        # target's, so it compares the typed names at each position.
+        # ZIP: This relationship can only be created here because the source's
+        # and the target's chained names are separate. This checks whether the
+        # source's is a prefix of the target's, so it compares the typed names
+        # at each position.
         for from_name, to_name in zip(
             from_pos.typed_names, to_pos.typed_names, strict=False
         ):

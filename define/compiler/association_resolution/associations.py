@@ -172,10 +172,11 @@ def _view_name_diagnostics(
             )
         ]
     view_diagnostics: list[diagnostics.Diagnostic] = []
-    # ZIP: An association lists its Encoding Operation's views, which must be
-    # the logical operation's views in the same order, so this compares the
-    # two views at each position. A different number of views was reported
-    # above.
+    # ZIP: This relationship can only be created here because the
+    # association and the logical operation are separate definitions, and
+    # this checks the rule that the views the association lists are the
+    # logical operation's views in the same order, so it compares the two
+    # views at each position. A different number of views was reported above.
     for number, (associated_view, logical_view) in enumerate(
         zip(association.views, logical_views, strict=True), start=1
     ):
