@@ -1,4 +1,4 @@
-"""Reference graph validation of Encoding Operations."""
+"""Validation of the Encoding Operations that association resolution loads."""
 
 from __future__ import annotations
 

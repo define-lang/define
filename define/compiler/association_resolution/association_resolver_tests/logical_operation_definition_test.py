@@ -1,4 +1,4 @@
-"""Reference graph validation of the Encoding Operations associated with a logical operation."""
+"""Association resolution of a logical operation's associations with Encoding Operations, and checks of the Encoding Operations that resolution chooses through them."""
 
 from __future__ import annotations
 

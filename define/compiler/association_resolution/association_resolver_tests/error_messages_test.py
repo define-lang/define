@@ -209,3 +209,359 @@ def test_missing_encoding_operation_format(
             File "mixed_sum.dfn", line 22, column 21
                 execute the logical_operation<standard:/number/add> {
                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""")
+
+
+def _association_files(encoding_operations: str) -> dict[str, str]:
+    return {
+        ".define/project/config.defcl": (
+            "project: {\n"
+            '  universe_name: "my.domain.com:my_lib"\n'
+            "  associations: {\n"
+            "    has_encodings: TRUE\n"
+            "    has_encoding_operations: TRUE\n"
+            "  }\n"
+            "}\n"
+        ),
+        ".define/encodings/encodings.defcl": (
+            "encodings: {\n"
+            "  value_encodings: [\n"
+            "    {\n"
+            '      value: "/number"\n'
+            '      encoding: "standard:/number/integer/ascii"\n'
+            "    }\n"
+            "  ]\n"
+            "}\n"
+        ),
+        ".define/encodings/encoding_operations.defcl": encoding_operations,
+        "combine.dfn": (
+            "define the logical_operation<my.domain.com:my_lib:/combine> {\n"
+            "    define the view<a> {\n"
+            "        it is read.\n"
+            "    }\n"
+            "    define the view<b> {\n"
+            "        it is read.\n"
+            "    }\n"
+            "    define the view<result> {\n"
+            "        it is written.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "number.dfn": (
+            "define the potential value<my.domain.com:my_lib:/number> {\n"
+            "    it supports the logical_operation</combine> {\n"
+            "        it may be read.\n"
+            "        it may be written.\n"
+            "    }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the operation<my.domain.com:my_lib:/test> {\n"
+            "    define the view<first> {\n"
+            "        it is read.\n"
+            "        it may only contain particles where {\n"
+            "            it has the value</number>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the view<second> {\n"
+            "        it is read.\n"
+            "        it may only contain particles where {\n"
+            "            it has the value</number>.\n"
+            "        }\n"
+            "    }\n"
+            "    define the view<combined> {\n"
+            "        it is written.\n"
+            "        it may only contain particles where {\n"
+            "            it has the value</number>.\n"
+            "        }\n"
+            "    }\n"
+            "\n"
+            "    it does {\n"
+            "        execute the logical_operation</combine> {\n"
+            "            with view<a> looking at view<first>.\n"
+            "            with view<b> looking at view<second>.\n"
+            "            with view<result> looking at view<combined>.\n"
+            "        }\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+
+
+def _chosen_association_files(encoding_operations: str) -> dict[str, str]:
+    # Only an Encoding Operation that an execution chooses is loaded and
+    # checked against its association.
+    files = _association_files(encoding_operations)
+    files["test.dfn"] += (
+        "\n"
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it also assigns the position</combined>.\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<first> {\n"
+        "            it may only contain particles where {\n"
+        "                it has the value</number>.\n"
+        "            }\n"
+        "        }\n"
+        "        define the position<second> {\n"
+        "            it may only contain particles where {\n"
+        "                it has the value</number>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a particle in position<first>.\n"
+        '        set the value of position<first> from literal<standard:/number>"1".\n'
+        "        create a particle in position<second>.\n"
+        '        set the value of position<second> from literal<standard:/number>"2".\n'
+        "        create a particle in position</combined>.\n"
+        "        execute the operation</test> {\n"
+        "            with view<first> looking at position<first>.\n"
+        "            with view<second> looking at position<second>.\n"
+        "            with view<combined> looking at position</combined>.\n"
+        "        }\n"
+        "    }\n"
+        "}\n"
+    )
+    files["combined.dfn"] = (
+        "define the potential position<my.domain.com:my_lib:/combined> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the value</number>.\n"
+        "    }\n"
+        "}\n"
+    )
+    return files
+
+
+def test_association_view_count_format(validate_project: ValidateProject):
+    encoding_operations = (
+        "encoding_operations: {\n"
+        "  operation_encodings: [\n"
+        "    {\n"
+        '      logical_operation: "/combine"\n'
+        "      encoding_operation: {\n"
+        '        name: "standard:/number/integer/ascii/add"\n'
+        "        views: [\n"
+        "          {\n"
+        '            view: "a"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "b"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          }\n"
+        "        ]\n"
+        "      }\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+    )
+    result = validate_project(_association_files(encoding_operations))
+    assert [
+        diagnostic.format(result.program_result.source_map)
+        for diagnostic in result.program_result.all_diagnostics
+    ] == [
+        """\
+File ".define/encodings/encoding_operations.defcl", line 6, column 16
+    name: "standard:/number/integer/ascii/add"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+this association lists 2 views for 'encoding_operation<standard:/number/integer/ascii/add>', but 'logical_operation<my.domain.com:my_lib:/combine>' has 3, defined here:
+File "combine.dfn", line 1, column 12
+    define the logical_operation<my.domain.com:my_lib:/combine> {
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""",
+    ]
+
+
+def test_association_view_name_and_encoding_format(validate_project: ValidateProject):
+    encoding_operations = (
+        "encoding_operations: {\n"
+        "  operation_encodings: [\n"
+        "    {\n"
+        '      logical_operation: "/combine"\n'
+        "      encoding_operation: {\n"
+        '        name: "standard:/number/integer/ascii/add"\n'
+        "        views: [\n"
+        "          {\n"
+        '            view: "a"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "c"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "result"\n'
+        '            encoding: "standard:/number/natural/ascii"\n'
+        "          }\n"
+        "        ]\n"
+        "      }\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+    )
+    result = validate_project(_association_files(encoding_operations))
+    assert [
+        diagnostic.format(result.program_result.source_map)
+        for diagnostic in result.program_result.all_diagnostics
+    ] == [
+        """\
+File ".define/encodings/encoding_operations.defcl", line 13, column 19
+    view: "c"
+          ^^^
+this association lists 'c' as view 2 of 'encoding_operation<standard:/number/integer/ascii/add>', but view 2 of 'logical_operation<my.domain.com:my_lib:/combine>' is 'b', defined here:
+File "combine.dfn", line 5, column 16
+    define the view<b> {
+               ^^^^^^^""",
+    ]
+
+
+def test_association_encoding_operation_view_count_format(
+    validate_project: ValidateProject,
+):
+    encoding_operations = (
+        "encoding_operations: {\n"
+        "  operation_encodings: [\n"
+        "    {\n"
+        '      logical_operation: "/combine"\n'
+        "      encoding_operation: {\n"
+        '        name: "/combine/integer"\n'
+        "        views: [\n"
+        "          {\n"
+        '            view: "a"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "b"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "result"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          }\n"
+        "        ]\n"
+        "      }\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+    )
+    encoding_operation = (
+        "define the encoding_operation<my.domain.com:my_lib:/combine/integer> {\n"
+        "    define the view<a> {\n"
+        "        it is read.\n"
+        "        it may only contain particles where {\n"
+        "            it has the encoding<standard:/number/integer/ascii>.\n"
+        "        }\n"
+        "    }\n"
+        "    define the view<result> {\n"
+        "        it is written.\n"
+        "        it may only contain particles where {\n"
+        "            it has the encoding<standard:/number/integer/ascii>.\n"
+        "        }\n"
+        "    }\n"
+        "\n"
+        "    it does {\n"
+        "        execute the computer operation.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project(
+        {
+            **_chosen_association_files(encoding_operations),
+            "combine/integer.dfn": encoding_operation,
+        }
+    )
+    assert [
+        diagnostic.format(result.program_result.source_map)
+        for diagnostic in result.program_result.all_diagnostics
+    ] == [
+        """\
+File ".define/encodings/encoding_operations.defcl", line 6, column 16
+    name: "/combine/integer"
+           ^^^^^^^^^^^^^^^^
+this association lists 3 views for 'encoding_operation<my.domain.com:my_lib:/combine/integer>', but it has 2 interface views, defined here:
+File "combine/integer.dfn", line 1, column 12
+    define the encoding_operation<my.domain.com:my_lib:/combine/integer> {
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""",
+    ]
+
+
+def test_association_encoding_operation_view_name_and_encoding_format(
+    validate_project: ValidateProject,
+):
+    encoding_operations = (
+        "encoding_operations: {\n"
+        "  operation_encodings: [\n"
+        "    {\n"
+        '      logical_operation: "/combine"\n'
+        "      encoding_operation: {\n"
+        '        name: "/combine/integer"\n'
+        "        views: [\n"
+        "          {\n"
+        '            view: "a"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "b"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "result"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          }\n"
+        "        ]\n"
+        "      }\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+    )
+    encoding_operation = (
+        "define the encoding_operation<my.domain.com:my_lib:/combine/integer> {\n"
+        "    define the view<a> {\n"
+        "        it is read.\n"
+        "        it may only contain particles where {\n"
+        "            it has the encoding<standard:/number/integer/ascii>.\n"
+        "        }\n"
+        "    }\n"
+        "    define the view<c> {\n"
+        "        it is read.\n"
+        "        it may only contain particles where {\n"
+        "            it has the encoding<standard:/number/integer/ascii>.\n"
+        "        }\n"
+        "    }\n"
+        "    define the view<result> {\n"
+        "        it is written.\n"
+        "        it may only contain particles where {\n"
+        "            it has the encoding<standard:/number/natural/ascii>.\n"
+        "        }\n"
+        "    }\n"
+        "\n"
+        "    it does {\n"
+        "        execute the computer operation.\n"
+        "    }\n"
+        "}\n"
+    )
+    result = validate_project(
+        {
+            **_chosen_association_files(encoding_operations),
+            "combine/integer.dfn": encoding_operation,
+        }
+    )
+    assert [
+        diagnostic.format(result.program_result.source_map)
+        for diagnostic in result.program_result.all_diagnostics
+    ] == [
+        """\
+File ".define/encodings/encoding_operations.defcl", line 13, column 19
+    view: "b"
+          ^^^
+this association lists 'b' as view 2 of 'encoding_operation<my.domain.com:my_lib:/combine/integer>', but its view 2 is 'c', defined here:
+File "combine/integer.dfn", line 8, column 16
+    define the view<c> {
+               ^^^^^^^""",
+        """\
+File ".define/encodings/encoding_operations.defcl", line 18, column 24
+    encoding: "standard:/number/integer/ascii"
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+this association says 'view<result>' of 'encoding_operation<my.domain.com:my_lib:/combine/integer>' has 'encoding<standard:/number/integer/ascii>', but it has 'encoding<standard:/number/natural/ascii>', assigned here:
+File "combine/integer.dfn", line 17, column 24
+    it has the encoding<standard:/number/natural/ascii>.
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""",
+    ]

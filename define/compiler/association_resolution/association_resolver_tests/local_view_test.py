@@ -1,4 +1,4 @@
-"""Reference graph validation of local views."""
+"""Association resolution of local views."""
 
 from __future__ import annotations
 

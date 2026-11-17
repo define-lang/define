@@ -1,4 +1,4 @@
-"""Reference graph validation of value qualities."""
+"""Association resolution of value qualities' encodings."""
 
 from __future__ import annotations
 

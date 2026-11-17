@@ -1,4 +1,4 @@
-"""Reference graph validation of the composite Value Operations that actions execute."""
+"""Association resolution of the composite Value Operations that actions execute."""
 
 from __future__ import annotations
 

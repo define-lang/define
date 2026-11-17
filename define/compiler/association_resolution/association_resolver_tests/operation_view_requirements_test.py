@@ -1,4 +1,4 @@
-"""Reference graph validation of Matching View Requirements for Operation Argument Statements."""
+"""Association resolution of the literals that Operation Argument Statements look at, against Matching View Requirements."""
 
 from __future__ import annotations
 

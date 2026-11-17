@@ -1,4 +1,4 @@
-"""Reference graph validation of literal sources in Value Setting Statements."""
+"""Association resolution of literal sources in Value Setting Statements."""
 
 from __future__ import annotations
 
