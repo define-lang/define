@@ -27,7 +27,10 @@ func main() {
 	maxDirectories := flag.Int("max_cached_directories", 100_000, "decoded input directories to keep in memory")
 	slots := flag.Int("slots", runtime.NumCPU(), "actions to stage or run at once")
 	deleters := flag.Int("deleters", 8, "finished action directories to delete at once")
-	idleDirectories := flag.Int("idle_action_directories", 256, "finished action directories to keep for reuse by actions that run the same command")
+	// Every command that reruns between two builds, once for each build running
+	// it at the same time, needs an idle directory to reuse. One costs mostly
+	// inodes: a few thousand on average, of the store's hundreds of millions.
+	idleDirectories := flag.Int("idle_action_directories", 1024, "finished action directories to keep for reuse by actions that run the same command")
 	flag.Parse()
 	if err := setUpLogging(); err != nil {
 		log.Fatalf("setting up logging: %v", err)
