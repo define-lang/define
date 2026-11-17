@@ -8,18 +8,19 @@ from pathlib import PurePosixPath
 
 import msgspec
 
+from define.compiler import name_types
 from define.compiler.config import config_file, global_names
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.config.encodings import encoding_operations_pb2
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from crates.source_rendering.python import rendering
     from defcl.python import validator as defcl_validator
     from define.compiler import ast
-    from define.compiler.config import project_config
+    from define.compiler.config import local_deps_config, project_config
 
 CONFIG_FILE = config_file.ConfigFile(
     path=define_path.DefinePathFromPosix(
@@ -36,13 +37,13 @@ class AssociatedView(msgspec.Struct, frozen=True):
     name: str
     # Where the association writes the view's name.
     name_location: rendering.SourceLocation
-    encoding: ast.ReferenceGlobalNameContent
+    encoding: ast.GlobalTypedNameReference
 
 
 class AssociatedEncodingOperation(msgspec.Struct, frozen=True):
-    """The Encoding Operation of an association: its name, located where the association writes it, and its Interface Views in order."""
+    """The Encoding Operation of an association: a reference to it, located where the association writes it, and its Interface Views in order."""
 
-    name: ast.ReferenceGlobalNameContent
+    reference: ast.GlobalTypedNameReference
     views: tuple[AssociatedView, ...]
 
 
@@ -61,12 +62,14 @@ class EncodingOperationsConfigReader(
         super().__init__(root, source_map, CONFIG_FILE)
 
     def load(
-        self, project: project_config.ProjectConfig
+        self,
+        project: project_config.ProjectConfig,
+        sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry] | None,
     ) -> tuple[
         types.MappingProxyType[str, list[AssociatedEncodingOperation]] | None,
         list[diagnostics.FormattableDiagnostic],
     ]:
-        """Load and validate the project's Encoding Operation associations with its logical operations.
+        """Load and validate the project's Encoding Operation associations with its logical operations, given the sub-roots that the project configures.
 
         Returns an immutable mapping from each logical operation's short global
         name to its associated Encoding Operations, or None
@@ -95,7 +98,8 @@ class EncodingOperationsConfigReader(
         encoding_operations, association_diagnostics = _encoding_operations(
             result.message.encoding_operations.operation_encodings,
             result.file,
-            project.fqun.canonical,
+            project.fqun,
+            sub_roots,
         )
         encoding_operations_diagnostics.extend(association_diagnostics)
         return (
@@ -108,7 +112,7 @@ def _encoding_operation(
     file: defcl_validator.ValidatedFile,
     field_path: diagnostics.FieldPath,
     association: encoding_operations_pb2.OperationEncoding,
-    fqun: str,
+    fqun: ast.Fqun,
 ) -> tuple[
     tuple[ast.ReferenceGlobalNameContent, AssociatedEncodingOperation] | None,
     list[diagnostics.Diagnostic],
@@ -118,17 +122,21 @@ def _encoding_operation(
     Returns them, or None if either one cannot be used, with their
     diagnostics. fqun is the project's universe.
     """
+    canonical = fqun.canonical
     # TODO: Allow a logical operation in another universe when the project
     # defines an encoding that the Encoding Operation's views require, as DLP
     # 58 allows.
     logical_operation, association_diagnostics = global_names.config_global_name(
-        file, (*field_path, "logical_operation"), association.logical_operation, fqun
+        file,
+        (*field_path, "logical_operation"),
+        association.logical_operation,
+        canonical,
     )
     universe_diagnostic = (
         None
         if logical_operation is None
         else global_names.check_global_name_in_this_universe(
-            "logical_operation", logical_operation, fqun
+            "logical_operation", logical_operation, canonical
         )
     )
     if universe_diagnostic is not None:
@@ -139,7 +147,7 @@ def _encoding_operation(
             file,
             (*encoding_operation_path, "name"),
             association.encoding_operation.name,
-            fqun,
+            canonical,
         )
     )
     association_diagnostics.extend(encoding_operation_diagnostics)
@@ -147,7 +155,7 @@ def _encoding_operation(
     for index, view in enumerate(association.encoding_operation.views):
         view_path = (*encoding_operation_path, "views", index)
         encoding, encoding_diagnostics = global_names.config_global_name(
-            file, (*view_path, "encoding"), view.encoding, fqun
+            file, (*view_path, "encoding"), view.encoding, canonical
         )
         association_diagnostics.extend(encoding_diagnostics)
         if encoding is not None:
@@ -155,7 +163,9 @@ def _encoding_operation(
                 AssociatedView(
                     name=view.view,
                     name_location=file.location_of((*view_path, "view")),
-                    encoding=encoding,
+                    encoding=global_names.associated_reference(
+                        name_types.NameType.ENCODING, encoding, fqun
+                    ),
                 )
             )
     if (
@@ -167,14 +177,20 @@ def _encoding_operation(
         return None, association_diagnostics
     return (
         logical_operation,
-        AssociatedEncodingOperation(name=encoding_operation, views=tuple(views)),
+        AssociatedEncodingOperation(
+            reference=global_names.associated_reference(
+                name_types.NameType.ENCODING_OPERATION, encoding_operation, fqun
+            ),
+            views=tuple(views),
+        ),
     ), association_diagnostics
 
 
 def _encoding_operations(
     associations: Sequence[encoding_operations_pb2.OperationEncoding],
     file: defcl_validator.ValidatedFile,
-    fqun: str,
+    fqun: ast.Fqun,
+    sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry] | None,
 ) -> tuple[
     dict[str, list[AssociatedEncodingOperation]],
     list[diagnostics.FormattableDiagnostic],
@@ -182,11 +198,14 @@ def _encoding_operations(
     """Return each logical operation's Encoding Operations from the associations, with the diagnostics about the associations.
 
     An association repeated later, or whose logical operation or Encoding
-    Operation is not a valid name for it, is ignored. fqun is the project's
-    universe.
+    Operation is not a valid name for it, is ignored, and so is one whose
+    Encoding Operation is in a universe that the project, whose universe is
+    fqun and whose sub-roots are sub_roots, does not configure.
     """
     encoding_operations: dict[str, list[AssociatedEncodingOperation]] = {}
     association_diagnostics: list[diagnostics.FormattableDiagnostic] = []
+    # Each universe that the project does not configure is reported once.
+    unconfigured_universes: set[str] = set()
     # The index of the first association of each logical operation and
     # Encoding Operation.
     first_indexes: dict[tuple[str, str], int] = {}
@@ -221,9 +240,17 @@ def _encoding_operations(
             )
             continue
         first_indexes[pair] = index
-        if names is not None:
-            logical_operation, encoding_operation = names
+        if names is None:
+            continue
+        logical_operation, encoding_operation = names
+        universe_diagnostic = global_names.check_universe_configured(
+            encoding_operation.reference.name_content, fqun, sub_roots
+        )
+        if universe_diagnostic is None:
             encoding_operations.setdefault(logical_operation.path.name, []).append(
                 encoding_operation
             )
+        elif universe_diagnostic.universe not in unconfigured_universes:
+            unconfigured_universes.add(universe_diagnostic.universe)
+            association_diagnostics.append(universe_diagnostic)
     return encoding_operations, association_diagnostics

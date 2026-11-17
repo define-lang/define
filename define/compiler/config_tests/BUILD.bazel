@@ -35,6 +35,7 @@ py_test(
     deps = [
         ":test_helpers",
         "//crates/source_rendering/python:rendering",
+        "//define/compiler/config:association_config",
         "//define/compiler/config:config_loader",
         "//define/compiler/config:encodings_config",
         "//define/compiler/config:local_deps_config",
@@ -56,6 +57,7 @@ py_test(
         "//crates/source_rendering/python:rendering",
         "//defcl/python:error_types",
         "//defcl/python:errors",
+        "//define/compiler/config:association_config",
         "//define/compiler/config:config_loader",
         "//define/compiler/config:local_deps_config",
         "//define/compiler/data_structures:define_path",
@@ -73,6 +75,7 @@ py_test(
     deps = [
         ":test_helpers",
         "//define/compiler:constants",
+        "//define/compiler/config:association_config",
         "//define/compiler/config:config_loader",
         "//define/compiler/config:local_deps_config",
         "//define/compiler/config:project_config",
@@ -93,6 +96,7 @@ py_test(
         "//crates/source_rendering/python:rendering",
         "//defcl/python:error_types",
         "//defcl/python:errors",
+        "//define/compiler/config:association_config",
         "//define/compiler/config:config_loader",
         "//define/compiler/config:local_deps_config",
         "//define/compiler/config:project_config",
@@ -110,6 +114,7 @@ py_test(
     data = ["//define/testdata/config/sub_root"],
     deps = [
         ":test_helpers",
+        "//define/compiler/config:association_config",
         "//define/compiler/config:config_loader",
         "//define/compiler/config:local_deps_config",
         "//define/compiler/config:project_config",

@@ -9,7 +9,7 @@ from define.compiler import (
     constants,
     name_types,
 )
-from define.compiler.config import config_loader
+from define.compiler.config import global_names
 from define.compiler.data_structures import typed_name_dict
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import reference_graph
@@ -155,12 +155,10 @@ class DefinitionStructuralValidator:
         # Source compiled without a project root has no associations.
         if root_config is None:
             return
-        for name in root_config.value_encodings.get(
+        for encoding in root_config.associations.value_encodings.get(
             definition.typed_name.name_content.path.name, ()
         ):
-            edge = self._reference_edge(
-                _associated_reference(definition, name_types.NameType.ENCODING, name)
-            )
+            edge = self._reference_edge(encoding)
             if edge is not None:
                 self._associated_encodings.append(edge)
 
@@ -172,14 +170,10 @@ class DefinitionStructuralValidator:
         # Source compiled without a project root has no associations.
         if root_config is None:
             return
-        for association in root_config.logical_operation_encoding_operations.get(
+        for association in root_config.associations.encoding_operations.get(
             definition.typed_name.name_content.path.name, ()
         ):
-            edge = self._reference_edge(
-                _associated_reference(
-                    definition, name_types.NameType.ENCODING_OPERATION, association.name
-                )
-            )
+            edge = self._reference_edge(association.reference)
             if edge is not None:
                 self._encoding_operation_associations.append(
                     validation_result.EncodingOperationAssociation(
@@ -1153,7 +1147,7 @@ class DefinitionStructuralValidator:
         # Process a cross-FQUN reference in a filesystem context.
         if (
             global_name.fqun is not None
-            and config_loader.universe_needs_configuration(global_name.fqun.canonical)
+            and global_names.universe_needs_configuration(global_name.fqun.canonical)
             and self._context.is_filesystem_context
         ):
             root_config = self._context.root_config
@@ -1177,25 +1171,3 @@ class DefinitionStructuralValidator:
             enclosing_definition=self._definition,
             global_name_reference=typed_global_name,
         )
-
-
-def _associated_reference(
-    definition: ast.GlobalDefinition,
-    name_type: name_types.NameType,
-    name: ast.ReferenceGlobalNameContent,
-) -> ast.GlobalTypedNameReference:
-    """Return a reference to the definition of name_type, named name, that the project config associates with the definition."""
-    # TODO: Investigate having the config loader return each associated
-    # name as a `GlobalTypedNameReference` instead of only its name
-    # content, so that it is not built here. The loader would need an
-    # `ast.Fqun` for the project's universe, which means parsing the
-    # project config's `universe_name` with the parser, as associated names
-    # are parsed.
-    # The associated names are located where the association config writes
-    # them, so diagnostics about them point there.
-    return ast.GlobalTypedNameReference(
-        name_type=name_type,
-        name_content=name,
-        enclosing_fqun=definition.typed_name.name_content.fqun,
-        location=name.location,
-    )

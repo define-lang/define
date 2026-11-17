@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import types
 
-from define.compiler.config import config_loader
+from define.compiler.config import association_config, config_loader
 from define.compiler.data_structures import define_path
 from define.compiler.parsing import test_helpers
 from define.compiler.validator import validation_result
@@ -26,8 +26,9 @@ class TestDefinitionStructuralValidator:
                 root_config=config_loader.Config(
                     fqun=test_helpers.parse_fqun("my.domain.com:my_lib"),
                     sub_roots=types.MappingProxyType({}),
-                    value_encodings={},
-                    logical_operation_encoding_operations={},
+                    associations=association_config.AssociationTable(
+                        value_encodings={}, encoding_operations={}
+                    ),
                 ),
             ),
         )

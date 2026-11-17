@@ -3,6 +3,23 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
+    name = "association_config",
+    srcs = ["association_config.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+    deps = [
+        ":encoding_operations_config",
+        ":encodings_config",
+        ":local_deps_config",
+        ":project_config",
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler:ast",
+        "//define/compiler/data_structures:define_path",
+        "//define/compiler/errors:diagnostics",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
     name = "config",
     srcs = ["__init__.py"],
 )
@@ -27,13 +44,11 @@ py_library(
     srcs = ["config_loader.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        ":encoding_operations_config",
-        ":encodings_config",
+        ":association_config",
         ":local_deps_config",
         ":project_config",
         "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
-        "//define/compiler:constants",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "@pypi//msgspec",
@@ -47,10 +62,12 @@ py_library(
     deps = [
         ":config_file",
         ":global_names",
+        ":local_deps_config",
         ":project_config",
         "//crates/source_rendering/python:rendering",
         "//defcl/python:validator",
         "//define/compiler:ast",
+        "//define/compiler:name_types",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/config/encodings:encoding_operations_proto_py",
@@ -65,10 +82,12 @@ py_library(
     deps = [
         ":config_file",
         ":global_names",
+        ":local_deps_config",
         ":project_config",
         "//crates/source_rendering/python:rendering",
         "//defcl/python:validator",
         "//define/compiler:ast",
+        "//define/compiler:name_types",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/config/encodings:encodings_proto_py",
@@ -78,9 +97,13 @@ py_library(
 py_library(
     name = "global_names",
     srcs = ["global_names.py"],
+    visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":local_deps_config",
         "//defcl/python:validator",
         "//define/compiler:ast",
+        "//define/compiler:constants",
+        "//define/compiler:name_types",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:syntax_errors",
         "//define/compiler/parsing:parser",
@@ -125,6 +148,7 @@ py_library(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":association_config",
         ":config",
         ":config_file",
         ":config_loader",

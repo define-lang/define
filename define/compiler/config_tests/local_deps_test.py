@@ -7,7 +7,7 @@ from pathlib import PurePosixPath
 
 from crates.source_rendering.python import rendering
 from defcl.python import error_types, errors
-from define.compiler.config import config_loader, local_deps_config
+from define.compiler.config import association_config, config_loader, local_deps_config
 from define.compiler.config_tests import test_helpers
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
@@ -233,8 +233,9 @@ def test_dots_within_a_part_of_path(
                     ),
                 ),
             },
-            value_encodings={},
-            logical_operation_encoding_operations={},
+            associations=association_config.AssociationTable(
+                value_encodings={}, encoding_operations={}
+            ),
         ),
         diagnostics=[],
     )
@@ -282,8 +283,9 @@ def test_duplicate_universe_name_uses_the_first_entry(
                     ),
                 )
             },
-            value_encodings={},
-            logical_operation_encoding_operations={},
+            associations=association_config.AssociationTable(
+                value_encodings={}, encoding_operations={}
+            ),
         ),
         diagnostics=[
             diagnostics.DuplicateLocalDependencyDiagnostic(

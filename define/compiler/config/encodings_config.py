@@ -6,18 +6,19 @@ import types
 import typing
 from pathlib import PurePosixPath
 
+from define.compiler import name_types
 from define.compiler.config import config_file, global_names
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.config.encodings import encodings_pb2
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from crates.source_rendering.python import rendering
     from defcl.python import validator as defcl_validator
     from define.compiler import ast
-    from define.compiler.config import project_config
+    from define.compiler.config import local_deps_config, project_config
 
 CONFIG_FILE = config_file.ConfigFile(
     path=define_path.DefinePathFromPosix(
@@ -27,7 +28,7 @@ CONFIG_FILE = config_file.ConfigFile(
 )
 
 _EMPTY_VALUE_ENCODINGS: types.MappingProxyType[
-    str, list[ast.ReferenceGlobalNameContent]
+    str, list[ast.GlobalTypedNameReference]
 ] = types.MappingProxyType({})
 
 
@@ -39,18 +40,22 @@ class EncodingsConfigReader(config_file.ConfigFileReader[encodings_pb2.Encodings
         super().__init__(root, source_map, CONFIG_FILE)
 
     def load(
-        self, project: project_config.ProjectConfig
+        self,
+        project: project_config.ProjectConfig,
+        sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry] | None,
     ) -> tuple[
-        types.MappingProxyType[str, list[ast.ReferenceGlobalNameContent]] | None,
+        types.MappingProxyType[str, list[ast.GlobalTypedNameReference]] | None,
         list[diagnostics.FormattableDiagnostic],
     ]:
-        """Load and validate the project's Value Encoding Associations.
+        """Load and validate the project's Value Encoding Associations, given the sub-roots that the project configures.
 
         Returns an immutable mapping from each value quality's short global
-        name to the global names of its associated encodings, or None if a
+        name to references to its associated encodings, or None if a
         diagnostic keeps the associations from being used, with the
         associations' diagnostics. The mapping is empty when the project config
-        does not say that the project has Value Encoding Associations.
+        does not say that the project has Value Encoding Associations. A value
+        quality whose only encodings are in universes that the project does not
+        configure has an empty list.
         """
         # TODO: Once a library can be compiled, report each association whose
         # value quality the compile never validated. Until then, an association
@@ -72,7 +77,8 @@ class EncodingsConfigReader(config_file.ConfigFileReader[encodings_pb2.Encodings
         value_encodings, association_diagnostics = _value_encodings(
             result.message.encodings.value_encodings,
             result.file,
-            project.fqun.canonical,
+            project.fqun,
+            sub_roots,
         )
         encodings_diagnostics.extend(association_diagnostics)
         return types.MappingProxyType(value_encodings), encodings_diagnostics
@@ -114,24 +120,31 @@ def _value_encoding(
 def _value_encodings(
     associations: Sequence[encodings_pb2.ValueEncoding],
     file: defcl_validator.ValidatedFile,
-    fqun: str,
+    fqun: ast.Fqun,
+    sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry] | None,
 ) -> tuple[
-    dict[str, list[ast.ReferenceGlobalNameContent]],
+    dict[str, list[ast.GlobalTypedNameReference]],
     list[diagnostics.FormattableDiagnostic],
 ]:
-    """Return each value quality's encodings from the Value Encoding Associations, with the diagnostics about the associations.
+    """Return references to each value quality's encodings from the Value Encoding Associations, with the diagnostics about the associations.
 
     An association repeated later, or whose value quality or encoding is not a
-    valid name for it, is ignored. fqun is the project's universe.
+    valid name for it, is ignored, and so is one whose encoding is in a
+    universe that the project, whose universe is fqun and whose sub-roots are
+    sub_roots, does not configure.
     """
-    value_encodings: dict[str, list[ast.ReferenceGlobalNameContent]] = {}
+    value_encodings: dict[str, list[ast.GlobalTypedNameReference]] = {}
     association_diagnostics: list[diagnostics.FormattableDiagnostic] = []
+    # Each universe that the project does not configure is reported once.
+    unconfigured_universes: set[str] = set()
     # The index of the first association of each value quality and encoding.
     first_indexes: dict[tuple[str, str], int] = {}
     previous_value = ""
     for index, association in enumerate(associations):
         field_path = ("encodings", "value_encodings", index)
-        names, name_diagnostics = _value_encoding(file, field_path, association, fqun)
+        names, name_diagnostics = _value_encoding(
+            file, field_path, association, fqun.canonical
+        )
         association_diagnostics.extend(name_diagnostics)
         if association.value < previous_value:
             association_diagnostics.append(
@@ -157,7 +170,20 @@ def _value_encodings(
             )
             continue
         first_indexes[pair] = index
-        if names is not None:
-            value, encoding = names
-            value_encodings.setdefault(value.path.name, []).append(encoding)
+        if names is None:
+            continue
+        value, encoding = names
+        encodings = value_encodings.setdefault(value.path.name, [])
+        universe_diagnostic = global_names.check_universe_configured(
+            encoding, fqun, sub_roots
+        )
+        if universe_diagnostic is None:
+            encodings.append(
+                global_names.associated_reference(
+                    name_types.NameType.ENCODING, encoding, fqun
+                )
+            )
+        elif universe_diagnostic.universe not in unconfigured_universes:
+            unconfigured_universes.add(universe_diagnostic.universe)
+            association_diagnostics.append(universe_diagnostic)
     return value_encodings, association_diagnostics

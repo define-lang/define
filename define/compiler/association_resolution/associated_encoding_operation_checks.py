@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast, name_types
+from define.compiler import ast
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
@@ -37,7 +37,7 @@ def check(
         definition_results, associations
     ):
         check_diagnostics.extend(
-            _association_diagnostics(definition, association, encoding_operation)
+            _association_diagnostics(association, encoding_operation)
         )
         check_diagnostics.extend(
             _direction_diagnostics(
@@ -80,7 +80,6 @@ def _direction_diagnostics(
 
 
 def _association_diagnostics(
-    definition: ast.LogicalOperationDefinition,
     association: validation_result.EncodingOperationAssociation,
     encoding_operation: ast.EncodingOperationDefinition,
 ) -> list[diagnostics.Diagnostic]:
@@ -99,7 +98,6 @@ def _association_diagnostics(
                 definition_location=encoding_operation.typed_name.location,
             )
         ]
-    fqun = definition.typed_name.name_content.fqun
     association_diagnostics: list[diagnostics.Diagnostic] = []
     # ZIP: This relationship can only be created here because the
     # association and the Encoding Operation are separate definitions, and
@@ -127,12 +125,7 @@ def _association_diagnostics(
         # Encoding Operation's definition was validated.
         if encoding is None:
             continue
-        associated_encoding = ast.GlobalTypedNameReference(
-            name_type=name_types.NameType.ENCODING,
-            name_content=associated_view.encoding,
-            enclosing_fqun=fqun,
-            location=associated_view.encoding.location,
-        )
+        associated_encoding = associated_view.encoding
         if associated_encoding.full_typed_name != encoding.full_typed_name:
             association_diagnostics.append(
                 diagnostics.AssociationViewEncodingDiagnostic(

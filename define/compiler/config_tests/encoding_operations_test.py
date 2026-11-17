@@ -30,10 +30,14 @@ def test_resolves_encoding_operations(
     () = result.diagnostics
     assert result.config is not None
     assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert test_helpers.associated_names(result.config.value_encodings) == {}
+    assert result.config.sub_roots == {
+        "other.com:lib": test_helpers.declared_sub_root("other.com:lib", "lib")
+    }
+    assert (
+        test_helpers.associated_names(result.config.associations.value_encodings) == {}
+    )
     assert test_helpers.associated_encoding_operations(
-        result.config.logical_operation_encoding_operations
+        result.config.associations.encoding_operations
     ) == {
         "/number/add": [
             (
@@ -112,7 +116,7 @@ def test_logical_operation_in_another_universe(
     assert result.config is not None
     assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert result.config.logical_operation_encoding_operations == {}
+    assert result.config.associations.encoding_operations == {}
 
 
 def test_logical_operation_that_is_not_a_global_name(
@@ -134,7 +138,7 @@ def test_logical_operation_that_is_not_a_global_name(
     assert result.config is not None
     assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert result.config.logical_operation_encoding_operations == {}
+    assert result.config.associations.encoding_operations == {}
 
 
 def test_logical_operation_full_name_in_own_universe(
@@ -157,7 +161,7 @@ def test_logical_operation_full_name_in_own_universe(
     assert result.config is not None
     assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert result.config.logical_operation_encoding_operations == {}
+    assert result.config.associations.encoding_operations == {}
 
 
 def test_view_encoding_that_is_not_a_global_name(
@@ -177,7 +181,7 @@ def test_view_encoding_that_is_not_a_global_name(
         )
     )
     assert result.config is not None
-    assert result.config.logical_operation_encoding_operations == {}
+    assert result.config.associations.encoding_operations == {}
 
 
 def test_encoding_operation_that_is_not_a_global_name(
@@ -199,7 +203,7 @@ def test_encoding_operation_that_is_not_a_global_name(
     assert result.config is not None
     assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert result.config.logical_operation_encoding_operations == {}
+    assert result.config.associations.encoding_operations == {}
 
 
 def test_encoding_operation_full_name_in_own_universe(
@@ -222,7 +226,7 @@ def test_encoding_operation_full_name_in_own_universe(
     assert result.config is not None
     assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
-    assert result.config.logical_operation_encoding_operations == {}
+    assert result.config.associations.encoding_operations == {}
 
 
 def test_unsorted_logical_operations(
@@ -242,7 +246,7 @@ def test_unsorted_logical_operations(
     )
     assert result.config is not None
     assert test_helpers.associated_encoding_operations(
-        result.config.logical_operation_encoding_operations
+        result.config.associations.encoding_operations
     ) == {
         "/number/negate": [
             (
@@ -290,7 +294,7 @@ def test_duplicate_encoding_operation(
     )
     assert result.config is not None
     assert test_helpers.associated_encoding_operations(
-        result.config.logical_operation_encoding_operations
+        result.config.associations.encoding_operations
     ) == {
         "/number/add": [
             (
@@ -334,3 +338,27 @@ def test_encoding_operation_missing(
             )
         ],
     )
+
+
+def test_encoding_operation_in_unconfigured_universe(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    result = test_helpers.load_config()
+    # Both Encoding Operations are in the same universe, which is reported
+    # once.
+    (diagnostic,) = result.diagnostics
+    assert diagnostic == diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+        location=rendering.SourceLocation(
+            line=6,
+            column=16,
+            end_line=6,
+            end_column=28,
+            file_path=str(encoding_operations_config.CONFIG_FILE.path),
+        ),
+        universe="other.com:lib",
+        current_universe_name="test.example.com:my_lib",
+    )
+    assert result.config is not None
+    assert result.config.associations.encoding_operations == {}

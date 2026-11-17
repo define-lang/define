@@ -9,7 +9,7 @@ from __future__ import annotations
 import typing
 
 from define.compiler import constants
-from define.compiler.config import config_loader
+from define.compiler.config import config_loader, global_names
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural.resolver import reference_resolver
 
@@ -86,7 +86,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
 
         Reports why a reference cannot resolve the first time that happens.
         """
-        if not config_loader.universe_needs_configuration(
+        if not global_names.universe_needs_configuration(
             edge.global_name_reference.effective_fqun.canonical
         ):
             return True

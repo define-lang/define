@@ -6,7 +6,12 @@ import typing
 from pathlib import PurePosixPath
 
 from define.compiler import constants
-from define.compiler.config import config_loader, local_deps_config, project_config
+from define.compiler.config import (
+    association_config,
+    config_loader,
+    local_deps_config,
+    project_config,
+)
 from define.compiler.config_tests import test_helpers
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
@@ -53,8 +58,9 @@ def test_resolves_fqun_and_sub_roots(
                     ),
                 ),
             },
-            value_encodings={},
-            logical_operation_encoding_operations={},
+            associations=association_config.AssociationTable(
+                value_encodings={}, encoding_operations={}
+            ),
         ),
         diagnostics=[],
     )
@@ -71,8 +77,9 @@ def test_missing_local_deps_resolves_empty_sub_roots(
         config=config_loader.Config(
             fqun=test_helpers.loaded_fqun(result.config, "test.example.com:my_lib"),
             sub_roots={},
-            value_encodings={},
-            logical_operation_encoding_operations={},
+            associations=association_config.AssociationTable(
+                value_encodings={}, encoding_operations={}
+            ),
         ),
         diagnostics=[],
     )
@@ -105,8 +112,9 @@ def test_declaring_entry_universe_match_succeeds(
         config=config_loader.Config(
             fqun=test_helpers.loaded_fqun(result.config, "test.example.com:my_lib"),
             sub_roots={},
-            value_encodings={},
-            logical_operation_encoding_operations={},
+            associations=association_config.AssociationTable(
+                value_encodings={}, encoding_operations={}
+            ),
         ),
         diagnostics=[],
     )

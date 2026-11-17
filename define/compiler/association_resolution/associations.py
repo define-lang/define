@@ -6,12 +6,12 @@ import typing
 
 import msgspec
 
-from define.compiler import ast, name_types
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from define.compiler import ast
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
@@ -97,7 +97,6 @@ class Associations:
     ) -> list[diagnostics.Diagnostic]:
         """Add a logical operation's associations with Encoding Operations, and return a diagnostic for each association that cannot be used."""
         logical_operation_name = definition.typed_name.source_typed_name
-        fqun = definition.typed_name.name_content.fqun
         encoding_operations: dict[
             tuple[str, ...], validation_result.EncodingOperationAssociation
         ] = {}
@@ -111,14 +110,7 @@ class Associations:
                 continue
             encodings: list[str] = []
             for view in association.views:
-                encodings.append(
-                    ast.GlobalTypedNameReference(
-                        name_type=name_types.NameType.ENCODING,
-                        name_content=view.encoding,
-                        enclosing_fqun=fqun,
-                        location=view.encoding.location,
-                    ).full_typed_name
-                )
+                encodings.append(view.encoding.full_typed_name)
             first = encoding_operations.setdefault(tuple(encodings), association)
             if first is not association:
                 encoding_operation = association.edge.global_name_reference

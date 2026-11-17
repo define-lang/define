@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import typing
 
+from define.compiler import ast, constants
 from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.parsing import parser
 from define.compiler.validator.structural import name_validators
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from defcl.python import validator as defcl_validator
-    from define.compiler import ast
+    from define.compiler import name_types
+    from define.compiler.config import local_deps_config
 
 
 def config_global_name(
@@ -79,4 +83,49 @@ def check_global_name_in_this_universe(
         field_name=field_name,
         name=content.source_name,
         fqun=fqun,
+    )
+
+
+def universe_needs_configuration(fqun: str) -> bool:
+    """Whether a project must configure a universe as a sub-root before referencing it."""
+    # TODO: Remove this once the Define Standard Library exists.
+    return fqun != constants.STANDARD_UNIVERSE
+
+
+def associated_reference(
+    name_type: name_types.NameType,
+    name: ast.ReferenceGlobalNameContent,
+    fqun: ast.Fqun,
+) -> ast.GlobalTypedNameReference:
+    """Return a reference to the definition of name_type named name, which a project config whose universe is fqun associates with one of the project's definitions, located where the config writes it."""
+    return ast.GlobalTypedNameReference(
+        name_type=name_type,
+        name_content=name,
+        enclosing_fqun=fqun,
+        location=name.location,
+    )
+
+
+def check_universe_configured(
+    name: ast.ReferenceGlobalNameContent,
+    fqun: ast.Fqun,
+    sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry] | None,
+) -> diagnostics.ExternalUniverseNotConfiguredDiagnostic | None:
+    """Return a diagnostic if name is in a universe that the project whose universe is fqun and whose sub-roots are sub_roots must configure before referencing it, and does not.
+
+    sub_roots is None when the project's local dependencies config cannot be
+    used, so which universes the project configures is unknown.
+    """
+    name_fqun = name.fqun
+    if (
+        sub_roots is None
+        or name_fqun is None
+        or not universe_needs_configuration(name_fqun.canonical)
+        or name_fqun.canonical in sub_roots
+    ):
+        return None
+    return diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+        location=name_fqun.location,
+        universe=name_fqun.canonical,
+        current_universe_name=fqun.canonical,
     )

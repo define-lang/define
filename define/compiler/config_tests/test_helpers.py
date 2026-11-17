@@ -101,13 +101,32 @@ def declaring_entry(universe: str, path: str) -> local_deps_config.LocalDependen
     )
 
 
+def declared_sub_root(
+    universe: str, path: str, index: int = 0
+) -> local_deps_config.LocalDependencyEntry:
+    """Return the sub-root that entry index of the local dependencies config of the project at the project root declares."""
+    return local_deps_config.LocalDependencyEntry(
+        universe=universe,
+        path=define_path.DefinePathFromPosix(PurePosixPath(path)),
+        universe_location=config_field_location(
+            local_deps_config.CONFIG_FILE, ("deps", "local", index, "universe_name")
+        ),
+        path_location=config_field_location(
+            local_deps_config.CONFIG_FILE, ("deps", "local", index, "path")
+        ),
+    )
+
+
 def associated_names(
-    associations: Mapping[str, list[ast.ReferenceGlobalNameContent]],
+    associations: Mapping[str, list[ast.GlobalTypedNameReference]],
 ) -> dict[str, list[tuple[str, rendering.SourceLocation]]]:
-    """Return the names associated with each key, as their text and locations."""
+    """Return the names associated with each key, as the text the config writes and their locations."""
     result: dict[str, list[tuple[str, rendering.SourceLocation]]] = {}
-    for key, names in associations.items():
-        result[key] = [(name.source_name, name.location) for name in names]
+    for key, references in associations.items():
+        result[key] = [
+            (reference.name_content.source_name, reference.location)
+            for reference in references
+        ]
     return result
 
 
@@ -141,11 +160,11 @@ def associated_encoding_operations(
         for encoding_operation in encoding_operations:
             views: list[tuple[str, str]] = []
             for view in encoding_operation.views:
-                views.append((view.name, view.encoding.source_name))
+                views.append((view.name, view.encoding.name_content.source_name))
             result[logical_operation].append(
                 (
-                    encoding_operation.name.source_name,
-                    encoding_operation.name.location,
+                    encoding_operation.reference.name_content.source_name,
+                    encoding_operation.reference.location,
                     views,
                 )
             )

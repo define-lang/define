@@ -10,7 +10,7 @@ from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.config import config_loader, local_deps_config
+from define.compiler.config import association_config, config_loader, local_deps_config
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.parsing import test_helpers as parsing_test_helpers
@@ -44,8 +44,9 @@ def _make_context(
         root_config=config_loader.Config(
             fqun=parsing_test_helpers.parse_fqun(fqun),
             sub_roots=types.MappingProxyType(sub_root_mappings or {}),
-            value_encodings={},
-            logical_operation_encoding_operations={},
+            associations=association_config.AssociationTable(
+                value_encodings={}, encoding_operations={}
+            ),
         ),
     )
 
