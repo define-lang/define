@@ -11,9 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	repb "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
@@ -38,18 +36,19 @@ func (err *TimeoutError) Error() string {
 // Executor runs actions. At most `slots` actions are staged or running at
 // once.
 type Executor struct {
-	store      *cas.Store
-	workRoot   string
-	workerName string
-	slots      chan struct{}
-	deletions  chan string
-	count      atomic.Uint64
+	store       *cas.Store
+	workRoot    string
+	workerName  string
+	slots       chan struct{}
+	deletions   chan string
+	directories directoryPool
 }
 
 // New creates an executor that builds action directories under workRoot,
 // which must be on the same filesystem as the store, and deletes any left
-// there.
-func New(store *cas.Store, workRoot string, slots int, deleters int) (*Executor, error) {
+// there. It keeps up to idleDirectories finished action directories for later
+// actions to reuse.
+func New(store *cas.Store, workRoot string, slots int, deleters int, idleDirectories int) (*Executor, error) {
 	if err := os.RemoveAll(workRoot); err != nil {
 		return nil, err
 	}
@@ -61,11 +60,12 @@ func New(store *cas.Store, workRoot string, slots int, deleters int) (*Executor,
 		return nil, err
 	}
 	executor := &Executor{
-		store:      store,
-		workRoot:   workRoot,
-		workerName: hostname,
-		slots:      make(chan struct{}, slots),
-		deletions:  make(chan string, 4096),
+		store:       store,
+		workRoot:    workRoot,
+		workerName:  hostname,
+		slots:       make(chan struct{}, slots),
+		deletions:   make(chan string, 4096),
+		directories: directoryPool{maxIdle: idleDirectories},
 	}
 	for range deleters {
 		go executor.delete()
@@ -96,23 +96,37 @@ func (executor *Executor) Execute(ctx context.Context, action *repb.Action, comm
 	defer func() { <-executor.slots }()
 
 	metadata.WorkerStartTimestamp = timestamppb.Now()
-	actionDirectory := filepath.Join(executor.workRoot, strconv.FormatUint(executor.count.Add(1), 10))
-	defer func() { executor.deletions <- actionDirectory }()
+	identity := commandIdentity(command)
+	actionDirectory, reused := executor.directories.take(executor.workRoot, identity)
+	defer func() {
+		for _, evicted := range executor.directories.put(identity, actionDirectory) {
+			executor.deletions <- evicted
+		}
+	}()
 	inputRoot := filepath.Join(actionDirectory, "root")
 	tempDirectory := filepath.Join(actionDirectory, "tmp")
-	for _, directory := range []string{inputRoot, tempDirectory} {
-		if err := os.MkdirAll(directory, 0o755); err != nil {
-			return nil, err
-		}
-	}
 
 	metadata.InputFetchStartTimestamp = timestamppb.Now()
 	inputRootKey, err := cas.KeyFromDigest(action.InputRootDigest)
 	if err != nil {
 		return nil, err
 	}
-	if err := executor.stage(inputRootKey, inputRoot); err != nil {
-		return nil, err
+	if reused {
+		if err := prepareReused(actionDirectory, tempDirectory); err != nil {
+			return nil, err
+		}
+		if err := executor.restage(inputRootKey, inputRoot); err != nil {
+			return nil, err
+		}
+	} else {
+		for _, directory := range []string{inputRoot, tempDirectory} {
+			if err := os.MkdirAll(directory, 0o755); err != nil {
+				return nil, err
+			}
+		}
+		if err := executor.stage(inputRootKey, inputRoot); err != nil {
+			return nil, err
+		}
 	}
 	workingDirectory, err := resolveRelative(inputRoot, command.WorkingDirectory)
 	if err != nil {
@@ -208,12 +222,19 @@ func (executor *Executor) stageDirectory(key cas.Key, path string, missing *cas.
 	if err != nil {
 		return err
 	}
+	return executor.stageEntries(directory, path, missing, symlinks)
+}
+
+// stageEntries stages every entry of directory into path, which has none of
+// them yet.
+func (executor *Executor) stageEntries(directory *repb.Directory, path string, missing *cas.MissingBlobsError, symlinks *[]symlink) error {
 	for _, file := range directory.Files {
 		fileKey, err := cas.KeyFromDigest(file.Digest)
 		if err != nil {
 			return err
 		}
 		err = executor.store.Link(fileKey, filepath.Join(path, file.Name))
+		var missingErr *cas.MissingBlobsError
 		if errors.As(err, &missingErr) {
 			missing.Keys = append(missing.Keys, missingErr.Keys...)
 			continue

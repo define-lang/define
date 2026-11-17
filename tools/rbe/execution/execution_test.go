@@ -25,16 +25,7 @@ func TestMain(m *testing.M) {
 
 func newExecutor(t *testing.T) (*Executor, *cas.Store) {
 	t.Helper()
-	root := t.TempDir()
-	store, err := cas.Open(filepath.Join(root, "cas"), 1<<30, 100)
-	if err != nil {
-		t.Fatal(err)
-	}
-	executor, err := New(store, filepath.Join(root, "work"), 4, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return executor, store
+	return newReusingExecutor(t, 0)
 }
 
 func put(t *testing.T, store *cas.Store, contents string) *repb.Digest {
@@ -267,5 +258,362 @@ func TestRejectsPathsThatLeaveTheActionDirectory(t *testing.T) {
 		if err != nil || resolved != expected {
 			t.Errorf("resolved %q to %q, %v", path, resolved, err)
 		}
+	}
+}
+
+func newReusingExecutor(t *testing.T, idleDirectories int) (*Executor, *cas.Store) {
+	t.Helper()
+	root := t.TempDir()
+	store, err := cas.Open(filepath.Join(root, "cas"), 1<<30, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	executor, err := New(store, filepath.Join(root, "work"), 4, 1, idleDirectories)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return executor, store
+}
+
+func TestReusedDirectoryHoldsExactlyTheNewInputs(t *testing.T) {
+	executor, store := newReusingExecutor(t, 4)
+	command := testprogram.Command(t, "script", "script")
+	command.OutputPaths = []string{"out/tree.txt", "out/temp.txt"}
+	first := putDirectory(t, store, &repb.Directory{
+		Files: []*repb.FileNode{
+			{Name: "change.txt", Digest: put(t, store, "old")},
+			{Name: "gone.txt", Digest: put(t, store, "gone")},
+			{Name: "keep.txt", Digest: put(t, store, "same")},
+			{Name: "script", Digest: put(t, store, "write dir/extra.txt leftover\nreadonly dir\ntempwrite leftover\nwrite out/tree.txt first\nwrite out/temp.txt first\nstdout one")},
+		},
+		Directories: []*repb.DirectoryNode{
+			{Name: "dir", Digest: putDirectory(t, store, &repb.Directory{Files: []*repb.FileNode{{Name: "inner.txt", Digest: put(t, store, "inner")}}})},
+			{Name: "olddir", Digest: putDirectory(t, store, &repb.Directory{Files: []*repb.FileNode{{Name: "file", Digest: put(t, store, "old")}}})},
+		},
+		Symlinks: []*repb.SymlinkNode{{Name: "link", Target: "keep.txt"}, {Name: "relink", Target: "change.txt"}},
+	})
+	second := putDirectory(t, store, &repb.Directory{
+		Files: []*repb.FileNode{
+			{Name: "added.txt", Digest: put(t, store, "added")},
+			{Name: "change.txt", Digest: put(t, store, "new")},
+			{Name: "keep.txt", Digest: put(t, store, "same")},
+			{Name: "script", Digest: put(t, store, "tree . out/tree.txt\ntemptree out/temp.txt\nstdout two")},
+		},
+		Directories: []*repb.DirectoryNode{
+			{Name: "dir", Digest: putDirectory(t, store, &repb.Directory{Files: []*repb.FileNode{{Name: "inner.txt", Digest: put(t, store, "inner")}}})},
+			{Name: "newdir", Digest: putDirectory(t, store, &repb.Directory{Files: []*repb.FileNode{{Name: "file", Digest: put(t, store, "new")}}})},
+		},
+		Symlinks: []*repb.SymlinkNode{{Name: "link", Target: "keep.txt"}, {Name: "relink", Target: "keep.txt"}},
+	})
+
+	firstResult, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: first}, command)
+	if err != nil || firstResult.ExitCode != 0 {
+		t.Fatalf("result %v, %v", firstResult, err)
+	}
+	secondResult, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: second}, command)
+	if err != nil || secondResult.ExitCode != 0 {
+		t.Fatalf("result %v, %v", secondResult, err)
+	}
+
+	if entries := workDirectoryEntries(t, executor); entries != 1 {
+		t.Fatalf("%d action directories, so the second action did not reuse the first's", entries)
+	}
+	want := strings.Join([]string{
+		"added.txt = added",
+		"change.txt = new",
+		"dir/",
+		"dir/inner.txt = inner",
+		"keep.txt = same",
+		"link -> keep.txt",
+		"newdir/",
+		"newdir/file = new",
+		"out/",
+		"relink -> keep.txt",
+		"script = tree . out/tree.txt\ntemptree out/temp.txt\nstdout two",
+	}, "\n")
+	if tree := readBlob(t, store, secondResult.OutputFiles[0].Digest); tree != want {
+		t.Fatalf("the second action saw:\n%s\nwant:\n%s", tree, want)
+	}
+	if temp := readBlob(t, store, secondResult.OutputFiles[1].Digest); temp != "" {
+		t.Fatalf("the second action's temporary directory holds:\n%s", temp)
+	}
+	// The store took the first action's outputs and stdout by linking them,
+	// so the second action must not have written over them.
+	for _, digest := range []*repb.Digest{firstResult.OutputFiles[0].Digest, firstResult.OutputFiles[1].Digest} {
+		if contents := readBlob(t, store, digest); contents != "first" {
+			t.Fatalf("the first action's output now holds %q", contents)
+		}
+	}
+	if stdout := readBlob(t, store, firstResult.StdoutDigest); stdout != "one" {
+		t.Fatalf("the first action's stdout now holds %q", stdout)
+	}
+	if stdout := readBlob(t, store, secondResult.StdoutDigest); stdout != "two" {
+		t.Fatalf("the second action's stdout holds %q", stdout)
+	}
+}
+
+func TestDeletesTheOldestIdleDirectoryBeyondTheLimit(t *testing.T) {
+	executor, store := newReusingExecutor(t, 1)
+	root := putDirectory(t, store, &repb.Directory{})
+	for _, steps := range [][]string{{"stdout", "first"}, {"stdout", "second"}} {
+		if _, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, testprogram.Command(t, steps...)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	waitUntil(t, func() bool { return workDirectoryEntries(t, executor) == 1 })
+	if _, err := os.Stat(filepath.Join(executor.workRoot, "2")); err != nil {
+		t.Fatalf("the newest idle directory is gone: %v", err)
+	}
+}
+
+func workDirectoryEntries(t *testing.T, executor *Executor) int {
+	t.Helper()
+	entries, err := os.ReadDir(executor.workRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return len(entries)
+}
+
+func waitUntil(t *testing.T, condition func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(10 * time.Second)
+	for !condition() {
+		if time.Now().After(deadline) {
+			t.Fatal("timed out")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// scriptCommand runs the steps in the input file "script", so that actions
+// that run the same command, and so reuse each other's directories, can do
+// different things.
+func scriptCommand(t *testing.T) *repb.Command {
+	t.Helper()
+	command := testprogram.Command(t, "script", "script")
+	command.OutputPaths = []string{"out/tree.txt"}
+	return command
+}
+
+func withScript(t *testing.T, store *cas.Store, directory *repb.Directory, script string) *repb.Digest {
+	t.Helper()
+	withScript := &repb.Directory{
+		Files:       append(slices.Clone(directory.Files), &repb.FileNode{Name: "script", Digest: put(t, store, script)}),
+		Directories: directory.Directories,
+		Symlinks:    directory.Symlinks,
+	}
+	return putDirectory(t, store, withScript)
+}
+
+// inputTree runs an action that lists its input tree in a directory that an
+// earlier action with the same command left behind.
+func inputTree(t *testing.T, executor *Executor, store *cas.Store, inputs *repb.Directory) string {
+	t.Helper()
+	root := withScript(t, store, inputs, "tree . out/tree.txt")
+	result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, scriptCommand(t))
+	if err != nil || result.ExitCode != 0 {
+		t.Fatalf("result %v, %v", result, err)
+	}
+	if entries := workDirectoryEntries(t, executor); entries != 1 {
+		t.Fatalf("%d action directories, so the action did not reuse the earlier one's", entries)
+	}
+	return readBlob(t, store, result.OutputFiles[0].Digest)
+}
+
+func TestReuseRestoresInputsThatAnActionChanged(t *testing.T) {
+	executor, store := newReusingExecutor(t, 4)
+	inputs := &repb.Directory{
+		Files: []*repb.FileNode{
+			{Name: "empty", Digest: cas.EmptyKey.Digest()},
+			{Name: "file_to_directory", Digest: put(t, store, "file")},
+			{Name: "same.txt", Digest: put(t, store, "same")},
+		},
+		Directories: []*repb.DirectoryNode{
+			{Name: "deleted", Digest: putDirectory(t, store, &repb.Directory{Files: []*repb.FileNode{{Name: "x", Digest: put(t, store, "x")}}})},
+			{Name: "directory_to_file", Digest: putDirectory(t, store, &repb.Directory{Files: []*repb.FileNode{{Name: "y", Digest: put(t, store, "y")}}})},
+		},
+		Symlinks: []*repb.SymlinkNode{{Name: "symlink_to_file", Target: "same.txt"}},
+	}
+	changes := strings.Join([]string{
+		"remove same.txt write same.txt replaced",
+		"remove deleted",
+		"remove file_to_directory mkdir file_to_directory",
+		"remove directory_to_file write directory_to_file file",
+		"remove symlink_to_file write symlink_to_file file",
+		"writable empty write empty filled",
+		"write out/tree.txt first",
+	}, "\n")
+	root := withScript(t, store, inputs, changes)
+	if result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, scriptCommand(t)); err != nil || result.ExitCode != 0 {
+		t.Fatalf("result %v, %v", result, err)
+	}
+
+	want := strings.Join([]string{
+		"deleted/",
+		"deleted/x = x",
+		"directory_to_file/",
+		"directory_to_file/y = y",
+		"empty = ",
+		"file_to_directory = file",
+		"out/",
+		"same.txt = same",
+		"script = tree . out/tree.txt",
+		"symlink_to_file -> same.txt",
+	}, "\n")
+	if tree := inputTree(t, executor, store, inputs); tree != want {
+		t.Fatalf("the second action saw:\n%s\nwant:\n%s", tree, want)
+	}
+}
+
+func TestReuseDeletesSymlinksOutOfTheTreeWithoutFollowingThem(t *testing.T) {
+	executor, store := newReusingExecutor(t, 4)
+	outside := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outside, "outside.txt"), []byte("untouched"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	inputs := &repb.Directory{
+		Files:       []*repb.FileNode{{Name: "keep.txt", Digest: put(t, store, "keep")}},
+		Directories: []*repb.DirectoryNode{{Name: "dir", Digest: putDirectory(t, store, &repb.Directory{Files: []*repb.FileNode{{Name: "inner.txt", Digest: put(t, store, "inner")}}})}},
+	}
+	changes := strings.Join([]string{
+		"remove dir symlink " + outside + " dir",
+		"remove keep.txt symlink " + filepath.Join(outside, "outside.txt") + " keep.txt",
+		"write out/tree.txt first",
+	}, "\n")
+	root := withScript(t, store, inputs, changes)
+	if result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, scriptCommand(t)); err != nil || result.ExitCode != 0 {
+		t.Fatalf("result %v, %v", result, err)
+	}
+
+	want := strings.Join([]string{
+		"dir/",
+		"dir/inner.txt = inner",
+		"keep.txt = keep",
+		"out/",
+		"script = tree . out/tree.txt",
+	}, "\n")
+	if tree := inputTree(t, executor, store, inputs); tree != want {
+		t.Fatalf("the second action saw:\n%s\nwant:\n%s", tree, want)
+	}
+	entries, err := os.ReadDir(outside)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Name() != "outside.txt" {
+		t.Fatalf("the directory outside the tree now holds %v", entries)
+	}
+	if contents, err := os.ReadFile(filepath.Join(outside, "outside.txt")); err != nil || string(contents) != "untouched" {
+		t.Fatalf("the file outside the tree now holds %q, %v", contents, err)
+	}
+}
+
+func TestReusesTheDirectoryOfAnActionThatTimedOut(t *testing.T) {
+	executor, store := newReusingExecutor(t, 4)
+	inputs := &repb.Directory{Files: []*repb.FileNode{{Name: "input.txt", Digest: put(t, store, "input")}}}
+	root := withScript(t, store, inputs, "remove input.txt write junk.txt junk sleep 60")
+	action := &repb.Action{InputRootDigest: root, Timeout: durationpb.New(500 * time.Millisecond)}
+	var timeoutErr *TimeoutError
+	if _, err := executor.Execute(context.Background(), action, scriptCommand(t)); !errors.As(err, &timeoutErr) {
+		t.Fatalf("returned %v", err)
+	}
+
+	want := "input.txt = input\nout/\nscript = tree . out/tree.txt"
+	if tree := inputTree(t, executor, store, inputs); tree != want {
+		t.Fatalf("the second action saw:\n%s\nwant:\n%s", tree, want)
+	}
+}
+
+func TestReusesTheDirectoryOfAnActionWithMissingInputs(t *testing.T) {
+	executor, store := newReusingExecutor(t, 4)
+	present := &repb.Directory{Files: []*repb.FileNode{{Name: "present.txt", Digest: put(t, store, "present")}}}
+	missingFile := cas.Key{Hash: sha256.Sum256([]byte("later")), Size: 5}
+	partial := &repb.Directory{
+		Directories: []*repb.DirectoryNode{
+			{Name: "a", Digest: putDirectory(t, store, present)},
+			{Name: "b", Digest: putDirectory(t, store, &repb.Directory{Files: []*repb.FileNode{{Name: "later.txt", Digest: missingFile.Digest()}}})},
+		},
+	}
+	root := withScript(t, store, partial, "write out/tree.txt first")
+	var missingErr *cas.MissingBlobsError
+	if _, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, scriptCommand(t)); !errors.As(err, &missingErr) {
+		t.Fatalf("returned %v", err)
+	}
+
+	put(t, store, "later")
+	want := "a/\na/present.txt = present\nb/\nb/later.txt = later\nout/\nscript = tree . out/tree.txt"
+	if tree := inputTree(t, executor, store, partial); tree != want {
+		t.Fatalf("the second action saw:\n%s\nwant:\n%s", tree, want)
+	}
+}
+
+func TestConcurrentActionsWithTheSameCommandGetTheirOwnDirectories(t *testing.T) {
+	executor, store := newReusingExecutor(t, 4)
+	root := withScript(t, store, &repb.Directory{}, "write out/tree.txt first")
+	if _, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, scriptCommand(t)); err != nil {
+		t.Fatal(err)
+	}
+
+	slow := withScript(t, store, &repb.Directory{}, "sleep 1 tree . out/tree.txt")
+	command := scriptCommand(t)
+	trees := make(chan string, 2)
+	errs := make(chan error, 2)
+	for range 2 {
+		go func() {
+			result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: slow}, command)
+			if err != nil {
+				errs <- err
+				return
+			}
+			key, err := cas.KeyFromDigest(result.OutputFiles[0].Digest)
+			if err != nil {
+				errs <- err
+				return
+			}
+			contents, err := store.Read(key)
+			errs <- err
+			trees <- string(contents)
+		}()
+	}
+	for range 2 {
+		if err := <-errs; err != nil {
+			t.Fatal(err)
+		}
+	}
+	for range 2 {
+		if tree := <-trees; tree != "out/\nscript = sleep 1 tree . out/tree.txt" {
+			t.Fatalf("an action saw:\n%s", tree)
+		}
+	}
+	if entries := workDirectoryEntries(t, executor); entries != 2 {
+		t.Fatalf("%d action directories for two actions at once", entries)
+	}
+}
+
+func TestReportsMissingInputsOfAReusedDirectory(t *testing.T) {
+	executor, store := newReusingExecutor(t, 4)
+	root := withScript(t, store, &repb.Directory{
+		Directories: []*repb.DirectoryNode{{Name: "dir", Digest: putDirectory(t, store, &repb.Directory{})}},
+	}, "write out/tree.txt first")
+	if _, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, scriptCommand(t)); err != nil {
+		t.Fatal(err)
+	}
+
+	missingFile := cas.Key{Hash: sha256.Sum256([]byte("absent file")), Size: 11}
+	missingDirectory := cas.Key{Hash: sha256.Sum256([]byte("absent directory")), Size: 16}
+	root = withScript(t, store, &repb.Directory{
+		Files:       []*repb.FileNode{{Name: "file", Digest: missingFile.Digest()}},
+		Directories: []*repb.DirectoryNode{{Name: "dir", Digest: missingDirectory.Digest()}},
+	}, "tree . out/tree.txt")
+	_, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, scriptCommand(t))
+	var missingErr *cas.MissingBlobsError
+	if !errors.As(err, &missingErr) {
+		t.Fatalf("returned %v", err)
+	}
+	if !slices.Equal(missingErr.Keys, []cas.Key{missingDirectory, missingFile}) {
+		t.Fatalf("missing %v", missingErr.Keys)
+	}
+	if entries := workDirectoryEntries(t, executor); entries != 1 {
+		t.Fatalf("%d action directories, so the action did not reuse the earlier one's", entries)
 	}
 }

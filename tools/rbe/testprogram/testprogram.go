@@ -4,11 +4,13 @@ package testprogram
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -80,6 +82,38 @@ func run(arguments []string) error {
 				err = os.WriteFile(arguments[2], contents, 0o644)
 			}
 			arguments = arguments[3:]
+		case "script":
+			// Steps from an input file let actions that run the same command
+			// do different things.
+			var contents []byte
+			if contents, err = os.ReadFile(arguments[1]); err == nil {
+				err = run(strings.Fields(string(contents)))
+			}
+			arguments = arguments[2:]
+		case "tree":
+			err = writeTree(arguments[1], arguments[2])
+			arguments = arguments[3:]
+		case "tempwrite":
+			err = os.WriteFile(filepath.Join(os.Getenv(tempVariables()[0]), arguments[1]), nil, 0o644)
+			arguments = arguments[2:]
+		case "temptree":
+			err = writeTree(os.Getenv(tempVariables()[0]), arguments[1])
+			arguments = arguments[2:]
+		case "readonly":
+			err = os.Chmod(arguments[1], 0o555)
+			arguments = arguments[2:]
+		case "writable":
+			err = os.Chmod(arguments[1], 0o644)
+			arguments = arguments[2:]
+		case "remove":
+			err = os.RemoveAll(arguments[1])
+			arguments = arguments[2:]
+		case "mkdir":
+			err = os.Mkdir(arguments[1], 0o755)
+			arguments = arguments[2:]
+		case "symlink":
+			err = os.Symlink(arguments[1], arguments[2])
+			arguments = arguments[3:]
 		case "stdout":
 			_, err = os.Stdout.WriteString(arguments[1])
 			arguments = arguments[2:]
@@ -125,6 +159,44 @@ func run(arguments []string) error {
 		}
 	}
 	return nil
+}
+
+// writeTree writes a line for each entry under root: a directory's path with
+// a trailing slash, a file's path and contents, and a symlink's path and
+// target.
+func writeTree(root string, output string) error {
+	var lines []string
+	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || path == root {
+			return err
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		relative = filepath.ToSlash(relative)
+		switch {
+		case entry.Type()&fs.ModeSymlink != 0:
+			target, err := os.Readlink(path)
+			if err != nil {
+				return err
+			}
+			lines = append(lines, relative+" -> "+target)
+		case entry.IsDir():
+			lines = append(lines, relative+"/")
+		default:
+			contents, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			lines = append(lines, relative+" = "+string(contents))
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(output, []byte(strings.Join(lines, "\n")), 0o644)
 }
 
 func checkTemp(outside string) error {

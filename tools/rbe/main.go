@@ -27,6 +27,7 @@ func main() {
 	maxDirectories := flag.Int("max_cached_directories", 100_000, "decoded input directories to keep in memory")
 	slots := flag.Int("slots", runtime.NumCPU(), "actions to stage or run at once")
 	deleters := flag.Int("deleters", 8, "finished action directories to delete at once")
+	idleDirectories := flag.Int("idle_action_directories", 256, "finished action directories to keep for reuse by actions that run the same command")
 	flag.Parse()
 	if err := setUpLogging(); err != nil {
 		log.Fatalf("setting up logging: %v", err)
@@ -39,7 +40,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("opening the store: %v", err)
 	}
-	executor, err := execution.New(store, filepath.Join(*root, "work"), *slots, *deleters)
+	executor, err := execution.New(store, filepath.Join(*root, "work"), *slots, *deleters, *idleDirectories)
 	if err != nil {
 		log.Fatalf("creating the executor: %v", err)
 	}

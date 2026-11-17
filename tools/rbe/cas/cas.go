@@ -351,6 +351,26 @@ func (store *Store) Link(key Key, path string) error {
 	return err
 }
 
+// IsLink reports whether the file that info describes holds key's blob
+// because it is a link to the blob, as Link makes. A file that was written,
+// replaced or linked to an evicted blob is not.
+func (store *Store) IsLink(key Key, info fs.FileInfo) (bool, error) {
+	if !info.Mode().IsRegular() {
+		return false, nil
+	}
+	if key.Size == 0 && key == EmptyKey {
+		return info.Size() == 0, nil
+	}
+	blobInfo, err := os.Lstat(store.blobPath(key))
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return os.SameFile(info, blobInfo), nil
+}
+
 // Writer writes one blob and verifies its digest when committed.
 type Writer struct {
 	store    *Store
