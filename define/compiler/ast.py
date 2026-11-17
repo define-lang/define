@@ -118,17 +118,16 @@ class ExecutableDefinition(GlobalDefinition, Generic[ViewDefinitionT_co]):  # no
     """Base class for definitions that a statement executes with an Operation Arguments Block."""
 
     views: Final[tuple[ViewDefinitionT_co, ...]]
+    # The index of the view with each source typed name. Only the parser
+    # constructs these classes.
+    view_indexes_by_name: Derived[dict[str, int]]
 
-    def view_indexes_by_name(self) -> dict[str, int]:
-        """Return the index of the first view with each name."""
-        # Scanning the views for each argument would make an execution
-        # quadratic in its operation's views, and keeping a dict on every
-        # operation definition would hold memory for the whole compile, so
-        # callers build this once per execution.
-        view_indexes: dict[str, int] = {}
-        for index, view in enumerate(self.views):
-            _ = view_indexes.setdefault(view.typed_name.source_typed_name, index)
-        return view_indexes
+    def get_view(self, name: str) -> ViewDefinitionT_co | None:
+        """Return the view whose source typed name is name, if there is one."""
+        index = self.view_indexes_by_name.get(name)
+        if index is None:
+            return None
+        return self.views[index]
 
 
 class OperationDefinition(ExecutableDefinition[InterfaceViewDefinition]):

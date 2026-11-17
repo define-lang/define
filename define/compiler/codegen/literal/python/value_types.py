@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, cast
 
 from define.compiler import constants
 from define.compiler.association_resolution import concrete_program
@@ -113,23 +113,23 @@ class PythonValueTypes:
             self._value_encodings[value_quality.full_typed_name]
         )
 
-    def view_python_value_types(
-        self, runtime_operation: concrete_program.RuntimeOperation
-    ) -> dict[str, str]:
-        """Return the Python type of the values that each interface view of the runtime operation holds, by the view's source typed name."""
-        python_value_types: dict[str, str] = {}
+    def argument_python_value_type(
+        self, runtime_operation: concrete_program.RuntimeOperation, view_name: str
+    ) -> str:
+        """Return the Python type of the values that the interface view named view_name of the runtime operation holds."""
         if isinstance(runtime_operation, concrete_program.CompositeValueOperation):
-            for view_name, encoding in runtime_operation.view_encodings.items():
-                python_value_types[view_name] = encoding_python_value_type(encoding)
-            return python_value_types
-        definition = self._encoding_operations[
-            runtime_operation.full_typed_name
-        ].definition
-        for view in definition.views:
-            python_value_types[view.typed_name.source_typed_name] = (
-                encoded_python_value_type(view.quality_assignment_block)
+            return encoding_python_value_type(
+                runtime_operation.view_encodings[view_name]
             )
-        return python_value_types
+        # Validation reports an argument for a view that the executed
+        # operation does not define.
+        view = cast(
+            "ast.InterfaceViewDefinition",
+            self._encoding_operations[
+                runtime_operation.full_typed_name
+            ].definition.get_view(view_name),
+        )
+        return encoded_python_value_type(view.quality_assignment_block)
 
     def assigned_python_value_type(
         self, block: ast.QualityAssignmentBlock | None

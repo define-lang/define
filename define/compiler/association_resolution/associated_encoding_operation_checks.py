@@ -55,17 +55,15 @@ def _direction_diagnostics(
     association_location: rendering.SourceLocation,
 ) -> list[diagnostics.Diagnostic]:
     """Return a diagnostic for each view of the Encoding Operation whose direction differs from the logical operation's view of the same name."""
-    logical_view_indexes = definition.view_indexes_by_name()
     direction_diagnostics: list[diagnostics.Diagnostic] = []
     for encoding_view in encoding_operation.views:
         view_name = encoding_view.typed_name.source_typed_name
-        logical_view_index = logical_view_indexes.get(view_name)
+        logical_view = definition.get_view(view_name)
         # A view that the logical operation does not have is reported
         # where the association lists it, or where it differs from the
         # Encoding Operation.
-        if logical_view_index is None:
+        if logical_view is None:
             continue
-        logical_view = definition.views[logical_view_index]
         if _direction(encoding_view) != _direction(logical_view):
             direction_diagnostics.append(
                 diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(

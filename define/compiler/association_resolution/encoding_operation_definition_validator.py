@@ -70,17 +70,17 @@ class EncodingOperationDefinitionValidator(
         # The grammar allows an Encoding Operation to execute only Encoding
         # Operations.
         encoding_operation = typing.cast("ast.EncodingOperationDefinition", executed)
-        view_indexes = encoding_operation.view_indexes_by_name()
         arguments: list[
             concrete_program.OperationArgument[ast.LocalTypedNameReference]
         ] = []
         is_complete = True
         for argument in statement.arguments:
-            view_index = view_indexes.get(argument.view.source_typed_name)
+            interface_view = encoding_operation.get_view(
+                argument.view.source_typed_name
+            )
             # Structural validation reports a view name with an invalid format.
-            if view_index is None:
+            if interface_view is None:
                 return
-            interface_view = encoding_operation.views[view_index]
             looking_at = argument.looking_at
             if not isinstance(looking_at, ast.Literal):
                 arguments.append(

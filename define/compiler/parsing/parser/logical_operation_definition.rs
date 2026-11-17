@@ -6,6 +6,8 @@ use crate::parse_error::{ParseError, ParseResult};
 use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::operation_definition::VIEW_DIRECTION_STATEMENT_STARTS;
+use pyo3::prelude::*;
+use pyo3::types::{PyDict, PyString};
 use source_rendering::Position;
 use terminals::{DEFINE_THE, DEFINE_THE_VIEW, IT_IS_READ, IT_IS_WRITTEN, VIEW};
 
@@ -55,6 +57,8 @@ impl<'py> Parser<'py, '_> {
         let views = self
             .nodes
             .start::<ast::LogicalOperationViewDefinition<'_>>();
+        let view_indexes_by_name = PyDict::new(self.ast.py());
+        let mut view_count = 0;
         loop {
             let view_start = self.scanner.position;
             // The statement is not a view definition.
@@ -63,9 +67,11 @@ impl<'py> Parser<'py, '_> {
             else {
                 return Err(self.invalid_logical_operation_definition_statement());
             };
-            let view =
+            let (view, source_typed_name) =
                 self.parse_logical_operation_view_definition(view_start, view_typed_name_start)?;
+            view_indexes_by_name.set_item(source_typed_name, view_count)?;
             self.nodes.push(&views, view);
+            view_count += 1;
             match self.next_line_in_block(0, &[DEFINE_THE_VIEW])? {
                 LineInBlock::Statement => {}
                 LineInBlock::Close => break,
@@ -78,9 +84,12 @@ impl<'py> Parser<'py, '_> {
         let views = self.nodes.finish_tuple(views)?;
         let end = self.parse_block_close()?;
         let location = self.ast.location(start, end)?;
-        let definition = self
-            .ast
-            .logical_operation_definition(location, typed_name, views)?;
+        let definition = self.ast.logical_operation_definition(
+            location,
+            typed_name,
+            views,
+            view_indexes_by_name,
+        )?;
         Ok((definition, end))
     }
 
@@ -98,10 +107,13 @@ impl<'py> Parser<'py, '_> {
         &mut self,
         start: Position,
         typed_name_start: Position,
-    ) -> ParseResult<ast::LogicalOperationViewDefinition<'py>> {
+    ) -> ParseResult<(
+        ast::LogicalOperationViewDefinition<'py>,
+        Bound<'py, PyString>,
+    )> {
         let name = self.parse_local_name_content()?;
         let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
-        let (typed_name, _) =
+        let (typed_name, source_typed_name) =
             self.local_typed_name_reference(typed_name_location, ast::NameType::View, name)?;
         let block_open_end = self.parse_block_open()?;
         let line = self.next_line_in_block(INDENTATION_WIDTH, &VIEW_DIRECTION_STATEMENT_STARTS)?;
@@ -132,9 +144,10 @@ impl<'py> Parser<'py, '_> {
         }
         let end = self.parse_block_close()?;
         let location = self.ast.location(start, end)?;
-        Ok(self
+        let view = self
             .ast
-            .logical_operation_view_definition(location, typed_name, is_input, is_output)?)
+            .logical_operation_view_definition(location, typed_name, is_input, is_output)?;
+        Ok((view, source_typed_name))
     }
 }
 

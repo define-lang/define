@@ -133,18 +133,16 @@ class ActionOperationExecutionValidator:
         Diagnostics are added to ``statement_diagnostics``.
         """
         looked_at = _LookedAtPositions()
-        view_indexes = {} if executed is None else executed.view_indexes_by_name()
         for argument in stmt.arguments:
             position = argument.looking_at
             if not isinstance(position, ast.PositionReference):
                 continue
             if not next(looked_at_validity):
                 continue
-            view_index = view_indexes.get(argument.view.source_typed_name)
             interface_view = (
                 None
-                if executed is None or view_index is None
-                else executed.views[view_index]
+                if executed is None
+                else executed.get_view(argument.view.source_typed_name)
             )
             is_read = interface_view is not None and interface_view.is_input
             particle = self._analyze_looked_at_position(

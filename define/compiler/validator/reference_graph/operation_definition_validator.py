@@ -222,7 +222,6 @@ class OperationDefinitionValidator[
         statement_diagnostics: list[diagnostics.Diagnostic],
     ) -> Iterator[_ViewArgument]:
         """Record how the executed definition uses each view the arguments look at, and yield each argument that looks at a view."""
-        view_indexes = executed.view_indexes_by_name()
         for argument in arguments:
             looking_at = argument.looking_at
             # Literals are checked when the arguments are validated.
@@ -232,8 +231,7 @@ class OperationDefinitionValidator[
             # Structural validation reports undefined views.
             if looked_at_view is None:
                 continue
-            view_index = view_indexes.get(argument.view.source_typed_name)
-            executed_view = None if view_index is None else executed.views[view_index]
+            executed_view = executed.get_view(argument.view.source_typed_name)
             statement_diagnostics.extend(
                 self._view_uses.record_use(
                     argument, looking_at, executed_view, operation_name

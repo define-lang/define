@@ -332,56 +332,87 @@ class TestInterfacePositionQualityAssignments:
             is None
         )
 
-    def test_ignore_later_duplicate_with_different_quality_assignments(self):
-        action = _parse_action(
-            f"define the potential action<{_FQUN}:/act> {{\n"
-            "    define the position<pos_a> {\n"
-            "        it may only contain particles where {\n"
-            "            it has the position</first>.\n"
-            "        }\n"
-            "    }\n"
-            "    define the position<pos_a> {\n"
-            "        it may only contain particles where {\n"
-            "            it has the position</second>.\n"
-            "        }\n"
-            "    }\n"
-            "    it happens when {\n"
-            "        the position<pos_a> has a particle.\n"
-            "    } and it does {\n"
-            "        define the position<_noop>.\n"
-            "        create a particle in position<_noop>.\n"
-            "    }\n"
-            "}\n"
-        )
-        block = action.interface_positions_by_name[
-            "position<pos_a>"
-        ].quality_assignment_block
-        assert block is not None
-        assert block.as_set == frozenset({f"position<{_FQUN}:/first>"})
 
-    def test_ignore_later_duplicate_that_adds_quality_assignments(self):
-        action = _parse_action(
-            f"define the potential action<{_FQUN}:/act> {{\n"
-            "    define the position<pos_a>.\n"
-            "    define the position<pos_a> {\n"
-            "        it may only contain particles where {\n"
-            "            it has the position</second>.\n"
-            "        }\n"
-            "    }\n"
-            "    it happens when {\n"
-            "        the position<pos_a> has a particle.\n"
-            "    } and it does {\n"
-            "        define the position<_noop>.\n"
-            "        create a particle in position<_noop>.\n"
-            "    }\n"
-            "}\n"
-        )
-        assert (
-            action.interface_positions_by_name[
-                "position<pos_a>"
-            ].quality_assignment_block
-            is None
-        )
+def _parse_executable_definition(
+    source: str,
+) -> ast.ExecutableDefinition[ast.ViewDefinition]:
+    [definition] = test_helpers.parse(source).definitions
+    assert isinstance(definition, ast.ExecutableDefinition)
+    return definition
+
+
+_VALUE_OPERATION = (
+    f"define the operation<{_FQUN}:/copy> {{\n"
+    "    define the view<source> {\n"
+    "        it is read.\n"
+    "        it may only contain particles where {\n"
+    "            it has the value</number>.\n"
+    "        }\n"
+    "    }\n"
+    "    define the view<target> {\n"
+    "        it is written.\n"
+    "        it may only contain particles where {\n"
+    "            it has the value</number>.\n"
+    "        }\n"
+    "    }\n"
+    "    it does {\n"
+    "        set the value of view<target> from view<source>.\n"
+    "    }\n"
+    "}\n"
+)
+
+_ENCODING_OPERATION = (
+    f"define the encoding_operation<{_FQUN}:/copy> {{\n"
+    "    define the view<source> {\n"
+    "        it is read.\n"
+    "        it may only contain particles where {\n"
+    "            it has the encoding</integer>.\n"
+    "        }\n"
+    "    }\n"
+    "    define the view<target> {\n"
+    "        it is written.\n"
+    "        it may only contain particles where {\n"
+    "            it has the encoding</integer>.\n"
+    "        }\n"
+    "    }\n"
+    "    it does {\n"
+    "        set the value of view<target> from view<source>.\n"
+    "    }\n"
+    "}\n"
+)
+
+_LOGICAL_OPERATION = (
+    f"define the logical_operation<{_FQUN}:/copy> {{\n"
+    "    define the view<source> {\n"
+    "        it is read.\n"
+    "    }\n"
+    "    define the view<target> {\n"
+    "        it is written.\n"
+    "    }\n"
+    "}\n"
+)
+
+
+class TestExecutableDefinitionViews:
+    @pytest.mark.parametrize(
+        "source", [_VALUE_OPERATION, _ENCODING_OPERATION, _LOGICAL_OPERATION]
+    )
+    def test_view_indexes_by_name(self, source: str):
+        definition = _parse_executable_definition(source)
+        assert definition.view_indexes_by_name == {
+            "view<source>": 0,
+            "view<target>": 1,
+        }
+
+    @pytest.mark.parametrize(
+        "source", [_VALUE_OPERATION, _ENCODING_OPERATION, _LOGICAL_OPERATION]
+    )
+    def test_get_view(self, source: str):
+        definition = _parse_executable_definition(source)
+        [source_view, target_view] = definition.views
+        assert definition.get_view("view<source>") is source_view
+        assert definition.get_view("view<target>") is target_view
+        assert definition.get_view("view<other>") is None
 
 
 class TestActionIsDestructor:

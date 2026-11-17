@@ -362,9 +362,6 @@ class ActionStatementsGenerator:
         arguments: list[renderer.PositionExpression | str] = []
         outputs: list[renderer.PositionExpression] = []
         output_view_names: list[str] = []
-        view_python_value_types = self._python_value_types.view_python_value_types(
-            execution.runtime_operation
-        )
         for argument in execution.arguments:
             looking_at = argument.looking_at
             # Validation reports output views that look at literals, so a
@@ -372,9 +369,10 @@ class ActionStatementsGenerator:
             if isinstance(looking_at, concrete_program.EncodedLiteral):
                 arguments.append(value_types.python_literal(looking_at))
                 continue
-            value_type = view_python_value_types[
-                argument.interface_view.typed_name.source_typed_name
-            ]
+            value_type = self._python_value_types.argument_python_value_type(
+                execution.runtime_operation,
+                argument.interface_view.typed_name.source_typed_name,
+            )
             if argument.interface_view.is_input:
                 arguments.append(positions.build(looking_at, value_type=value_type))
             if argument.interface_view.is_output:

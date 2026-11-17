@@ -476,7 +476,7 @@ class _FieldTypes:
             and len(arguments) == 2
             and arguments[0] is str
             and isinstance(arguments[1], type)
-            and arguments[1] in self._classes
+            and (arguments[1] is int or arguments[1] in self._classes)
         ):
             return rust_renderer.FieldType.Dict()
         if origin is tuple and len(arguments) == 2 and arguments[1] is Ellipsis:

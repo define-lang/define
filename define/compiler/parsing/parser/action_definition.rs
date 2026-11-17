@@ -70,10 +70,6 @@ const ACTION_STATEMENT_STARTS: [&[u8]; 6] = action_statement_starts!();
 const ACTION_STATEMENTS_BLOCK_STARTS: [&[u8]; 7] =
     action_statement_starts!(DEFINE_THE_POTENTIAL_POSITION);
 
-/// Each interface position of an action definition with its source typed
-/// name.
-type NamedInterfacePositions<'py> = Vec<(Bound<'py, PyString>, ast::LocalPositionDefinition<'py>)>;
-
 impl<'py, 'source> Parser<'py, 'source> {
     /// Parses the rest of an action definition after its `action`, given the
     /// positions of the definition's start and of its `action`, and returns
@@ -102,7 +98,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         // error when the block ends before its trigger conditions block.
         let (implications, line, content_end) =
             self.parse_quality_implications(block_open_end, &fqun)?;
-        let (interface_positions, named_interface_positions, line, content_end) =
+        let (interface_positions, interface_positions_by_name, line, content_end) =
             self.parse_interface_positions(line, content_end, &fqun)?;
         let (trigger_conditions, trigger_name, action_statements) =
             self.parse_trigger_and_action(line, content_end, &fqun)?;
@@ -112,11 +108,13 @@ impl<'py, 'source> Parser<'py, 'source> {
             0,
             Self::statement_instead_of_action_close,
         )?;
-        let (interface_positions_by_name, trigger_position) = self
-            .interface_positions_by_name_and_trigger_position(
-                named_interface_positions,
-                trigger_name,
-            )?;
+        // The dict's values are all interface positions.
+        let trigger_position = match trigger_name {
+            Some(trigger_name) => interface_positions_by_name
+                .get_item(trigger_name)?
+                .map(ast::LocalPositionDefinition),
+            None => None,
+        };
         let location = self.ast.location(start, end)?;
         let definition = self.ast.action_definition(
             location,
@@ -129,36 +127,6 @@ impl<'py, 'source> Parser<'py, 'source> {
             trigger_position,
         )?;
         Ok((definition, end))
-    }
-
-    /// Returns the dict from each source typed name of an interface position in
-    /// `named_interface_positions` to the interface position it refers to, and
-    /// the interface position named `trigger_name`, whose particle triggers
-    /// the action, if there is one.
-    fn interface_positions_by_name_and_trigger_position(
-        &self,
-        named_interface_positions: NamedInterfacePositions<'py>,
-        trigger_name: Option<Bound<'py, PyString>>,
-    ) -> PyResult<(
-        Bound<'py, PyDict>,
-        Option<ast::LocalPositionDefinition<'py>>,
-    )> {
-        let interface_positions_by_name = PyDict::new(self.ast.py());
-        for (name, position) in &named_interface_positions {
-            // A name refers to the first interface position with that name.
-            if !interface_positions_by_name.contains(name)? {
-                interface_positions_by_name.set_item(name, position.clone().into_object())?;
-            }
-        }
-        // An action has only a few interface positions, and their names are
-        // interned, so comparing identities is cheaper than a dict lookup.
-        let trigger_position = trigger_name.and_then(|trigger_name| {
-            named_interface_positions
-                .into_iter()
-                .find(|(name, _)| name.is(&trigger_name))
-                .map(|(_, position)| position)
-        });
-        Ok((interface_positions_by_name, trigger_position))
     }
 
     /// Parses the quality implication statements at the start of an action
@@ -196,9 +164,10 @@ impl<'py, 'source> Parser<'py, 'source> {
 
     /// Parses the local position definitions in an action definition block,
     /// starting at `line`, after content that ends at `content_end`, whose
-    /// references take their default FQUN from `fqun`. Returns them, and each
-    /// of them with its source typed name, with the line in the block after
-    /// them and where the block's content ends before that line.
+    /// references take their default FQUN from `fqun`. Returns them, and the
+    /// dict from each of their source typed names to the interface position,
+    /// with the line in the block after them and where the block's content
+    /// ends before that line.
     ///
     /// ```ebnf
     /// { local_position_definition }
@@ -210,12 +179,12 @@ impl<'py, 'source> Parser<'py, 'source> {
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(
         NodeTuple<'py, ast::LocalPositionDefinition<'py>>,
-        NamedInterfacePositions<'py>,
+        Bound<'py, PyDict>,
         LineInBlock,
         Position,
     )> {
         let interface_positions = self.nodes.start::<ast::LocalPositionDefinition<'_>>();
-        let mut named_interface_positions = Vec::new();
+        let interface_positions_by_name = PyDict::new(self.ast.py());
         loop {
             if !matches!(line, LineInBlock::Statement) {
                 break;
@@ -232,14 +201,14 @@ impl<'py, 'source> Parser<'py, 'source> {
                 ACTION_DEFINITION_BLOCK_INDENTATION,
                 fqun,
             )?;
-            named_interface_positions.push((name, position.clone()));
+            interface_positions_by_name.set_item(name, position.clone().into_object())?;
             self.nodes.push(&interface_positions, position);
             content_end = end;
             line = self.next_line_in_block(0, &ACTION_DEFINITION_STATEMENT_STARTS)?;
         }
         Ok((
             self.nodes.finish_tuple(interface_positions)?,
-            named_interface_positions,
+            interface_positions_by_name,
             line,
             content_end,
         ))

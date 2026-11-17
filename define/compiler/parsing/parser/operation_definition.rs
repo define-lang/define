@@ -9,6 +9,8 @@ use crate::parser::Parser;
 use crate::parser::lines::{INDENTATION_WIDTH, LineInBlock};
 use crate::parser::names::FqunWithCanonicalText;
 use crate::parser::operation_execution::OperationKind;
+use pyo3::prelude::*;
+use pyo3::types::{PyDict, PyString};
 use source_rendering::Position;
 use terminals::{
     DEFINE_THE, DEFINE_THE_VIEW, EXECUTE_THE, EXECUTE_THE_COMPUTER_OPERATION,
@@ -72,7 +74,8 @@ impl<'py, 'source> Parser<'py, 'source> {
         let (typed_name, fqun) =
             self.parse_global_typed_name_in_definition(typed_name_start, name_type)?;
         let block_open_end = self.parse_block_open()?;
-        let (views, line, content_end) = self.parse_interface_views(block_open_end, &fqun)?;
+        let (views, view_indexes_by_name, line, content_end) =
+            self.parse_interface_views(block_open_end, &fqun)?;
         let statements = self.parse_operation_statements_block(kind, line, content_end, &fqun)?;
         let end = self.parse_block_close_after_content(
             start,
@@ -84,11 +87,23 @@ impl<'py, 'source> Parser<'py, 'source> {
         let definition = match kind {
             OperationKind::Value => self
                 .ast
-                .value_operation_definition(location, typed_name, views, statements)?
+                .value_operation_definition(
+                    location,
+                    typed_name,
+                    views,
+                    view_indexes_by_name,
+                    statements,
+                )?
                 .into(),
             OperationKind::Encoding => self
                 .ast
-                .encoding_operation_definition(location, typed_name, views, statements)?
+                .encoding_operation_definition(
+                    location,
+                    typed_name,
+                    views,
+                    view_indexes_by_name,
+                    statements,
+                )?
                 .into(),
         };
         Ok((definition, end))
@@ -108,12 +123,14 @@ impl<'py, 'source> Parser<'py, 'source> {
         fqun: &FqunWithCanonicalText<'py, 'source>,
     ) -> ParseResult<(
         NodeTuple<'py, ast::InterfaceViewDefinition<'py>>,
+        Bound<'py, PyDict>,
         LineInBlock,
         Position,
     )> {
         let views = self.nodes.start::<ast::InterfaceViewDefinition<'_>>();
+        let view_indexes_by_name = PyDict::new(self.ast.py());
+        let mut view_count = 0;
         let mut content_end = block_open_end;
-        let mut has_view = false;
         loop {
             let line = self.next_line_in_block(0, &OPERATION_DEFINITION_STATEMENT_STARTS)?;
             let start = self.scanner.position;
@@ -122,14 +139,21 @@ impl<'py, 'source> Parser<'py, 'source> {
                 LineInBlock::Close | LineInBlock::Unclosed => None,
             };
             let Some(typed_name_start) = typed_name_start else {
-                if !has_view {
+                if view_count == 0 {
                     return Err(self.missing_interface_view_definition(line, block_open_end));
                 }
-                return Ok((self.nodes.finish_tuple(views)?, line, content_end));
+                return Ok((
+                    self.nodes.finish_tuple(views)?,
+                    view_indexes_by_name,
+                    line,
+                    content_end,
+                ));
             };
-            has_view = true;
-            let (view, end) = self.parse_view_definition(start, typed_name_start, fqun)?;
+            let (view, source_typed_name, end) =
+                self.parse_view_definition(start, typed_name_start, fqun)?;
+            view_indexes_by_name.set_item(source_typed_name, view_count)?;
             self.nodes.push(&views, view);
+            view_count += 1;
             content_end = end;
         }
     }
@@ -152,10 +176,14 @@ impl<'py, 'source> Parser<'py, 'source> {
         start: Position,
         typed_name_start: Position,
         fqun: &FqunWithCanonicalText<'py, 'source>,
-    ) -> ParseResult<(ast::InterfaceViewDefinition<'py>, Position)> {
+    ) -> ParseResult<(
+        ast::InterfaceViewDefinition<'py>,
+        Bound<'py, PyString>,
+        Position,
+    )> {
         let name = self.parse_local_name_content()?;
         let typed_name_location = self.ast.location(typed_name_start, self.scanner.position)?;
-        let (typed_name, _) =
+        let (typed_name, source_typed_name) =
             self.local_typed_name_reference(typed_name_location, ast::NameType::View, name)?;
         let block_open_end = self.parse_block_open()?;
         let (is_input, is_output, line, content_end) = self
@@ -197,7 +225,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let definition = self
             .ast
             .interface_view_definition(location, typed_name, is_input, is_output, block)?;
-        Ok((definition, end))
+        Ok((definition, source_typed_name, end))
     }
 
     /// Parses the View Direction Statements at the start of a view definition

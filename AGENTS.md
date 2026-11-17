@@ -73,6 +73,22 @@ See [define/spec/spec.md] for the language specification.
   a multi-argument object, performs intermediate computation, contains nested
   iteration, has multiple conditions, or spans multiple lines after formatting.
 
+## Rust
+
+- Keep a function's main path straight down its top level. When one case is an
+  error or an exception, return early with `?`, `let ... else`, or a small
+  `match` that only binds the value or returns, instead of putting the main path
+  inside a `match` arm. Use `match` for real multi-way dispatch, where the arms
+  are peers.
+- Use iterator, `Option`, and `Result` combinators only when each step is a
+  single short expression with no branching. Use `match`, `if let`, or a loop
+  when the code handles errors with `?`, returns early, has side effects, or
+  would need a step that only changes how `Option`s and `Result`s are nested,
+  such as `transpose` or `flatten`.
+- Put a Rust module's tests in an inline `#[cfg(test)] mod tests` in the
+  module's own file. Use a separate `<module>_test.rs` file only when the tests
+  are large enough to make the module hard to read.
+
 ## Design
 
 - Code should express current requirements directly. When changing a design,
@@ -136,9 +152,6 @@ See [define/spec/spec.md] for the language specification.
   directly on the full list.
 - **Never break one line of Define source code across two Python lines**, even
   if it creates a very long Python string.
-- Put a Rust module's tests in an inline `#[cfg(test)] mod tests` in the
-  module's own file. Use a separate `<module>_test.rs` file only when the tests
-  are large enough to make the module hard to read.
 
 ## Bazel
 

@@ -88,7 +88,7 @@ class OperationArgumentsValidator:
         Returns the arguments that name a view of the executed definition, by
         view index in source order.
         """
-        view_indexes = executed.view_indexes_by_name()
+        view_indexes = executed.view_indexes_by_name
         arguments_by_index = self._collect_arguments(
             arguments, executed, view_indexes, operation_name, validation_diagnostics
         )
@@ -125,15 +125,14 @@ class OperationArgumentsValidator:
                 ast.InterfaceViewDefinition, LookedAtT | ast.Literal
             ]
         ] = []
-        view_indexes = executed.view_indexes_by_name()
         for argument in statement.arguments:
-            view_index = view_indexes.get(argument.view.source_typed_name)
+            interface_view = executed.get_view(argument.view.source_typed_name)
             # Structural validation reports a view name with an invalid format.
-            if view_index is None:
+            if interface_view is None:
                 return None
             arguments.append(
                 abstract_program.Argument(
-                    interface_view=executed.views[view_index],
+                    interface_view=interface_view,
                     looking_at=argument.looking_at,
                 )
             )
@@ -236,7 +235,7 @@ class OperationArgumentsValidator:
     ):
         for view in executed.views:
             view_name = view.typed_name.source_typed_name
-            # A duplicate view shares the first definition's argument.
+            # Views that share a name share an argument.
             if view_indexes[view_name] not in arguments:
                 validation_diagnostics.append(
                     diagnostics.MissingOperationArgumentDiagnostic(
