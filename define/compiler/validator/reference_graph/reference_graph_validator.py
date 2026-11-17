@@ -4,12 +4,7 @@ from __future__ import annotations
 
 import typing
 
-import msgspec
-
 from define.compiler import ast
-from define.compiler.association_resolution import (
-    association_resolver,
-)
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import (
     reference_graph_executor,
@@ -22,9 +17,7 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
-    from define.compiler.association_resolution import (
-        concrete_program,
-    )
+    from define.compiler.association_resolution import association_resolver
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.graphs import (
         reference_graph_order,
@@ -37,24 +30,18 @@ def _requires_validation(
 ) -> typing.TypeIs[
     ast.ActionDefinition
     | ast.ValueOperationDefinition
-    | ast.EncodingOperationDefinition
     | ast.LogicalOperationDefinition
     | ast.ValueDefinition
 ]:
+    # Association resolution validates Encoding Operations once it has the
+    # ones it chooses loaded.
     return isinstance(
         definition,
         ast.ActionDefinition
         | ast.ValueOperationDefinition
-        | ast.EncodingOperationDefinition
         | ast.LogicalOperationDefinition
         | ast.ValueDefinition,
     )
-
-
-class ReferenceGraphValidationResult(msgspec.Struct, frozen=True):
-    """What reference graph validation and association resolution produce, beyond the diagnostics they report."""
-
-    concrete_program: concrete_program.ConcreteProgram
 
 
 # TODO: We need a mode that forces a fake caller as the parent of any top-level
@@ -85,11 +72,12 @@ class ReferenceGraphValidator:
             ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
             validation_result.DefinitionValidationResult,
         ],
+        resolver: association_resolver.AssociationResolver,
         *,
         entry_action: ast.ActionDefinition | None,
         allow_entry_action_occupied_implied_position_requirements: bool = False,
     ):
-        """Initialize with the definition order and definition results.
+        """Initialize with the definition order, the definition results, and the association resolver that resolves each definition once it is validated.
 
         allow_entry_action_occupied_implied_position_requirements exists only
         for validation tests of behavior that requires such a program.
@@ -100,16 +88,12 @@ class ReferenceGraphValidator:
         self._validation_state = (
             reference_graph_validation_state.ReferenceGraphValidationState()
         )
-        self._association_resolver = association_resolver.AssociationResolver(
-            definition_results
-        )
+        self._association_resolver = resolver
         self._allow_entry_action_occupied_implied_position_requirements = (
             allow_entry_action_occupied_implied_position_requirements
         )
 
-    def validate(
-        self, max_workers: int | None = None
-    ) -> ReferenceGraphValidationResult:
+    def validate(self, max_workers: int | None = None):
         """Validate every definition in direct-reference-first order, resolving each to concrete code once it is validated."""
         definition_order = self._definition_order
         _ = reference_graph_executor.process_definitions(
@@ -124,17 +108,11 @@ class ReferenceGraphValidator:
             and not self._allow_entry_action_occupied_implied_position_requirements
         ):
             self._validate_entry_action_requirements(entry_action)
-        return ReferenceGraphValidationResult(
-            concrete_program=self._association_resolver.concrete_program(
-                definition_order
-            )
-        )
 
     def _validate_definition(
         self,
         definition: ast.ActionDefinition
         | ast.ValueOperationDefinition
-        | ast.EncodingOperationDefinition
         | ast.LogicalOperationDefinition
         | ast.ValueDefinition,
     ):
@@ -163,10 +141,6 @@ class ReferenceGraphValidator:
                             definition, value_operation_result.steps
                         )
                     )
-            case ast.EncodingOperationDefinition():
-                definition_diagnostics.extend(
-                    resolver.resolve_encoding_operation(definition)
-                )
             case ast.LogicalOperationDefinition():
                 definition_diagnostics.extend(
                     resolver.resolve_logical_operation(definition)

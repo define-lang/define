@@ -19,7 +19,10 @@ py_library(
 py_library(
     name = "association_resolver",
     srcs = ["association_resolver.py"],
-    visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
+    visibility = [
+        "//define/compiler:__pkg__",
+        "//define/compiler/validator/reference_graph:__pkg__",
+    ],
     deps = [
         ":associated_encoding_operation_checks",
         ":associations",
@@ -30,6 +33,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/graphs:reference_graph",
         "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:abstract_program",
@@ -44,7 +48,9 @@ py_library(
         "//define/compiler:name_types",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/graphs:reference_graph",
         "//define/compiler/validator:validation_result",
+        "@pypi//msgspec",
     ],
 )
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from define.compiler import ast
 from define.compiler.association_resolution import (
     associated_encoding_operation_checks,
     associations,
@@ -18,9 +19,8 @@ from define.compiler.validator.reference_graph import abstract_program
 if typing.TYPE_CHECKING:
     from collections.abc import Collection
 
-    from define.compiler import ast
     from define.compiler.data_structures import typed_name_dict
-    from define.compiler.graphs import reference_graph_order
+    from define.compiler.graphs import reference_graph, reference_graph_order
     from define.compiler.validator import validation_result
 
 
@@ -60,19 +60,8 @@ class AssociationResolver:
     def resolve_logical_operation(
         self, definition: ast.LogicalOperationDefinition
     ) -> list[diagnostics.Diagnostic]:
-        """Add a logical operation's associations with Encoding Operations, check the loaded Encoding Operations that they name, and return the diagnostics about them."""
-        matching_associations, logical_operation_diagnostics = (
-            self._associations.add_logical_operation(definition)
-        )
-        # An association whose views differ from the logical operation's is
-        # already reported, so its Encoding Operation is not also checked
-        # against that association.
-        logical_operation_diagnostics.extend(
-            associated_encoding_operation_checks.check(
-                definition, self._definition_results, matching_associations
-            )
-        )
-        return logical_operation_diagnostics
+        """Add a logical operation's associations with Encoding Operations, and return the diagnostics about them."""
+        return self._associations.add_logical_operation(definition)
 
     def resolve_value_operation(
         self,
@@ -117,7 +106,29 @@ class AssociationResolver:
         )
         return action_diagnostics
 
-    def resolve_encoding_operation(
+    def chosen_edges(self) -> list[reference_graph.ReferenceEdge]:
+        """Return the edge to each encoding and Encoding Operation that resolution chose, once every definition is resolved."""
+        return self._associations.chosen_edges()
+
+    def resolve_encoding_operations(self):
+        """Validate each loaded Encoding Operation and check each chosen association against the Encoding Operation it names, once the chosen ones are loaded, and add the diagnostics to the definitions they are about."""
+        for definition_result in self._definition_results.values():
+            definition = definition_result.definition
+            if isinstance(definition, ast.EncodingOperationDefinition):
+                definition_result.diagnostics.extend(
+                    self._resolve_encoding_operation(definition)
+                )
+        for chosen in self._associations.chosen_encoding_operations():
+            logical_operation = chosen.logical_operation
+            self._definition_results[logical_operation.typed_name].diagnostics.extend(
+                associated_encoding_operation_checks.check(
+                    logical_operation,
+                    self._definition_results,
+                    [chosen.encoding_operation_association],
+                )
+            )
+
+    def _resolve_encoding_operation(
         self, definition: ast.EncodingOperationDefinition
     ) -> list[diagnostics.Diagnostic]:
         """Validate an Encoding Operation, add it to the concrete program, and return the diagnostics about it."""

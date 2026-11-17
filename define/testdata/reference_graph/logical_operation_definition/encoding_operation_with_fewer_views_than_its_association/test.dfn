@@ -1,4 +1,4 @@
-# An associated Encoding Operation must have the Interface Views that its association lists. The project's association of /combine/integer with /combine lists view<b>, which /combine/integer does not have.
+# A chosen Encoding Operation must have the Interface Views that its association lists. The action's execution of /test chooses the project's association of /combine/integer with /combine, which lists view<b>, which /combine/integer does not have.
 define the operation<my.domain.com:my_lib:/test> {
     define the view<first> {
         it is read.
@@ -24,6 +24,34 @@ define the operation<my.domain.com:my_lib:/test> {
             with view<a> looking at view<first>.
             with view<b> looking at view<second>.
             with view<result> looking at view<combined>.
+        }
+    }
+}
+
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</combined>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        define the position<second> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<first>.
+        set the value of position<first> from literal<standard:/number>"1".
+        create a particle in position<second>.
+        set the value of position<second> from literal<standard:/number>"1".
+        create a particle in position</combined>.
+        execute the operation</test> {
+            with view<first> looking at position<first>.
+            with view<second> looking at position<second>.
+            with view<combined> looking at position</combined>.
         }
     }
 }

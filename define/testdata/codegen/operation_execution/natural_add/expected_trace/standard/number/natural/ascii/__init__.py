@@ -3,7 +3,3 @@
 
 def encoding_add(view_a: int, view_b: int) -> int:
     return view_a + view_b
-
-
-def encoding_add_integer(view_a: int, view_b: int) -> int:
-    return view_a + view_b

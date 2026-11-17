@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(tmp_path)
-    result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    result = program_validator.validate_program(PurePosixPath("test.dfn")).result
     assert result.file_results == []
     assert result.all_diagnostics == [
         diagnostics.NotRunFromProjectRootDiagnostic(
@@ -48,7 +48,7 @@ def test_invalid_project_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     )
     monkeypatch.chdir(tmp_path)
 
-    result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    result = program_validator.validate_program(PurePosixPath("test.dfn")).result
     assert result.file_results == []
     assert result.all_diagnostics == [
         diagnostics.ConfigViolationDiagnostic(
@@ -81,7 +81,7 @@ def test_project_config_with_layout_error_is_still_used(
     )
     monkeypatch.chdir(tmp_path)
 
-    result = program_validator.validate_program(PurePosixPath("test.dfn"))
+    result = program_validator.validate_program(PurePosixPath("test.dfn")).result
     blank_line, duplicate_definition = result.all_diagnostics
     assert type(blank_line) is errors.SyntaxDiagnostic
     assert blank_line.kind == error_types.SyntaxDiagnosticKind.BLANK_LINE

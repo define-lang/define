@@ -340,7 +340,7 @@ class ValueOperationResolver:
         encodings: list[ast.GlobalTypedNameReference] = []
         for argument in execution.arguments:
             encodings.append(view_encodings[argument.looking_at.source_typed_name])
-        encoding_operation = self._associations.encoding_operation(
+        encoding_operation = self._associations.choose_encoding_operation(
             execution.logical_operation, _full_typed_names(encodings)
         )
         if encoding_operation is None:

@@ -85,19 +85,18 @@ class DefinitionValidationResult(msgspec.Struct):
     # Whether each position looked at by an Operation Argument Statement in an
     # action is valid, in source order.
     looked_at_position_validity: list[bool] = msgspec.field(default_factory=list)
-    # For a value quality, the references to the encodings that its project
-    # associates with it.
-    associated_encodings: list[ast.GlobalTypedNameReference] = msgspec.field(
+    # For a value quality, an edge to each encoding that its project
+    # associates with it. Structural validation does not follow these edges.
+    # Association resolution has the encoding it chooses loaded.
+    associated_encodings: list[reference_graph.ReferenceEdge] = msgspec.field(
         default_factory=list
     )
     # For a logical operation, each Encoding Operation that its project
-    # associates with it.
+    # associates with it. Structural validation does not follow their edges.
+    # Association resolution has the Encoding Operations it chooses loaded.
     encoding_operation_associations: list[EncodingOperationAssociation] = msgspec.field(
         default_factory=list
     )
-    # The full typed names of the logical operations that the definition
-    # executes.
-    executed_logical_operations: list[str] = msgspec.field(default_factory=list)
 
 
 @dataclass

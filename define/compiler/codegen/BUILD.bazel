@@ -76,8 +76,6 @@ py_test(
         ":test_helpers",
         "//define/compiler:conftest",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator:validation_result",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
     ],
 )
 

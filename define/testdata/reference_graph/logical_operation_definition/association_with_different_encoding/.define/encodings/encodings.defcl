@@ -1,6 +1,10 @@
 encodings: {
   value_encodings: [
     {
+      value: "/count"
+      encoding: "standard:/number/natural/ascii"
+    },
+    {
       value: "/number"
       encoding: "standard:/number/integer/ascii"
     }

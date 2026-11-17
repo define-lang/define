@@ -2471,6 +2471,50 @@ def _association_files(encoding_operations: str) -> dict[str, str]:
     }
 
 
+def _chosen_association_files(encoding_operations: str) -> dict[str, str]:
+    # Only an Encoding Operation that an execution chooses is loaded and
+    # checked against its association.
+    files = _association_files(encoding_operations)
+    files["test.dfn"] += (
+        "\n"
+        "define the potential action<my.domain.com:my_lib:/test> {\n"
+        "    it also assigns the position</combined>.\n"
+        "    it happens when {\n"
+        "        this particle is created.\n"
+        "    } and it does {\n"
+        "        define the position<first> {\n"
+        "            it may only contain particles where {\n"
+        "                it has the value</number>.\n"
+        "            }\n"
+        "        }\n"
+        "        define the position<second> {\n"
+        "            it may only contain particles where {\n"
+        "                it has the value</number>.\n"
+        "            }\n"
+        "        }\n"
+        "        create a particle in position<first>.\n"
+        '        set the value of position<first> from literal<standard:/number>"1".\n'
+        "        create a particle in position<second>.\n"
+        '        set the value of position<second> from literal<standard:/number>"2".\n'
+        "        create a particle in position</combined>.\n"
+        "        execute the operation</test> {\n"
+        "            with view<first> looking at position<first>.\n"
+        "            with view<second> looking at position<second>.\n"
+        "            with view<combined> looking at position</combined>.\n"
+        "        }\n"
+        "    }\n"
+        "}\n"
+    )
+    files["combined.dfn"] = (
+        "define the potential position<my.domain.com:my_lib:/combined> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the value</number>.\n"
+        "    }\n"
+        "}\n"
+    )
+    return files
+
+
 def test_association_view_count_format(validate_project: ValidateProject):
     encoding_operations = (
         "encoding_operations: {\n"
@@ -2604,7 +2648,7 @@ def test_association_encoding_operation_view_count_format(
     )
     result = validate_project(
         {
-            **_association_files(encoding_operations),
+            **_chosen_association_files(encoding_operations),
             "combine/integer.dfn": encoding_operation,
         }
     )
@@ -2680,7 +2724,7 @@ def test_association_encoding_operation_view_name_and_encoding_format(
     )
     result = validate_project(
         {
-            **_association_files(encoding_operations),
+            **_chosen_association_files(encoding_operations),
             "combine/integer.dfn": encoding_operation,
         }
     )

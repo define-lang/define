@@ -10,14 +10,14 @@ from define.compiler.validator.reference_graph import abstract_program
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
-    from define.compiler.validator.reference_graph import reference_graph_validator
+    from define.compiler import conftest
     from define.compiler.validator.reference_graph.destruction import (
         destruction_contract,
     )
 
 
 def action_graph(
-    result: reference_graph_validator.ReferenceGraphValidationResult,
+    result: conftest.ReferenceGraphValidationResult,
 ) -> list[tuple[str, str]]:
     """List triggered actions in definition postorder and statement order.
 
@@ -34,7 +34,7 @@ def action_graph(
 
 
 def _definition_edges(
-    result: reference_graph_validator.ReferenceGraphValidationResult,
+    result: conftest.ReferenceGraphValidationResult,
     definition: ast.ActionDefinition,
 ) -> Iterator[tuple[str, str]]:
     source = definition.typed_name.source_typed_name
@@ -53,7 +53,7 @@ def _definition_edges(
 
 
 def _guaranteed_particle_destructors(
-    result: reference_graph_validator.ReferenceGraphValidationResult,
+    result: conftest.ReferenceGraphValidationResult,
     reference: destruction_contract.RunGuaranteedParticleDestructors,
 ) -> Iterator[str]:
     """Yield each Destructor that a call to an action's method for what it left behind runs."""
@@ -84,7 +84,7 @@ def _destruction_contract_edges(
 
 
 def action_graph_set(
-    result: reference_graph_validator.ReferenceGraphValidationResult,
+    result: conftest.ReferenceGraphValidationResult,
 ) -> set[tuple[str, str]]:
     """Return trigger edges for reference-graph diamonds with nondeterministic order."""
     return set(action_graph(result))

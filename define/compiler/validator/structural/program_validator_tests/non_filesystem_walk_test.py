@@ -427,7 +427,6 @@ def test_standard_reference_loads_its_standard_file_non_filesystem(
         standard_library_file("number/minimum.dfn"),
         standard_library_file("number/multiply.dfn"),
         standard_library_file("number/negate.dfn"),
-        standard_library_file("number/natural/ascii.dfn"),
     ]
 
 

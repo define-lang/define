@@ -42,8 +42,8 @@ def validate_program(
     *,
     max_workers: int | None = None,
     allow_entry_action_interface_positions: bool = False,
-) -> validation_result.ProgramValidationResult:
-    """Validate a program starting from the given file path.
+) -> StructurallyValidatedProgram:
+    """Validate a program starting from the given file path, and return the validation, which can load more of the program.
 
     allow_entry_action_interface_positions exists only for validation tests
     that specifically require an entry action with interface positions. It
@@ -51,7 +51,7 @@ def validate_program(
     """
     source_map = rendering.SourceMap()
     resolver = filesystem_reference_resolver.FilesystemReferenceResolver(source_map)
-    program_validation = _ProgramValidationRun(
+    run = _ProgramValidationRun(
         resolver,
         source_map,
         allow_entry_action_interface_positions=allow_entry_action_interface_positions,
@@ -60,10 +60,9 @@ def validate_program(
     if entry_file is not None:
         with work_pool.WorkPool(max_workers=max_workers) as pool:
             for definition in entry_file.definitions.values():
-                program_validation.request_definition(entry_file, definition, pool)
+                run.request_definition(entry_file, definition, pool)
             pool.run_until_idle()
-
-    return program_validation.build_program_result()
+    return StructurallyValidatedProgram(run, run.build_program_result())
 
 
 def validate_program_non_filesystem(
@@ -71,8 +70,8 @@ def validate_program_non_filesystem(
     *,
     max_workers: int | None = None,
     allow_entry_action_interface_positions: bool = False,
-) -> validation_result.ProgramValidationResult:
-    """Validate a program from source text, loading config only when needed.
+) -> StructurallyValidatedProgram:
+    """Validate a program from source text, loading config only when needed, and return the validation, which can load more of the program.
 
     allow_entry_action_interface_positions exists only for validation tests
     that specifically require an entry action with interface positions. It
@@ -83,19 +82,48 @@ def validate_program_non_filesystem(
     resolver = non_filesystem_reference_resolver.NonFilesystemReferenceResolver(
         source_file, source_map
     )
-    program_validation = _ProgramValidationRun(
+    run = _ProgramValidationRun(
         resolver,
         source_map,
         allow_entry_action_interface_positions=allow_entry_action_interface_positions,
     )
     if source_file.load_failure is not None:
-        return program_validation.build_program_result()
+        return StructurallyValidatedProgram(run, run.build_program_result())
 
     with work_pool.WorkPool(max_workers=max_workers) as pool:
         for definition in source_file.definitions.values():
-            program_validation.request_definition(source_file, definition, pool)
+            run.request_definition(source_file, definition, pool)
         pool.run_until_idle()
-    return program_validation.build_program_result(select_last_constructor=True)
+    return StructurallyValidatedProgram(
+        run, run.build_program_result(select_last_constructor=True)
+    )
+
+
+@typing.final
+class StructurallyValidatedProgram:
+    """A structurally validated program, which can load more of the program."""
+
+    def __init__(
+        self,
+        run: _ProgramValidationRun,
+        result: validation_result.ProgramValidationResult,
+    ):
+        """Initialize with the run that validated the program that the entry file reaches, and its result."""
+        self._run = run
+        self.result = result
+
+    def load_associated(
+        self,
+        edges: Iterable[reference_graph.ReferenceEdge],
+        *,
+        max_workers: int | None = None,
+    ):
+        """Load and validate what the edges of associations reach, and everything that it references, and add it to the program's result.
+
+        Each edge starts at a validated logical operation or value quality.
+        """
+        self._run.load_associated(edges, max_workers=max_workers)
+        self.result.file_results = self._run.file_results()
 
 
 class _ProgramValidationRun:
@@ -103,12 +131,15 @@ class _ProgramValidationRun:
 
     Loads files and validates definitions on a thread pool as references reach
     them, and registers them and the references between them. All shared state
-    is managed on the coordinator thread.
+    is managed on the coordinator thread. After the program that the entry
+    file reaches is validated, it loads what association resolution chooses.
     """
 
     _resolver: reference_resolver.ReferenceResolver
     _source_map: rendering.SourceMap
     _file_validator: file_validator.FileStructuralValidator
+    # The graph of the definitions that the current run validates, which
+    # exists only during a run.
     _reference_graph: reference_graph.ReferenceGraph
     _definition_results: typed_name_dict.TypedNameDict[
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
@@ -116,15 +147,10 @@ class _ProgramValidationRun:
     ]
     # The full typed names of definitions submitted for validation.
     _requested_definition_names: set[str]
-    # The full typed names of the logical operations that a validated
-    # definition executes.
-    _executed_logical_operations: set[str]
-    # Each validated logical operation definition, with its file, by full typed
-    # name.
-    _logical_operations: dict[
-        str,
-        tuple[file_validator.LoadedFile, validation_result.DefinitionValidationResult],
-    ]
+    # The file of each validated logical operation and value quality, by full
+    # typed name, because association resolution has the edges of their
+    # associations followed.
+    _associating_definition_files: dict[str, file_validator.LoadedFile]
     _allow_entry_action_interface_positions: bool
 
     def __init__(
@@ -141,8 +167,7 @@ class _ProgramValidationRun:
         self._reference_graph = reference_graph.ReferenceGraph()
         self._definition_results = typed_name_dict.TypedNameDict()
         self._requested_definition_names = set()
-        self._executed_logical_operations = set()
-        self._logical_operations = {}
+        self._associating_definition_files = {}
         self._allow_entry_action_interface_positions = (
             allow_entry_action_interface_positions
         )
@@ -153,13 +178,7 @@ class _ProgramValidationRun:
         select_last_constructor: bool = False,
     ) -> validation_result.ProgramValidationResult:
         """Validate the entry action and assemble the program result."""
-        file_results: list[validation_result.FileValidationResult] = []
-        for loaded_file in self._resolver.completed_files():
-            file_results.append(
-                loaded_file.build_file_validation_result(
-                    self._validated_definition_results(loaded_file)
-                )
-            )
+        file_results = self.file_results()
         entry_action = None
         entry_file_definitions: list[ast.GlobalDefinition] = []
         # The entry file is the first file to load. There is none if it could
@@ -184,12 +203,6 @@ class _ProgramValidationRun:
         )
         # Later stages need only the compact order, not cycle-detection state.
         del self._reference_graph
-
-        # The completed order replaces these structural-only edges;
-        # retaining both would duplicate per-reference state during later stages.
-        for file_result in file_results:
-            for definition_result in file_result.definition_results:
-                definition_result.reference_edges.clear()
         return validation_result.ProgramValidationResult(
             file_results=file_results,
             entry_action=entry_action,
@@ -198,6 +211,48 @@ class _ProgramValidationRun:
             program_diagnostics=self._resolver.program_diagnostics(),
             source_map=self._source_map,
         )
+
+    def load_associated(
+        self,
+        edges: Iterable[reference_graph.ReferenceEdge],
+        *,
+        max_workers: int | None = None,
+    ):
+        """Load and validate what the edges of associations reach, and everything that it references."""
+        # Only definitions that this run validates are in its graph, to find
+        # cycles among them. The associations' edges start at definitions
+        # that are not, and cannot be part of a cycle, since nothing that an
+        # association reaches references a logical operation or value
+        # quality.
+        self._reference_graph = reference_graph.ReferenceGraph()
+        with work_pool.WorkPool(max_workers=max_workers) as pool:
+            for edge in edges:
+                source = edge.enclosing_definition
+                self._request_reference(
+                    self._associating_definition_files[
+                        source.typed_name.full_typed_name
+                    ],
+                    self._definition_results[source.typed_name],
+                    edge,
+                    pool,
+                )
+            pool.run_until_idle()
+        del self._reference_graph
+
+    def file_results(self) -> list[validation_result.FileValidationResult]:
+        """Return the result of each loaded file, without the reference edges that structural validation follows."""
+        file_results: list[validation_result.FileValidationResult] = []
+        for loaded_file in self._resolver.completed_files():
+            file_result = loaded_file.build_file_validation_result(
+                self._validated_definition_results(loaded_file)
+            )
+            # The completed order replaces these structural-only edges;
+            # retaining both would duplicate per-reference state during later
+            # stages.
+            for definition_result in file_result.definition_results:
+                definition_result.reference_edges.clear()
+            file_results.append(file_result)
+        return file_results
 
     def _validated_definition_results(
         self, loaded_file: file_validator.LoadedFile
@@ -256,37 +311,11 @@ class _ProgramValidationRun:
         self._follow_edges(
             loaded_file, definition_result, definition_result.reference_edges, pool
         )
-        for logical_operation in definition_result.executed_logical_operations:
-            if logical_operation in self._executed_logical_operations:
-                continue
-            self._executed_logical_operations.add(logical_operation)
-            registered = self._logical_operations.get(logical_operation)
-            if registered is not None:
-                self._follow_encoding_operation_edges(*registered, pool)
-        if isinstance(definition_result.definition, ast.LogicalOperationDefinition):
-            name = definition_result.definition.typed_name.full_typed_name
-            self._logical_operations[name] = (loaded_file, definition_result)
-            if name in self._executed_logical_operations:
-                self._follow_encoding_operation_edges(
-                    loaded_file, definition_result, pool
-                )
-
-    def _follow_encoding_operation_edges(
-        self,
-        loaded_file: file_validator.LoadedFile,
-        definition_result: validation_result.DefinitionValidationResult,
-        pool: work_pool.WorkPool,
-    ):
-        """Follow the edges of an executed logical operation to the Encoding Operations that perform it."""
-        self._follow_edges(
-            loaded_file,
-            definition_result,
-            [
-                association.edge
-                for association in definition_result.encoding_operation_associations
-            ],
-            pool,
-        )
+        definition = definition_result.definition
+        if isinstance(definition, ast.LogicalOperationDefinition | ast.ValueDefinition):
+            self._associating_definition_files[
+                definition.typed_name.full_typed_name
+            ] = loaded_file
 
     def _follow_edges(
         self,
@@ -297,36 +326,42 @@ class _ProgramValidationRun:
     ):
         """Add a validated definition's edges to the reference graph, and request the definitions that they reach."""
         for edge in edges:
-            if not self._add_reference_edge(edge, definition_result):
-                continue
-            # A definition can reference only definitions that come before it
-            # in its own file.
-            same_file_definition = loaded_file.earlier_definition(
-                edge.global_name_reference, definition_result.definition
-            )
-            if same_file_definition is not None:
-                self.request_definition(loaded_file, same_file_definition, pool)
-                continue
-            match self._resolver.validate_reference(
-                loaded_file, edge, definition_result
-            ):
-                case reference_resolver.ReachedDefinition() as reached_definition:
-                    self.request_definition(
-                        reached_definition.loaded_file,
-                        reached_definition.definition,
-                        pool,
-                    )
-                case file_validation_context.FileValidationContext() as file_to_load:
-                    pool.submit(
-                        self._file_validator.load_file,
-                        file_to_load,
-                        handle_result=self._process_loaded_file,
-                    )
-                case None:
-                    # Nothing to do for this reference now: it waits for a
-                    # file that is already loading, or it was reported or
-                    # skipped.
-                    pass
+            if self._add_reference_edge(edge, definition_result):
+                self._request_reference(loaded_file, definition_result, edge, pool)
+
+    def _request_reference(
+        self,
+        loaded_file: file_validator.LoadedFile,
+        definition_result: validation_result.DefinitionValidationResult,
+        edge: reference_graph.ReferenceEdge,
+        pool: work_pool.WorkPool,
+    ):
+        """Request the definition that a validated definition's edge reaches, loading its file if needed."""
+        # A definition can reference only definitions that come before it in
+        # its own file.
+        same_file_definition = loaded_file.earlier_definition(
+            edge.global_name_reference, definition_result.definition
+        )
+        if same_file_definition is not None:
+            self.request_definition(loaded_file, same_file_definition, pool)
+            return
+        match self._resolver.validate_reference(loaded_file, edge, definition_result):
+            case reference_resolver.ReachedDefinition() as reached_definition:
+                self.request_definition(
+                    reached_definition.loaded_file,
+                    reached_definition.definition,
+                    pool,
+                )
+            case file_validation_context.FileValidationContext() as file_to_load:
+                pool.submit(
+                    self._file_validator.load_file,
+                    file_to_load,
+                    handle_result=self._process_loaded_file,
+                )
+            case None:
+                # Nothing to do for this reference now: it waits for a file
+                # that is already loading, or it was reported or skipped.
+                pass
 
     def _add_reference_edge(
         self,

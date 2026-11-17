@@ -280,13 +280,11 @@ py_library(
         ":reference_graph_validation_state",
         "//define/compiler:ast",
         "//define/compiler/association_resolution:association_resolver",
-        "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/graphs:reference_graph_executor",
         "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/validator:validation_result",
-        "@pypi//msgspec",
     ],
 )
 
@@ -298,6 +296,7 @@ py_test(
         ":action_contract",
         ":action_definition_validator",
         ":reference_graph_validator",
+        "//define/compiler/association_resolution:association_resolver",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:program_validator",
@@ -312,8 +311,8 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":abstract_program",
-        ":reference_graph_validator",
         "//define/compiler:ast",
+        "//define/compiler:conftest",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
     ],
 )

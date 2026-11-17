@@ -10,22 +10,29 @@ from typing import TYPE_CHECKING, Protocol, cast
 import msgspec
 import pytest
 
+from define.compiler import driver
 from define.compiler.validator import test_helpers
-from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 from define.testdata import path_resolver
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from define.compiler.association_resolution import concrete_program
     from define.compiler.validator import validation_result
+
+
+class ReferenceGraphValidationResult(msgspec.Struct, frozen=True):
+    """What reference graph validation and association resolution produce, beyond the diagnostics they report."""
+
+    concrete_program: concrete_program.ConcreteProgram
 
 
 class FullValidationResult(msgspec.Struct):
     """Result of running both structural and reference graph validation."""
 
     program_result: validation_result.ProgramValidationResult
-    reference_graph_result: reference_graph_validator.ReferenceGraphValidationResult
+    reference_graph_result: ReferenceGraphValidationResult
 
 
 class ValidateProject(Protocol):
@@ -186,7 +193,7 @@ def validate_testdata_structural_non_filesystem(
             source,
             max_workers=max_workers,
             allow_entry_action_interface_positions=allow_entry_action_interface_positions,
-        )
+        ).result
 
     return _run
 
@@ -212,7 +219,7 @@ def validate_testdata_structural(
             PurePosixPath(entry_file),
             max_workers=max_workers,
             allow_entry_action_interface_positions=allow_entry_action_interface_positions,
-        )
+        ).result
 
     return _run
 
@@ -237,41 +244,39 @@ def validate_testdata_non_filesystem_with_reference_graph(
         allow_entry_action_occupied_implied_position_requirements: bool = False,
     ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
-        result = program_validator.validate_program_non_filesystem(
-            source,
-            max_workers=max_workers,
-            allow_entry_action_interface_positions=allow_entry_action_interface_positions,
-        )
-        _run_reference_graph_validation(
-            result,
+        return _run_reference_graph_validation(
+            program_validator.validate_program_non_filesystem(
+                source,
+                max_workers=max_workers,
+                allow_entry_action_interface_positions=allow_entry_action_interface_positions,
+            ),
             max_workers=max_workers,
             allow_entry_action_occupied_implied_position_requirements=(
                 allow_entry_action_occupied_implied_position_requirements
             ),
-        )
-        return result
+        ).program_result
 
     return _run
 
 
 def _run_reference_graph_validation(
-    structural_result: validation_result.ProgramValidationResult,
+    structural_result: program_validator.StructurallyValidatedProgram,
     *,
     max_workers: int | None = None,
     allow_entry_action_occupied_implied_position_requirements: bool = False,
 ) -> FullValidationResult:
-    validator = reference_graph_validator.ReferenceGraphValidator(
-        structural_result.definition_order,
-        structural_result.definition_results,
-        entry_action=structural_result.entry_action,
+    result = driver.validate_and_resolve_program(
+        structural_result,
+        max_workers=max_workers,
         allow_entry_action_occupied_implied_position_requirements=(
             allow_entry_action_occupied_implied_position_requirements
         ),
     )
-    reference_graph_result = validator.validate(max_workers=max_workers)
     return FullValidationResult(
-        program_result=structural_result,
-        reference_graph_result=reference_graph_result,
+        program_result=result.program_validation,
+        reference_graph_result=ReferenceGraphValidationResult(
+            concrete_program=result.concrete_program
+        ),
     )
 
 

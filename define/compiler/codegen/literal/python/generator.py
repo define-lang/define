@@ -8,7 +8,7 @@ import typing
 
 import msgspec
 
-from define.compiler import ast
+from define.compiler import ast, work_pool
 from define.compiler.codegen.literal.python import (
     action_definition,
     composite_value_operation,
@@ -70,11 +70,11 @@ class _SharedModule:
 def _generates_module_part(
     definition: ast.GlobalDefinition,
 ) -> typing.TypeIs[
-    ast.ActionDefinition
-    | ast.EncodingOperationDefinition
-    | ast.PositionDefinition
-    | ast.ValueOperationDefinition
+    ast.ActionDefinition | ast.PositionDefinition | ast.ValueOperationDefinition
 ]:
+    # Encoding Operations are generated from the concrete program's Encoding
+    # Operations, which are not in the definition order.
+    #
     # Literals are already in their values' encodings in generated code, so
     # values, encodings, and Potential Literals need no code of their own.
     # Logical operations are part of the compiler, not of the generated
@@ -89,7 +89,6 @@ def _generates_module_part(
         definition,
         (
             ast.ActionDefinition,
-            ast.EncodingOperationDefinition,
             ast.PositionDefinition,
             ast.ValueOperationDefinition,
         ),
@@ -147,9 +146,10 @@ class _ModulePlan(msgspec.Struct, frozen=True):
         composite_value_operations: Mapping[
             str, Sequence[concrete_program.CompositeValueOperation]
         ],
+        encoding_operations: Mapping[str, concrete_program.ConcreteEncodingOperation],
         converter: naming.NameConverter,
     ) -> _ModulePlan:
-        """Assign definitions to modules, in definition order."""
+        """Assign definitions to modules, in definition order, and then Encoding Operations, keyed by full typed name."""
         definition_indexes: dict[str, int] = {}
         definition_counts: collections.Counter[str] = collections.Counter()
         for index, definition in enumerate(definitions):
@@ -168,6 +168,18 @@ class _ModulePlan(msgspec.Struct, frozen=True):
                 continue
             definition_indexes[full_typed_name] = index
             module_name = _module_name(definition, converter)
+            definition_counts[module_name] += 1
+        # Encoding Operations are loaded in no particular order, so ordering
+        # them by name keeps the generated code the same from run to run.
+        # Their functions come after the module's classes, which only call
+        # them when they run.
+        for index, full_typed_name in enumerate(
+            sorted(encoding_operations), start=len(definitions)
+        ):
+            definition_indexes[full_typed_name] = index
+            module_name = _module_name(
+                encoding_operations[full_typed_name].definition, converter
+            )
             definition_counts[module_name] += 1
         shared_modules: dict[str, _SharedModule] = {}
         for module_name, count in definition_counts.items():
@@ -229,12 +241,26 @@ class _DefinitionGenerator:
         ):
             if package is not None:
                 packages.add(package)
+
+        def add_package(package: str | None, _pool: work_pool.WorkPool):
+            if package is not None:
+                packages.add(package)
+
+        # An Encoding Operation's callers name its function from its typed
+        # name alone, so Encoding Operations are generated in any order.
+        with work_pool.WorkPool(max_workers) as pool:
+            for encoding_operation in self._codegen_input.encoding_operations.values():
+                pool.submit(
+                    self._generate_encoding_operation,
+                    encoding_operation,
+                    handle_result=add_package,
+                )
+            pool.run_until_idle()
         return self._entry_definition, packages
 
     def _generate_definition(
         self,
         definition: ast.ActionDefinition
-        | ast.EncodingOperationDefinition
         | ast.PositionDefinition
         | ast.ValueOperationDefinition,
     ) -> str | None:
@@ -257,23 +283,6 @@ class _DefinitionGenerator:
                 ),
                 needs_runtime_import=True,
             )
-        elif isinstance(definition, ast.EncodingOperationDefinition):
-            encoding_operation = (
-                encoding_operation_definition.generate_encoding_operation(
-                    self._codegen_input.encoding_operations[
-                        definition.typed_name.full_typed_name
-                    ],
-                    self._converter,
-                )
-            )
-            module_name = encoding_operation.module_name
-            part = _ModulePart(
-                definition_index=definition_index,
-                body=renderer.render_operation_function(encoding_operation),
-                imports=encoding_operation.imports,
-                typing_names=[],
-                needs_runtime_import=False,
-            )
         else:
             position = position_definition.PositionDefinitionGenerator(
                 definition,
@@ -293,6 +302,23 @@ class _DefinitionGenerator:
                 needs_runtime_import=True,
             )
         return self._write_part(module_name, part)
+
+    def _generate_encoding_operation(
+        self, encoding_operation: concrete_program.ConcreteEncodingOperation
+    ) -> str | None:
+        function = encoding_operation_definition.generate_encoding_operation(
+            encoding_operation, self._converter
+        )
+        part = _ModulePart(
+            definition_index=self._module_plan.definition_indexes[
+                encoding_operation.definition.typed_name.full_typed_name
+            ],
+            body=renderer.render_operation_function(function),
+            imports=function.imports,
+            typing_names=[],
+            needs_runtime_import=False,
+        )
+        return self._write_part(function.module_name, part)
 
     def _generate_composite_value_operations(
         self, definition: ast.ValueOperationDefinition
@@ -395,6 +421,7 @@ class PythonLiteralCodeGenerator:
         module_plan = _ModulePlan.from_definitions(
             codegen_input.definition_order.definitions,
             codegen_input.composite_value_operations,
+            codegen_input.encoding_operations,
             converter,
         )
         entry_definition, packages = _DefinitionGenerator(

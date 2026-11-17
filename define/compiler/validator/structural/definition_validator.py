@@ -41,11 +41,10 @@ class DefinitionStructuralValidator:
     _valid_typed_names: set[str]
     _particle_statement_validity: list[validation_result.ParticleStatementValidity]
     _looked_at_position_validity: list[bool]
-    _associated_encodings: list[ast.GlobalTypedNameReference]
+    _associated_encodings: list[reference_graph.ReferenceEdge]
     _encoding_operation_associations: list[
         validation_result.EncodingOperationAssociation
     ]
-    _executed_logical_operations: list[str]
     _unknown_fquns: set[str]
     _implied_qualities: typed_name_dict.TypedNameDict[
         ast.GlobalTypedNameReference, ast.QualityImplicationStatement
@@ -75,7 +74,6 @@ class DefinitionStructuralValidator:
         self._looked_at_position_validity = []
         self._associated_encodings = []
         self._encoding_operation_associations = []
-        self._executed_logical_operations = []
         self._unknown_fquns = set()
         self._implied_qualities = typed_name_dict.TypedNameDict()
         self._used_implied_qualities = set()
@@ -132,7 +130,6 @@ class DefinitionStructuralValidator:
             looked_at_position_validity=self._looked_at_position_validity,
             associated_encodings=self._associated_encodings,
             encoding_operation_associations=self._encoding_operation_associations,
-            executed_logical_operations=self._executed_logical_operations,
         )
 
     def _validate_action_definition(
@@ -153,7 +150,7 @@ class DefinitionStructuralValidator:
         self._check_unused_quality_implications()
 
     def _reference_associated_encodings(self, definition: ast.ValueDefinition):
-        """Record and reference each encoding that the project associates with the value quality, so that each loads with it."""
+        """Record an edge to each encoding that the project associates with the value quality, which association resolution follows for the encoding it chooses."""
         root_config = self._context.root_config
         # Source compiled without a project root has no associations.
         if root_config is None:
@@ -161,27 +158,16 @@ class DefinitionStructuralValidator:
         for name in root_config.value_encodings.get(
             definition.typed_name.name_content.path.name, ()
         ):
-            encoding = _associated_reference(
-                definition, name_types.NameType.ENCODING, name
+            edge = self._reference_edge(
+                _associated_reference(definition, name_types.NameType.ENCODING, name)
             )
-            self._associated_encodings.append(encoding)
-            self._process_reference(encoding)
+            if edge is not None:
+                self._associated_encodings.append(edge)
 
     def _validate_associated_encoding_operations(
         self, definition: ast.LogicalOperationDefinition
     ):
-        """Record each Encoding Operation that the project associates with the logical operation, with an edge to it that the program follows only if it executes the logical operation."""
-        # Executing a logical operation executes one of the Encoding Operations
-        # that perform it, so the program loads all of them when it executes
-        # the logical operation.
-        # TODO: Load only the Encoding Operations that the program's executions
-        # of the logical operation choose, instead of every one associated with
-        # it. The associations state each Encoding Operation's encodings, so
-        # choosing one needs no loading. What remains is loading during
-        # reference graph validation, when the encodings of each execution are
-        # known. That replaces the associations' edges and
-        # `executed_logical_operations`, and the program validator's following
-        # of them.
+        """Record each Encoding Operation that the project associates with the logical operation, with an edge to it that association resolution follows if it chooses the Encoding Operation."""
         root_config = self._context.root_config
         # Source compiled without a project root has no associations.
         if root_config is None:
@@ -230,14 +216,11 @@ class DefinitionStructuralValidator:
                     )
                 case ast.LogicalOperationExecutionStatement():
                     has_execution = True
-                    if self._validate_execution(
+                    _ = self._validate_execution(
                         statement.logical_operation,
                         statement.arguments,
                         validate_looked_at,
-                    ):
-                        self._executed_logical_operations.append(
-                            statement.logical_operation.full_typed_name
-                        )
+                    )
                 case ast.ViewSettingStatement():
                     self._validate_view_setting(
                         definition,

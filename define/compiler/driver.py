@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from typing import TextIO
 
 from define.compiler import constants
+from define.compiler.association_resolution import association_resolver
 from define.compiler.codegen import generator
 from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import reference_graph_validator
@@ -66,6 +67,44 @@ class CompilerValidationResult(CompilerResult):
         return self.program_validation.error_strings()
 
 
+def validate_and_resolve_program(
+    program: program_validator.StructurallyValidatedProgram,
+    *,
+    max_workers: int | None = None,
+    allow_entry_action_occupied_implied_position_requirements: bool = False,
+) -> CompilerValidationResult:
+    """Run reference graph validation and association resolution on a structurally validated program, loading what resolution chooses, and produce the compiler result.
+
+    allow_entry_action_occupied_implied_position_requirements exists only for
+    validation tests of behavior that requires such a program.
+    """
+    program_result = program.result
+    resolver = association_resolver.AssociationResolver(
+        program_result.definition_results
+    )
+    # TODO: Make ReferenceGraphValidator return diagnostics instead of
+    # adding them to definitions itself?
+    reference_graph_validator.ReferenceGraphValidator(
+        program_result.definition_order,
+        program_result.definition_results,
+        resolver,
+        entry_action=program_result.entry_action,
+        allow_entry_action_occupied_implied_position_requirements=(
+            allow_entry_action_occupied_implied_position_requirements
+        ),
+    ).validate(max_workers=max_workers)
+    program.load_associated(resolver.chosen_edges(), max_workers=max_workers)
+    # The structural run's state, such as its resolver and loaded paths, would
+    # otherwise be retained until code generation, but nothing loads more of
+    # the program after this.
+    del program
+    resolver.resolve_encoding_operations()
+    return CompilerValidationResult(
+        program_validation=program_result,
+        concrete_program=resolver.concrete_program(program_result.definition_order),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class CompilationResult(CompilerResult):
     """Caller-facing result retained after compilation."""
@@ -99,48 +138,26 @@ class CompilationResult(CompilerResult):
 class Driver:
     """Orchestrates the full Define compilation pipeline."""
 
+    @staticmethod
     def validate_program(
-        self, path: Path, *, max_threads: int | None = None
+        path: Path, *, max_threads: int | None = None
     ) -> CompilerValidationResult:
         """Validate a source file and all the files it references."""
-        program_validation = program_validator.validate_program(
-            path, max_workers=max_threads
-        )
-        return self._complete_validation(
-            program_validation,
-            max_threads=max_threads,
-        )
-
-    def validate_source(
-        self, source: str, *, max_threads: int | None = None
-    ) -> CompilerValidationResult:
-        """Validate source text in non-filesystem mode."""
-        program_validation = program_validator.validate_program_non_filesystem(
-            source, max_workers=max_threads
-        )
-        return self._complete_validation(
-            program_validation,
-            max_threads=max_threads,
+        return validate_and_resolve_program(
+            program_validator.validate_program(path, max_workers=max_threads),
+            max_workers=max_threads,
         )
 
     @staticmethod
-    def _complete_validation(
-        program_result: validation_result.ProgramValidationResult,
-        *,
-        max_threads: int | None = None,
+    def validate_source(
+        source: str, *, max_threads: int | None = None
     ) -> CompilerValidationResult:
-        """Run reference graph validation and association resolution, and produce the compiler result."""
-        # TODO: Make ReferenceGraphValidator return diagnostics instead of
-        # adding them to definitions itself?
-        validator = reference_graph_validator.ReferenceGraphValidator(
-            program_result.definition_order,
-            program_result.definition_results,
-            entry_action=program_result.entry_action,
-        )
-        reference_graph_result = validator.validate(max_workers=max_threads)
-        return CompilerValidationResult(
-            program_validation=program_result,
-            concrete_program=reference_graph_result.concrete_program,
+        """Validate source text in non-filesystem mode."""
+        return validate_and_resolve_program(
+            program_validator.validate_program_non_filesystem(
+                source, max_workers=max_threads
+            ),
+            max_workers=max_threads,
         )
 
     def compile_program(

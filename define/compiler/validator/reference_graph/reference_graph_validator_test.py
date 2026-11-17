@@ -11,6 +11,7 @@ from unittest import mock
 
 import pytest
 
+from define.compiler.association_resolution import association_resolver
 from define.compiler.validator.reference_graph import (
     action_contract,
     action_definition_validator,
@@ -87,9 +88,20 @@ def _structural_result(source: str) -> validation_result.ProgramValidationResult
     # These coordinator tests validate callable actions without a program startup.
     result = program_validator.validate_program_non_filesystem(
         source, max_workers=1, allow_entry_action_interface_positions=True
-    )
+    ).result
     assert_no_errors(result)
     return result
+
+
+def _reference_graph_validator(
+    structural_result: validation_result.ProgramValidationResult,
+) -> reference_graph_validator.ReferenceGraphValidator:
+    return reference_graph_validator.ReferenceGraphValidator(
+        structural_result.definition_order,
+        structural_result.definition_results,
+        association_resolver.AssociationResolver(structural_result.definition_results),
+        entry_action=structural_result.entry_action,
+    )
 
 
 def test_independent_actions_validate_in_parallel():
@@ -111,14 +123,19 @@ def test_independent_actions_validate_in_parallel():
         autospec=True,
         side_effect=synchronized_analyze,
     ):
-        result = reference_graph_validator.ReferenceGraphValidator(
+        resolver = association_resolver.AssociationResolver(
+            structural_result.definition_results
+        )
+        reference_graph_validator.ReferenceGraphValidator(
             structural_result.definition_order,
             structural_result.definition_results,
+            resolver,
             entry_action=structural_result.entry_action,
         ).validate(max_workers=2)
 
     assert_no_errors(structural_result)
-    assert len(result.concrete_program.actions) == 2
+    concrete_program = resolver.concrete_program(structural_result.definition_order)
+    assert len(concrete_program.actions) == 2
 
 
 def test_referenced_action_finishes_before_referencing_action_starts():
@@ -145,11 +162,7 @@ def test_referenced_action_finishes_before_referencing_action_starts():
         autospec=True,
         side_effect=record_order,
     ):
-        reference_graph_validator.ReferenceGraphValidator(
-            structural_result.definition_order,
-            structural_result.definition_results,
-            entry_action=structural_result.entry_action,
-        ).validate(max_workers=2)
+        _reference_graph_validator(structural_result).validate(max_workers=2)
 
     assert completed_actions == {_CALLEE_NAME, _CALLER_NAME}
 
@@ -178,11 +191,7 @@ def test_shared_referenced_definition_is_validated_once():
         autospec=True,
         side_effect=count_validation,
     ):
-        reference_graph_validator.ReferenceGraphValidator(
-            structural_result.definition_order,
-            structural_result.definition_results,
-            entry_action=structural_result.entry_action,
-        ).validate(max_workers=3)
+        _reference_graph_validator(structural_result).validate(max_workers=3)
 
     assert validation_count_by_action == {
         _CALLEE_NAME: 1,
@@ -236,11 +245,7 @@ def test_callers_share_the_completed_callee_contract():
         autospec=True,
         side_effect=collect_contract,
     ):
-        reference_graph_validator.ReferenceGraphValidator(
-            structural_result.definition_order,
-            structural_result.definition_results,
-            entry_action=structural_result.entry_action,
-        ).validate(max_workers=1)
+        _reference_graph_validator(structural_result).validate(max_workers=1)
 
     assert_no_errors(structural_result)
     (callee_mark,) = [
@@ -294,11 +299,7 @@ def test_reference_failure_prevents_referencing_action_validation():
         ),
         pytest.raises(RuntimeError, match="/callee> validation failed"),
     ):
-        reference_graph_validator.ReferenceGraphValidator(
-            structural_result.definition_order,
-            structural_result.definition_results,
-            entry_action=structural_result.entry_action,
-        ).validate(max_workers=1)
+        _reference_graph_validator(structural_result).validate(max_workers=1)
 
     # One worker validates /callee first, and its failure stops the rest.
     assert analyzed_actions == {_CALLEE_NAME}

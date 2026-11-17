@@ -1,4 +1,4 @@
-# An Encoding Operation associated with a logical operation must have views with the same directions. The project associates /number/integer/ascii/negate, whose view<a> is read, with /negate.
+# An Encoding Operation that an execution chooses must have views with the same directions as its logical operation's. The action's execution of /test chooses /number/integer/ascii/negate, whose view<a> is read, for /negate, whose view<a> is written.
 define the operation<my.domain.com:my_lib:/test> {
     define the view<first> {
         it is written.
@@ -17,6 +17,21 @@ define the operation<my.domain.com:my_lib:/test> {
         execute the logical_operation</negate> {
             with view<a> looking at view<first>.
             with view<result> looking at view<second>.
+        }
+    }
+}
+
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</first>.
+    it also assigns the position</second>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</first>.
+        create a particle in position</second>.
+        execute the operation</test> {
+            with view<first> looking at position</first>.
+            with view<second> looking at position</second>.
         }
     }
 }

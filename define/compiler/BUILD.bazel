@@ -61,9 +61,10 @@ py_library(
     srcs = ["conftest.py"],
     visibility = [":__subpackages__"],
     deps = [
+        ":driver",
+        "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
         "//define/testdata:path_resolver",
         "@pypi//msgspec",
@@ -86,6 +87,7 @@ py_library(
     deps = [
         ":ast",
         ":constants",
+        "//define/compiler/association_resolution:association_resolver",
         "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/codegen:generator",
         "//define/compiler/errors:diagnostics",
@@ -135,7 +137,6 @@ py_test(
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",

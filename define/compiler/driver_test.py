@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path, PureWindowsPath
-from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
@@ -16,9 +15,6 @@ from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
-
-if TYPE_CHECKING:
-    from define.compiler.validator import validation_result
 
 
 def _setup_project(tmp_path: Path, universe_name: str):
@@ -241,16 +237,16 @@ class TestSourceValidation:
             source: str,
             *,
             max_workers: int | None = None,
-        ) -> validation_result.ProgramValidationResult:
+        ) -> program_validator.StructurallyValidatedProgram:
             assert max_workers == 3
             return structural_validate(source, max_workers=max_workers)
 
         def validate_reference_graph(
             validator: reference_graph_validator.ReferenceGraphValidator,
             max_workers: int | None = None,
-        ) -> reference_graph_validator.ReferenceGraphValidationResult:
+        ):
             assert max_workers == 3
-            return reference_graph_validate(
+            reference_graph_validate(
                 validator,
                 max_workers=max_workers,
             )

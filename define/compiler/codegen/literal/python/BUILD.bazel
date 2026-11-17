@@ -93,6 +93,7 @@ py_library(
         ":renderer",
         ":value_types",
         "//define/compiler:ast",
+        "//define/compiler:work_pool",
         "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/graphs:reference_graph_executor",
         "@pypi//msgspec",

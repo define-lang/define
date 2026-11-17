@@ -7,10 +7,6 @@ def encoding_absolute_value(view_a: int) -> int:
     return builtins.abs(view_a)
 
 
-def encoding_add(view_a: int, view_b: int) -> int:
-    return view_a + view_b
-
-
 def encoding_minimum(view_a: int, view_b: int) -> int:
     return builtins.min(view_a, view_b)
 
