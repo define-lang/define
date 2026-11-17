@@ -27,15 +27,15 @@ def test_occupied_implied_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_occupied_implied_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -80,14 +80,14 @@ def test_occupied_implied_requirement_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_destructor_requiring_empty_implied_position_is_reported(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
@@ -96,14 +96,14 @@ def test_destructor_requiring_empty_implied_position_is_reported(
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "destructor_empty.dfn"
     assert all_diags[0].position_name == "position</marker>"
-    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR_EMPTY)]
+    assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR_EMPTY)]
 
 
 def test_destructor_in_constructor_checks_implied_requirement_locally(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -148,7 +148,7 @@ def test_destructor_in_constructor_checks_implied_requirement_locally(
             "file_path": "destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_P, _DESTRUCTOR),
         (_TEST, _P),
     ]

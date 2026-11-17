@@ -32,7 +32,7 @@ def test_shared_position_on_callee_does_not_satisfy_same_position_on_caller(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -67,8 +67,8 @@ def test_occupied_guarantee_propagates_through_transitive_implication(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -80,8 +80,8 @@ def test_empty_guarantee_propagates_through_transitive_implication(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIER),
@@ -92,7 +92,7 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
@@ -109,7 +109,7 @@ def test_occupied_guarantee_blocks_create_through_transitive_implication(
     assert all_diags[0].populated_at.end_line == 7
     assert all_diags[0].populated_at.end_column == 45
     assert all_diags[0].populated_at.file_path == "implied_action.dfn"
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -121,7 +121,7 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 15
@@ -140,7 +140,7 @@ def test_empty_guarantee_blocks_move_through_transitive_implication(
     assert all_diags[0].inferred_at.end_line == 8
     assert all_diags[0].inferred_at.end_column == 44
     assert all_diags[0].inferred_at.file_path == "implied_action.dfn"
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -152,8 +152,8 @@ def test_occupied_implied_position_guarantee_propagates_through_transitive_impli
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -165,8 +165,8 @@ def test_empty_implied_position_guarantee_propagates_through_transitive_implicat
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -178,7 +178,7 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 14
@@ -192,7 +192,7 @@ def test_occupied_implied_position_guarantee_blocks_create_through_transitive_im
     assert all_diags[0].populated_at.end_line == 7
     assert all_diags[0].populated_at.end_column == 51
     assert all_diags[0].populated_at.file_path == "implied_action.dfn"
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -204,7 +204,7 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 16
@@ -215,7 +215,7 @@ def test_empty_implied_position_guarantee_blocks_move_through_transitive_implica
     assert all_diags[0].position_name == "position<box>::position</implied_pos>"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),
@@ -227,7 +227,7 @@ def test_occupied_implied_position_guarantee_propagates_through_directly_implied
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 9
@@ -241,7 +241,7 @@ def test_occupied_implied_position_guarantee_propagates_through_directly_implied
     assert all_diags[0].populated_at.end_line == 7
     assert all_diags[0].populated_at.end_column == 51
     assert all_diags[0].populated_at.file_path == "implied_action.dfn"
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (
             "action<my.domain.com:my_lib:/middle>",
             "action<my.domain.com:my_lib:/implied_action>",
@@ -254,7 +254,7 @@ def test_empty_implied_position_guarantee_propagates_through_directly_implied_ac
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 11
@@ -265,7 +265,7 @@ def test_empty_implied_position_guarantee_propagates_through_directly_implied_ac
     assert all_diags[0].position_name == "position</implied_pos>"
     assert all_diags[0].is_action_interface_position is False
     assert all_diags[0].inferred_at is None
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (
             "action<my.domain.com:my_lib:/middle>",
             "action<my.domain.com:my_lib:/implied_action>",
@@ -278,7 +278,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_with_caller_create
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 12
@@ -294,7 +294,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_with_caller_create
     assert all_diags[0].populated_at.end_line == 6
     assert all_diags[0].populated_at.end_column == 45
     assert all_diags[0].populated_at.file_path == "filler.dfn"
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_IMPLIER, _FILLER),
         (_TEST, _IMPLIER),
     ]
@@ -304,7 +304,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_through_deeper_cha
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 12
@@ -321,7 +321,7 @@ def test_constructor_transitively_implied_occupancy_conflicts_through_deeper_cha
     assert all_diags[0].populated_at.end_line == 6
     assert all_diags[0].populated_at.end_column == 45
     assert all_diags[0].populated_at.file_path == "filler.dfn"
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MIDDLE, _FILLER),
         (_IMPLIER, _MIDDLE),
         (_TEST, _IMPLIER),
@@ -332,7 +332,7 @@ def test_inner_action_guarantee_through_implied_action_chain_attaches_to_full_ca
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 21
@@ -355,4 +355,4 @@ def test_sibling_action_guarantee_and_requirement_share_implied_position_key(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)

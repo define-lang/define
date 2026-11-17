@@ -54,10 +54,10 @@ def test_invalid_fqun_format_format(validate_project: ValidateProject):
             )
         }
     )
-    [load_failure] = result.program_result.all_diagnostics
+    [load_failure] = result.program_validation.all_diagnostics
     assert isinstance(load_failure, syntax_errors.GlobalNameInvalidFqunFormat)
     assert (
-        load_failure.format(result.program_result.source_map)
+        load_failure.format(result.program_validation.source_map)
         == textwrap.dedent("""\
         File "test.dfn", line 3, column 29
             it has the position<mv:too:many:colons:bad:/y>.
@@ -72,10 +72,10 @@ def test_path_mismatch_format(validate_project: ValidateProject):
         {"foo/bar.dfn": source},
         entry_file="foo/bar.dfn",
     )
-    assert len(result.program_result.file_results) == 1
-    diags = result.program_result.file_results[0].diagnostics
+    assert len(result.program_validation.file_results) == 1
+    diags = result.program_validation.file_results[0].diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(result.program_result.source_map)
+    formatted = diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "foo/bar.dfn", line 1, column 52
             define the potential position<my.domain.com:my_lib:/wrong/path>.
@@ -102,9 +102,9 @@ def test_circular_reference_format(validate_project: ValidateProject):
             ),
         }
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "other.dfn", line 3, column 20
             it has the position</test>.
@@ -128,9 +128,9 @@ def test_incorrect_indentation_format(validate_project: ValidateProject):
             "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
         }
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 3, column 1
                   it has the position</child>.
@@ -162,13 +162,13 @@ def test_referenced_definition_not_found_format(validate_project: ValidateProjec
             ),
         },
     )
-    assert len(result.program_result.file_results) == 2
-    test_result = result.program_result.file_results[0]
+    assert len(result.program_validation.file_results) == 2
+    test_result = result.program_validation.file_results[0]
     assert test_result.file_path == define_path.DefinePath("test.dfn")
     diags = test_result.diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
-    formatted = diags[0].format(result.program_result.source_map)
+    formatted = diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -188,10 +188,10 @@ def test_referenced_file_not_found_format(validate_project: ValidateProject):
         "}\n"
     )
     result = validate_project({"test.dfn": source})
-    diags = result.program_result.all_diagnostics
+    diags = result.program_validation.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
-    formatted = diags[0].format(result.program_result.source_map)
+    formatted = diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 3, column 29
             it has the position</missing>.
@@ -218,10 +218,10 @@ def test_path_inside_other_universe_format(validate_project: ValidateProject):
         local_deps={child_universe: "lib"},
         sub_roots={"lib": child_universe},
     )
-    diags = result.program_result.all_diagnostics
+    diags = result.program_validation.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.PathInsideOtherUniverseDiagnostic)
-    formatted = diags[0].format(result.program_result.source_map)
+    formatted = diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -241,10 +241,10 @@ def test_external_universe_not_configured_format(validate_project: ValidateProje
         "}\n"
     )
     result = validate_project({"test.dfn": source})
-    diags = result.program_result.all_diagnostics
+    diags = result.program_validation.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
-    formatted = diags[0].format(result.program_result.source_map)
+    formatted = diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -563,13 +563,13 @@ def test_move_into_defining_position_format(validate_project: ValidateProject):
             "end_pos.dfn": "define the potential position<my.domain.com:my_lib:/end_pos>.\n",
         },
     )
-    assert len(result.program_result.file_results) == 3
-    test_result = result.program_result.file_results[0]
+    assert len(result.program_validation.file_results) == 3
+    test_result = result.program_validation.file_results[0]
     assert test_result.file_path == define_path.DefinePath("test.dfn")
     diags = test_result.diagnostics
     assert len(diags) == 2
     assert isinstance(diags[1], diagnostics.MoveIntoDefiningPositionDiagnostic)
-    formatted = diags[1].format(result.program_result.source_map)
+    formatted = diags[1].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -605,7 +605,7 @@ def test_sub_root_fqun_mismatch_error_message(
         local_deps={child_universe: "lib"},
         sub_roots={"lib": wrong_child_universe},
     )
-    program_result = result.program_result
+    program_result = result.program_validation
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.SubRootFqunMismatchDiagnostic)
     assert (
@@ -767,7 +767,7 @@ def test_not_project_root_error_message_for_subroot(
         local_deps={child_universe: "lib"},
         max_workers=1,
     )
-    program_result = result.program_result
+    program_result = result.program_validation
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.SubRootNotProjectRootDiagnostic)
     assert (
@@ -794,7 +794,7 @@ def test_sub_root_path_already_declared_error_message(
             "mv:define-lang.org:second_child": "lib",
         },
     )
-    program_result = result.program_result
+    program_result = result.program_validation
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.SubRootPathAlreadyDeclaredDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
@@ -816,7 +816,7 @@ def test_local_dependency_on_own_universe_error_message(
         universe_name=parent_universe,
         local_deps={parent_universe: "lib"},
     )
-    program_result = result.program_result
+    program_result = result.program_validation
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.LocalDependencyOnOwnUniverseDiagnostic)
     assert diagnostic.format(program_result.source_map) == (
@@ -880,12 +880,12 @@ def test_source_file_not_found_error_message(
     validate_project: ValidateProject,
 ):
     result = validate_project({}, entry_file="nonexistent.dfn")
-    assert len(result.program_result.file_results) == 1
-    [load_failure] = result.program_result.all_diagnostics
+    assert len(result.program_validation.file_results) == 1
+    [load_failure] = result.program_validation.all_diagnostics
     assert isinstance(load_failure, syntax_errors.SourceFileNotFound)
     assert load_failure.file_path == "nonexistent.dfn"
     assert (
-        load_failure.format(result.program_result.source_map)
+        load_failure.format(result.program_validation.source_map)
         == "Source file not found: nonexistent.dfn"
     )
 

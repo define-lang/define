@@ -10,26 +10,21 @@ actual error strings.
 
 from __future__ import annotations
 
-import abc
 import enum
 import sys
 import typing
 from dataclasses import dataclass
 from typing import TextIO
 
-from define.compiler import constants
-from define.compiler.association_resolution import association_resolver
+from define.compiler import constants, validation_pipeline
 from define.compiler.codegen import generator
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
 
     from define.compiler import ast
-    from define.compiler.association_resolution import concrete_program
-    from define.compiler.validator import validation_result
 
 
 class DriverMode(enum.StrEnum):
@@ -46,67 +41,8 @@ class ExitCode(enum.IntEnum):
     ERROR = 1
 
 
-class CompilerResult(abc.ABC):
-    """A compiler result that can report errors."""
-
-    @abc.abstractmethod
-    def error_strings(self) -> list[str]:
-        """Format errors for the command-line caller."""
-
-
-@dataclass
-class CompilerValidationResult(CompilerResult):
-    """Result of completing every compiler validation stage."""
-
-    program_validation: validation_result.ProgramValidationResult
-    concrete_program: concrete_program.ConcreteProgram
-
-    @typing.override
-    def error_strings(self) -> list[str]:
-        """Format errors from the detailed program validation data."""
-        return self.program_validation.error_strings()
-
-
-def validate_and_resolve_program(
-    program: program_validator.StructurallyValidatedProgram,
-    *,
-    max_workers: int | None = None,
-    allow_entry_action_occupied_implied_position_requirements: bool = False,
-) -> CompilerValidationResult:
-    """Run reference graph validation and association resolution on a structurally validated program, loading what resolution chooses, and produce the compiler result.
-
-    allow_entry_action_occupied_implied_position_requirements exists only for
-    validation tests of behavior that requires such a program.
-    """
-    program_result = program.result
-    resolver = association_resolver.AssociationResolver(
-        program_result.definition_results
-    )
-    # TODO: Make ReferenceGraphValidator return diagnostics instead of
-    # adding them to definitions itself?
-    reference_graph_validator.ReferenceGraphValidator(
-        program_result.definition_order,
-        program_result.definition_results,
-        resolver,
-        entry_action=program_result.entry_action,
-        allow_entry_action_occupied_implied_position_requirements=(
-            allow_entry_action_occupied_implied_position_requirements
-        ),
-    ).validate(max_workers=max_workers)
-    program.load_associated(resolver.chosen_edges(), max_workers=max_workers)
-    # The structural run's state, such as its resolver and loaded paths, would
-    # otherwise be retained until code generation, but nothing loads more of
-    # the program after this.
-    del program
-    resolver.resolve_encoding_operations()
-    return CompilerValidationResult(
-        program_validation=program_result,
-        concrete_program=resolver.concrete_program(program_result.definition_order),
-    )
-
-
 @dataclass(frozen=True, slots=True)
-class CompilationResult(CompilerResult):
+class CompilationResult:
     """Caller-facing result retained after compilation."""
 
     all_diagnostics: list[diagnostics.FormattableDiagnostic]
@@ -115,7 +51,7 @@ class CompilationResult(CompilerResult):
 
     @classmethod
     def from_validation_result(
-        cls, validation: CompilerValidationResult
+        cls, validation: validation_pipeline.CompilerValidationResult
     ) -> typing.Self:
         """Create the compact result retained after compilation."""
         program_validation = validation.program_validation
@@ -129,7 +65,6 @@ class CompilationResult(CompilerResult):
         """Whether validation produced any diagnostics."""
         return bool(self.all_diagnostics)
 
-    @typing.override
     def error_strings(self) -> list[str]:
         """Return errors formatted before detailed validation data was released."""
         return self._error_strings
@@ -141,9 +76,9 @@ class Driver:
     @staticmethod
     def validate_program(
         path: Path, *, max_threads: int | None = None
-    ) -> CompilerValidationResult:
+    ) -> validation_pipeline.CompilerValidationResult:
         """Validate a source file and all the files it references."""
-        return validate_and_resolve_program(
+        return validation_pipeline.validate_and_resolve_program(
             program_validator.validate_program(path, max_workers=max_threads),
             max_workers=max_threads,
         )
@@ -151,9 +86,9 @@ class Driver:
     @staticmethod
     def validate_source(
         source: str, *, max_threads: int | None = None
-    ) -> CompilerValidationResult:
+    ) -> validation_pipeline.CompilerValidationResult:
         """Validate source text in non-filesystem mode."""
-        return validate_and_resolve_program(
+        return validation_pipeline.validate_and_resolve_program(
             program_validator.validate_program_non_filesystem(
                 source, max_workers=max_threads
             ),
@@ -194,7 +129,7 @@ class Driver:
 
     @staticmethod
     def _generate_code(
-        compiler_validation: CompilerValidationResult,
+        compiler_validation: validation_pipeline.CompilerValidationResult,
         output_dir: Path,
         *,
         trace_operations: bool = False,

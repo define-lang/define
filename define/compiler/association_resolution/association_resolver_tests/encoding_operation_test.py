@@ -204,7 +204,7 @@ def test_literal_in_every_view_encoding(
 def test_missing_potential_literal(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.all_diagnostics) == 1
     diagnostic = result.all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)

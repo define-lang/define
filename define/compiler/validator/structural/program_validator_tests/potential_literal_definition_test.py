@@ -20,7 +20,7 @@ def test_valid_literal(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     full_result = validate_testdata_project_with_reference_graph()
-    result = full_result.program_result
+    result = full_result.program_validation
     assert_no_errors(result)
     assert len(result.file_results) == 2
     assert len(result.definition_results) == 2
@@ -186,7 +186,7 @@ def test_same_file_encoding_must_precede_reference(
 def test_configured_external_encoding(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
     assert len(result.file_results) == 2
     assert len(result.definition_results) == 2

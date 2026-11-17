@@ -19,7 +19,7 @@ def test_move_interface_to_implied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(
         all_diags[0], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
@@ -54,7 +54,7 @@ def test_move_implied_to_interface(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
@@ -81,7 +81,7 @@ def test_move_interface_through_implied_back_to_interface(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 14
@@ -123,7 +123,7 @@ def test_interface_to_implied_propagates_across_fqun(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(
         all_diags[0], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
@@ -161,7 +161,7 @@ def test_action_creates_in_both_interface_and_implied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
@@ -193,7 +193,7 @@ def test_swap_interface_and_implied_via_local(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 14

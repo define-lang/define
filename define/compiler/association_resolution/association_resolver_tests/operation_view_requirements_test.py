@@ -34,7 +34,7 @@ def test_invalid_literal_content(
 def test_literal_value_has_no_encoding(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.ValueHasNoEncodingDiagnostic(
             location=rendering.SourceLocation(
@@ -48,7 +48,7 @@ def test_literal_value_has_no_encoding(
 def test_interface_view_value_has_no_encoding(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.ValueHasNoEncodingDiagnostic(
             location=rendering.SourceLocation(

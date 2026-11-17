@@ -39,7 +39,7 @@ def test_duplicate_caller_view(
 def test_value_mismatch(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.OperationArgumentMissingQualitiesDiagnostic(
             location=rendering.SourceLocation(
@@ -106,7 +106,7 @@ def test_position_missing_value_quality(
 def test_position_value_mismatch(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.OperationArgumentMissingQualitiesDiagnostic(
             location=rendering.SourceLocation(

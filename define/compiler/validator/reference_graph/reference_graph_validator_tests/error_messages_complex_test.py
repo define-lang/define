@@ -248,7 +248,7 @@ def test_destruction_contract_traces_every_trigger_hop(
     # (whose incoming position declares it), and d2 by /outer (which moved the
     # particle out of holder::iface). So both destructors must fire
     # (do_destruction -> d1 and do_destruction -> d2).
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_BEFORE_DESTRUCTOR, _DO_DESTRUCTION),
         (_EMPTY_P2, _BEFORE_DESTRUCTOR),
         (_DO_NOTHING, _EMPTY_P2),
@@ -261,7 +261,7 @@ def test_destruction_contract_traces_every_trigger_hop(
         (_TEST, _HOLDER),
         (_TEST, _OUTER),
     ]
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
@@ -273,7 +273,7 @@ def test_destruction_contract_traces_every_trigger_hop(
     # d1 is hidden from every trigger position below outer_implied::incoming, so
     # its contract is validated at outer_implied (the first caller that knows d1).
     # The full chain must trace all four trigger hops down to 'do_destruction'.
-    assert d1_diag.format(result.program_result.source_map) == textwrap.dedent("""\
+    assert d1_diag.format(result.program_validation.source_map) == textwrap.dedent("""\
         File "outer_implied.dfn", line 18, column 52
             move the particle in position<incoming> to action</triggered_by_outer_implied>::position<trigger_pos>.
                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -321,7 +321,7 @@ def test_destruction_contract_traces_every_trigger_hop(
     # that knows it is /outer. d2 must therefore be validated at /outer, with the
     # attachment traced back to the carrier quality assignment and the chain running
     # through every trigger hop down to 'do_destruction'.
-    assert d2_diag.format(result.program_result.source_map) == textwrap.dedent("""\
+    assert d2_diag.format(result.program_validation.source_map) == textwrap.dedent("""\
         File "outer.dfn", line 13, column 30
             create a particle in action</outer_implied>::position<run>.
                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -17,37 +17,49 @@ if TYPE_CHECKING:
 def test_local_positions_and_move(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_move_between_interface_positions(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_move_from_chained(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_move_from_interface(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_move_from_local(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_shared_interface_quality_assignment(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_valid_local_positions(
@@ -61,14 +73,14 @@ def test_move_from_child_to_parents_empty_sibling(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_duplicate_source_definition_does_not_add_missing_quality_diagnostics(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert all_diags[0].location.file_path == "test.dfn"
@@ -110,7 +122,7 @@ def test_undefined_move_destination_is_not_treated_as_defined_position(
 ):
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
-    ).program_result
+    ).program_validation
     diags = result.all_diagnostics
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
@@ -142,7 +154,7 @@ def test_same_fqun_must_use_short_form_in_from(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
@@ -157,7 +169,7 @@ def test_same_fqun_must_use_short_form_in_to(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
@@ -174,7 +186,7 @@ def test_valid_global_to_position(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].location.file_path == "test.dfn"
@@ -211,7 +223,7 @@ def test_move_to_chained_prefix_marks_error(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert all_diags[0].location.file_path == "test.dfn"

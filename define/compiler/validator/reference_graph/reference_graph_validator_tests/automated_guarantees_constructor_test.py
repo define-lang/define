@@ -21,15 +21,15 @@ def test_constructor_implied_position_guarantee_visible_to_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _CONSTRUCT)]
 
 
 def test_constructor_occupied_guarantee_conflicts_with_caller_create(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.column == 30
@@ -39,4 +39,4 @@ def test_constructor_occupied_guarantee_conflicts_with_caller_create(
     assert all_diags[0].position_name == "position<box>::position</color>"
     assert all_diags[0].populated_at.line == 6
     assert all_diags[0].populated_at.file_path == "construct.dfn"
-    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
+    assert action_graph(result.concrete_program) == [(_TEST, _CONSTRUCT)]

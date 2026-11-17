@@ -68,9 +68,9 @@ def test_local_duplicate_particle_format(
         "}\n"
     )
     result = validate_project({"test.dfn": source})
-    diags = result.program_result.file_results[0].diagnostics
+    diags = result.program_validation.file_results[0].diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(result.program_result.source_map)
+    formatted = diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 7, column 30
             create a particle in position<pos>.
@@ -98,9 +98,9 @@ def test_move_to_occupied_position_format(
         "}\n"
     )
     result = validate_project({"test.dfn": source})
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 9, column 52
             move the particle in position<from_pos> to position<to_pos>.
@@ -126,9 +126,9 @@ def test_move_from_empty_position_format(
         "}\n"
     )
     result = validate_project({"test.dfn": source})
-    diags = result.program_result.file_results[0].diagnostics
+    diags = result.program_validation.file_results[0].diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(result.program_result.source_map)
+    formatted = diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -170,12 +170,12 @@ def test_deferred_position_chain_error_format(
             "wrong.dfn": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
         },
     )
-    assert len(result.program_result.file_results) == 3
-    test_result = result.program_result.file_results[0]
+    assert len(result.program_validation.file_results) == 3
+    test_result = result.program_validation.file_results[0]
     assert test_result.file_path == define_path.DefinePath("test.dfn")
     diags = test_result.diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(result.program_result.source_map)
+    formatted = diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -222,12 +222,12 @@ def test_deferred_action_chain_error_format(
             ),
         },
     )
-    assert len(result.program_result.file_results) == 2
-    test_result = result.program_result.file_results[0]
+    assert len(result.program_validation.file_results) == 2
+    test_result = result.program_validation.file_results[0]
     assert test_result.file_path == define_path.DefinePath("test.dfn")
     diags = test_result.diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(result.program_result.source_map)
+    formatted = diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -271,9 +271,9 @@ def test_action_requires_empty_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 12, column 30
             create a particle in position<box>::action</other>::position<trigger_pos>.
@@ -293,7 +293,7 @@ def test_action_requires_empty_position_format(
             File "other.dfn", line 7, column 30
                 create a particle in position<item>.
                                      ^^^^^^^^^^^^^^""")
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_TEST, _OTHER),
     ]
 
@@ -331,9 +331,9 @@ def test_action_requires_occupied_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 30
             create a particle in position<box>::action</other>::position<trigger_pos>.
@@ -458,9 +458,9 @@ def test_propagated_action_requires_empty_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -491,7 +491,7 @@ def test_propagated_action_requires_empty_position_format(
                 create a particle in position<input>::position</item_parent>::position</item>.
                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""")
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MIDDLE, _INNER),
         (_OUTER, _MIDDLE),
         (_TEST, _OUTER),
@@ -568,9 +568,9 @@ def test_requirement_carried_through_two_moves_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     # The box moved through /outer into /middle never had its required child.
     # The position names where /test sees it (through /outer's interface, not
     # the move destinations), and the chain traces both moves down to /middle's
@@ -594,7 +594,7 @@ def test_requirement_carried_through_two_moves_format(
             File "middle.dfn", line 11, column 33
                 destroy the particle in position<input>::position</required>.
                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""")
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_OUTER, _MIDDLE),
         (_TEST, _OUTER),
     ]
@@ -688,9 +688,9 @@ def test_requirement_carried_through_actions_on_locals_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     # action</inner> and action</middle> exist only on body-local positions (gw
     # and mid_holder); the particle with its /marker child is passed down
     # through each action's Interface Position named input. The missing child is
@@ -718,7 +718,7 @@ def test_requirement_carried_through_actions_on_locals_format(
             File "inner.dfn", line 11, column 33
                 destroy the particle in position<input>::position</marker>.
                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""")
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MIDDLE, _INNER),
         (_OUTER, _MIDDLE),
         (_TEST, _OUTER),
@@ -764,10 +764,10 @@ def test_value_setting_type_mismatch_format(
             ),
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    formatted = diagnostic.format(result.program_result.source_map)
+    formatted = diagnostic.format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -823,9 +823,9 @@ def test_literal_cannot_be_converted_format(validate_project: ValidateProject):
             ),
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 42
             with view<number> looking at literal</text>"5".
@@ -882,9 +882,9 @@ def test_literal_cannot_be_converted_to_any_literal_encoding_format(
             ),
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 40
             with view<text> looking at literal<standard:/number>"5".
@@ -934,9 +934,9 @@ def test_move_missing_qualities_error_message(
             ),
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 17, column 52
             move the particle in position<from_pos> to position<to_pos>.
@@ -981,9 +981,9 @@ def test_move_missing_qualities_error_message_cross_universe(
         local_deps={child_fqun: "lib"},
         sub_roots={"lib": child_fqun},
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent(f"""\
         File "test.dfn", line 13, column 52
             move the particle in position<from_pos> to position<to_pos>.
@@ -1038,9 +1038,9 @@ def test_constructor_requires_empty_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 30
             create a particle in position<box>.
@@ -1097,9 +1097,9 @@ def test_constructor_requires_occupied_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 10, column 30
             create a particle in position<box>.
@@ -1160,9 +1160,9 @@ def test_destroy_in_emptied_interface_position_format(
             "test.dfn": test_source,
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 16, column 33
             destroy the particle in position<box>::action</other>::position<item>.
@@ -1210,9 +1210,9 @@ def test_destroy_in_default_empty_interface_position_format(
             "test.dfn": test_source,
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -1264,9 +1264,9 @@ def test_move_from_emptied_interface_position_format(
             "test.dfn": test_source,
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 18, column 30
             move the particle in position<box>::action</other>::position<item> to position<sink2>.
@@ -1315,9 +1315,9 @@ def test_move_from_default_empty_interface_position_format(
             "test.dfn": test_source,
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -1407,9 +1407,9 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
         ),
     }
     result = validate_project(files)
-    all_diagnostics = result.program_result.all_diagnostics
+    all_diagnostics = result.program_validation.all_diagnostics
     assert len(all_diagnostics) == 1
-    formatted = all_diagnostics[0].format(result.program_result.source_map)
+    formatted = all_diagnostics[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 18, column 50
             move the particle in position<source> to position<worker>::action</relay>::position<input>.
@@ -1476,9 +1476,9 @@ def test_destructor_changes_value_after_move_format(validate_project: ValidatePr
         ),
     }
     result = validate_project(files)
-    all_diagnostics = result.program_result.all_diagnostics
+    all_diagnostics = result.program_validation.all_diagnostics
     assert len(all_diagnostics) == 1
-    formatted = all_diagnostics[0].format(result.program_result.source_map)
+    formatted = all_diagnostics[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "cleanup.dfn", line 9, column 26
             set the value of position</value> from literal<standard:/number>"5".
@@ -1561,9 +1561,9 @@ def test_undefined_operation_view_format(
             ),
         }
     )
-    diags = result.program_result.all_diagnostics
+    diags = result.program_validation.all_diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(result.program_result.source_map)
+    formatted = diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 14, column 18
             with view<extra> looking at literal<standard:/number>"4".
@@ -1614,9 +1614,9 @@ def test_operation_argument_missing_qualities_format(
             ),
         }
     )
-    diags = result.program_result.all_diagnostics
+    diags = result.program_validation.all_diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(result.program_result.source_map)
+    formatted = diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 42
             with view<source> looking at view<number>.
@@ -1680,9 +1680,9 @@ def test_operation_argument_position_missing_qualities_format(
             ),
         }
     )
-    diags = result.program_result.all_diagnostics
+    diags = result.program_validation.all_diagnostics
     assert len(diags) == 1
-    formatted = diags[0].format(result.program_result.source_map)
+    formatted = diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 10, column 42
             with view<source> looking at position<number>.
@@ -1743,9 +1743,9 @@ def test_occupied_action_interface_when_action_triggers_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -1863,8 +1863,8 @@ def test_local_view_error_messages(
         },
     )
     formatted = [
-        diagnostic.format(result.program_result.source_map)
-        for diagnostic in result.program_result.all_diagnostics
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
     ]
     assert formatted == [
         textwrap.dedent("""\
@@ -1992,8 +1992,8 @@ def test_interface_view_single_assignment_error_messages(
         },
     )
     formatted = [
-        diagnostic.format(result.program_result.source_map)
-        for diagnostic in result.program_result.all_diagnostics
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
     ]
     assert formatted == [
         textwrap.dedent("""\
@@ -2098,8 +2098,8 @@ def test_view_setting_written_twice_error_messages(
         },
     )
     formatted = [
-        diagnostic.format(result.program_result.source_map)
-        for diagnostic in result.program_result.all_diagnostics
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
     ]
     assert formatted == [
         textwrap.dedent("""\
@@ -2177,8 +2177,8 @@ def test_view_setting_read_from_written_read_write_view_error_messages(
         },
     )
     formatted = [
-        diagnostic.format(result.program_result.source_map)
-        for diagnostic in result.program_result.all_diagnostics
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
     ]
     assert formatted == [
         textwrap.dedent("""\
@@ -2250,8 +2250,8 @@ def test_executed_operation_has_read_write_view_error_messages(
         },
     )
     formatted = [
-        diagnostic.format(result.program_result.source_map)
-        for diagnostic in result.program_result.all_diagnostics
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
     ]
     assert formatted == [
         textwrap.dedent("""\
@@ -2279,9 +2279,9 @@ def test_logical_operation_read_not_supported_format(
             "test.dfn": _NEGATE_TEST_FILE,
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -2309,9 +2309,9 @@ def test_logical_operation_write_not_supported_format(
             "test.dfn": _NEGATE_TEST_FILE,
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -2373,8 +2373,8 @@ def test_view_direction_error_messages(
         },
     )
     formatted = [
-        diagnostic.format(result.program_result.source_map)
-        for diagnostic in result.program_result.all_diagnostics
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
     ]
     assert formatted == [
         textwrap.dedent("""\

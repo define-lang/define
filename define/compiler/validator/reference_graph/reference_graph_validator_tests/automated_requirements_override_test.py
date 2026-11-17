@@ -24,7 +24,7 @@ def test_action_caller_occupied_overrides_inner_empty(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_action_caller_empty_overrides_inner_occupied(
@@ -33,29 +33,29 @@ def test_action_caller_empty_overrides_inner_occupied(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_occupied_implied_position_requirements=True
     )
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_constructor_occupied_overrides_triggered_action_empty(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_constructor_empty_overrides_triggered_action_occupied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_inner_chained_action_occupied_requirement_fulfilled_by_intermediate_action(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         ("action<my.domain.com:my_lib:/outer>", "action<my.domain.com:my_lib:/inner>"),
         ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/outer>"),
     ]
@@ -65,7 +65,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -151,7 +151,7 @@ def test_doubly_nested_both_outer_and_caller_fill(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         ("action<my.domain.com:my_lib:/middle>", "action<my.domain.com:my_lib:/inner>"),
         ("action<my.domain.com:my_lib:/outer>", "action<my.domain.com:my_lib:/middle>"),
         ("action<my.domain.com:my_lib:/test>", "action<my.domain.com:my_lib:/outer>"),

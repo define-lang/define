@@ -33,9 +33,9 @@ def test_invalid_literal_content_format(validate_project: ValidateProject):
             "target.dfn": "define the potential position<my.domain.com:my_lib:/target> {\n    it may only contain particles where {\n        it has the value<standard:/number/natural>.\n    }\n}\n",
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
         formatted
         == textwrap.dedent("""\
@@ -66,9 +66,9 @@ def test_literal_cannot_set_value_format(validate_project: ValidateProject):
             "text_encoding.dfn": "define the encoding<my.domain.com:my_lib:/text_encoding>.\n",
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 7, column 49
             set the value of position</target> from literal</text>"5".
@@ -183,9 +183,9 @@ def test_missing_encoding_operation_format(
             ),
         },
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_result.source_map)
+    formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 21, column 21
             execute the operation</outer_sum> {
@@ -356,8 +356,8 @@ def test_association_view_count_format(validate_project: ValidateProject):
     )
     result = validate_project(_association_files(encoding_operations))
     assert [
-        diagnostic.format(result.program_result.source_map)
-        for diagnostic in result.program_result.all_diagnostics
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
     ] == [
         """\
 File ".define/encodings/encoding_operations.defcl", line 6, column 16
@@ -399,8 +399,8 @@ def test_association_view_name_and_encoding_format(validate_project: ValidatePro
     )
     result = validate_project(_association_files(encoding_operations))
     assert [
-        diagnostic.format(result.program_result.source_map)
-        for diagnostic in result.program_result.all_diagnostics
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
     ] == [
         """\
 File ".define/encodings/encoding_operations.defcl", line 13, column 19
@@ -469,8 +469,8 @@ def test_association_encoding_operation_view_count_format(
         }
     )
     assert [
-        diagnostic.format(result.program_result.source_map)
-        for diagnostic in result.program_result.all_diagnostics
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
     ] == [
         """\
 File ".define/encodings/encoding_operations.defcl", line 6, column 16
@@ -545,8 +545,8 @@ def test_association_encoding_operation_view_name_and_encoding_format(
         }
     )
     assert [
-        diagnostic.format(result.program_result.source_map)
-        for diagnostic in result.program_result.all_diagnostics
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
     ] == [
         """\
 File ".define/encodings/encoding_operations.defcl", line 13, column 19

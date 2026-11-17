@@ -17,21 +17,21 @@ if TYPE_CHECKING:
 def test_valid_logical_operation_execution(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_valid_operation_execution(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_read_before_write(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
             location=rendering.SourceLocation(
@@ -47,7 +47,7 @@ def test_read_before_write(
 def test_written_twice(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.LocalViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(
@@ -66,7 +66,7 @@ def test_written_twice(
 def test_unread(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.UnreadLocalViewDiagnostic(
             location=rendering.SourceLocation(
@@ -80,7 +80,7 @@ def test_unread(
 def test_write_not_supported(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
@@ -96,7 +96,7 @@ def test_write_not_supported(
 def test_value_quality_mismatch(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
@@ -121,7 +121,7 @@ def test_value_quality_mismatch(
 def test_written_by_missing_logical_operation(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
@@ -135,7 +135,7 @@ def test_written_by_missing_logical_operation(
 def test_duplicate_name(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.LocalNameConflictDiagnostic(
             location=rendering.SourceLocation(
@@ -150,7 +150,7 @@ def test_duplicate_name(
 def test_unreferenced(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.UnreferencedLocalViewDiagnostic(
             location=rendering.SourceLocation(
@@ -164,7 +164,7 @@ def test_unreferenced(
 def test_missing_logical_operation_looks_at_undefined_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
@@ -184,7 +184,7 @@ def test_missing_logical_operation_looks_at_undefined_view(
 def test_written_twice_after_unknown_use(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
@@ -209,7 +209,7 @@ def test_written_twice_after_unknown_use(
 def test_passed_to_read_write_view_after_write(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
@@ -224,7 +224,7 @@ def test_passed_to_read_write_view_after_write(
 def test_passed_to_read_write_view_before_write(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(

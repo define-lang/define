@@ -25,15 +25,15 @@ def test_interface_to_local_occupied_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_interface_to_local_occupied_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -81,14 +81,14 @@ def test_interface_to_local_occupied_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_implied_to_local_occupied_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -136,14 +136,14 @@ def test_implied_to_local_occupied_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_interface_to_implied_occupied_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -191,7 +191,7 @@ def test_interface_to_implied_occupied_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
     # Moving the particle into the Destructor's implied position, the
     # point of this test, also requires that position to be empty.
     assert isinstance(
@@ -207,7 +207,7 @@ def test_implied_to_implied_occupied_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -255,7 +255,7 @@ def test_implied_to_implied_occupied_violated(
             "file_path": "destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
+    assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
     # Moving the particle into the Destructor's implied position, the
     # point of this test, also requires that position to be empty.
     assert isinstance(

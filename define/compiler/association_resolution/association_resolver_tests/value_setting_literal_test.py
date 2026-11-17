@@ -18,21 +18,21 @@ if TYPE_CHECKING:
 def test_built_in_literal(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_defined_literal_with_built_in_encoding(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_empty_literal_content(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
@@ -49,7 +49,7 @@ def test_empty_literal_content(
 def test_invalid_literal_content(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
@@ -66,7 +66,7 @@ def test_invalid_literal_content(
 def test_no_literal_parser(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.LiteralCannotSetValueDiagnostic(
             location=rendering.SourceLocation(
@@ -92,7 +92,7 @@ def test_only_matching_encodings_suggested(
     monkeypatch.setitem(
         literal_parsers.LITERAL_PARSERS, (text_encoding, text_encoding), str
     )
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.LiteralCannotSetValueDiagnostic(
             location=rendering.SourceLocation(
@@ -113,7 +113,7 @@ def test_only_matching_encodings_suggested(
 def test_value_has_no_encoding(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.ValueHasNoEncodingDiagnostic(
             location=rendering.SourceLocation(
@@ -127,14 +127,14 @@ def test_value_has_no_encoding(
 def test_boolean_literal(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_invalid_boolean_literal_content(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
@@ -151,7 +151,7 @@ def test_invalid_boolean_literal_content(
 def test_boolean_literal_sets_natural(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.LiteralCannotSetValueDiagnostic(
             location=rendering.SourceLocation(
@@ -172,14 +172,14 @@ def test_boolean_literal_sets_natural(
 def test_binary_literal(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_invalid_binary_literal_content(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
@@ -196,7 +196,7 @@ def test_invalid_binary_literal_content(
 def test_binary_literal_sets_boolean(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.LiteralCannotSetValueDiagnostic(
             location=rendering.SourceLocation(
@@ -213,21 +213,21 @@ def test_binary_literal_sets_boolean(
 def test_binary_literal_sets_natural(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_decimal_literal_sets_binary(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_negative_decimal_literal_sets_binary(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
@@ -244,14 +244,14 @@ def test_negative_decimal_literal_sets_binary(
 def test_binary_literal_sets_integer(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_negative_decimal_literal_sets_natural(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
@@ -268,7 +268,7 @@ def test_negative_decimal_literal_sets_natural(
 def test_fractional_decimal_literal_sets_integer(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
@@ -285,14 +285,14 @@ def test_fractional_decimal_literal_sets_integer(
 def test_text_literal(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_text_literal_with_two_scalars(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
@@ -309,14 +309,14 @@ def test_text_literal_with_two_scalars(
 def test_code_point_literal(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_invalid_code_point_literal_content(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
@@ -333,14 +333,14 @@ def test_invalid_code_point_literal_content(
 def test_hex_literal_sets_integer(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_invalid_hex_literal_content(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(

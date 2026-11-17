@@ -35,50 +35,50 @@ def test_circular_destructor_contract_is_skipped(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert all_diags[0].cycle == [_DESTRUCTOR, _CLOSE_FILE, _DESTRUCTOR]
     assert all_diags[0].location.line == 4
     assert all_diags[0].location.column == 24
     assert all_diags[0].location.file_path == "close_file.dfn"
-    assert action_graph(result.reference_graph_result) == [(_TEST, _CLOSE_FILE)]
+    assert action_graph(result.concrete_program) == [(_TEST, _CLOSE_FILE)]
 
 
 def test_circular_caller_attached_destructor_contract_is_skipped(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert all_diags[0].cycle == [_DESTRUCTOR, _CALLER, _DESTRUCTOR]
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == "caller.dfn"
-    assert action_graph(result.reference_graph_result) == [(_CALLER, _CLOSE_FILE)]
+    assert action_graph(result.concrete_program) == [(_CALLER, _CLOSE_FILE)]
 
 
 def test_missing_caller_attached_destructor_is_reported_and_skipped(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[0].file_path == "missing_destructor.dfn"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 35
     assert all_diags[0].location.file_path == "test.dfn"
-    assert action_graph(result.reference_graph_result) == [(_TEST, _CLOSE_FILE)]
+    assert action_graph(result.concrete_program) == [(_TEST, _CLOSE_FILE)]
 
 
 def test_caller_known_child_state_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
     ]
@@ -88,7 +88,7 @@ def test_caller_known_child_state_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -144,7 +144,7 @@ def test_caller_known_child_state_requirement_violated(
             "file_path": "delete_file_destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
     ]
@@ -154,7 +154,7 @@ def test_caller_unknown_child_state_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -237,7 +237,7 @@ def test_caller_unknown_child_state_requirement_violated(
             "file_path": "delete_file_destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_TEST, _TOUCH),
         (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
@@ -248,7 +248,7 @@ def test_caller_attached_destructor_requiring_empty_position_is_reported_only_on
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
@@ -263,7 +263,7 @@ def test_two_caller_attached_destructors_validated_independently(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -319,7 +319,7 @@ def test_two_caller_attached_destructors_validated_independently(
             "file_path": "destructor_b.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DESTRUCTOR_A),
         (_CLOSE_FILE, _DESTRUCTOR_B),
         (_TEST, _CLOSE_FILE),
@@ -330,8 +330,8 @@ def test_all_caller_attached_destructors_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DESTRUCTOR_A),
         (_CLOSE_FILE, _DESTRUCTOR_B),
         (_TEST, _CLOSE_FILE),
@@ -342,7 +342,7 @@ def test_three_destructors_with_two_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[1].required_value is False
@@ -452,7 +452,7 @@ def test_three_destructors_with_two_violated(
             "file_path": "destructor_b.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DESTRUCTOR_A),
         (_CLOSE_FILE, _DESTRUCTOR_B),
         (_CLOSE_FILE, _DESTRUCTOR_C),
@@ -464,7 +464,7 @@ def test_declared_quality_destructor_validated_once(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -512,7 +512,7 @@ def test_declared_quality_destructor_validated_once(
             "file_path": "destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
     ]
@@ -522,8 +522,8 @@ def test_declared_quality_destructor_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
     ]
@@ -533,8 +533,8 @@ def test_constructor_consumer_caller_known_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
     ]
@@ -544,7 +544,7 @@ def test_constructor_consumer_caller_known_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -600,7 +600,7 @@ def test_constructor_consumer_caller_known_violated(
             "file_path": "delete_file_destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DELETE_FILE_DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
     ]
@@ -610,7 +610,7 @@ def test_visible_and_caller_attached_destructors_coexist(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -712,7 +712,7 @@ def test_visible_and_caller_attached_destructors_coexist(
             "file_path": "delete_file2.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DELETE_FILE1),
         (_CLOSE_FILE, _DELETE_FILE2),
         (_TEST, _CLOSE_FILE),
@@ -723,7 +723,7 @@ def test_assignment_in_destructor_requirement_chain_appears_once(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 3
 
     through_caller_attached_destructor = all_diags[0]

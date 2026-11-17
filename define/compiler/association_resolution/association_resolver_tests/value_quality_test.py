@@ -14,8 +14,8 @@ def test_project_value_encoding(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    value_encodings = result.reference_graph_result.concrete_program.value_encodings
+    assert_no_errors(result.program_validation)
+    value_encodings = result.concrete_program.value_encodings
     assert {
         value_quality: encoding.full_typed_name
         for value_quality, encoding in value_encodings.items()
@@ -28,8 +28,8 @@ def test_encoding_from_another_universe(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    value_encodings = result.reference_graph_result.concrete_program.value_encodings
+    assert_no_errors(result.program_validation)
+    value_encodings = result.concrete_program.value_encodings
     assert {
         value_quality: encoding.full_typed_name
         for value_quality, encoding in value_encodings.items()
@@ -42,8 +42,8 @@ def test_encoding_from_universe_without_multiverse(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    value_encodings = result.reference_graph_result.concrete_program.value_encodings
+    assert_no_errors(result.program_validation)
+    value_encodings = result.concrete_program.value_encodings
     assert {
         value_quality: encoding.full_typed_name
         for value_quality, encoding in value_encodings.items()
@@ -56,8 +56,8 @@ def test_standard_encoding(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    value_encodings = result.reference_graph_result.concrete_program.value_encodings
+    assert_no_errors(result.program_validation)
+    value_encodings = result.concrete_program.value_encodings
     assert {
         value_quality: encoding.full_typed_name
         for value_quality, encoding in value_encodings.items()

@@ -81,7 +81,7 @@ def test_interface_occupied_requirement_propagates_and_is_violated_at_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -131,7 +131,7 @@ def test_interface_occupied_requirement_propagates_and_is_violated_at_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MID, _DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -141,7 +141,7 @@ def test_implied_requirement_propagates_and_is_violated_at_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -191,7 +191,7 @@ def test_implied_requirement_propagates_and_is_violated_at_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MID, _DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -201,7 +201,7 @@ def test_child_requirement_propagates_and_is_violated_at_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -251,7 +251,7 @@ def test_child_requirement_propagates_and_is_violated_at_caller(
             "file_path": "destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MID, _DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -261,7 +261,7 @@ def test_requirement_follows_moved_in_particle_to_contracted_origin(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -311,7 +311,7 @@ def test_requirement_follows_moved_in_particle_to_contracted_origin(
             "file_path": "destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MID, _DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -321,8 +321,8 @@ def test_propagated_requirement_satisfied_at_caller_produces_no_error(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_MID, _DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -332,7 +332,7 @@ def test_requirement_destructor_gets_from_its_callee_names_destructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -395,7 +395,7 @@ def test_requirement_destructor_gets_from_its_callee_names_destructor(
             "file_path": "check.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_DESTRUCTOR, _CHECK),
         (_TEST, _DESTRUCTOR),
     ]

@@ -99,7 +99,7 @@ class TestUnknownGlobalChainStart:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "action</other>"
@@ -115,7 +115,7 @@ class TestImpliedQualityChainStart:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert (
@@ -139,14 +139,14 @@ class TestImpliedQualityChainStart:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_occupied_implied_position_requirements=True
         )
-        assert_no_errors(result.program_result)
+        assert_no_errors(result.program_validation)
 
     def test_invalid_chain_past_implied_position(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/z>"
@@ -160,14 +160,14 @@ class TestImpliedQualityChainStart:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        assert_no_errors(result.program_result)
+        assert_no_errors(result.program_validation)
 
     def test_invalid_chain_past_implied_action(
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
@@ -185,7 +185,7 @@ class TestImpliedQualityChainStart:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_occupied_implied_position_requirements=True
         )
-        assert_no_errors(result.program_result)
+        assert_no_errors(result.program_validation)
 
 
 class TestMissingDefinitionInChain:
@@ -194,7 +194,7 @@ class TestMissingDefinitionInChain:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
         assert all_diags[0].file_path == "middle.dfn"

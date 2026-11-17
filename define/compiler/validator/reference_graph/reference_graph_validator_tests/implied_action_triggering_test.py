@@ -41,31 +41,31 @@ def test_action_triggers_implied_action_directly(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _IMPLIED)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _IMPLIED)]
 
 
 def test_action_triggers_implied_action_via_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _IMPLIED)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _IMPLIED)]
 
 
 def test_constructor_triggers_implied_action(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _IMPLIED)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _IMPLIED)]
 
 
 def test_implied_action_iface_requirement_does_not_propagate_to_caller(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -95,7 +95,7 @@ def test_implied_action_iface_requirement_does_not_propagate_to_caller(
             "file_path": "implied_action.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MIDDLE, _IMPLIED),
         (_TEST, _MIDDLE),
     ]
@@ -105,7 +105,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -146,7 +146,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MIDDLE, _IMPLIED_OUTER),
         (_MIDDLE, _INNER),
         (_TEST, _MIDDLE),
@@ -157,8 +157,8 @@ def test_caller_triggers_action_implied_by_quality_assignment(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_IMPLIER, _IMPLIED),
         (_TEST, _IMPLIED),
         (_TEST, _IMPLIER),
@@ -169,16 +169,16 @@ def test_implied_action_guarantees_propagate_to_caller(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _IMPLIED)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _IMPLIED)]
 
 
 def test_transitive_implication_triggers_action(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_FORWARDER, _IMPLIED),
         (_IMPLIER, _FORWARDER),
         (_TEST, _IMPLIED),

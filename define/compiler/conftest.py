@@ -7,10 +7,9 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING, Protocol, cast
 
-import msgspec
 import pytest
 
-from define.compiler import driver
+from define.compiler import validation_pipeline
 from define.compiler.validator import test_helpers
 from define.compiler.validator.structural import program_validator
 from define.testdata import path_resolver
@@ -18,21 +17,7 @@ from define.testdata import path_resolver
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from define.compiler.association_resolution import concrete_program
     from define.compiler.validator import validation_result
-
-
-class ReferenceGraphValidationResult(msgspec.Struct, frozen=True):
-    """What reference graph validation and association resolution produce, beyond the diagnostics they report."""
-
-    concrete_program: concrete_program.ConcreteProgram
-
-
-class FullValidationResult(msgspec.Struct):
-    """Result of running both structural and reference graph validation."""
-
-    program_result: validation_result.ProgramValidationResult
-    reference_graph_result: ReferenceGraphValidationResult
 
 
 class ValidateProject(Protocol):
@@ -49,7 +34,7 @@ class ValidateProject(Protocol):
         entry_file: str = ...,
         allow_entry_action_interface_positions: bool = ...,
         allow_entry_action_occupied_implied_position_requirements: bool = ...,
-    ) -> FullValidationResult:
+    ) -> validation_pipeline.CompilerValidationResult:
         """Validate a project with the given files."""
         ...
 
@@ -77,7 +62,7 @@ def validate_project(
         # Pass True only when a validation test specifically requires an entry
         # action with an occupied implied-position requirement.
         allow_entry_action_occupied_implied_position_requirements: bool = False,
-    ) -> FullValidationResult:
+    ) -> validation_pipeline.CompilerValidationResult:
         test_helpers.write_project_config(tmp_path, universe_name)
         if local_deps is not None:
             test_helpers.write_local_deps_config(tmp_path, local_deps)
@@ -98,7 +83,7 @@ def validate_project(
             max_workers=max_workers,
             allow_entry_action_interface_positions=allow_entry_action_interface_positions,
         )
-        return _run_reference_graph_validation(
+        return validation_pipeline.validate_and_resolve_program(
             structural_result,
             max_workers=max_workers,
             allow_entry_action_occupied_implied_position_requirements=(
@@ -244,7 +229,7 @@ def validate_testdata_non_filesystem_with_reference_graph(
         allow_entry_action_occupied_implied_position_requirements: bool = False,
     ) -> validation_result.ProgramValidationResult:
         monkeypatch.chdir(directory)
-        return _run_reference_graph_validation(
+        return validation_pipeline.validate_and_resolve_program(
             program_validator.validate_program_non_filesystem(
                 source,
                 max_workers=max_workers,
@@ -254,30 +239,9 @@ def validate_testdata_non_filesystem_with_reference_graph(
             allow_entry_action_occupied_implied_position_requirements=(
                 allow_entry_action_occupied_implied_position_requirements
             ),
-        ).program_result
+        ).program_validation
 
     return _run
-
-
-def _run_reference_graph_validation(
-    structural_result: program_validator.StructurallyValidatedProgram,
-    *,
-    max_workers: int | None = None,
-    allow_entry_action_occupied_implied_position_requirements: bool = False,
-) -> FullValidationResult:
-    result = driver.validate_and_resolve_program(
-        structural_result,
-        max_workers=max_workers,
-        allow_entry_action_occupied_implied_position_requirements=(
-            allow_entry_action_occupied_implied_position_requirements
-        ),
-    )
-    return FullValidationResult(
-        program_result=result.program_validation,
-        reference_graph_result=ReferenceGraphValidationResult(
-            concrete_program=result.concrete_program
-        ),
-    )
 
 
 class ValidateTestdataProjectWithReferenceGraph(Protocol):
@@ -289,7 +253,7 @@ class ValidateTestdataProjectWithReferenceGraph(Protocol):
         max_workers: int | None = ...,
         allow_entry_action_interface_positions: bool = ...,
         allow_entry_action_occupied_implied_position_requirements: bool = ...,
-    ) -> FullValidationResult:
+    ) -> validation_pipeline.CompilerValidationResult:
         """Run structural and reference graph validation."""
         ...
 
@@ -311,14 +275,14 @@ def validate_testdata_project_with_reference_graph(
         # Pass True only when a validation test specifically requires an entry
         # action with an occupied implied-position requirement.
         allow_entry_action_occupied_implied_position_requirements: bool = False,
-    ) -> FullValidationResult:
+    ) -> validation_pipeline.CompilerValidationResult:
         monkeypatch.chdir(directory)
         structural_result = program_validator.validate_program(
             PurePosixPath("test.dfn"),
             max_workers=max_workers,
             allow_entry_action_interface_positions=allow_entry_action_interface_positions,
         )
-        return _run_reference_graph_validation(
+        return validation_pipeline.validate_and_resolve_program(
             structural_result,
             max_workers=max_workers,
             allow_entry_action_occupied_implied_position_requirements=(

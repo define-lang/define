@@ -18,55 +18,73 @@ if TYPE_CHECKING:
 def test_action_implies_action(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_action_implies_position(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_action_with_implied_qualities_and_multiple_interface_positions(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_action_with_multiple_implications(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_multiple_implications_one_definition(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_position_implies_action(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_diamond_transitivity(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_multi_level_action_transitivity(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_propagated_particle(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_single_level_transitivity_satisfies_move(
@@ -75,14 +93,14 @@ def test_single_level_transitivity_satisfies_move(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_single_level_transitivity_does_not_include_unrelated(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
@@ -101,7 +119,7 @@ def test_multi_level_transitivity(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_diamond_transitivity_create_conflict_detected(
@@ -110,7 +128,7 @@ def test_diamond_transitivity_create_conflict_detected(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -164,7 +182,7 @@ def test_diamond_transitivity_with_create_destroy_succeeds(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_action_interface_position_has_quality_with_implication_move_succeeds(
@@ -173,14 +191,14 @@ def test_action_interface_position_has_quality_with_implication_move_succeeds(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_matching_implied_but_not_matching_impliers_for_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
@@ -197,14 +215,14 @@ def test_action_guarantee_preserves_transitive_qualities(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_action_creates_particle_in_interface_position_with_implying_quality(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_constructor_quality_with_implication_carried_into_move(
@@ -213,7 +231,7 @@ def test_constructor_quality_with_implication_carried_into_move(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_inferred_occupied_interface_position_has_implication_implied(
@@ -222,7 +240,7 @@ def test_inferred_occupied_interface_position_has_implication_implied(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_propagated_requirement_particle_has_implication_implied(
@@ -231,7 +249,7 @@ def test_propagated_requirement_particle_has_implication_implied(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_same_path_in_different_fquns_are_distinct_qualities(
@@ -239,7 +257,7 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
 ):
     b_fqun = "mv:define-lang.org:cross_implication_lib_b"
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 16
@@ -256,14 +274,14 @@ def test_constructor_fills_implied_position_for_move(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
 
 
 def test_constructor_filled_position_blocks_caller_create(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 12
@@ -283,7 +301,7 @@ def test_unresolved_implication_target_is_skipped(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[0].location.file_path == "implier.dfn"
@@ -296,7 +314,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.UntriggeredImpliedActionDiagnostic(
             location=rendering.SourceLocation(
                 line=2,

@@ -18,37 +18,49 @@ if TYPE_CHECKING:
 def test_action_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_action_position_long_names(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_local_start(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_position_action(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_position_action_long_names(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_short_names(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 class TestCreateParticle:
@@ -56,7 +68,7 @@ class TestCreateParticle:
         self,
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
-        result = validate_testdata_project_with_reference_graph().program_result
+        result = validate_testdata_project_with_reference_graph().program_validation
         diags = result.all_diagnostics
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
@@ -247,7 +259,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert_no_errors(result.program_result)
+        assert_no_errors(result.program_validation)
 
     def test_chained_local_after_short_form_global_position(
         self,
@@ -256,7 +268,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "position</other>"
@@ -344,7 +356,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[0].location.line == 11
@@ -358,7 +370,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[0].location.line == 12
@@ -372,7 +384,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "action</act_x>"
@@ -392,7 +404,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "action</act_y>"
@@ -412,7 +424,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert_no_errors(result.program_result)
+        assert_no_errors(result.program_validation)
 
     def test_chain_element_inside_action_not_found(
         self,
@@ -421,7 +433,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
@@ -444,7 +456,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"

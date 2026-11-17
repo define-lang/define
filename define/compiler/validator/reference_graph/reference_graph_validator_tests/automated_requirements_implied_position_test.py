@@ -28,7 +28,7 @@ def test_caller_violates_empty_via_create_in_implied_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -65,7 +65,7 @@ def test_caller_violates_empty_via_create_in_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_TEST, _INNER),
     ]
 
@@ -74,7 +74,7 @@ def test_caller_violates_occupied_via_move_from_implied_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -103,7 +103,7 @@ def test_caller_violates_occupied_via_move_from_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_TEST, _INNER),
     ]
 
@@ -112,7 +112,7 @@ def test_caller_violates_occupied_via_destroy_in_implied_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -141,7 +141,7 @@ def test_caller_violates_occupied_via_destroy_in_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_TEST, _INNER),
     ]
 
@@ -150,8 +150,8 @@ def test_caller_satisfies_empty_in_implied_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_TEST, _INNER),
     ]
 
@@ -160,8 +160,8 @@ def test_caller_satisfies_occupied_in_implied_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_TEST, _INNER),
     ]
 
@@ -170,7 +170,7 @@ def test_caller_violates_empty_via_create_in_child_of_implied_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -210,7 +210,7 @@ def test_caller_violates_empty_via_create_in_child_of_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_TEST, _INNER),
     ]
 
@@ -219,7 +219,7 @@ def test_caller_violates_occupied_via_move_from_child_of_implied_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -251,7 +251,7 @@ def test_caller_violates_occupied_via_move_from_child_of_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_TEST, _INNER),
     ]
 
@@ -260,7 +260,7 @@ def test_caller_violates_occupied_via_destroy_in_child_of_implied_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -292,7 +292,7 @@ def test_caller_violates_occupied_via_destroy_in_child_of_implied_position(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_TEST, _INNER),
     ]
 
@@ -301,8 +301,8 @@ def test_caller_satisfies_empty_in_child_of_implied_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_TEST, _INNER),
     ]
 
@@ -311,8 +311,8 @@ def test_caller_satisfies_occupied_in_child_of_implied_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_TEST, _INNER),
     ]
 
@@ -321,7 +321,7 @@ def test_caller_violates_empty_via_create_in_iface_of_implied_action(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -369,7 +369,7 @@ def test_caller_violates_empty_via_create_in_iface_of_implied_action(
             "file_path": "sub.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_INNER, _SUB),
         (_TEST, _INNER),
     ]
@@ -379,7 +379,7 @@ def test_caller_violates_occupied_via_move_from_iface_of_implied_action(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -419,7 +419,7 @@ def test_caller_violates_occupied_via_move_from_iface_of_implied_action(
             "file_path": "sub.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_INNER, _SUB),
         (_TEST, _INNER),
     ]
@@ -429,7 +429,7 @@ def test_caller_violates_occupied_via_destroy_in_iface_of_implied_action(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -469,7 +469,7 @@ def test_caller_violates_occupied_via_destroy_in_iface_of_implied_action(
             "file_path": "sub.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_INNER, _SUB),
         (_TEST, _INNER),
     ]
@@ -479,7 +479,7 @@ def test_caller_violates_empty_via_create_in_child_of_iface_of_implied_action(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -527,7 +527,7 @@ def test_caller_violates_empty_via_create_in_child_of_iface_of_implied_action(
             "file_path": "sub.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_INNER, _SUB),
         (_TEST, _INNER),
     ]
@@ -537,7 +537,7 @@ def test_caller_violates_occupied_via_move_from_child_of_iface_of_implied_action
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -577,7 +577,7 @@ def test_caller_violates_occupied_via_move_from_child_of_iface_of_implied_action
             "file_path": "sub.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_INNER, _SUB),
         (_TEST, _INNER),
     ]
@@ -587,7 +587,7 @@ def test_caller_violates_occupied_via_destroy_in_child_of_iface_of_implied_actio
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -627,7 +627,7 @@ def test_caller_violates_occupied_via_destroy_in_child_of_iface_of_implied_actio
             "file_path": "sub.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_INNER, _SUB),
         (_TEST, _INNER),
     ]

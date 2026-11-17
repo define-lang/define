@@ -175,7 +175,7 @@ def test_output_view_sets_value_in_action(
 def test_output_view_argument_error_in_destructor_does_not_report_changed_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.OperationArgumentMissingQualitiesDiagnostic(
             location=rendering.SourceLocation(

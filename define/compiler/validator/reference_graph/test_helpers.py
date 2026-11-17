@@ -10,14 +10,14 @@ from define.compiler.validator.reference_graph import abstract_program
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
-    from define.compiler import conftest
+    from define.compiler.association_resolution import concrete_program
     from define.compiler.validator.reference_graph.destruction import (
         destruction_contract,
     )
 
 
 def action_graph(
-    result: conftest.ReferenceGraphValidationResult,
+    program: concrete_program.ConcreteProgram,
 ) -> list[tuple[str, str]]:
     """List triggered actions in definition postorder and statement order.
 
@@ -26,21 +26,19 @@ def action_graph(
     reference-graph diamonds that make the order nondeterministic.
     """
     edges: list[tuple[str, str]] = []
-    for definition in result.concrete_program.definition_order.definitions:
+    for definition in program.definition_order.definitions:
         if not isinstance(definition, ast.ActionDefinition):
             continue
-        edges.extend(_definition_edges(result, definition))
+        edges.extend(_definition_edges(program, definition))
     return edges
 
 
 def _definition_edges(
-    result: conftest.ReferenceGraphValidationResult,
+    program: concrete_program.ConcreteProgram,
     definition: ast.ActionDefinition,
 ) -> Iterator[tuple[str, str]]:
     source = definition.typed_name.source_typed_name
-    for step in result.concrete_program.actions[
-        definition.typed_name.full_typed_name
-    ].steps:
+    for step in program.actions[definition.typed_name.full_typed_name].steps:
         if isinstance(step, abstract_program.ActionExecution):
             yield from _destruction_contract_edges(step.destruction_connections)
             yield source, step.action.get_last_action().full_typed_name
@@ -48,16 +46,16 @@ def _definition_edges(
             for destructor in step.contribution.work.destructors:
                 yield source, destructor.get_last_action().full_typed_name
             for reference in step.contribution.work.guaranteed_particle_destructors:
-                for destructor in _guaranteed_particle_destructors(result, reference):
+                for destructor in _guaranteed_particle_destructors(program, reference):
                     yield source, destructor
 
 
 def _guaranteed_particle_destructors(
-    result: conftest.ReferenceGraphValidationResult,
+    program: concrete_program.ConcreteProgram,
     reference: destruction_contract.RunGuaranteedParticleDestructors,
 ) -> Iterator[str]:
     """Yield each Destructor that a call to an action's method for what it left behind runs."""
-    for guaranteed in result.concrete_program.actions[
+    for guaranteed in program.actions[
         reference.action.full_typed_name
     ].guaranteed_particle_destructors:
         if guaranteed.position_in_action != reference.position_in_action:
@@ -65,7 +63,7 @@ def _guaranteed_particle_destructors(
         for destructor in guaranteed.destructors:
             yield destructor.full_typed_name
         for child_reference in guaranteed.for_child_positions:
-            yield from _guaranteed_particle_destructors(result, child_reference)
+            yield from _guaranteed_particle_destructors(program, child_reference)
 
 
 def _destruction_contract_edges(
@@ -84,7 +82,7 @@ def _destruction_contract_edges(
 
 
 def action_graph_set(
-    result: conftest.ReferenceGraphValidationResult,
+    program: concrete_program.ConcreteProgram,
 ) -> set[tuple[str, str]]:
     """Return trigger edges for reference-graph diamonds with nondeterministic order."""
-    return set(action_graph(result))
+    return set(action_graph(program))

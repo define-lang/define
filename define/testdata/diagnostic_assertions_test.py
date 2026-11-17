@@ -167,7 +167,7 @@ def test_boolean_and_helper_assertions():
     assert (
         _problems("""
 def test_case(validate_testdata_project_with_reference_graph):
-    diag = validate_testdata_project_with_reference_graph().program_result.all_diagnostics[0]
+    diag = validate_testdata_project_with_reference_graph().program_validation.all_diagnostics[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.location == location
     assert diag.position_name == "position<box>" and diag.action_name == action_name

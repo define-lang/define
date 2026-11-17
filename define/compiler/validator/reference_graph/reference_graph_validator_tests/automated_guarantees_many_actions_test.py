@@ -32,8 +32,8 @@ def test_destroyed_particle_guarantees_do_not_apply_to_replacement_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (
             _MIDDLE,
             "action<my.domain.com:my_lib:/empty_marker>",
@@ -50,7 +50,7 @@ def test_destroyed_particle_guarantees_do_not_make_replacement_particle_occupied
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.DestroyInEmptyInterfacePositionDiagnostic)
@@ -69,7 +69,7 @@ def test_destroyed_particle_guarantees_do_not_make_replacement_particle_occupied
     assert diag.inferred_at.end_line == 7
     assert diag.inferred_at.end_column == 49
     assert diag.inferred_at.file_path == "empty_marker.dfn"
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (
             _TEST,
             "action<my.domain.com:my_lib:/empty_marker>",
@@ -86,8 +86,8 @@ def test_inner_empty_guarantee_propagates_through_outer(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
     ]
@@ -97,8 +97,8 @@ def test_inner_occupied_guarantee_propagates_through_outer(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
     ]
@@ -108,7 +108,7 @@ def test_occupied_guarantee_creates_empty_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -156,7 +156,7 @@ def test_occupied_guarantee_creates_empty_requirement(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
     ]
@@ -166,7 +166,7 @@ def test_move_guarantee_creates_occupied_in_distant_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 15
@@ -179,7 +179,7 @@ def test_move_guarantee_creates_occupied_in_distant_caller(
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
     ]
@@ -189,7 +189,7 @@ def test_callee_guarantee_below_particle_its_caller_replaced_does_not_apply(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 15
@@ -202,7 +202,7 @@ def test_callee_guarantee_below_particle_its_caller_replaced_does_not_apply(
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MIDDLE, _INNER),
         (_TEST, _MIDDLE),
     ]
@@ -212,7 +212,7 @@ def test_caller_guarantee_below_particle_its_callee_created_applies(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 10
@@ -225,7 +225,7 @@ def test_caller_guarantee_below_particle_its_callee_created_applies(
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MIDDLE, _INNER),
         (_TEST, _MIDDLE),
     ]
@@ -235,7 +235,7 @@ def test_earlier_callee_move_applies_before_later_callee_refills_its_origin(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 9
@@ -251,7 +251,7 @@ def test_callee_guarantee_below_particle_its_caller_moved_follows_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 8
@@ -270,7 +270,7 @@ def test_caller_emptying_position_its_child_particle_callee_filled_reads_empty(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 17
@@ -289,7 +289,7 @@ def test_later_of_two_callees_on_child_particle_decides_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 8
@@ -308,7 +308,7 @@ def test_child_particle_callee_guarantee_below_position_its_caller_replaced_does
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 18
@@ -327,7 +327,7 @@ def test_callee_move_into_particle_its_caller_then_moved_follows_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 9
@@ -343,7 +343,7 @@ def test_callee_moving_particle_below_new_particle_in_its_origin_applies(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 11
@@ -362,7 +362,7 @@ def test_callee_moving_particle_and_one_below_it_moves_each_to_its_own_destinati
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 10
@@ -378,7 +378,7 @@ def test_callee_moving_particle_back_below_new_particle_leaves_it_there(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 13
@@ -397,7 +397,7 @@ def test_transitive_child_guarantee_follows_particle_through_move(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 27
@@ -410,7 +410,7 @@ def test_transitive_child_guarantee_follows_particle_through_move(
         all_diags[0].position_name
         == "position<gateway>::action</outer>::position<destination>::position</result>"
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MIDDLE, _INNER),
         (_OUTER, _MIDDLE),
         (_TEST, _OUTER),
@@ -421,7 +421,7 @@ def test_transitive_child_guarantee_at_moved_position_follows_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
@@ -439,7 +439,7 @@ def test_transitive_child_guarantee_at_moved_position_follows_particle(
     assert diagnostic.populated_at.end_line == 7
     assert diagnostic.populated_at.end_column == 46
     assert diagnostic.populated_at.file_path == "inner.dfn"
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_MIDDLE, _OUTER),
         (_TEST, _MIDDLE),
@@ -450,7 +450,7 @@ def test_body_move_carries_pending_callee_guarantees(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
@@ -474,7 +474,7 @@ def test_guarantee_move_carries_pending_callee_guarantees(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
@@ -498,7 +498,7 @@ def test_later_sibling_callee_empties_position_an_earlier_sibling_filled(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.DestroyInEmptyPositionDiagnostic)
@@ -516,7 +516,7 @@ def test_callee_of_callee_empties_position_its_caller_filled(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.DestroyInEmptyPositionDiagnostic)
@@ -534,7 +534,7 @@ def test_implied_callee_of_callee_empties_position_its_caller_filled(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.DestroyInEmptyPositionDiagnostic)
@@ -552,7 +552,7 @@ def test_callee_guarantee_below_particle_the_same_callee_moved_is_published(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position</destination>::position</marker>"
@@ -565,7 +565,7 @@ def test_callee_moving_particle_then_its_child_particle_moves_what_is_below_it(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 10
@@ -584,7 +584,7 @@ def test_particle_below_child_particle_a_callee_moved_then_destroyed_is_not_publ
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position</destination>::position</a>"
@@ -597,7 +597,7 @@ def test_callee_moving_child_particle_then_its_parent_particle_moves_what_is_bel
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 11
@@ -613,7 +613,7 @@ def test_caller_publishes_child_particle_its_callee_moved_after_its_parent_parti
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 8
@@ -632,7 +632,7 @@ def test_callee_moving_particle_out_of_two_particles_it_then_moves_follows_all_t
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 10
@@ -648,7 +648,7 @@ def test_callee_moving_child_particle_then_destroying_its_parent_particle_keeps_
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 10
@@ -664,7 +664,7 @@ def test_callee_replacing_particle_removes_what_its_caller_tracked_below_it(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position</input>::position</a>::position</x>"
@@ -677,7 +677,7 @@ def test_callee_moving_two_child_particles_out_then_destroying_their_parent_keep
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.line == 7

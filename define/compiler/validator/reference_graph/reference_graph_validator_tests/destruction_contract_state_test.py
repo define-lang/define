@@ -56,7 +56,7 @@ def test_particles_share_destroyer_state_but_have_independent_facts(
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
     _assert_shared_state_with_independent_facts(
         published_contracts["action<my.domain.com:my_lib:/middle>"]
     )
@@ -67,7 +67,7 @@ def test_particles_share_caller_state_but_have_independent_facts(
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
     _assert_shared_state_with_independent_facts(
         published_contracts["action<my.domain.com:my_lib:/middle>"]
     )
@@ -103,7 +103,7 @@ def test_automatic_destruction_snapshots_each_target_before_destructors(
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
     first_contracts, second_contracts = published_contracts[
         "action<my.domain.com:my_lib:/middle>"
     ].destruction_contracts
@@ -136,7 +136,7 @@ def test_automatic_destruction_with_unrelated_pending_guarantees(
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
     first, second = published_contracts[
         "action<my.domain.com:my_lib:/middle>"
     ].destruction_contracts
@@ -152,7 +152,7 @@ def test_automatic_destruction_with_unrelated_pending_guarantees(
     marker = _chain("position<my.domain.com:my_lib:/marker>")
     assert first.child_state.occupancy.get(marker) is None
     assert second.child_state.occupancy.get(marker) is None
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (
             "action<my.domain.com:my_lib:/outer>",
             "action<my.domain.com:my_lib:/filler>",
@@ -253,7 +253,7 @@ def test_large_child_states_share_extend_and_compact_from_source(
     )
     project["test.dfn"] = "\n".join(lines) + "\n"
     result = validate_project(project, max_workers=1)
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
     snapshots: list[
         child_state.ChildStateStore[position_occupancy.PositionOccupancyState]
     ] = []
@@ -300,7 +300,7 @@ def test_caller_passed_child_of_local_parent_keeps_its_contract(
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
     (contracts,) = published_contracts[
         "action<my.domain.com:my_lib:/middle>"
     ].destruction_contracts
@@ -326,7 +326,7 @@ def test_shared_state_uses_each_moved_particles_own_origin(
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
     (contracts,) = published_contracts[
         "action<my.domain.com:my_lib:/middle>"
     ].destruction_contracts
@@ -357,7 +357,7 @@ def test_shared_state_uses_each_moved_particles_own_origin(
         )
         is None
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (
             "action<my.domain.com:my_lib:/middle>",
             "action<my.domain.com:my_lib:/destroyer>",
@@ -373,7 +373,7 @@ def test_repeated_executions_keep_distinct_shared_histories(
     published_contracts: dict[str, action_contract.ActionContract],
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    assert_no_errors(result.program_result)
+    assert_no_errors(result.program_validation)
     first, second = published_contracts[
         "action<my.domain.com:my_lib:/middle>"
     ].destruction_contracts

@@ -17,14 +17,14 @@ if TYPE_CHECKING:
 def test_valid_execution(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
 
 
 def test_read_not_supported(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationReadNotSupportedDiagnostic(
             location=rendering.SourceLocation(
@@ -40,7 +40,7 @@ def test_read_not_supported(
 def test_write_not_supported(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
@@ -56,7 +56,7 @@ def test_write_not_supported(
 def test_logical_operation_not_supported(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.LogicalOperationReadNotSupportedDiagnostic(
             location=rendering.SourceLocation(
@@ -80,7 +80,7 @@ def test_logical_operation_not_supported(
 def test_write_to_input_only_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.WriteToInputOnlyViewDiagnostic(
             location=rendering.SourceLocation(
@@ -96,7 +96,7 @@ def test_write_to_input_only_view(
 def test_read_from_unwritten_output_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.ReadFromUnwrittenOutputViewDiagnostic(
             location=rendering.SourceLocation(
@@ -112,7 +112,7 @@ def test_read_from_unwritten_output_view(
 def test_undefined_logical_operation_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
@@ -135,7 +135,7 @@ def test_undefined_logical_operation_view(
 def test_argument_order(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.OperationArgumentOrderDiagnostic(
             location=rendering.SourceLocation(
@@ -151,7 +151,7 @@ def test_argument_order(
 def test_missing_argument(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
@@ -166,7 +166,7 @@ def test_missing_argument(
 def test_looks_at_undefined_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
@@ -180,7 +180,7 @@ def test_looks_at_undefined_view(
 def test_missing_logical_operation(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
@@ -194,7 +194,7 @@ def test_missing_logical_operation(
 def test_missing_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
@@ -208,7 +208,7 @@ def test_missing_value(
 def test_view_without_value_quality(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    result = validate_testdata_project_with_reference_graph().program_result
+    result = validate_testdata_project_with_reference_graph().program_validation
     assert result.all_diagnostics == [
         diagnostics.ViewMissingValueQualityDiagnostic(
             location=rendering.SourceLocation(

@@ -14,7 +14,7 @@ def test_multiple_pending_depth_updates_do_not_hide_cycle(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    diagnostics_found = result.program_result.all_diagnostics
+    diagnostics_found = result.program_validation.all_diagnostics
     assert len(diagnostics_found) == 1
     diagnostic = diagnostics_found[0]
     assert isinstance(diagnostic, diagnostics.CircularGlobalReferenceDiagnostic)
@@ -35,7 +35,7 @@ def test_rejected_cycle_restores_depths_for_later_edge(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    diagnostics_found = result.program_result.all_diagnostics
+    diagnostics_found = result.program_validation.all_diagnostics
     assert len(diagnostics_found) == 2
     first_diagnostic = diagnostics_found[0]
     assert isinstance(first_diagnostic, diagnostics.CircularGlobalReferenceDiagnostic)
@@ -70,7 +70,7 @@ def test_visited_reference_does_not_skip_independent_definition(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    diagnostics_found = result.program_result.all_diagnostics
+    diagnostics_found = result.program_validation.all_diagnostics
     assert len(diagnostics_found) == 1
     diagnostic = diagnostics_found[0]
     assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)

@@ -25,27 +25,33 @@ _INNER = "action<my.domain.com:my_lib:/inner>"
 def test_consumes_implied_action_interface(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_minimal(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_non_entry(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
-    assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
+    assert_no_errors(
+        validate_testdata_project_with_reference_graph().program_validation
+    )
 
 
 def test_create_fires_constructor_via_quality_assignment_on_local_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _CONSTRUCT)]
 
 
 def test_create_fires_constructor_via_quality_assignment_on_interface_position(
@@ -54,24 +60,24 @@ def test_create_fires_constructor_via_quality_assignment_on_interface_position(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _CONSTRUCT)]
 
 
 def test_create_in_position_child_fires_constructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _CONSTRUCT)]
 
 
 def test_create_in_action_child_interface_fires_constructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_INNER, _CONSTRUCT),
         (_TEST, _INNER),
     ]
@@ -81,8 +87,8 @@ def test_create_fires_multiple_constructors(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_TEST, _CONSTRUCT_A),
         (_TEST, _CONSTRUCT_B),
     ]
@@ -92,7 +98,7 @@ def test_create_does_not_fire_non_constructor_action_quality(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
     assert all_diags[0].location.line == 7
@@ -100,36 +106,36 @@ def test_create_does_not_fire_non_constructor_action_quality(
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
-    assert action_graph(result.reference_graph_result) == []
+    assert action_graph(result.concrete_program) == []
 
 
 def test_move_into_position_does_not_fire_constructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSTRUCT)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _CONSTRUCT)]
 
 
 def test_missing_constructor_file_is_reported_and_skipped(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 35
     assert all_diags[0].file_path == "construct.dfn"
     assert all_diags[0].location.file_path == "test.dfn"
-    assert action_graph(result.reference_graph_result) == []
+    assert action_graph(result.concrete_program) == []
 
 
 def test_create_parent_not_occupied_does_not_fire_constructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
     assert all_diags[0].location.line == 9
@@ -143,4 +149,4 @@ def test_create_parent_not_occupied_does_not_fire_constructor(
     assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].position_name == "position<box>::action</inner>::position<slot>"
     assert all_diags[1].parent_position_name == "position<box>"
-    assert action_graph(result.reference_graph_result) == [(_INNER, _CONSTRUCT)]
+    assert action_graph(result.concrete_program) == [(_INNER, _CONSTRUCT)]

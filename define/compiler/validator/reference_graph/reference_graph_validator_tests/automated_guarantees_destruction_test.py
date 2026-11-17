@@ -12,6 +12,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 if typing.TYPE_CHECKING:
     from define.compiler import conftest
+    from define.compiler.association_resolution import concrete_program
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _HOLDER = "position<holder>"
@@ -24,9 +25,9 @@ _BUILD = "action<my.domain.com:my_lib:/build>"
 
 
 def _destroyed_positions(
-    result: conftest.FullValidationResult,
+    program: concrete_program.ConcreteProgram,
 ) -> list[tuple[str, ...]]:
-    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
+    step = program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     return [
         destroyed.position.canonical_chained_name_tuple
@@ -38,8 +39,8 @@ def test_discardable_callee_guarantees_are_dropped_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert _destroyed_positions(result) == [
+    assert_no_errors(result.program_validation)
+    assert _destroyed_positions(result.concrete_program) == [
         (_HOLDER, "position<my.domain.com:my_lib:/child_1>"),
         (_HOLDER,),
     ]
@@ -49,8 +50,8 @@ def test_callee_guarantees_moving_particles_are_dropped_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert _destroyed_positions(result) == [
+    assert_no_errors(result.program_validation)
+    assert _destroyed_positions(result.concrete_program) == [
         (_HOLDER, "position<my.domain.com:my_lib:/child_1>"),
         (_HOLDER,),
     ]
@@ -60,8 +61,8 @@ def test_callee_guarantees_on_received_particle_are_destroyed_individually(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert _destroyed_positions(result) == [
+    assert_no_errors(result.program_validation)
+    assert _destroyed_positions(result.concrete_program) == [
         (
             _HOLDER,
             "position<my.domain.com:my_lib:/box>",
@@ -82,7 +83,7 @@ def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particl
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -147,7 +148,7 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -219,7 +220,7 @@ def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_des
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -284,7 +285,7 @@ def test_deep_callee_creating_destructor_on_same_particle_is_applied_for_destroy
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -349,7 +350,7 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -414,7 +415,7 @@ def test_callee_guarantee_over_recorded_state_is_applied_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -479,7 +480,7 @@ def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_par
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -552,7 +553,7 @@ def test_unresolved_quality_does_not_prevent_dropping_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -562,7 +563,7 @@ def test_unresolved_quality_does_not_prevent_dropping_for_destroyed_particle(
     assert diagnostic.location.end_column == 34
     assert diagnostic.location.file_path == "child_2.dfn"
     assert diagnostic.file_path == "missing.dfn"
-    assert _destroyed_positions(result) == [
+    assert _destroyed_positions(result.concrete_program) == [
         (_HOLDER, "position<my.domain.com:my_lib:/child_1>"),
         (_HOLDER,),
     ]
@@ -572,7 +573,7 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -637,7 +638,7 @@ def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_f
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -702,7 +703,7 @@ def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     untriggered = all_diags[0]
     assert isinstance(untriggered, diagnostics.UntriggeredActionDiagnostic)
@@ -733,12 +734,12 @@ def test_callee_particle_whose_destructor_requirements_hold_is_not_expanded_when
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert _destroyed_positions(result) == [
+    assert_no_errors(result.program_validation)
+    assert _destroyed_positions(result.concrete_program) == [
         (_HOLDER, "position<my.domain.com:my_lib:/box>"),
         (_HOLDER,),
     ]
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_CLEANUP, "action<my.domain.com:my_lib:/keep>"),
         (_CLEANUP, "action<my.domain.com:my_lib:/keep>"),
         (_TEST, "action<my.domain.com:my_lib:/make>"),
@@ -750,8 +751,8 @@ def test_destroying_guaranteed_particles_runs_every_destructor_of_each(
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_BUILD, "action<my.domain.com:my_lib:/make>"),
         (_TEST, _BUILD),
         (_TEST, _CLEANUP),
@@ -764,8 +765,8 @@ def test_destroying_guaranteed_particle_runs_destructors_of_particles_its_callee
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (
             "action<my.domain.com:my_lib:/fill_2>",
             "action<my.domain.com:my_lib:/fill_3>",
@@ -784,8 +785,8 @@ def test_destructor_requirement_inside_what_a_callee_left_holds_without_expandin
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
+    assert_no_errors(result.program_validation)
+    step = result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert step.contribution.work.destructors == []
     (run,) = step.contribution.work.guaranteed_particle_destructors
@@ -799,7 +800,7 @@ def test_destructor_requirement_inside_what_a_callee_left_holds_without_expandin
         "position<my.domain.com:my_lib:/box>",
         "position<my.domain.com:my_lib:/child>",
     )
-    assert _destroyed_positions(result) == [
+    assert _destroyed_positions(result.concrete_program) == [
         (_HOLDER, "position<my.domain.com:my_lib:/box>"),
         (_HOLDER,),
     ]
@@ -809,7 +810,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    (diagnostic,) = result.program_result.all_diagnostics
+    (diagnostic,) = result.program_validation.all_diagnostics
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
@@ -872,7 +873,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
             "file_path": "cleanup.dfn",
         },
     )
-    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
+    step = result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert [
         destructor.canonical_chained_name_tuple
@@ -888,7 +889,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
         )
     ]
     assert step.contribution.work.guaranteed_particle_destructors == []
-    assert _destroyed_positions(result) == [
+    assert _destroyed_positions(result.concrete_program) == [
         (
             _HOLDER,
             "position<my.domain.com:my_lib:/box>",
@@ -903,7 +904,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    (diagnostic,) = result.program_result.all_diagnostics
+    (diagnostic,) = result.program_validation.all_diagnostics
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
@@ -958,7 +959,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
             "file_path": "cleanup.dfn",
         },
     )
-    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
+    step = result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert [
         destructor.canonical_chained_name_tuple
@@ -974,7 +975,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
         )
     ]
     assert step.contribution.work.guaranteed_particle_destructors == []
-    assert _destroyed_positions(result) == [
+    assert _destroyed_positions(result.concrete_program) == [
         (
             _HOLDER,
             "position<my.domain.com:my_lib:/box>",
@@ -989,7 +990,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    inner, value = result.program_result.all_diagnostics
+    inner, value = result.program_validation.all_diagnostics
     assert isinstance(inner, diagnostics.InferredRequirementViolationDiagnostic)
     assert inner.location.line == 12
     assert inner.location.column == 30
@@ -1098,7 +1099,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
             "file_path": "cleanup.dfn",
         },
     )
-    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
+    step = result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert [
         destructor.canonical_chained_name_tuple
@@ -1114,7 +1115,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
         )
     ]
     assert step.contribution.work.guaranteed_particle_destructors == []
-    assert _destroyed_positions(result) == [
+    assert _destroyed_positions(result.concrete_program) == [
         (
             _HOLDER,
             "position<my.domain.com:my_lib:/box>",
@@ -1129,7 +1130,7 @@ def test_destructor_requirement_on_position_a_callee_left_in_error_does_not_prev
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    (diagnostic,) = result.program_result.all_diagnostics
+    (diagnostic,) = result.program_validation.all_diagnostics
     assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 49
@@ -1138,7 +1139,7 @@ def test_destructor_requirement_on_position_a_callee_left_in_error_does_not_prev
     assert diagnostic.occupied_at.line == 9
     assert diagnostic.occupied_at.column == 30
     assert diagnostic.occupied_at.file_path == "make.dfn"
-    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
+    step = result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert step.contribution.work.destructors == []
     (run,) = step.contribution.work.guaranteed_particle_destructors
@@ -1152,7 +1153,7 @@ def test_destructor_requirement_on_position_a_callee_left_in_error_does_not_prev
         "position<my.domain.com:my_lib:/box>",
         "position<my.domain.com:my_lib:/child>",
     )
-    assert _destroyed_positions(result) == [
+    assert _destroyed_positions(result.concrete_program) == [
         (_HOLDER, "position<my.domain.com:my_lib:/box>"),
         (_HOLDER,),
     ]
@@ -1162,7 +1163,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    (diagnostic,) = result.program_result.all_diagnostics
+    (diagnostic,) = result.program_validation.all_diagnostics
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
@@ -1217,7 +1218,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
             "file_path": "cleanup.dfn",
         },
     )
-    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
+    step = result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert [
         destructor.canonical_chained_name_tuple
@@ -1233,7 +1234,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
         )
     ]
     assert step.contribution.work.guaranteed_particle_destructors == []
-    assert _destroyed_positions(result) == [
+    assert _destroyed_positions(result.concrete_program) == [
         (
             _HOLDER,
             "position<my.domain.com:my_lib:/box>",
@@ -1248,7 +1249,7 @@ def test_destructor_requirement_on_position_the_caller_left_in_error_does_not_pr
     validate_testdata_project_with_reference_graph: conftest.ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    (diagnostic,) = result.program_result.all_diagnostics
+    (diagnostic,) = result.program_validation.all_diagnostics
     assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 49
@@ -1259,7 +1260,7 @@ def test_destructor_requirement_on_position_the_caller_left_in_error_does_not_pr
     assert diagnostic.occupied_at.line == 9
     assert diagnostic.occupied_at.column == 30
     assert diagnostic.occupied_at.file_path == "make.dfn"
-    step = result.reference_graph_result.concrete_program.actions[_TEST].steps[-1]
+    step = result.concrete_program.actions[_TEST].steps[-1]
     assert isinstance(step, abstract_program.Destruction)
     assert step.contribution.work.destructors == []
     (run,) = step.contribution.work.guaranteed_particle_destructors
@@ -1273,7 +1274,7 @@ def test_destructor_requirement_on_position_the_caller_left_in_error_does_not_pr
         "position<my.domain.com:my_lib:/box>",
         "position<my.domain.com:my_lib:/child>",
     )
-    assert _destroyed_positions(result) == [
+    assert _destroyed_positions(result.concrete_program) == [
         (_HOLDER, "position<my.domain.com:my_lib:/box>"),
         (_HOLDER,),
     ]

@@ -61,13 +61,11 @@ py_library(
     srcs = ["conftest.py"],
     visibility = [":__subpackages__"],
     deps = [
-        ":driver",
-        "//define/compiler/association_resolution:concrete_program",
+        ":validation_pipeline",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:program_validator",
         "//define/testdata:path_resolver",
-        "@pypi//msgspec",
         "@pypi//pytest",
     ],
 )
@@ -87,12 +85,9 @@ py_library(
     deps = [
         ":ast",
         ":constants",
-        "//define/compiler/association_resolution:association_resolver",
-        "//define/compiler/association_resolution:concrete_program",
+        ":validation_pipeline",
         "//define/compiler/codegen:generator",
         "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:validation_result",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
     ],
 )
@@ -210,6 +205,18 @@ py_library(
 )
 
 py_library(
+    name = "validation_pipeline",
+    srcs = ["validation_pipeline.py"],
+    deps = [
+        "//define/compiler/association_resolution:association_resolver",
+        "//define/compiler/association_resolution:concrete_program",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
+    ],
+)
+
+py_library(
     name = "work_pool",
     srcs = ["work_pool.py"],
     visibility = [":__subpackages__"],
@@ -247,6 +254,7 @@ pyright_test(
         ":main_integration_test",
         ":main_test",
         ":name_types",
+        ":validation_pipeline",
         ":work_pool",
         ":work_pool_test",
     ],

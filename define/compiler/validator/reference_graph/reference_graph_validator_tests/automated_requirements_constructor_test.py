@@ -98,7 +98,7 @@ def test_entry_point_occupied_implied_position_requirement_reports_diagnostic(
         }
     )
 
-    all_diagnostics = result.program_result.all_diagnostics
+    all_diagnostics = result.program_validation.all_diagnostics
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
     assert isinstance(
@@ -141,7 +141,7 @@ def test_entry_point_transitive_occupied_requirement_reports_diagnostic(
         }
     )
 
-    all_diagnostics = result.program_result.all_diagnostics
+    all_diagnostics = result.program_validation.all_diagnostics
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
     assert isinstance(
@@ -157,7 +157,7 @@ def test_occupied_interface_requirement_always_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -197,15 +197,15 @@ def test_occupied_interface_requirement_always_violated(
             "file_path": "consumer.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [(_TEST, _CONSUMER)]
+    assert action_graph(result.concrete_program) == [(_TEST, _CONSUMER)]
 
 
 def test_empty_interface_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _INITIALIZER)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _INITIALIZER)]
 
 
 def test_empty_interface_requirement_satisfied_when_created_in_interface_position(
@@ -214,15 +214,15 @@ def test_empty_interface_requirement_satisfied_when_created_in_interface_positio
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _INITIALIZER)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _INITIALIZER)]
 
 
 def test_constructor_empty_violation_via_create_in_implied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -276,7 +276,7 @@ def test_constructor_empty_violation_via_create_in_child_of_implied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)

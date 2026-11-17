@@ -18,7 +18,7 @@ def test_encoding_operation_with_fewer_views(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.AssociationLogicalOperationViewCountDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
@@ -42,7 +42,7 @@ def test_encoding_operation_with_different_view_name(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.AssociationLogicalOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=9,
@@ -67,7 +67,7 @@ def test_encoding_operation_with_different_view_direction(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
@@ -96,7 +96,7 @@ def test_encoding_operation_with_views_in_different_order(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.AssociationLogicalOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=9,
@@ -138,7 +138,7 @@ def test_encoding_operations_with_same_encodings(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.DuplicateAssociatedEncodingOperationDiagnostic(
             location=rendering.SourceLocation(
                 line=26,
@@ -165,7 +165,7 @@ def test_encoding_operation_with_read_write_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
@@ -194,7 +194,7 @@ def test_encoding_operation_view_without_encoding(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.ViewMissingEncodingDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
@@ -222,7 +222,7 @@ def test_associated_encoding_operation_not_defined(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
@@ -240,14 +240,14 @@ def test_unexecuted_logical_operation_does_not_load_encoding_operations(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == []
+    assert result.program_validation.all_diagnostics == []
 
 
 def test_encoding_operation_in_unconfigured_universe(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.ExternalUniverseNotConfiguredDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
@@ -266,7 +266,7 @@ def test_association_with_fewer_views(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.AssociationLogicalOperationViewCountDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
@@ -290,7 +290,7 @@ def test_association_with_different_view_name(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.AssociationLogicalOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=13,
@@ -315,7 +315,7 @@ def test_association_with_different_encoding(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.AssociationViewEncodingDiagnostic(
             location=rendering.SourceLocation(
                 line=14,
@@ -343,7 +343,7 @@ def test_encoding_operation_with_fewer_views_than_its_association(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.AssociationViewCountDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
@@ -370,7 +370,7 @@ def test_encoding_operation_with_different_view_name_than_its_association(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_result.all_diagnostics == [
+    assert result.program_validation.all_diagnostics == [
         diagnostics.AssociationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=13,

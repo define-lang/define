@@ -89,8 +89,8 @@ def test_diamond_both_paths_satisfy_empty_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph_set(result.reference_graph_result) == {
+    assert_no_errors(result.program_validation)
+    assert action_graph_set(result.concrete_program) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -102,7 +102,7 @@ def test_diamond_one_path_violates_empty_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -150,7 +150,7 @@ def test_diamond_one_path_violates_empty_requirement(
         == "position<box_b>::action</act_b>::position<gateway>::position</value>"
     )
     assert all_diags[0].location.file_path == "test.dfn"
-    assert action_graph_set(result.reference_graph_result) == {
+    assert action_graph_set(result.concrete_program) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -162,7 +162,7 @@ def test_diamond_other_path_violates_empty_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -210,7 +210,7 @@ def test_diamond_other_path_violates_empty_requirement(
         == "position<box_c>::action</act_c>::position<gateway>::position</value>"
     )
     assert all_diags[0].location.file_path == "test.dfn"
-    assert action_graph_set(result.reference_graph_result) == {
+    assert action_graph_set(result.concrete_program) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -222,7 +222,7 @@ def test_diamond_occupied_requirement_independent_per_path(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -262,7 +262,7 @@ def test_diamond_occupied_requirement_independent_per_path(
             "file_path": "shared.dfn",
         },
     )
-    assert action_graph_set(result.reference_graph_result) == {
+    assert action_graph_set(result.concrete_program) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -274,8 +274,8 @@ def test_diamond_top_caller_satisfies_occupied_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph_set(result.reference_graph_result) == {
+    assert_no_errors(result.program_validation)
+    assert action_graph_set(result.concrete_program) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -287,7 +287,7 @@ def test_diamond_one_path_violates_occupied_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -327,7 +327,7 @@ def test_diamond_one_path_violates_occupied_requirement(
             "file_path": "shared.dfn",
         },
     )
-    assert action_graph_set(result.reference_graph_result) == {
+    assert action_graph_set(result.concrete_program) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),
@@ -339,7 +339,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -417,7 +417,7 @@ def test_diamond_neither_path_satisfies_occupied_requirement(
             "file_path": "shared.dfn",
         },
     )
-    assert action_graph_set(result.reference_graph_result) == {
+    assert action_graph_set(result.concrete_program) == {
         (_TEST, _ACT_B),
         (_TEST, _ACT_C),
         (_ACT_B, _SHARED),

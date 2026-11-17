@@ -74,7 +74,9 @@ py_test(
     deps = [
         ":generator",
         ":test_helpers",
+        "//define/compiler:ast",
         "//define/compiler:conftest",
+        "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/validator:test_helpers",
     ],
 )

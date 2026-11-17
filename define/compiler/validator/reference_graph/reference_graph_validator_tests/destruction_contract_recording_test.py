@@ -29,7 +29,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -85,7 +85,7 @@ def test_contract_keyed_on_contracted_origin_after_move(
             "file_path": "delete_destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MID, _DELETE_DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -95,8 +95,8 @@ def test_moved_in_contracted_origin_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_MID, _DELETE_DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -106,7 +106,7 @@ def test_auto_destruction_records_contract_validated_by_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -170,7 +170,7 @@ def test_auto_destruction_records_contract_validated_by_caller(
             "file_path": "delete_destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MID, _DELETE_DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -180,8 +180,8 @@ def test_auto_destruction_contract_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_MID, _DELETE_DESTRUCTOR),
         (_TEST, _MID),
     ]
@@ -191,8 +191,8 @@ def test_destroyer_destroys_implied_position_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DELETE_DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
     ]
@@ -202,7 +202,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -257,7 +257,7 @@ def test_destroyer_destroys_implied_position_requirement_violated(
             "file_path": "delete_destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DELETE_DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
     ]
@@ -267,7 +267,7 @@ def test_destruction_contracts_validated_in_execution_order(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -377,7 +377,7 @@ def test_destruction_contracts_validated_in_execution_order(
             "file_path": "destructor.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_TWO, _DESTRUCTOR),
         (_CLOSE_TWO, _DESTRUCTOR),
         (_TEST, _CLOSE_TWO),
@@ -388,8 +388,8 @@ def test_both_destructions_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_CLOSE_TWO, _DESTRUCTOR),
         (_CLOSE_TWO, _DESTRUCTOR),
         (_TEST, _CLOSE_TWO),

@@ -42,7 +42,7 @@ def test_inner_chained_action_empty_requirement_propagates(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -90,7 +90,7 @@ def test_inner_chained_action_empty_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
     ]
@@ -100,8 +100,8 @@ def test_inner_chained_action_empty_requirement_satisfied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
     ]
@@ -111,7 +111,7 @@ def test_inner_chained_action_occupied_requirement_is_reported_where_inner_actio
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -142,7 +142,7 @@ def test_inner_chained_action_occupied_requirement_is_reported_where_inner_actio
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
     ]
@@ -152,8 +152,8 @@ def test_inner_chained_action_occupied_requirement_caller_fills(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
     ]
@@ -163,8 +163,8 @@ def test_pending_transitive_guarantee_satisfies_later_action_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_CALL_FILL, _FILL_ITEM),
         (_CONSUME_ITEM, _CALL_FILL),
         (_TEST, _CALL_FILL),
@@ -176,8 +176,8 @@ def test_pending_guarantees_on_one_position_chain_satisfy_later_requirements(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_CALL_PARENT, _FILL_PARENT),
         (_CALL_CHILD, _FILL_CHILD),
         (_TEST, _CALL_CHILD),
@@ -190,8 +190,8 @@ def test_pending_guarantees_on_separate_position_chains_satisfy_later_requiremen
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_CALL_FILL, _FILL_ITEM),
         (_TEST, _CALL_FILL),
         (_TEST, _CALL_FILL),
@@ -203,8 +203,8 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_satisfy_later
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_CALL_PARENT, _FILL_PARENT),
         (_CALL_CHILD, _FILL_CHILD),
         (_CALL_FILL, _FILL_ITEM),
@@ -219,7 +219,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 3
     parent_marker_diagnostic = all_diags[0]
     assert isinstance(
@@ -372,7 +372,7 @@ def test_pending_guarantees_on_shared_and_separate_position_chains_violate_later
     assert item_diagnostic.propagation_chain[1].location.end_column == 92
     assert item_diagnostic.propagation_chain[2].location.end_line == 18
     assert item_diagnostic.propagation_chain[2].location.end_column == 82
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_CALL_PARENT, _FILL_PARENT),
         (_CALL_CHILD, _FILL_CHILD),
         (_CALL_FILL, _FILL_ITEM),
@@ -387,7 +387,7 @@ def test_three_deep_action_chain_requirement_propagates(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -444,7 +444,7 @@ def test_three_deep_action_chain_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_MIDDLE, _INNER),
         (_OUTER, _MIDDLE),
         (_TEST, _OUTER),
@@ -455,7 +455,7 @@ def test_four_deep_action_chain_requirement_propagates(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -519,7 +519,7 @@ def test_four_deep_action_chain_requirement_propagates(
             "file_path": "d.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         ("action<my.domain.com:my_lib:/c>", "action<my.domain.com:my_lib:/d>"),
         ("action<my.domain.com:my_lib:/b>", "action<my.domain.com:my_lib:/c>"),
         ("action<my.domain.com:my_lib:/a>", "action<my.domain.com:my_lib:/b>"),
@@ -531,7 +531,7 @@ def test_both_requirements_propagate_when_inner_has_both(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -579,7 +579,7 @@ def test_both_requirements_propagate_when_inner_has_both(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
     ]
@@ -589,7 +589,7 @@ def test_trigger_position_child_empty_requirement_propagates(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -638,7 +638,7 @@ def test_trigger_position_child_empty_requirement_propagates(
             "file_path": "inner.dfn",
         },
     )
-    assert action_graph(result.reference_graph_result) == [
+    assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
     ]
@@ -648,7 +648,7 @@ def test_trigger_position_child_occupied_requirement_propagates(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False

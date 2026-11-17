@@ -29,24 +29,24 @@ def test_local_position_left_occupied_fires_destructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_local_position_in_constructor_left_occupied_fires_destructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_auto_destruction_fires_all_local_particle_destructors(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [
         (_TEST, _DESTRUCTOR_A),
         (_TEST, _DESTRUCTOR_B),
     ]
@@ -56,22 +56,22 @@ def test_empty_local_position_does_not_fire_destructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnreferencedPositionDiagnostic)
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 20
     assert all_diags[0].location.file_path == "test.dfn"
-    assert action_graph(result.reference_graph_result) == []
+    assert action_graph(result.concrete_program) == []
 
 
 def test_explicit_destroy_before_block_end_does_not_double_fire(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    edges = action_graph(result.reference_graph_result)
+    assert_no_errors(result.program_validation)
+    edges = action_graph(result.concrete_program)
     assert edges == [(_TEST, _DESTRUCTOR)]
 
 
@@ -79,8 +79,8 @@ def test_auto_destruction_cascades_into_child_particle_destructors(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _CHILD_DESTRUCTOR)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _CHILD_DESTRUCTOR)]
 
 
 def test_move_from_interface_position_to_local_then_auto_destroy(
@@ -89,8 +89,8 @@ def test_move_from_interface_position_to_local_then_auto_destroy(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_move_from_implied_position_to_local_then_auto_destroy(
@@ -99,15 +99,15 @@ def test_move_from_implied_position_to_local_then_auto_destroy(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_occupied_implied_position_requirements=True
     )
-    assert_no_errors(result.program_result)
-    assert action_graph(result.reference_graph_result) == [(_TEST, _DESTRUCTOR)]
+    assert_no_errors(result.program_validation)
+    assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
 
 
 def test_auto_destruction_failing_occupied_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -167,7 +167,7 @@ def test_constructor_auto_destruction_failing_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 10
@@ -229,7 +229,7 @@ def test_auto_destruction_reports_each_failing_destructor_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 17
@@ -345,7 +345,7 @@ def test_cascade_child_auto_destruction_failing_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 10
@@ -409,7 +409,7 @@ def test_interface_to_local_auto_destruction_failing_requirement(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 15
@@ -473,7 +473,7 @@ def test_implied_to_local_auto_destruction_failing_requirement(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_occupied_implied_position_requirements=True
     )
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 11
@@ -535,7 +535,7 @@ def test_destructor_requirement_propagates_to_caller_via_implied_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_result.all_diagnostics
+    all_diags = result.program_validation.all_diagnostics
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 19

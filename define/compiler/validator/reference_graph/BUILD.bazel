@@ -312,7 +312,7 @@ py_library(
     deps = [
         ":abstract_program",
         "//define/compiler:ast",
-        "//define/compiler:conftest",
+        "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/validator/reference_graph/destruction:destruction_contract",
     ],
 )

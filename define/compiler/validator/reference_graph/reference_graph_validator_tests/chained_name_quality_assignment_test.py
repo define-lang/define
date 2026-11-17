@@ -61,7 +61,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "action<my.domain.com:my_lib:/wrong>"
@@ -106,7 +106,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        assert_no_errors(result.program_result)
+        assert_no_errors(result.program_validation)
 
     def test_duplicate_definition_preserves_first_quality_assignments(
         self,
@@ -115,7 +115,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.LocalNameConflictDiagnostic)
         assert all_diags[0].local_name == "pos_a"
@@ -129,7 +129,7 @@ class TestCreateParticle:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        all_diags = result.program_result.all_diagnostics
+        all_diags = result.program_validation.all_diagnostics
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
         assert all_diags[0].definition_type == "action"
