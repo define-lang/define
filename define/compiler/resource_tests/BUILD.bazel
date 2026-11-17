@@ -23,6 +23,7 @@ py_test(
         "//define/testdata/compiler_resources:wide_destruction",
         "//define/testdata/resource_tests/cyclic_garbage",
     ],
+    tags = ["no-coverage"],
     deps = [
         ":resource_cases",
         "//defcl/python:error_types",
@@ -139,6 +140,7 @@ py_test(
         "RESOURCE_LIMIT_RUNNER": "$(rlocationpath :resource_limit_runner)",
         "RESOURCE_TEST_RUNNER": "$(rlocationpath :resource_test_runner)",
     },
+    tags = ["no-coverage"],
     target_compatible_with = ["@platforms//os:linux"],
     deps = [
         ":resource_test_runner",
