@@ -337,15 +337,15 @@ class ReferenceResolver:
             self._path_tracker.mark_root_failed(root_prefix)
             return None
         root_config = result.config
-        existing = self._path_tracker.project_root_for_fqun(root_config.fqun)
+        existing = self._path_tracker.project_root_for_fqun(root_config.fqun.canonical)
         if existing is not None and existing[0] != root_prefix:
             _, existing_config = existing
             self._path_tracker.mark_root_failed(root_prefix)
             self._program_diagnostics.append(
                 diagnostics.DuplicateFqunDiagnostic(
-                    location=root_config.fqun_location,
-                    fqun=root_config.fqun,
-                    existing_location=existing_config.fqun_location,
+                    location=root_config.fqun.location,
+                    fqun=root_config.fqun.canonical,
+                    existing_location=existing_config.fqun.location,
                 )
             )
             return None
@@ -361,7 +361,7 @@ class ReferenceResolver:
         """Record the sub-roots that a loaded project's local dependencies declare."""
         for entry in root_config.sub_roots.values():
             sub_root_path = root_prefix / entry.path
-            if entry.universe == root_config.fqun:
+            if entry.universe == root_config.fqun.canonical:
                 self._disabled_universes.add((root_prefix, entry.universe))
                 self._program_diagnostics.append(
                     diagnostics.LocalDependencyOnOwnUniverseDiagnostic(

@@ -293,6 +293,33 @@ class InvalidGlobalName(DefineTokenError):
     )
 
 
+class InvalidFqun(DefineNameSyntaxError):
+    """Wrote something that isn't a fully qualified universe name where only one is accepted."""
+
+    message_format: ClassVar[str] = (
+        "This is not a valid fully qualified universe name (like "
+        "'multiverse:authority:universe', 'authority:universe', or "
+        f"'{constants.STANDARD_UNIVERSE}')."
+    )
+
+
+class FqunContainsSpace(DefineNameSyntaxError):
+    """Wrote a space in a fully qualified universe name."""
+
+    message_format: ClassVar[str] = (
+        "A fully qualified universe name cannot contain spaces."
+    )
+
+
+class FqunHasTooManyComponents(DefineNameSyntaxError):
+    """Wrote a fully qualified universe name with more than three components."""
+
+    message_format: ClassVar[str] = (
+        "A fully qualified universe name has at most three components, like "
+        "'multiverse:authority:universe'."
+    )
+
+
 class InvalidHasAParticleSyntax(DefineTokenError):
     """Expected 'has a particle' after a local name in a trigger condition."""
 

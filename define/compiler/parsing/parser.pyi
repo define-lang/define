@@ -14,6 +14,9 @@ class ParseResult:
 def parse_global_name(
     name: bytes, file_path: str | None, line: int, column: int
 ) -> ast.ReferenceGlobalNameContent | syntax_errors.DefineSyntaxError: ...
+def parse_fqun(
+    name: bytes, file_path: str | None, line: int, column: int
+) -> ast.Fqun | syntax_errors.DefineSyntaxError: ...
 def parse(
     source: bytes,
     file_path: str | None,

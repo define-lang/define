@@ -108,9 +108,11 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":config_file",
+        ":global_names",
         "//crates/source_rendering/python:rendering",
         "//defcl/python:loader",
         "//defcl/schema/core:boolean_proto_py",
+        "//define/compiler:ast",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/config/project:config_proto_py",

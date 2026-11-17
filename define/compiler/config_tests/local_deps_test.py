@@ -7,7 +7,7 @@ from pathlib import PurePosixPath
 
 from crates.source_rendering.python import rendering
 from defcl.python import error_types, errors
-from define.compiler.config import config_loader, local_deps_config, project_config
+from define.compiler.config import config_loader, local_deps_config
 from define.compiler.config_tests import test_helpers
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
@@ -213,12 +213,11 @@ def test_dots_within_a_part_of_path(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    assert test_helpers.load_config() == config_loader.ConfigLoadResult(
+    result = test_helpers.load_config()
+
+    assert result == config_loader.ConfigLoadResult(
         config=config_loader.Config(
-            fqun="test.example.com:my_lib",
-            fqun_location=test_helpers.config_field_location(
-                project_config.CONFIG_FILE, ("project", "universe_name")
-            ),
+            fqun=test_helpers.loaded_fqun(result.config, "test.example.com:my_lib"),
             sub_roots={
                 "mv:define-lang.org:lib": local_deps_config.LocalDependencyEntry(
                     universe="mv:define-lang.org:lib",
@@ -265,12 +264,11 @@ def test_duplicate_universe_name_uses_the_first_entry(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    assert test_helpers.load_config() == config_loader.ConfigLoadResult(
+    result = test_helpers.load_config()
+
+    assert result == config_loader.ConfigLoadResult(
         config=config_loader.Config(
-            fqun="test.example.com:my_lib",
-            fqun_location=test_helpers.config_field_location(
-                project_config.CONFIG_FILE, ("project", "universe_name")
-            ),
+            fqun=test_helpers.loaded_fqun(result.config, "test.example.com:my_lib"),
             sub_roots={
                 "mv:define-lang.org:lib": local_deps_config.LocalDependencyEntry(
                     universe="mv:define-lang.org:lib",

@@ -41,6 +41,30 @@ def config_global_name(
     return (None if content_diagnostics else name_content), content_diagnostics
 
 
+def config_fqun(
+    file: defcl_validator.ValidatedFile,
+    field_path: diagnostics.FieldPath,
+    name: str,
+) -> tuple[ast.Fqun | None, list[diagnostics.Diagnostic]]:
+    """Parse and validate the fully qualified universe name in the config file's field at field_path.
+
+    Returns it, located at its value in the file, or None if it is not valid,
+    with its diagnostics.
+    """
+    # Each field's value is a string, so it is located at its opening quote,
+    # and the name starts after it.
+    # TODO: This is only right when the string has no escapes. Locate the
+    # name by its value's text once defcl gives that location.
+    quote = file.location_of(field_path)
+    fqun = parser.parse_fqun(
+        name.encode(), quote.file_path, quote.line, quote.column + 1
+    )
+    if isinstance(fqun, syntax_errors.DefineSyntaxError):
+        return None, [fqun]
+    fqun_diagnostics = name_validators.validate_fqun(fqun)
+    return (None if fqun_diagnostics else fqun), fqun_diagnostics
+
+
 def check_global_name_in_this_universe(
     field_name: str, content: ast.ReferenceGlobalNameContent, fqun: str
 ) -> diagnostics.Diagnostic | None:

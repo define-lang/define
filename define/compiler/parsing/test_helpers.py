@@ -20,6 +20,13 @@ def parse(source: str, file_path: str | None = None) -> ast.Program:
     return result.program
 
 
+def parse_fqun(name: str) -> ast.Fqun:
+    """Parse name, which must be a fully qualified universe name, into an FQUN."""
+    fqun = parser.parse_fqun(name.encode(), None, 1, 1)
+    assert not isinstance(fqun, syntax_errors.DefineSyntaxError)
+    return fqun
+
+
 def parse_syntax_error(
     source: str, file_path: str | None = None
 ) -> syntax_errors.DefineSyntaxError:

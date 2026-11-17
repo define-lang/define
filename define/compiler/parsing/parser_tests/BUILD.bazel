@@ -40,6 +40,7 @@ py_test(
         "error_messages_test.py",
         "extra_whitespace_test.py",
         "file_encoding_test.py",
+        "fqun_test.py",
         "global_name_test.py",
         "incomplete_statements_test.py",
         "indentation_test.py",

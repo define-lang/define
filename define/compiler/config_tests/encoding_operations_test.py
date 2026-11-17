@@ -29,7 +29,7 @@ def test_resolves_encoding_operations(
     result = test_helpers.load_config()
     () = result.diagnostics
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert test_helpers.associated_names(result.config.value_encodings) == {}
     assert test_helpers.associated_encoding_operations(
@@ -110,7 +110,7 @@ def test_logical_operation_in_another_universe(
         fqun="test.example.com:my_lib",
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert result.config.logical_operation_encoding_operations == {}
 
@@ -132,7 +132,7 @@ def test_logical_operation_that_is_not_a_global_name(
         )
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert result.config.logical_operation_encoding_operations == {}
 
@@ -155,7 +155,7 @@ def test_logical_operation_full_name_in_own_universe(
         fqun="test.example.com:my_lib",
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert result.config.logical_operation_encoding_operations == {}
 
@@ -197,7 +197,7 @@ def test_encoding_operation_that_is_not_a_global_name(
         )
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert result.config.logical_operation_encoding_operations == {}
 
@@ -220,7 +220,7 @@ def test_encoding_operation_full_name_in_own_universe(
         fqun="test.example.com:my_lib",
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert result.config.logical_operation_encoding_operations == {}
 

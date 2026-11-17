@@ -105,13 +105,33 @@ pub struct NameContent {
     pub is_local_name: bool,
 }
 
+/// What a scan of a fully qualified universe name that is a whole source, such
+/// as one that configuration writes, found.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FqunNameContent {
+    /// The length in bytes of the name content, which ends before the first
+    /// `>` or line feed, or at the end of the source.
+    pub length: usize,
+    /// The number of UTF-8 characters in the name content.
+    pub character_count: usize,
+    /// Whether every byte of the name content is from ` ` through `~`.
+    pub is_printable_ascii: bool,
+    /// Where the `:`s between the FQUN's components are, counting the end of
+    /// its universe as the last, which is where a global name's path would
+    /// begin. `None` for name content with a space, which is not an FQUN.
+    pub fqun_separators: Option<FqunSeparators>,
+}
+
 /// What a scan of name content reports, which is whether the name content
-/// is a local name only when `FINDS_LOCAL_NAMES` is true.
+/// is a local name only when `FINDS_LOCAL_NAMES` is true. When
+/// `PATH_STARTS_AT_END` is true, the name content is an FQUN with no path, so
+/// it is scanned as if a path began where it ends.
 // Each scan builds its own result type on every path, so that a scan that
 // skips the work for local names does not copy a larger result into a smaller
 // one.
 trait ScannedNameContent {
     const FINDS_LOCAL_NAMES: bool;
+    const PATH_STARTS_AT_END: bool;
 
     fn new(
         length: usize,
@@ -125,6 +145,7 @@ trait ScannedNameContent {
 
 impl ScannedNameContent for GlobalNameContent {
     const FINDS_LOCAL_NAMES: bool = false;
+    const PATH_STARTS_AT_END: bool = false;
 
     #[inline(always)]
     fn new(
@@ -147,6 +168,7 @@ impl ScannedNameContent for GlobalNameContent {
 
 impl ScannedNameContent for NameContent {
     const FINDS_LOCAL_NAMES: bool = true;
+    const PATH_STARTS_AT_END: bool = false;
 
     #[inline(always)]
     fn new(
@@ -168,11 +190,41 @@ impl ScannedNameContent for NameContent {
     }
 }
 
+impl ScannedNameContent for FqunNameContent {
+    const FINDS_LOCAL_NAMES: bool = false;
+    const PATH_STARTS_AT_END: bool = true;
+
+    #[inline(always)]
+    fn new(
+        length: usize,
+        character_count: usize,
+        is_printable_ascii: bool,
+        _: bool,
+        fqun_separators: Option<FqunSeparators>,
+        _: bool,
+    ) -> Self {
+        Self {
+            length,
+            character_count,
+            is_printable_ascii,
+            fqun_separators,
+        }
+    }
+}
+
 /// Scans the name content at the start of `source`, where only a global name
 /// belongs.
 #[inline]
 #[must_use]
 pub fn global_name_content(source: &[u8]) -> GlobalNameContent {
+    scan_name_content(source)
+}
+
+/// Scans the name content at the start of `source`, which must be a fully
+/// qualified universe name with no path.
+#[inline]
+#[must_use]
+pub fn fqun_name_content(source: &[u8]) -> FqunNameContent {
     scan_name_content(source)
 }
 
@@ -276,22 +328,38 @@ fn name_content_in_vector<Scanned: ScannedNameContent>(
 ) -> Scanned {
     let within = low_bits(length);
     let component_separators = masks.component_separators & within;
-    // A `/` can begin the path of a global name when it is first or follows a
-    // `:`, and when at least one more byte follows it in the name content.
-    let path_starts = masks.path_separators & ((component_separators << 1) | 1) & (within >> 1);
+    let path_starts = if Scanned::PATH_STARTS_AT_END {
+        1 << length
+    } else {
+        // A `/` can begin the path of a global name when it is first or
+        // follows a `:`, and when at least one more byte follows it in the
+        // name content.
+        masks.path_separators & ((component_separators << 1) | 1) & (within >> 1)
+    };
     let first_path_start = path_starts.trailing_zeros();
     let is_global_name = first_path_start < (masks.spaces & within).trailing_zeros();
     // The `:`s before the first `/` that can begin a path. A global name's
     // path follows its last `:`, if it has one.
     let fqun_separators = component_separators & !path_starts & path_starts.wrapping_sub(1);
-    let last = first_path_start.wrapping_sub(1);
+    // An FQUN with no path ends where its last component does, as if a `:`
+    // were there.
+    let last = if Scanned::PATH_STARTS_AT_END {
+        first_path_start
+    } else {
+        first_path_start.wrapping_sub(1)
+    };
     // The fields are computed before the `Option` is, so that `None`, which
     // is only a count of 0, is no branch away from `Some`.
-    let first = fqun_separators.trailing_zeros();
+    let first = if Scanned::PATH_STARTS_AT_END {
+        fqun_separators.trailing_zeros().min(last)
+    } else {
+        fqun_separators.trailing_zeros()
+    };
     let second = (fqun_separators & fqun_separators.wrapping_sub(1))
         .trailing_zeros()
         .min(last);
-    let count = fqun_separators.count_ones() & 0u32.wrapping_sub(u32::from(is_global_name));
+    let separator_count = fqun_separators.count_ones() + u32::from(Scanned::PATH_STARTS_AT_END);
+    let count = separator_count & 0u32.wrapping_sub(u32::from(is_global_name));
     Scanned::new(
         length,
         length - (masks.continuation & within).count_ones() as usize,
@@ -471,9 +539,15 @@ impl<Scanned: ScannedNameContent> UndecidedName<Scanned> {
             self.local_name_breaks |=
                 (component_separators | masks.path_separators | masks.spaces) & within;
         }
-        let path_starts = masks.path_separators
-            & ((component_separators << 1) | self.follows_component_separator)
-            & within;
+        // An FQUN with no path has no `/` that can begin one, so every `:` in
+        // it separates its components.
+        let path_starts = if Scanned::PATH_STARTS_AT_END {
+            0
+        } else {
+            masks.path_separators
+                & ((component_separators << 1) | self.follows_component_separator)
+                & within
+        };
         let separators = component_separators & !path_starts & path_starts.wrapping_sub(1);
         let after_first = separators & separators.wrapping_sub(1);
         // The first two `:`s in this vector, or `u32::MAX` where there are
@@ -516,7 +590,12 @@ impl<Scanned: ScannedNameContent> UndecidedName<Scanned> {
         let offset = bytes.offset;
         let within = low_bits(length);
         let path_starts = self.add_separators(masks, within, offset);
-        let first_path_start = path_starts.trailing_zeros();
+        let first_path_start = if Scanned::PATH_STARTS_AT_END {
+            // `length`, which is less than 32.
+            within.count_ones()
+        } else {
+            path_starts.trailing_zeros()
+        };
         let decided = self.decided(
             first_path_start < (masks.spaces & within).trailing_zeros(),
             offset + first_path_start,
@@ -553,15 +632,26 @@ impl DecidedName {
         total_length: usize,
         is_local_name: bool,
     ) -> Scanned {
-        // A global name's path is at least one byte after its first `/`.
-        let is_global_name = self.has_path_start & ((self.path_start as usize) + 1 < total_length);
-        // A global name's path follows its last `:`, if it has one. The fields
-        // are computed before the `Option` is, so that `None`, which is only a
-        // count of 0, is no branch away from `Some`.
-        let last = self.path_start.wrapping_sub(1);
+        // A global name's path is at least one byte after its first `/`. An
+        // FQUN with no path ends where its path would begin.
+        let is_global_name = if Scanned::PATH_STARTS_AT_END {
+            self.has_path_start
+        } else {
+            self.has_path_start & ((self.path_start as usize) + 1 < total_length)
+        };
+        // A global name's path follows its last `:`, if it has one, and an
+        // FQUN with no path ends where its last component does, as if a `:`
+        // were there. The fields are computed before the `Option` is, so that
+        // `None`, which is only a count of 0, is no branch away from `Some`.
+        let last = if Scanned::PATH_STARTS_AT_END {
+            self.path_start
+        } else {
+            self.path_start.wrapping_sub(1)
+        };
         let first = self.first_fqun_separator.min(last);
         let second = self.second_fqun_separator.min(last);
-        let count = self.fqun_separator_count & 0u32.wrapping_sub(u32::from(is_global_name));
+        let separator_count = self.fqun_separator_count + u32::from(Scanned::PATH_STARTS_AT_END);
+        let count = separator_count & 0u32.wrapping_sub(u32::from(is_global_name));
         Scanned::new(
             total_length,
             total_length - bytes.continuation_bytes,
@@ -743,6 +833,135 @@ mod tests {
     use super::*;
     use googletest::prelude::*;
     use indoc::indoc;
+
+    #[gtest]
+    fn fqun_name_content_with_three_components() -> Result<()> {
+        verify_that!(
+            fqun_name_content(b"mv:define-lang.org:parser"),
+            eq(FqunNameContent {
+                length: 25,
+                character_count: 25,
+                is_printable_ascii: true,
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(3).or_fail()?,
+                    first: 2,
+                    second: 18,
+                    last: 25
+                }),
+            })
+        )
+    }
+
+    #[gtest]
+    fn fqun_name_content_with_one_component() -> Result<()> {
+        verify_that!(
+            fqun_name_content(b"standard"),
+            eq(FqunNameContent {
+                length: 8,
+                character_count: 8,
+                is_printable_ascii: true,
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(1).or_fail()?,
+                    first: 8,
+                    second: 8,
+                    last: 8
+                }),
+            })
+        )
+    }
+
+    #[gtest]
+    fn fqun_name_content_with_path_separator_in_authority() -> Result<()> {
+        verify_that!(
+            fqun_name_content(b"define-lang.org/a:parser"),
+            eq(FqunNameContent {
+                length: 24,
+                character_count: 24,
+                is_printable_ascii: true,
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(2).or_fail()?,
+                    first: 17,
+                    second: 24,
+                    last: 24
+                }),
+            })
+        )
+    }
+
+    #[gtest]
+    fn fqun_name_content_with_space_is_not_fqun() -> Result<()> {
+        verify_that!(
+            fqun_name_content(b"define-lang.org:my parser"),
+            eq(FqunNameContent {
+                length: 25,
+                character_count: 25,
+                is_printable_ascii: true,
+                fqun_separators: None,
+            })
+        )
+    }
+
+    #[gtest]
+    fn fqun_name_content_ends_at_name_content_end() -> Result<()> {
+        verify_that!(
+            fqun_name_content(b"define-lang.org:parser>x"),
+            eq(FqunNameContent {
+                length: 22,
+                character_count: 22,
+                is_printable_ascii: true,
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(2).or_fail()?,
+                    first: 15,
+                    second: 22,
+                    last: 22
+                }),
+            })
+        )
+    }
+
+    #[gtest]
+    fn fqun_name_content_longer_than_one_vector() -> Result<()> {
+        verify_that!(
+            fqun_name_content(b"a_very_long_multiverse_name:define-lang.org:a_long_universe"),
+            eq(FqunNameContent {
+                length: 59,
+                character_count: 59,
+                is_printable_ascii: true,
+                fqun_separators: Some(FqunSeparators {
+                    count: NonZeroU32::new(3).or_fail()?,
+                    first: 27,
+                    second: 43,
+                    last: 59
+                }),
+            })
+        )
+    }
+
+    #[gtest]
+    fn fqun_name_content_longer_than_one_vector_with_space_in_first_vector() -> Result<()> {
+        verify_that!(
+            fqun_name_content(b"a very long multiverse name:define-lang.org:a_long_universe"),
+            eq(FqunNameContent {
+                length: 59,
+                character_count: 59,
+                is_printable_ascii: true,
+                fqun_separators: None,
+            })
+        )
+    }
+
+    #[gtest]
+    fn fqun_name_content_longer_than_one_vector_with_space_in_last_vector() -> Result<()> {
+        verify_that!(
+            fqun_name_content(b"a_very_long_multiverse_name:define-lang.org:a long universe"),
+            eq(FqunNameContent {
+                length: 59,
+                character_count: 59,
+                is_printable_ascii: true,
+                fqun_separators: None,
+            })
+        )
+    }
 
     #[gtest]
     fn name_content_with_fqun() -> Result<()> {

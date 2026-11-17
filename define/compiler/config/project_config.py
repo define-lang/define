@@ -8,13 +8,14 @@ from pathlib import PurePosixPath
 import msgspec
 
 from defcl.schema.core import boolean_pb2
-from define.compiler.config import config_file
+from define.compiler.config import config_file, global_names
 from define.compiler.data_structures import define_path
 from define.config.project import config_pb2
 
 if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from defcl.python import loader as defcl_loader
+    from define.compiler import ast
     from define.compiler.errors import diagnostics
 
 CONFIG_FILE = config_file.ConfigFile(
@@ -26,10 +27,10 @@ CONFIG_FILE = config_file.ConfigFile(
 class ProjectConfig(msgspec.Struct, frozen=True):
     """What a project config says about its project."""
 
-    fqun: str
-    # The location of the universe_name value, for diagnostics about the
-    # universe that are found after the config is loaded.
-    fqun_location: rendering.SourceLocation
+    # The project's universe, located at the universe_name value, for
+    # diagnostics about the universe that are found after the config is
+    # loaded.
+    fqun: ast.Fqun
     # Where the config says that the project has Value Encoding Associations,
     # or None if it does not say so.
     has_encodings_location: rendering.SourceLocation | None
@@ -57,9 +58,14 @@ class ProjectConfigReader(config_file.ConfigFileReader[config_pb2.ProjectConfigF
         if loaded is None:
             return None, config_diagnostics
         project = loaded.message.project
+        fqun, fqun_diagnostics = global_names.config_fqun(
+            loaded.file, ("project", "universe_name"), project.universe_name
+        )
+        config_diagnostics.extend(fqun_diagnostics)
+        if fqun is None:
+            return None, config_diagnostics
         return ProjectConfig(
-            fqun=project.universe_name or "",
-            fqun_location=loaded.file.location_of(("project", "universe_name")),
+            fqun=fqun,
             has_encodings_location=_true_association_location(
                 loaded, "has_encodings", project.associations.has_encodings
             ),

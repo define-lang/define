@@ -59,6 +59,7 @@ py_test(
         "//define/compiler/config:config_loader",
         "//define/compiler/config:local_deps_config",
         "//define/compiler/data_structures:define_path",
+        "//define/compiler/parsing:test_helpers",
         "@pypi//pytest",
     ],
 )

@@ -1168,7 +1168,7 @@ class DefinitionStructuralValidator:
                     diagnostics.ExternalUniverseNotConfiguredDiagnostic(
                         location=global_name.fqun.location,
                         universe=fqun_string,
-                        current_universe_name=root_config.fqun,
+                        current_universe_name=root_config.fqun.canonical,
                     )
                 )
                 return None

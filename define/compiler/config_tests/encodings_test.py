@@ -30,7 +30,7 @@ def test_resolves_value_encodings(
     result = test_helpers.load_config()
     () = result.diagnostics
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert test_helpers.associated_names(result.config.value_encodings) == {
         "/number/integer": [
@@ -48,12 +48,11 @@ def test_has_encodings_false_does_not_read_encodings(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    assert test_helpers.load_config() == config_loader.ConfigLoadResult(
+    result = test_helpers.load_config()
+
+    assert result == config_loader.ConfigLoadResult(
         config=config_loader.Config(
-            fqun="test.example.com:my_lib",
-            fqun_location=test_helpers.config_field_location(
-                project_config.CONFIG_FILE, ("project", "universe_name")
-            ),
+            fqun=test_helpers.loaded_fqun(result.config, "test.example.com:my_lib"),
             sub_roots={},
             value_encodings={},
             logical_operation_encoding_operations={},
@@ -101,7 +100,7 @@ def test_value_in_another_universe(
         fqun="test.example.com:my_lib",
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert test_helpers.associated_names(result.config.value_encodings) == {}
 
@@ -123,7 +122,7 @@ def test_value_that_is_not_a_global_name(
         )
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert test_helpers.associated_names(result.config.value_encodings) == {}
 
@@ -146,7 +145,7 @@ def test_value_full_name_in_own_universe(
         fqun="test.example.com:my_lib",
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert test_helpers.associated_names(result.config.value_encodings) == {}
 
@@ -159,7 +158,7 @@ def test_resolves_encoding_from_another_universe(
     result = test_helpers.load_config()
     () = result.diagnostics
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert test_helpers.associated_names(result.config.value_encodings) == {
         "/number": [test_helpers.encoding_name("other.com:lib:/number/ascii", 5)]
@@ -183,7 +182,7 @@ def test_encoding_that_is_not_a_global_name(
         )
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert test_helpers.associated_names(result.config.value_encodings) == {}
 
@@ -206,7 +205,7 @@ def test_encoding_full_name_in_own_universe(
         fqun="test.example.com:my_lib",
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert test_helpers.associated_names(result.config.value_encodings) == {}
 
@@ -226,7 +225,7 @@ def test_unsorted_values(
         previous_value="/number/natural",
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert test_helpers.associated_names(result.config.value_encodings) == {
         "/number/natural": [test_helpers.encoding_name("/number/natural/ascii", 5)],
@@ -252,7 +251,7 @@ def test_duplicate_value_encoding(
         ),
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert test_helpers.associated_names(result.config.value_encodings) == {
         "/number": [test_helpers.encoding_name("/number/ascii", 5)]
@@ -295,7 +294,7 @@ def test_duplicate_value_encoding_with_invalid_name(
         ),
     )
     assert result.config is not None
-    assert result.config.fqun == "test.example.com:my_lib"
+    assert result.config.fqun.canonical == "test.example.com:my_lib"
     assert result.config.sub_roots == {}
     assert test_helpers.associated_names(result.config.value_encodings) == {}
 

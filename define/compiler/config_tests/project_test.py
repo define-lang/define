@@ -8,7 +8,7 @@ from crates.source_rendering.python import rendering
 from defcl.python import error_types, errors
 from define.compiler.config import config_loader, local_deps_config, project_config
 from define.compiler.config_tests import test_helpers
-from define.compiler.errors import diagnostics
+from define.compiler.errors import diagnostics, syntax_errors
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -95,6 +95,46 @@ def test_empty_universe_name(
     )
 
 
+def test_universe_name_with_space(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    name = test_helpers.universe_name_location("test.example.com:my lib")
+    # The space follows "test.example.com:my".
+    space_column = name.column + len("test.example.com:my")
+    assert test_helpers.load_config() == config_loader.ConfigLoadResult(
+        config=None,
+        diagnostics=[
+            syntax_errors.FqunContainsSpace(
+                location=rendering.SourceLocation(
+                    line=name.line,
+                    column=space_column,
+                    end_line=name.line,
+                    end_column=space_column,
+                    file_path=name.file_path,
+                )
+            )
+        ],
+    )
+
+
+def test_universe_name_is_not_a_valid_fqun(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    assert test_helpers.load_config() == config_loader.ConfigLoadResult(
+        config=None,
+        diagnostics=[
+            diagnostics.UniverseWithoutAuthorityDiagnostic(
+                location=test_helpers.universe_name_location("my_lib"),
+                universe_name="my_lib",
+            )
+        ],
+    )
+
+
 def test_local_deps_diagnostics_reported_too(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
 ):
@@ -148,10 +188,7 @@ def test_layout_error_still_resolves(
 
     result = test_helpers.load_config()
     assert result.config == config_loader.Config(
-        fqun="test.example.com:my_lib",
-        fqun_location=test_helpers.config_field_location(
-            project_config.CONFIG_FILE, ("project", "universe_name")
-        ),
+        fqun=test_helpers.loaded_fqun(result.config, "test.example.com:my_lib"),
         sub_roots={},
         value_encodings={},
         logical_operation_encoding_operations={},

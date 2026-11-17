@@ -227,6 +227,22 @@ impl<'source> Scanner<'source> {
         (text, scanned)
     }
 
+    /// Consumes name content that must be a fully qualified universe name with
+    /// no path, and returns it with what the scan found.
+    pub(crate) fn consume_fqun_name_content(
+        &mut self,
+    ) -> (SourceText<'source>, vector_scan::FqunNameContent) {
+        let scanned = vector_scan::fqun_name_content(self.rest);
+        let (bytes, rest) = self.rest.split_at(scanned.length);
+        let text = SourceText {
+            bytes,
+            is_known_ascii: scanned.is_printable_ascii,
+        };
+        self.rest = rest;
+        self.position = self.position.columns_later(scanned.character_count);
+        (text, scanned)
+    }
+
     /// Consumes literal content up to its first `"` that is not after a `\`,
     /// or up to the end of the line or the source, and returns it.
     pub(crate) fn consume_literal_content(&mut self) -> LiteralContent<'source> {

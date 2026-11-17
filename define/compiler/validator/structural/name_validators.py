@@ -384,7 +384,7 @@ def _validate_universe_name_reserved(
 # ---------------------------------------------------------------------------
 
 
-def _validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
+def validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
     """Validate a fully-qualified universe name."""
     result: list[diagnostics.Diagnostic] = []
     if fqun.multiverse is not None:
@@ -426,7 +426,7 @@ def validate_global_name(
     """
     result: list[diagnostics.Diagnostic] = []
     if name.fqun is not None:
-        result.extend(_validate_fqun(name.fqun))
+        result.extend(validate_fqun(name.fqun))
         # References may name reserved universes, such as standard. Only
         # defining names in a reserved universe is forbidden.
         if (

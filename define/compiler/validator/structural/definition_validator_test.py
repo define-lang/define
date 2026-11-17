@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import types
 
-from crates.source_rendering.python import rendering
 from define.compiler.config import config_loader
 from define.compiler.data_structures import define_path
 from define.compiler.parsing import test_helpers
@@ -13,9 +12,6 @@ from define.compiler.validator.structural import (
 )
 
 # Where the locations come from does not matter to these tests.
-_LOCATION = rendering.SourceLocation(
-    line=1, column=1, end_line=1, end_column=1, file_path=".define/project/config.defcl"
-)
 
 
 class TestDefinitionStructuralValidator:
@@ -28,8 +24,7 @@ class TestDefinitionStructuralValidator:
                 file_path=define_path.DefinePath("test.dfn"),
                 root_prefix=define_path.DefinePath("/project"),
                 root_config=config_loader.Config(
-                    fqun="my.domain.com:my_lib",
-                    fqun_location=_LOCATION,
+                    fqun=test_helpers.parse_fqun("my.domain.com:my_lib"),
                     sub_roots=types.MappingProxyType({}),
                     value_encodings={},
                     logical_operation_encoding_operations={},

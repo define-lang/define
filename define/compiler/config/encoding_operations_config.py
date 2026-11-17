@@ -95,7 +95,7 @@ class EncodingOperationsConfigReader(
         encoding_operations, association_diagnostics = _encoding_operations(
             result.message.encoding_operations.operation_encodings,
             result.file,
-            project.fqun,
+            project.fqun.canonical,
         )
         encoding_operations_diagnostics.extend(association_diagnostics)
         return (

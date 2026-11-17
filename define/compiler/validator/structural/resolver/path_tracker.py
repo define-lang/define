@@ -189,7 +189,7 @@ class PathTracker[T]:
         if node.project_root is not None:
             raise ValueError(f"sub_root already registered: {root}")
         node.project_root = (root, root_config)
-        self._fqun_to_project_root[root_config.fqun] = (root, root_config)
+        self._fqun_to_project_root[root_config.fqun.canonical] = (root, root_config)
 
     def declare_sub_root(
         self,

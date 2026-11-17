@@ -33,10 +33,10 @@ def universe_needs_configuration(fqun: str) -> bool:
 class Config(msgspec.Struct):
     """Resolved project configuration for a project root."""
 
-    fqun: str
-    # The location of the universe_name value in project.defcl, for
-    # diagnostics about the universe that are found after the config is loaded.
-    fqun_location: rendering.SourceLocation
+    # The project's universe, located at the universe_name value in its project
+    # config, for diagnostics about the universe that are found after the
+    # config is loaded.
+    fqun: ast.Fqun
     # The local dependency entry for each universe that the project configures
     # as a sub-root.
     sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry]
@@ -123,13 +123,16 @@ class ConfigLoader:
         if project is None:
             return ConfigLoadResult(config=None, diagnostics=config_diagnostics)
         fqun_matches = True
-        if declaring_entry is not None and project.fqun != declaring_entry.universe:
+        if (
+            declaring_entry is not None
+            and project.fqun.canonical != declaring_entry.universe
+        ):
             fqun_matches = False
             config_diagnostics.append(
                 diagnostics.SubRootFqunMismatchDiagnostic(
-                    location=project.fqun_location,
+                    location=project.fqun.location,
                     expected_fqun=declaring_entry.universe,
-                    actual_fqun=project.fqun,
+                    actual_fqun=project.fqun.canonical,
                     sub_root_path=str(self._root),
                 )
             )
@@ -147,7 +150,6 @@ class ConfigLoader:
         return ConfigLoadResult(
             config=Config(
                 fqun=project.fqun,
-                fqun_location=project.fqun_location,
                 sub_roots=sub_roots,
                 value_encodings=value_encodings,
                 logical_operation_encoding_operations=encoding_operations,

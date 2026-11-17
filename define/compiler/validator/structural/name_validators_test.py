@@ -108,7 +108,7 @@ def _validate_global_name_path(path: ast.GlobalPathName):
     )
 
 
-def _validate_fqun(fqun: ast.Fqun):
+def validate_fqun(fqun: ast.Fqun):
     return name_validators.validate_global_name(_global_name(fqun, "/valid_path"))
 
 
@@ -721,18 +721,18 @@ class TestLocalNameFormat:
 class TestValidateFqun:
     def test_valid_with_authority(self):
         fqun = _fqun("my_lib", authority=_authority("my.domain.com"))
-        result = _validate_fqun(fqun)
+        result = validate_fqun(fqun)
         assert not result
 
     def test_standard_without_authority(self):
         fqun = _fqun("standard")
-        result = _validate_fqun(fqun)
+        result = validate_fqun(fqun)
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedUniverseNameDiagnostic)
 
     def test_universe_without_authority_not_standard(self):
         fqun = _fqun("my_lib")
-        result = _validate_fqun(fqun)
+        result = validate_fqun(fqun)
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.UniverseWithoutAuthorityDiagnostic)
         assert result[0].universe_name == "my_lib"
@@ -744,7 +744,7 @@ class TestValidateFqun:
             authority=_authority("example.com"),
             multiverse=_multiverse("_"),
         )
-        result = _validate_fqun(fqun)
+        result = validate_fqun(fqun)
         assert len(result) == 4
         assert isinstance(result[0], diagnostics.MultiverseNameTooShortDiagnostic)
         assert isinstance(result[1], diagnostics.MultiverseNameInvalidCharDiagnostic)
@@ -759,7 +759,7 @@ class TestValidateFqun:
 
     def test_reserved_authority(self):
         fqun = _fqun("my_lib", authority=_authority("example.com"))
-        result = _validate_fqun(fqun)
+        result = validate_fqun(fqun)
         assert len(result) == 1
         assert isinstance(result[0], diagnostics.ReservedAuthorityDomainDiagnostic)
 
@@ -769,7 +769,7 @@ class TestValidateFqun:
             authority=_authority("myhost"),
             multiverse=_multiverse("custom"),
         )
-        result = _validate_fqun(fqun)
+        result = validate_fqun(fqun)
         assert not result
 
     def test_collects_all_diagnostics(self):
@@ -778,7 +778,7 @@ class TestValidateFqun:
             authority=_authority("example.com"),
             multiverse=_multiverse("python"),
         )
-        result = _validate_fqun(fqun)
+        result = validate_fqun(fqun)
         assert len(result) == 3
         assert isinstance(result[0], diagnostics.ReservedMultiverseNameDiagnostic)
         assert isinstance(result[1], diagnostics.ReservedAuthorityDomainDiagnostic)

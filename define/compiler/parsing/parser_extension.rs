@@ -98,11 +98,32 @@ fn parse_global_name<'py>(
     }
 }
 
+/// Parses `name`, a fully qualified universe name that is not in Define
+/// source, such as the universe name that a project config writes, into an
+/// `ast.Fqun`. Its first character is at `line` and `column` in the file at
+/// `file_path`, so that the nodes' locations point there. Returns the
+/// `syntax_errors.DefineSyntaxError` instead if `name` is not an FQUN.
+#[pyfunction]
+fn parse_fqun<'py>(
+    py: Python<'py>,
+    name: &[u8],
+    file_path: Option<Bound<'py, PyString>>,
+    line: u32,
+    column: u32,
+) -> PyResult<Py<PyAny>> {
+    let mut parser = Parser::new(py, name, Position { line, column }, file_path, true)?;
+    match parser.parse_whole_fqun() {
+        Ok(fqun) => Ok(fqun.into_object().unbind()),
+        Err(error) => error.into_load_failure(),
+    }
+}
+
 // The module is named `parser`, which the crate's `parser` module already uses.
 #[pymodule(gil_used = false, name = "parser")]
 fn parser_module(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PythonParseResult>()?;
     module.add_function(wrap_pyfunction!(parse, module)?)?;
     module.add_function(wrap_pyfunction!(parse_file, module)?)?;
-    module.add_function(wrap_pyfunction!(parse_global_name, module)?)
+    module.add_function(wrap_pyfunction!(parse_global_name, module)?)?;
+    module.add_function(wrap_pyfunction!(parse_fqun, module)?)
 }

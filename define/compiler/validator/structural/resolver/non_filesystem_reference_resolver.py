@@ -105,7 +105,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
                 diagnostics.ExternalUniverseNotConfiguredDiagnostic(
                     location=fqun.location,
                     universe=fqun.canonical,
-                    current_universe_name=root_config.fqun,
+                    current_universe_name=root_config.fqun.canonical,
                 )
             )
         return False

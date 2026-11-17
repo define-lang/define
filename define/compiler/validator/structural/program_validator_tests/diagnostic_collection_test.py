@@ -75,9 +75,9 @@ def test_program_diagnostics_in_file_order(
         diagnostics.SubRootFqunMismatchDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
-                column=18,
+                column=19,
                 end_line=2,
-                end_column=38,
+                end_column=37,
                 file_path="alpha/.define/project/config.defcl",
             ),
             expected_fqun="alpha.com:alpha_lib",
@@ -87,9 +87,9 @@ def test_program_diagnostics_in_file_order(
         diagnostics.SubRootFqunMismatchDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
-                column=18,
+                column=19,
                 end_line=2,
-                end_column=37,
+                end_column=36,
                 file_path="zeta/.define/project/config.defcl",
             ),
             expected_fqun="zeta.com:zeta_lib",

@@ -9,6 +9,7 @@ from crates.source_rendering.python import rendering
 from define.compiler import constants
 from define.compiler.config import config_loader, local_deps_config
 from define.compiler.data_structures import define_path
+from define.compiler.parsing import test_helpers as parsing_test_helpers
 from define.compiler.validator.structural.resolver import path_tracker
 
 # Where the locations come from does not matter to these tests.
@@ -79,8 +80,7 @@ class TestSubRootTracking:
     def test_project_root_for_fqun_returns_root_and_config(self):
         tracker: path_tracker.PathTracker[str] = path_tracker.PathTracker()
         root_config = config_loader.Config(
-            fqun="my.universe",
-            fqun_location=_LOCATION,
+            fqun=parsing_test_helpers.parse_fqun("my.universe"),
             sub_roots={"dep": _entry("dep", "ext/dep")},
             value_encodings={},
             logical_operation_encoding_operations={},
@@ -96,8 +96,7 @@ class TestSubRootTracking:
         tracker.register_project_root(
             define_path.EMPTY,
             config_loader.Config(
-                fqun="my.universe",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("my.universe"),
                 sub_roots={},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -114,8 +113,7 @@ class TestSubRootTracking:
         tracker.register_project_root(
             define_path.EMPTY,
             config_loader.Config(
-                fqun="my.universe",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("my.universe"),
                 sub_roots={"dep": _entry("dep", "ext/dep")},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -123,7 +121,7 @@ class TestSubRootTracking:
         )
         root_config = tracker.config_for_root(define_path.EMPTY)
         assert root_config is not None
-        assert root_config.fqun == "my.universe"
+        assert root_config.fqun.canonical == "my.universe"
         assert root_config.sub_roots == {"dep": _entry("dep", "ext/dep")}
 
     def test_config_for_root_none_when_not_registered(self):
@@ -135,8 +133,7 @@ class TestSubRootTracking:
         tracker.register_project_root(
             define_path.EMPTY,
             config_loader.Config(
-                fqun="my.universe",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("my.universe"),
                 sub_roots={},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -146,8 +143,7 @@ class TestSubRootTracking:
             tracker.register_project_root(
                 define_path.EMPTY,
                 config_loader.Config(
-                    fqun="other.universe",
-                    fqun_location=_LOCATION,
+                    fqun=parsing_test_helpers.parse_fqun("other.universe"),
                     sub_roots={},
                     value_encodings={},
                     logical_operation_encoding_operations={},
@@ -159,8 +155,7 @@ class TestSubRootTracking:
         tracker.register_project_root(
             define_path.EMPTY,
             config_loader.Config(
-                fqun="my.universe",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("my.universe"),
                 sub_roots={"dep": _entry("dep", "ext/dep")},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -180,8 +175,7 @@ class TestSubRootTracking:
         tracker.register_project_root(
             define_path.EMPTY,
             config_loader.Config(
-                fqun="my.universe",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("my.universe"),
                 sub_roots={},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -197,8 +191,7 @@ class TestConflictDetection:
         tracker.register_project_root(
             define_path.DefinePath("lib"),
             config_loader.Config(
-                fqun="lib.uni",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("lib.uni"),
                 sub_roots={},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -218,8 +211,7 @@ class TestConflictDetection:
         tracker.register_project_root(
             define_path.EMPTY,
             config_loader.Config(
-                fqun="root.uni",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("root.uni"),
                 sub_roots={},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -235,8 +227,7 @@ class TestConflictDetection:
         tracker.register_project_root(
             define_path.EMPTY,
             config_loader.Config(
-                fqun="root.uni",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("root.uni"),
                 sub_roots={},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -245,8 +236,7 @@ class TestConflictDetection:
         tracker.register_project_root(
             define_path.DefinePath("lib"),
             config_loader.Config(
-                fqun="lib.uni",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("lib.uni"),
                 sub_roots={},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -261,8 +251,7 @@ class TestConflictDetection:
         tracker.register_project_root(
             define_path.EMPTY,
             config_loader.Config(
-                fqun="root.uni",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("root.uni"),
                 sub_roots={},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -271,8 +260,7 @@ class TestConflictDetection:
         tracker.register_project_root(
             define_path.DefinePath("lib"),
             config_loader.Config(
-                fqun="lib.uni",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("lib.uni"),
                 sub_roots={},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -281,8 +269,7 @@ class TestConflictDetection:
         tracker.register_project_root(
             define_path.DefinePath("lib/inner"),
             config_loader.Config(
-                fqun="inner.uni",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("inner.uni"),
                 sub_roots={},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -337,8 +324,7 @@ class TestUniverseRoot:
         tracker.register_project_root(
             define_path.EMPTY,
             config_loader.Config(
-                fqun="a.com:main",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("a.com:main"),
                 sub_roots={"b.com:lib": _entry("b.com:lib", "deps/lib")},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -353,8 +339,7 @@ class TestUniverseRoot:
         tracker.register_project_root(
             define_path.EMPTY,
             config_loader.Config(
-                fqun="a.com:main",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("a.com:main"),
                 sub_roots={},
                 value_encodings={},
                 logical_operation_encoding_operations={},
@@ -367,8 +352,7 @@ class TestUniverseRoot:
         tracker.register_project_root(
             define_path.EMPTY,
             config_loader.Config(
-                fqun="a.com:main",
-                fqun_location=_LOCATION,
+                fqun=parsing_test_helpers.parse_fqun("a.com:main"),
                 sub_roots={},
                 value_encodings={},
                 logical_operation_encoding_operations={},

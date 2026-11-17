@@ -188,7 +188,7 @@ def _fqun_mismatch_diagnostics(
     context: file_validation_context.FileValidationContext,
 ) -> list[diagnostics.Diagnostic]:
     root_config = context.root_config
-    expected_fqun = "" if root_config is None else root_config.fqun
+    expected_fqun = "" if root_config is None else root_config.fqun.canonical
     if not expected_fqun:
         return []
     actual = definition.typed_name.name_content.fqun.canonical

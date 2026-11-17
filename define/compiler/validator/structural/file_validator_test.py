@@ -13,6 +13,7 @@ from crates.source_rendering.python import rendering
 from define.compiler.config import config_loader, local_deps_config
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.parsing import test_helpers as parsing_test_helpers
 from define.compiler.validator.structural import (
     file_validation_context,
     file_validator,
@@ -41,8 +42,7 @@ def _make_context(
         file_path=define_path.DefinePath(file_name),
         root_prefix=define_path.DefinePath(tmp_path.as_posix()),
         root_config=config_loader.Config(
-            fqun=fqun,
-            fqun_location=_LOCATION,
+            fqun=parsing_test_helpers.parse_fqun(fqun),
             sub_roots=types.MappingProxyType(sub_root_mappings or {}),
             value_encodings={},
             logical_operation_encoding_operations={},

@@ -612,9 +612,9 @@ def test_sub_root_fqun_mismatch_error_message(
     assert isinstance(diagnostic, diagnostics.SubRootFqunMismatchDiagnostic)
     assert (
         diagnostic.format(program_result.source_map)
-        == 'File "lib/.define/project/config.defcl", line 2, column 18\n'
+        == 'File "lib/.define/project/config.defcl", line 2, column 19\n'
         + '    universe_name: "mv:define-lang.org:wrong_universe"\n'
-        + "                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
+        + "                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
         + "Sub-root at 'lib' is configured as a dependency with universe 'mv:define-lang.org:child' but the actual project root in that path says it has the universe name 'mv:define-lang.org:wrong_universe'"
     )
 
@@ -869,13 +869,13 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     (diagnostic,) = program_result.all_diagnostics
     assert isinstance(diagnostic, diagnostics.DuplicateFqunDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
-        File "lib/nested/.define/project/config.defcl", line 2, column 18
+        File "lib/nested/.define/project/config.defcl", line 2, column 19
             universe_name: "mv:define-lang.org:parent"
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^
         Universe 'mv:define-lang.org:parent' cannot be defined again here, since it is already defined here:
-        File ".define/project/config.defcl", line 2, column 18
+        File ".define/project/config.defcl", line 2, column 19
             universe_name: "mv:define-lang.org:parent"
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^""")
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^""")
 
 
 def test_source_file_not_found_error_message(

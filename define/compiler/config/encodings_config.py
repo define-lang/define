@@ -70,7 +70,9 @@ class EncodingsConfigReader(config_file.ConfigFileReader[encodings_pb2.Encodings
         if result is None:
             return None, encodings_diagnostics
         value_encodings, association_diagnostics = _value_encodings(
-            result.message.encodings.value_encodings, result.file, project.fqun
+            result.message.encodings.value_encodings,
+            result.file,
+            project.fqun.canonical,
         )
         encodings_diagnostics.extend(association_diagnostics)
         return types.MappingProxyType(value_encodings), encodings_diagnostics

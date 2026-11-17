@@ -45,11 +45,12 @@ def test_resolves_fqun_and_sub_roots(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    assert test_helpers.load_config(_SUB_ROOT) == config_loader.ConfigLoadResult(
+    result = test_helpers.load_config(_SUB_ROOT)
+
+    assert result == config_loader.ConfigLoadResult(
         config=config_loader.Config(
-            fqun="sub.example.com:lib",
-            fqun_location=test_helpers.config_field_location(
-                project_config.CONFIG_FILE, ("project", "universe_name"), root=_SUB_ROOT
+            fqun=test_helpers.loaded_fqun(
+                result.config, "sub.example.com:lib", root=_SUB_ROOT
             ),
             sub_roots={
                 "mv:define-lang.org:lib": local_deps_config.LocalDependencyEntry(

@@ -419,6 +419,34 @@ impl<'py, 'source> Parser<'py, 'source> {
         )?)
     }
 
+    /// Parses an FQUN that is the whole source, such as the universe name that
+    /// a project config writes, and returns it.
+    ///
+    /// ```ebnf
+    /// fqun_name =
+    ///     ( multiverse, ":", authority, ":", universe
+    ///     | authority, ":", universe
+    ///     | "standard" ) ;
+    /// ```
+    pub(crate) fn parse_whole_fqun(&mut self) -> ParseResult<ast::Fqun<'py>> {
+        let start = self.scanner.position;
+        let (content, scanned) = self.scanner.consume_fqun_name_content();
+        // The scan finds no separators in name content with a space.
+        let Some(separators) = scanned.fqun_separators else {
+            return Err(self.fqun_with_space(content, start));
+        };
+        // The name content must be the whole source.
+        if !self.scanner.is_at_end() || content.bytes.is_empty() {
+            return Err(self.invalid_fqun_name(content, start));
+        }
+        if separators.count.get() > 3 {
+            return Err(self.fqun_with_too_many_components(content, start));
+        }
+        self.disallowed_name_character(content, start)?;
+        let (fqun, _) = self.parse_fqun(content, separators, start)?;
+        Ok(fqun.node)
+    }
+
     /// Returns the error for a character in name `content`, which begins at
     /// `start`, that names do not allow, if it has one.
     fn disallowed_name_character(
@@ -569,6 +597,55 @@ impl<'py, 'source> Parser<'py, 'source> {
 
 // The functions that only run on an error path.
 impl<'source> Parser<'_, 'source> {
+    /// Returns the error for an FQUN, `content`, which begins at `start` and
+    /// has a space.
+    #[cold]
+    #[inline(never)]
+    fn fqun_with_space(&self, content: SourceText<'source>, start: Position) -> ParseError {
+        if let Some(error) = self.empty_or_disallowed_name(content, start) {
+            return error;
+        }
+        let before_space = content
+            .bytes
+            .iter()
+            .take_while(|&&byte| byte != SPACE)
+            .count();
+        let space = start.columns_later(content.slice(..before_space).character_count());
+        self.errors.fqun_contains_space(space, space)
+    }
+
+    /// Returns the error for an FQUN, `content`, which begins at `start` and
+    /// has more than three components.
+    #[cold]
+    #[inline(never)]
+    fn fqun_with_too_many_components(
+        &self,
+        content: SourceText<'source>,
+        start: Position,
+    ) -> ParseError {
+        if let Some(error) = self.empty_or_disallowed_name(content, start) {
+            return error;
+        }
+        let end = start
+            .columns_later(content.character_count())
+            .previous_column();
+        self.errors.fqun_has_too_many_components(start, end)
+    }
+
+    /// Returns the error for name content `content`, which begins at `start`,
+    /// that is not an FQUN that is the whole source.
+    #[cold]
+    #[inline(never)]
+    fn invalid_fqun_name(&self, content: SourceText<'source>, start: Position) -> ParseError {
+        if let Some(error) = self.empty_or_disallowed_name(content, start) {
+            return error;
+        }
+        let end = start
+            .columns_later(content.character_count())
+            .previous_column();
+        self.errors.invalid_fqun(start, end)
+    }
+
     /// Returns the error for a name type, at the scanner's position, that is
     /// not `position` or `action`.
     #[cold]

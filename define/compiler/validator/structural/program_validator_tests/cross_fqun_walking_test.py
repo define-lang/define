@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.config import local_deps_config, project_config
+from define.compiler.config import local_deps_config
 from define.compiler.config_tests import test_helpers as config_test_helpers
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
@@ -48,14 +48,12 @@ def test_sub_root_redeclares_parent_fqun(
     ]
     assert result.all_diagnostics == [
         diagnostics.DuplicateFqunDiagnostic(
-            location=config_test_helpers.config_field_location(
-                project_config.CONFIG_FILE,
-                ("project", "universe_name"),
-                root=define_path.DefinePath("lib/nested"),
+            location=config_test_helpers.universe_name_location(
+                "mv:define-lang.org:parent", root=define_path.DefinePath("lib/nested")
             ),
             fqun="mv:define-lang.org:parent",
-            existing_location=config_test_helpers.config_field_location(
-                project_config.CONFIG_FILE, ("project", "universe_name")
+            existing_location=config_test_helpers.universe_name_location(
+                "mv:define-lang.org:parent"
             ),
         ),
     ]
@@ -161,10 +159,8 @@ def test_cross_fqun_sub_root_fqun_mismatch(
     ]
     assert result.all_diagnostics == [
         diagnostics.SubRootFqunMismatchDiagnostic(
-            location=config_test_helpers.config_field_location(
-                project_config.CONFIG_FILE,
-                ("project", "universe_name"),
-                root=define_path.DefinePath("lib"),
+            location=config_test_helpers.universe_name_location(
+                "mv:define-lang.org:actual_child", root=define_path.DefinePath("lib")
             ),
             expected_fqun=_CHILD_UNIVERSE,
             actual_fqun="mv:define-lang.org:actual_child",

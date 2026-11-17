@@ -13,6 +13,7 @@ from define.compiler.config import (
     encoding_operations_config,
     encodings_config,
     local_deps_config,
+    project_config,
 )
 from define.compiler.data_structures import define_path
 
@@ -50,6 +51,35 @@ def config_field_location[M: message.Message](
     )
     assert result.loaded is not None
     return result.loaded.file.location_of(field_path)
+
+
+def loaded_fqun(
+    config: config_loader.Config | None,
+    canonical: str,
+    root: define_path.DefinePath = constants.PROJECT_ROOT,
+) -> ast.Fqun:
+    """Return the FQUN of a loaded config, after checking that it is canonical and located at the universe name in the project config of the project at root."""
+    assert config is not None
+    assert config.fqun.canonical == canonical
+    assert config.fqun.location == universe_name_location(canonical, root)
+    return config.fqun
+
+
+def universe_name_location(
+    universe_name: str, root: define_path.DefinePath = constants.PROJECT_ROOT
+) -> rendering.SourceLocation:
+    """Return the location of universe_name, the universe name in the project config of the project at root."""
+    quote = config_field_location(
+        project_config.CONFIG_FILE, ("project", "universe_name"), root
+    )
+    # The name starts after the opening quote of its string.
+    return rendering.SourceLocation(
+        line=quote.line,
+        column=quote.column + 1,
+        end_line=quote.line,
+        end_column=quote.column + len(universe_name),
+        file_path=quote.file_path,
+    )
 
 
 def declaring_entry(universe: str, path: str) -> local_deps_config.LocalDependencyEntry:
