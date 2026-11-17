@@ -171,16 +171,8 @@ class Associations:
         return association.edge.global_name_reference
 
     def chosen_encoding_operations(self) -> list[ChosenEncodingOperation]:
-        """Return each Encoding Operation that resolution chose, with the association that chose it, once every definition is resolved.
-
-        They are ordered by logical operation and by the encodings that the
-        association lists, not by when resolution chose them, which depends
-        on thread timing.
-        """
-        chosen_encoding_operations: list[ChosenEncodingOperation] = []
-        for key in sorted(self._chosen_encoding_operations):
-            chosen_encoding_operations.append(self._chosen_encoding_operations[key])
-        return chosen_encoding_operations
+        """Return each Encoding Operation that resolution chose, with the association that chose it, once every definition is resolved."""
+        return list(self._chosen_encoding_operations.values())
 
     def chosen_edges(self) -> list[reference_graph.ReferenceEdge]:
         """Return the edge to each encoding and Encoding Operation that resolution chose, once every definition is resolved."""
