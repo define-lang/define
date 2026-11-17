@@ -109,17 +109,12 @@ def associated_reference(
 def check_universe_configured(
     name: ast.ReferenceGlobalNameContent,
     fqun: ast.Fqun,
-    sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry] | None,
+    sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry],
 ) -> diagnostics.ExternalUniverseNotConfiguredDiagnostic | None:
-    """Return a diagnostic if name is in a universe that the project whose universe is fqun and whose sub-roots are sub_roots must configure before referencing it, and does not.
-
-    sub_roots is None when the project's local dependencies config cannot be
-    used, so which universes the project configures is unknown.
-    """
+    """Return a diagnostic if name is in a universe that the project whose universe is fqun and whose sub-roots are sub_roots must configure before referencing it, and does not."""
     name_fqun = name.fqun
     if (
-        sub_roots is None
-        or name_fqun is None
+        name_fqun is None
         or not universe_needs_configuration(name_fqun.canonical)
         or name_fqun.canonical in sub_roots
     ):

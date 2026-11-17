@@ -11,7 +11,9 @@ import threading
 import typing
 from collections import UserDict
 
+from crates.source_rendering.python import rendering
 from define.compiler.association_resolution import (
+    association_tables,
     associations,
     concrete_program,
     literal_encoder,
@@ -57,7 +59,9 @@ def test_concurrent_resolutions_work_out_each_key_once(
         validation_result.DefinitionValidationResult,
     ] = typed_name_dict.TypedNameDict()
     resolver = value_operation_resolver.ValueOperationResolver(
-        associations.Associations(definition_results),
+        associations.Associations(
+            association_tables.AssociationTables({}, rendering.SourceMap())
+        ),
         literal_encoder.LiteralEncoder(definition_results),
     )
     first_is_resolving = threading.Event()

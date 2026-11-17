@@ -7,10 +7,9 @@ py_library(
     srcs = ["association_config.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":config_loader",
         ":encoding_operations_config",
         ":encodings_config",
-        ":local_deps_config",
-        ":project_config",
         "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler/data_structures:define_path",
@@ -44,7 +43,6 @@ py_library(
     srcs = ["config_loader.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        ":association_config",
         ":local_deps_config",
         ":project_config",
         "//crates/source_rendering/python:rendering",
@@ -61,9 +59,9 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":config_file",
+        ":config_loader",
         ":global_names",
         ":local_deps_config",
-        ":project_config",
         "//crates/source_rendering/python:rendering",
         "//defcl/python:validator",
         "//define/compiler:ast",
@@ -81,9 +79,9 @@ py_library(
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
         ":config_file",
+        ":config_loader",
         ":global_names",
         ":local_deps_config",
-        ":project_config",
         "//crates/source_rendering/python:rendering",
         "//defcl/python:validator",
         "//define/compiler:ast",

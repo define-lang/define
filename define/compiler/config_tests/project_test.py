@@ -7,7 +7,6 @@ import typing
 from crates.source_rendering.python import rendering
 from defcl.python import error_types, errors
 from define.compiler.config import (
-    association_config,
     config_loader,
     local_deps_config,
     project_config,
@@ -195,9 +194,8 @@ def test_layout_error_still_resolves(
     assert result.config == config_loader.Config(
         fqun=test_helpers.loaded_fqun(result.config, "test.example.com:my_lib"),
         sub_roots={},
-        associations=association_config.AssociationTable(
-            value_encodings={}, encoding_operations={}
-        ),
+        has_encodings_location=None,
+        has_encoding_operations_location=None,
     )
     (diagnostic,) = result.diagnostics
     assert type(diagnostic) is errors.SyntaxDiagnostic

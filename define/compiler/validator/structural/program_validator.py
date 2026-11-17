@@ -5,7 +5,7 @@ using a thread pool. They manage all shared state on the main thread and
 delegate pure per-file validation to FileStructuralValidator workers. They
 validate only the entry file's definitions and the definitions they reference,
 directly or indirectly. A ReferenceResolver decides which files references lead
-to and which definitions they reach, and the validation loads those files and
+to and which definitions they resolve to, and the validation loads those files and
 validates those definitions.
 """
 
@@ -18,7 +18,10 @@ from crates.source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     import pathlib
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
+
+    from define.compiler.config import config_loader
+    from define.compiler.data_structures import define_path
 
 
 from define.compiler import ast, work_pool
@@ -108,7 +111,7 @@ class StructurallyValidatedProgram:
         run: _ProgramValidationRun,
         result: validation_result.ProgramValidationResult,
     ):
-        """Initialize with the run that validated the program that the entry file reaches, and its result."""
+        """Initialize with the run that validated the program that the entry file references, directly or indirectly, and its result."""
         self._run = run
         self.result = result
 
@@ -118,21 +121,27 @@ class StructurallyValidatedProgram:
         *,
         max_workers: int | None = None,
     ):
-        """Load and validate what the edges of associations reach, and everything that it references, and add it to the program's result.
+        """Load and validate what the edges of associations reference, and everything that it references, and add it to the program's result.
 
         Each edge starts at a validated logical operation or value quality.
         """
         self._run.load_associated(edges, max_workers=max_workers)
         self.result.file_results = self._run.file_results()
 
+    def project_roots(
+        self,
+    ) -> Mapping[str, tuple[define_path.DefinePath, config_loader.Config]]:
+        """Return the path and config of each project root whose config loaded, by its universe."""
+        return self._run.project_roots()
+
 
 class _ProgramValidationRun:
     """The state of structurally validating one program.
 
-    Loads files and validates definitions on a thread pool as references reach
-    them, and registers them and the references between them. All shared state
+    Loads files and validates definitions on a thread pool as references
+    resolve to them, and registers them and the references between them. All shared state
     is managed on the coordinator thread. After the program that the entry
-    file reaches is validated, it loads what association resolution chooses.
+    file references is validated, it loads what association resolution chooses.
     """
 
     _resolver: reference_resolver.ReferenceResolver
@@ -147,10 +156,6 @@ class _ProgramValidationRun:
     ]
     # The full typed names of definitions submitted for validation.
     _requested_definition_names: set[str]
-    # The file of each validated logical operation and value quality, by full
-    # typed name, because association resolution has the edges of their
-    # associations followed.
-    _associating_definition_files: dict[str, file_validator.LoadedFile]
     _allow_entry_action_interface_positions: bool
 
     def __init__(
@@ -167,7 +172,6 @@ class _ProgramValidationRun:
         self._reference_graph = reference_graph.ReferenceGraph()
         self._definition_results = typed_name_dict.TypedNameDict()
         self._requested_definition_names = set()
-        self._associating_definition_files = {}
         self._allow_entry_action_interface_positions = (
             allow_entry_action_interface_positions
         )
@@ -218,26 +222,35 @@ class _ProgramValidationRun:
         *,
         max_workers: int | None = None,
     ):
-        """Load and validate what the edges of associations reach, and everything that it references."""
+        """Load and validate what the edges of associations reference, and everything that it references."""
         # Only definitions that this run validates are in its graph, to find
         # cycles among them. The associations' edges start at definitions
-        # that are not, and cannot be part of a cycle, since nothing that an
-        # association reaches references a logical operation or value
-        # quality.
+        # that are not, and cannot be part of a cycle, since no encoding or
+        # Encoding Operation references a logical operation or value quality.
         self._reference_graph = reference_graph.ReferenceGraph()
+        project_roots = self.project_roots()
         with work_pool.WorkPool(max_workers=max_workers) as pool:
             for edge in edges:
-                source = edge.enclosing_definition
-                self._request_reference(
-                    self._associating_definition_files[
-                        source.typed_name.full_typed_name
-                    ],
-                    self._definition_results[source.typed_name],
+                # An association is in the config of the project whose
+                # universe its references are written in.
+                referencing_root, _ = project_roots[
+                    edge.global_name_reference.enclosing_fqun.canonical
+                ]
+                self._follow_reference(
+                    referencing_root,
+                    None,
+                    self._definition_results[edge.enclosing_definition.typed_name],
                     edge,
                     pool,
                 )
             pool.run_until_idle()
         del self._reference_graph
+
+    def project_roots(
+        self,
+    ) -> Mapping[str, tuple[define_path.DefinePath, config_loader.Config]]:
+        """Return the path and config of each project root whose config loaded, by its universe."""
+        return self._resolver.project_roots()
 
     def file_results(self) -> list[validation_result.FileValidationResult]:
         """Return the result of each loaded file, without the reference edges that structural validation follows."""
@@ -311,11 +324,6 @@ class _ProgramValidationRun:
         self._follow_edges(
             loaded_file, definition_result, definition_result.reference_edges, pool
         )
-        definition = definition_result.definition
-        if isinstance(definition, ast.LogicalOperationDefinition | ast.ValueDefinition):
-            self._associating_definition_files[
-                definition.typed_name.full_typed_name
-            ] = loaded_file
 
     def _follow_edges(
         self,
@@ -324,7 +332,7 @@ class _ProgramValidationRun:
         edges: Iterable[reference_graph.ReferenceEdge],
         pool: work_pool.WorkPool,
     ):
-        """Add a validated definition's edges to the reference graph, and request the definitions that they reach."""
+        """Add a validated definition's edges to the reference graph, and request the definitions that they reference."""
         for edge in edges:
             if self._add_reference_edge(edge, definition_result):
                 self._request_reference(loaded_file, definition_result, edge, pool)
@@ -336,7 +344,7 @@ class _ProgramValidationRun:
         edge: reference_graph.ReferenceEdge,
         pool: work_pool.WorkPool,
     ):
-        """Request the definition that a validated definition's edge reaches, loading its file if needed."""
+        """Request the definition that a validated definition's edge references, loading its file if needed."""
         # A definition can reference only definitions that come before it in
         # its own file.
         same_file_definition = loaded_file.earlier_definition(
@@ -345,7 +353,26 @@ class _ProgramValidationRun:
         if same_file_definition is not None:
             self.request_definition(loaded_file, same_file_definition, pool)
             return
-        match self._resolver.validate_reference(loaded_file, edge, definition_result):
+        self._follow_reference(
+            loaded_file.context.root_prefix, loaded_file, definition_result, edge, pool
+        )
+
+    def _follow_reference(
+        self,
+        referencing_root: define_path.DefinePath,
+        referencing_file: file_validator.LoadedFile | None,
+        definition_result: validation_result.DefinitionValidationResult,
+        edge: reference_graph.ReferenceEdge,
+        pool: work_pool.WorkPool,
+    ):
+        """Request the definition that an edge from referencing_root references, loading its file if needed.
+
+        referencing_file is the file that holds the edge, or None for an edge
+        from an association.
+        """
+        match self._resolver.validate_reference(
+            referencing_root, referencing_file, edge, definition_result
+        ):
             case reference_resolver.ReachedDefinition() as reached_definition:
                 self.request_definition(
                     reached_definition.loaded_file,

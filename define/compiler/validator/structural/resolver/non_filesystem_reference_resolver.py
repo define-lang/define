@@ -4,6 +4,9 @@ The supplied source is not a file in a project, so it loads its project's
 config only when one of its references needs it.
 """
 
+# TODO: Say "non-filesystem context", the spec's term, instead of "supplied
+# source" and "non-filesystem mode" throughout the compiler.
+
 from __future__ import annotations
 
 import typing
@@ -16,6 +19,7 @@ from define.compiler.validator.structural.resolver import reference_resolver
 if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from define.compiler import ast
+    from define.compiler.data_structures import define_path
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
     from define.compiler.validator.structural import (
@@ -28,7 +32,7 @@ if typing.TYPE_CHECKING:
 class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
     """Finds the files and definitions that the references of a program from supplied source lead to.
 
-    References can also reach the definitions of the supplied source, which no
+    References can also resolve to the definitions of the supplied source, which no
     file holds.
     """
 
@@ -58,7 +62,8 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
     @typing.override
     def validate_reference(
         self,
-        loaded_file: file_validator.LoadedFile,
+        referencing_root: define_path.DefinePath,
+        referencing_file: file_validator.LoadedFile | None,
         edge: reference_graph.ReferenceEdge,
         source_definition: validation_result.DefinitionValidationResult,
     ) -> (
@@ -66,7 +71,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         | file_validation_context.FileValidationContext
         | None
     ):
-        if loaded_file is self._source_file:
+        if referencing_file is self._source_file:
             if not self._source_reference_resolvable(edge):
                 return None
         else:
@@ -79,7 +84,9 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
                 return reference_resolver.ReachedDefinition(
                     self._source_file, source_definition_reached
                 )
-        return super().validate_reference(loaded_file, edge, source_definition)
+        return super().validate_reference(
+            referencing_root, referencing_file, edge, source_definition
+        )
 
     def _source_reference_resolvable(self, edge: reference_graph.ReferenceEdge) -> bool:
         """Whether a reference from the supplied source can resolve, loading the project config the first time one needs it.

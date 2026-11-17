@@ -27,6 +27,9 @@ Use these exact terms for these Define concepts. "Not:" lists terms to avoid.
   in an Operation Statements Block with
   `execute the logical_operation<standard:/number/add>`. The compiler knows what
   every logical operation means.
+- **non-filesystem context**: Compiling source code that does not come from a
+  file in a filesystem, such as from `stdin`, a REPL, or a text box on a
+  website. Not: non-filesystem mode, supplied source.
 - **occupancy requirement**: An Action Requirement that a position contain a
   particle or be empty.
 - **particle**: A single atomic creation. It occupies one position and has the

@@ -7,7 +7,6 @@ from pathlib import PurePosixPath
 
 from define.compiler import constants
 from define.compiler.config import (
-    association_config,
     config_loader,
     local_deps_config,
     project_config,
@@ -58,9 +57,8 @@ def test_resolves_fqun_and_sub_roots(
                     ),
                 ),
             },
-            associations=association_config.AssociationTable(
-                value_encodings={}, encoding_operations={}
-            ),
+            has_encodings_location=None,
+            has_encoding_operations_location=None,
         ),
         diagnostics=[],
     )
@@ -77,9 +75,8 @@ def test_missing_local_deps_resolves_empty_sub_roots(
         config=config_loader.Config(
             fqun=test_helpers.loaded_fqun(result.config, "test.example.com:my_lib"),
             sub_roots={},
-            associations=association_config.AssociationTable(
-                value_encodings={}, encoding_operations={}
-            ),
+            has_encodings_location=None,
+            has_encoding_operations_location=None,
         ),
         diagnostics=[],
     )
@@ -112,9 +109,8 @@ def test_declaring_entry_universe_match_succeeds(
         config=config_loader.Config(
             fqun=test_helpers.loaded_fqun(result.config, "test.example.com:my_lib"),
             sub_roots={},
-            associations=association_config.AssociationTable(
-                value_encodings={}, encoding_operations={}
-            ),
+            has_encodings_location=None,
+            has_encoding_operations_location=None,
         ),
         diagnostics=[],
     )

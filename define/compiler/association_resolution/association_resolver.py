@@ -19,6 +19,9 @@ from define.compiler.validator.reference_graph import abstract_program
 if typing.TYPE_CHECKING:
     from collections.abc import Collection
 
+    from define.compiler.association_resolution import (
+        association_tables,
+    )
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.graphs import reference_graph, reference_graph_order
     from define.compiler.validator import validation_result
@@ -38,10 +41,11 @@ class AssociationResolver:
             ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
             validation_result.DefinitionValidationResult,
         ],
+        tables: association_tables.AssociationTables,
     ):
-        """Initialize with the known definitions."""
+        """Initialize with the known definitions and each project's association table."""
         self._definition_results = definition_results
-        self._associations = associations.Associations(definition_results)
+        self._associations = associations.Associations(tables)
         self._literal_encoder = literal_encoder.LiteralEncoder(definition_results)
         self._value_operations = value_operation_resolver.ValueOperationResolver(
             self._associations, self._literal_encoder

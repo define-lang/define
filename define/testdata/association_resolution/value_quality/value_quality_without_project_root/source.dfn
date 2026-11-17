@@ -1,0 +1,6 @@
+# Source compiled without a project root has no associations, so its value quality has no encoding.
+define the potential value<my.domain.com:my_lib:/test> {
+    it supports the logical_operation<standard:/text/less_than> {
+        it may be read.
+    }
+}

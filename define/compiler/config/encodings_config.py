@@ -18,7 +18,7 @@ if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from defcl.python import validator as defcl_validator
     from define.compiler import ast
-    from define.compiler.config import local_deps_config, project_config
+    from define.compiler.config import config_loader, local_deps_config
 
 CONFIG_FILE = config_file.ConfigFile(
     path=define_path.DefinePathFromPosix(
@@ -40,14 +40,12 @@ class EncodingsConfigReader(config_file.ConfigFileReader[encodings_pb2.Encodings
         super().__init__(root, source_map, CONFIG_FILE)
 
     def load(
-        self,
-        project: project_config.ProjectConfig,
-        sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry] | None,
+        self, config: config_loader.Config
     ) -> tuple[
         types.MappingProxyType[str, list[ast.GlobalTypedNameReference]] | None,
         list[diagnostics.FormattableDiagnostic],
     ]:
-        """Load and validate the project's Value Encoding Associations, given the sub-roots that the project configures.
+        """Load and validate the project's Value Encoding Associations.
 
         Returns an immutable mapping from each value quality's short global
         name to references to its associated encodings, or None if a
@@ -61,13 +59,13 @@ class EncodingsConfigReader(config_file.ConfigFileReader[encodings_pb2.Encodings
         # value quality the compile never validated. Until then, an association
         # is checked only when the program uses its value quality, so one that
         # names an unused or undefined value quality goes unreported.
-        if project.has_encodings_location is None:
+        if config.has_encodings_location is None:
             return _EMPTY_VALUE_ENCODINGS, []
         # The project config says the file exists, so only then is it checked.
         if not self.exists():
             return None, [
                 diagnostics.EncodingsConfigNotFoundDiagnostic(
-                    location=project.has_encodings_location,
+                    location=config.has_encodings_location,
                     encodings_config_path=str(self.path()),
                 )
             ]
@@ -77,8 +75,8 @@ class EncodingsConfigReader(config_file.ConfigFileReader[encodings_pb2.Encodings
         value_encodings, association_diagnostics = _value_encodings(
             result.message.encodings.value_encodings,
             result.file,
-            project.fqun,
-            sub_roots,
+            config.fqun,
+            config.sub_roots,
         )
         encodings_diagnostics.extend(association_diagnostics)
         return types.MappingProxyType(value_encodings), encodings_diagnostics
@@ -121,7 +119,7 @@ def _value_encodings(
     associations: Sequence[encodings_pb2.ValueEncoding],
     file: defcl_validator.ValidatedFile,
     fqun: ast.Fqun,
-    sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry] | None,
+    sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry],
 ) -> tuple[
     dict[str, list[ast.GlobalTypedNameReference]],
     list[diagnostics.FormattableDiagnostic],

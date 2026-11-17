@@ -118,7 +118,8 @@ See [define/spec/spec.md] for the language specification.
 - [GLOSSARY.md](GLOSSARY.md) lists the term to use for each Define concept and
   the terms to avoid.
 - Never use these words for any Define concept: anchor, root, rooted, re-rooted,
-  carried, split point, establishing, frame, inside, enclosing, output, slot.
+  carried, split point, establishing, frame, inside, enclosing, output, slot,
+  reach.
 - Example: For `in_caller`, say "from the caller's perspective", never
   "re-rooted into the caller's frame"
 - Positions are not "nested", "enclosed", "inside", "contained" or "containers"

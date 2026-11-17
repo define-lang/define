@@ -6,7 +6,6 @@ import typing
 from pathlib import PurePosixPath
 
 from define.compiler.config import (
-    association_config,
     config_loader,
     local_deps_config,
     project_config,
@@ -73,9 +72,8 @@ def test_resolves_fqun_and_sub_roots(
                     ),
                 )
             },
-            associations=association_config.AssociationTable(
-                value_encodings={}, encoding_operations={}
-            ),
+            has_encodings_location=None,
+            has_encoding_operations_location=None,
         ),
         diagnostics=[],
     )

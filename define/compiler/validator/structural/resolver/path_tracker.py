@@ -9,6 +9,8 @@ import msgspec
 from define.compiler import constants
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from define.compiler.config import config_loader, local_deps_config
     from define.compiler.data_structures import define_path
 
@@ -227,6 +229,12 @@ class PathTracker[T]:
                 return node.declared_sub_root
         return None
 
+    def project_roots(
+        self,
+    ) -> Mapping[str, tuple[define_path.DefinePath, config_loader.Config]]:
+        """Return the path and config of each registered project root, by its universe."""
+        return self._fqun_to_project_root
+
     def project_root_for_fqun(
         self, fqun: str
     ) -> tuple[define_path.DefinePath, config_loader.Config] | None:
@@ -245,7 +253,7 @@ class PathTracker[T]:
     def universe_root(
         self, fqun: str | None, referencing_root: define_path.DefinePath
     ) -> define_path.DefinePath | None:
-        """Return the root of a referenced universe, if the referencing root can reach it.
+        """Return the root of a referenced universe, if the referencing root can reference it.
 
         fqun is None for a short-form reference, which is in the referencing
         root's own universe.

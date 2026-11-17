@@ -15,7 +15,6 @@ if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.association_resolution import concrete_program
-    from define.compiler.config import encoding_operations_config
     from define.compiler.data_structures import define_path, typed_name_dict
     from define.compiler.errors import syntax_errors
     from define.compiler.graphs import reference_graph, reference_graph_order
@@ -31,16 +30,6 @@ class ParticleStatementValidity(msgspec.Struct, frozen=True):
     target_ok: bool
     source_ok: bool = True
     from_is_prefix_of_to: bool = False
-
-
-class EncodingOperationAssociation(msgspec.Struct, frozen=True):
-    """An Encoding Operation that a logical operation's project associates with it."""
-
-    # The program follows the edge to the Encoding Operation only if it
-    # executes the logical operation.
-    edge: reference_graph.ReferenceEdge
-    # The Interface Views that the association lists, in order.
-    views: tuple[encoding_operations_config.AssociatedView, ...]
 
 
 class PostorderValidationResult(msgspec.Struct):
@@ -87,18 +76,6 @@ class DefinitionValidationResult(msgspec.Struct):
     # Whether each position looked at by an Operation Argument Statement in an
     # action is valid, in source order.
     looked_at_position_validity: list[bool] = msgspec.field(default_factory=list)
-    # For a value quality, an edge to each encoding that its project
-    # associates with it. Structural validation does not follow these edges.
-    # Association resolution has the encoding it chooses loaded.
-    associated_encodings: list[reference_graph.ReferenceEdge] = msgspec.field(
-        default_factory=list
-    )
-    # For a logical operation, each Encoding Operation that its project
-    # associates with it. Structural validation does not follow their edges.
-    # Association resolution has the Encoding Operations it chooses loaded.
-    encoding_operation_associations: list[EncodingOperationAssociation] = msgspec.field(
-        default_factory=list
-    )
 
 
 @dataclass

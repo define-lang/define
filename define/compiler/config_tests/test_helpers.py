@@ -9,6 +9,7 @@ from crates.source_rendering.python import rendering
 from defcl.python import loader as defcl_loader
 from define.compiler import constants
 from define.compiler.config import (
+    association_config,
     config_loader,
     encoding_operations_config,
     encodings_config,
@@ -37,6 +38,19 @@ def load_config(
     return config_loader.ConfigLoader(
         root, rendering.SourceMap()
     ).load_project_root_config(declaring_entry)
+
+
+def load_association_table(
+    root: define_path.DefinePath = constants.PROJECT_ROOT,
+) -> tuple[
+    association_config.AssociationTable, list[diagnostics.FormattableDiagnostic]
+]:
+    """Load the associations of the project at root, whose config must load without diagnostics."""
+    source_map = rendering.SourceMap()
+    result = config_loader.ConfigLoader(root, source_map).load_project_root_config(None)
+    assert result.diagnostics == []
+    assert result.config is not None
+    return association_config.load_association_table(root, source_map, result.config)
 
 
 def config_field_location[M: message.Message](
@@ -118,9 +132,10 @@ def declared_sub_root(
 
 
 def associated_names(
-    associations: Mapping[str, list[ast.GlobalTypedNameReference]],
+    associations: Mapping[str, list[ast.GlobalTypedNameReference]] | None,
 ) -> dict[str, list[tuple[str, rendering.SourceLocation]]]:
-    """Return the names associated with each key, as the text the config writes and their locations."""
+    """Return the names associated with each key, as the text the config writes and their locations, from associations that can be used."""
+    assert associations is not None
     result: dict[str, list[tuple[str, rendering.SourceLocation]]] = {}
     for key, references in associations.items():
         result[key] = [
@@ -149,9 +164,11 @@ def encoding_name(name: str, line: int) -> tuple[str, rendering.SourceLocation]:
 def associated_encoding_operations(
     associations: Mapping[
         str, list[encoding_operations_config.AssociatedEncodingOperation]
-    ],
+    ]
+    | None,
 ) -> dict[str, list[tuple[str, rendering.SourceLocation, list[tuple[str, str]]]]]:
-    """Return the Encoding Operations associated with each logical operation, as their names' text and locations, and their views' names and encodings' text."""
+    """Return the Encoding Operations associated with each logical operation, as their names' text and locations, and their views' names and encodings' text, from associations that can be used."""
+    assert associations is not None
     result: dict[
         str, list[tuple[str, rendering.SourceLocation, list[tuple[str, str]]]]
     ] = {}

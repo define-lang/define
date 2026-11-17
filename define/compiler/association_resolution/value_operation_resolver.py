@@ -283,7 +283,7 @@ class ValueOperationResolver:
                     composite_steps.append(step)
                 case abstract_program.LogicalOperationExecution():
                     execution = self._encoding_operation_execution(step, view_encodings)
-                    if isinstance(execution, MissingEncodingOperation):
+                    if not isinstance(execution, concrete_program.OperationExecution):
                         return execution, None
                     composite_steps.append(execution)
                 case EncodedValueOperationExecution():
@@ -335,8 +335,11 @@ class ValueOperationResolver:
         self,
         execution: abstract_program.LogicalOperationExecution,
         view_encodings: dict[str, ast.GlobalTypedNameReference],
-    ) -> concrete_program.OperationExecution | MissingEncodingOperation:
+    ) -> concrete_program.OperationExecution | MissingEncodingOperation | None:
         """Return the execution of the Encoding Operation that performs a logical operation for the encodings of the views it looks at."""
+        # Executing it cannot be resolved for a reason that is already reported.
+        if not self._associations.has_usable_associations(execution.logical_operation):
+            return None
         encodings: list[ast.GlobalTypedNameReference] = []
         for argument in execution.arguments:
             encodings.append(view_encodings[argument.looking_at.source_typed_name])

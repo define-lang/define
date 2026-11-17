@@ -195,6 +195,7 @@ py_library(
     visibility = ["//define/compiler/test_fixtures:__pkg__"],
     deps = [
         "//define/compiler/association_resolution:association_resolver",
+        "//define/compiler/association_resolution:association_tables",
         "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:reference_graph_validator",

@@ -41,10 +41,6 @@ class DefinitionStructuralValidator:
     _valid_typed_names: set[str]
     _particle_statement_validity: list[validation_result.ParticleStatementValidity]
     _looked_at_position_validity: list[bool]
-    _associated_encodings: list[reference_graph.ReferenceEdge]
-    _encoding_operation_associations: list[
-        validation_result.EncodingOperationAssociation
-    ]
     _unknown_fquns: set[str]
     _implied_qualities: typed_name_dict.TypedNameDict[
         ast.GlobalTypedNameReference, ast.QualityImplicationStatement
@@ -72,8 +68,6 @@ class DefinitionStructuralValidator:
         self._valid_typed_names = set()
         self._particle_statement_validity = []
         self._looked_at_position_validity = []
-        self._associated_encodings = []
-        self._encoding_operation_associations = []
         self._unknown_fquns = set()
         self._implied_qualities = typed_name_dict.TypedNameDict()
         self._used_implied_qualities = set()
@@ -110,12 +104,10 @@ class DefinitionStructuralValidator:
                 self._validate_operation_definition(definition)
             case ast.LogicalOperationDefinition() as definition:
                 self._validate_logical_operation_definition(definition)
-                self._validate_associated_encoding_operations(definition)
             case ast.ValueDefinition() as definition:
                 self._validate_logical_operation_support_statements(
                     definition.logical_operation_support_statements
                 )
-                self._reference_associated_encodings(definition)
             case _:
                 pass
         return self.build_result()
@@ -128,8 +120,6 @@ class DefinitionStructuralValidator:
             reference_edges=self._reference_edges,
             particle_statement_validity=self._particle_statement_validity,
             looked_at_position_validity=self._looked_at_position_validity,
-            associated_encodings=self._associated_encodings,
-            encoding_operation_associations=self._encoding_operation_associations,
         )
 
     def _validate_action_definition(
@@ -148,38 +138,6 @@ class DefinitionStructuralValidator:
         )
         self._check_unreferenced_positions()
         self._check_unused_quality_implications()
-
-    def _reference_associated_encodings(self, definition: ast.ValueDefinition):
-        """Record an edge to each encoding that the project associates with the value quality, which association resolution follows for the encoding it chooses."""
-        root_config = self._context.root_config
-        # Source compiled without a project root has no associations.
-        if root_config is None:
-            return
-        for encoding in root_config.associations.value_encodings.get(
-            definition.typed_name.name_content.path.name, ()
-        ):
-            edge = self._reference_edge(encoding)
-            if edge is not None:
-                self._associated_encodings.append(edge)
-
-    def _validate_associated_encoding_operations(
-        self, definition: ast.LogicalOperationDefinition
-    ):
-        """Record each Encoding Operation that the project associates with the logical operation, with an edge to it that association resolution follows if it chooses the Encoding Operation."""
-        root_config = self._context.root_config
-        # Source compiled without a project root has no associations.
-        if root_config is None:
-            return
-        for association in root_config.associations.encoding_operations.get(
-            definition.typed_name.name_content.path.name, ()
-        ):
-            edge = self._reference_edge(association.reference)
-            if edge is not None:
-                self._encoding_operation_associations.append(
-                    validation_result.EncodingOperationAssociation(
-                        edge=edge, views=association.views
-                    )
-                )
 
     def _validate_operation_definition(self, definition: ast.OperationDefinition):
         views = scope_tracker.ScopeTracker[

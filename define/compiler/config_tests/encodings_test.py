@@ -7,9 +7,7 @@ import typing
 from crates.source_rendering.python import rendering
 from define.compiler.config import (
     association_config,
-    config_loader,
     encodings_config,
-    local_deps_config,
     project_config,
 )
 from define.compiler.config_tests import test_helpers
@@ -28,14 +26,9 @@ def test_resolves_value_encodings(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    () = result.diagnostics
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert test_helpers.associated_names(
-        result.config.associations.value_encodings
-    ) == {
+    table, table_diagnostics = test_helpers.load_association_table()
+    () = table_diagnostics
+    assert test_helpers.associated_names(table.value_encodings) == {
         "/number/integer": [
             test_helpers.encoding_name("/number/integer/twos_complement", 5)
         ],
@@ -51,17 +44,9 @@ def test_has_encodings_false_does_not_read_encodings(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-
-    assert result == config_loader.ConfigLoadResult(
-        config=config_loader.Config(
-            fqun=test_helpers.loaded_fqun(result.config, "test.example.com:my_lib"),
-            sub_roots={},
-            associations=association_config.AssociationTable(
-                value_encodings={}, encoding_operations={}
-            ),
-        ),
-        diagnostics=[],
+    assert test_helpers.load_association_table() == (
+        association_config.AssociationTable(value_encodings={}, encoding_operations={}),
+        [],
     )
 
 
@@ -70,9 +55,11 @@ def test_missing_encodings(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    assert test_helpers.load_config() == config_loader.ConfigLoadResult(
-        config=None,
-        diagnostics=[
+    assert test_helpers.load_association_table() == (
+        association_config.AssociationTable(
+            value_encodings=None, encoding_operations={}
+        ),
+        [
             diagnostics.EncodingsConfigNotFoundDiagnostic(
                 location=test_helpers.config_field_location(
                     project_config.CONFIG_FILE,
@@ -89,8 +76,8 @@ def test_value_in_another_universe(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == diagnostics.AssociationNameInAnotherUniverseDiagnostic(
         location=rendering.SourceLocation(
             line=4,
@@ -103,12 +90,7 @@ def test_value_in_another_universe(
         name="other.com:lib:/number",
         fqun="test.example.com:my_lib",
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert (
-        test_helpers.associated_names(result.config.associations.value_encodings) == {}
-    )
+    assert test_helpers.associated_names(table.value_encodings) == {}
 
 
 def test_value_that_is_not_a_global_name(
@@ -116,8 +98,8 @@ def test_value_that_is_not_a_global_name(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == syntax_errors.InvalidGlobalName(
         location=rendering.SourceLocation(
             line=4,
@@ -127,12 +109,7 @@ def test_value_that_is_not_a_global_name(
             file_path=str(encodings_config.CONFIG_FILE.path),
         )
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert (
-        test_helpers.associated_names(result.config.associations.value_encodings) == {}
-    )
+    assert test_helpers.associated_names(table.value_encodings) == {}
 
 
 def test_value_full_name_in_own_universe(
@@ -140,8 +117,8 @@ def test_value_full_name_in_own_universe(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
         location=rendering.SourceLocation(
             line=4,
@@ -152,12 +129,7 @@ def test_value_full_name_in_own_universe(
         ),
         fqun="test.example.com:my_lib",
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert (
-        test_helpers.associated_names(result.config.associations.value_encodings) == {}
-    )
+    assert test_helpers.associated_names(table.value_encodings) == {}
 
 
 def test_resolves_encoding_from_another_universe(
@@ -165,16 +137,11 @@ def test_resolves_encoding_from_another_universe(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    () = result.diagnostics
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {
-        "other.com:lib": test_helpers.declared_sub_root("other.com:lib", "lib")
+    table, table_diagnostics = test_helpers.load_association_table()
+    () = table_diagnostics
+    assert test_helpers.associated_names(table.value_encodings) == {
+        "/number": [test_helpers.encoding_name("other.com:lib:/number/ascii", 5)]
     }
-    assert test_helpers.associated_names(
-        result.config.associations.value_encodings
-    ) == {"/number": [test_helpers.encoding_name("other.com:lib:/number/ascii", 5)]}
 
 
 def test_encoding_that_is_not_a_global_name(
@@ -182,8 +149,8 @@ def test_encoding_that_is_not_a_global_name(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == syntax_errors.InvalidGlobalName(
         location=rendering.SourceLocation(
             line=5,
@@ -193,12 +160,7 @@ def test_encoding_that_is_not_a_global_name(
             file_path=str(encodings_config.CONFIG_FILE.path),
         )
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert (
-        test_helpers.associated_names(result.config.associations.value_encodings) == {}
-    )
+    assert test_helpers.associated_names(table.value_encodings) == {}
 
 
 def test_encoding_full_name_in_own_universe(
@@ -206,8 +168,8 @@ def test_encoding_full_name_in_own_universe(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
         location=rendering.SourceLocation(
             line=5,
@@ -218,12 +180,7 @@ def test_encoding_full_name_in_own_universe(
         ),
         fqun="test.example.com:my_lib",
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert (
-        test_helpers.associated_names(result.config.associations.value_encodings) == {}
-    )
+    assert test_helpers.associated_names(table.value_encodings) == {}
 
 
 def test_unsorted_values(
@@ -231,8 +188,8 @@ def test_unsorted_values(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == diagnostics.UnsortedValueEncodingDiagnostic(
         location=test_helpers.config_field_location(
             encodings_config.CONFIG_FILE, ("encodings", "value_encodings", 1, "value")
@@ -240,12 +197,7 @@ def test_unsorted_values(
         value="/number/integer",
         previous_value="/number/natural",
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert test_helpers.associated_names(
-        result.config.associations.value_encodings
-    ) == {
+    assert test_helpers.associated_names(table.value_encodings) == {
         "/number/natural": [test_helpers.encoding_name("/number/natural/ascii", 5)],
         "/number/integer": [test_helpers.encoding_name("/number/integer/ascii", 9)],
     }
@@ -256,8 +208,8 @@ def test_duplicate_value_encoding(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == diagnostics.DuplicateValueEncodingDiagnostic(
         location=test_helpers.config_field_location(
             encodings_config.CONFIG_FILE, ("encodings", "value_encodings", 1)
@@ -268,12 +220,9 @@ def test_duplicate_value_encoding(
             encodings_config.CONFIG_FILE, ("encodings", "value_encodings", 0)
         ),
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert test_helpers.associated_names(
-        result.config.associations.value_encodings
-    ) == {"/number": [test_helpers.encoding_name("/number/ascii", 5)]}
+    assert test_helpers.associated_names(table.value_encodings) == {
+        "/number": [test_helpers.encoding_name("/number/ascii", 5)]
+    }
 
 
 def test_duplicate_value_encoding_with_invalid_name(
@@ -281,8 +230,8 @@ def test_duplicate_value_encoding_with_invalid_name(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    first_name, second_name, duplicate = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    first_name, second_name, duplicate = table_diagnostics
     assert first_name == syntax_errors.InvalidGlobalName(
         location=rendering.SourceLocation(
             line=5,
@@ -311,39 +260,7 @@ def test_duplicate_value_encoding_with_invalid_name(
             encodings_config.CONFIG_FILE, ("encodings", "value_encodings", 0)
         ),
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert (
-        test_helpers.associated_names(result.config.associations.value_encodings) == {}
-    )
-
-
-def test_local_deps_and_encodings_diagnostics(
-    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
-):
-    monkeypatch.chdir(testdata_project_directory)
-
-    assert test_helpers.load_config() == config_loader.ConfigLoadResult(
-        config=None,
-        diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
-                location=test_helpers.config_field_location(
-                    local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
-                ),
-                field_path=("deps", "local", 0, "path"),
-                violation_message="path must not be absolute",
-            ),
-            diagnostics.ConfigViolationDiagnostic(
-                location=test_helpers.config_field_location(
-                    encodings_config.CONFIG_FILE,
-                    ("encodings", "value_encodings", 0, "encoding"),
-                ),
-                field_path=("encodings", "value_encodings", 0, "encoding"),
-                violation_message="value is required",
-            ),
-        ],
-    )
+    assert test_helpers.associated_names(table.value_encodings) == {}
 
 
 def test_encodings_only_in_unconfigured_universe(
@@ -351,9 +268,9 @@ def test_encodings_only_in_unconfigured_universe(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
+    table, table_diagnostics = test_helpers.load_association_table()
     # Both encodings are in the same universe, which is reported once.
-    (diagnostic,) = result.diagnostics
+    (diagnostic,) = table_diagnostics
     assert diagnostic == diagnostics.ExternalUniverseNotConfiguredDiagnostic(
         location=rendering.SourceLocation(
             line=5,
@@ -365,9 +282,28 @@ def test_encodings_only_in_unconfigured_universe(
         universe="other.com:lib",
         current_universe_name="test.example.com:my_lib",
     )
-    assert result.config is not None
     # The value quality is still associated with an encoding, so it keeps
     # its entry.
-    assert test_helpers.associated_names(
-        result.config.associations.value_encodings
-    ) == {"/number": []}
+    assert test_helpers.associated_names(table.value_encodings) == {"/number": []}
+
+
+def test_encoding_missing(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    assert test_helpers.load_association_table() == (
+        association_config.AssociationTable(
+            value_encodings=None, encoding_operations={}
+        ),
+        [
+            diagnostics.ConfigViolationDiagnostic(
+                location=test_helpers.config_field_location(
+                    encodings_config.CONFIG_FILE,
+                    ("encodings", "value_encodings", 0, "encoding"),
+                ),
+                field_path=("encodings", "value_encodings", 0, "encoding"),
+                violation_message="value is required",
+            )
+        ],
+    )

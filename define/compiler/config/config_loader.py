@@ -7,7 +7,6 @@ import typing
 import msgspec
 
 from define.compiler.config import (
-    association_config,
     local_deps_config,
     project_config,
 )
@@ -32,7 +31,12 @@ class Config(msgspec.Struct):
     # The local dependency entry for each universe that the project configures
     # as a sub-root.
     sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry]
-    associations: association_config.AssociationTable
+    # Where the project config says that the project has Value Encoding
+    # Associations, or None if it does not say so.
+    has_encodings_location: rendering.SourceLocation | None
+    # Where the project config says that the project has Encoding Operation
+    # associations, or None if it does not say so.
+    has_encoding_operations_location: rendering.SourceLocation | None
 
 
 class ConfigLoadResult(msgspec.Struct, frozen=True):
@@ -119,17 +123,14 @@ class ConfigLoader:
                     sub_root_path=str(self._root),
                 )
             )
-        associations, association_diagnostics = (
-            association_config.load_association_table(
-                self._root, self._source_map, project, sub_roots
-            )
-        )
-        config_diagnostics.extend(association_diagnostics)
-        if not fqun_matches or sub_roots is None or associations is None:
+        if not fqun_matches or sub_roots is None:
             return ConfigLoadResult(config=None, diagnostics=config_diagnostics)
         return ConfigLoadResult(
             config=Config(
-                fqun=project.fqun, sub_roots=sub_roots, associations=associations
+                fqun=project.fqun,
+                sub_roots=sub_roots,
+                has_encodings_location=project.has_encodings_location,
+                has_encoding_operations_location=project.has_encoding_operations_location,
             ),
             diagnostics=config_diagnostics,
         )

@@ -15,6 +15,8 @@ from define.compiler.validator.structural import (
 from define.compiler.validator.structural.resolver import path_tracker
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.config import local_deps_config
@@ -27,7 +29,7 @@ if typing.TYPE_CHECKING:
 
 
 class ReachedDefinition(msgspec.Struct):
-    """A definition that a reference reached, and the file that holds it."""
+    """A definition that a reference resolved to, and the file that holds it."""
 
     loaded_file: file_validator.LoadedFile
     definition: ast.GlobalDefinition
@@ -45,7 +47,7 @@ class ReferenceResolver:
 
     Decides which files to load, so that no file loads twice, and owns the
     project roots and their configs. Reports the diagnostics for references
-    that cannot reach a definition. Only the coordinator thread may use it.
+    that cannot resolve to a definition. Only the coordinator thread may use it.
     """
 
     _path_tracker: path_tracker.PathTracker[file_validator.LoadedFile]
@@ -65,6 +67,12 @@ class ReferenceResolver:
         self._disabled_universes = set()
         self._program_diagnostics = []
 
+    def project_roots(
+        self,
+    ) -> Mapping[str, tuple[define_path.DefinePath, config_loader.Config]]:
+        """Return the path and config of each project root whose config loaded, by its universe."""
+        return self._path_tracker.project_roots()
+
     def completed_files(self) -> list[file_validator.LoadedFile]:
         """Return every file that finished loading."""
         return self._path_tracker.completed_results()
@@ -75,19 +83,23 @@ class ReferenceResolver:
 
     def validate_reference(
         self,
-        loaded_file: file_validator.LoadedFile,
+        referencing_root: define_path.DefinePath,
+        referencing_file: file_validator.LoadedFile | None,
         edge: reference_graph.ReferenceEdge,
         source_definition: validation_result.DefinitionValidationResult,
     ) -> ReachedDefinition | file_validation_context.FileValidationContext | None:
-        """Validate an edge, and return the definition it names if its file is loaded.
+        """Validate an edge from the project root referencing_root, and return the definition it names if its file is loaded.
 
-        The edge must not name an earlier definition in its own file.
+        referencing_file is the file that holds the edge, which must not name
+        an earlier definition in it, or None for an edge from an association,
+        which the project's config holds. Diagnostics about the edge are added
+        to source_definition.
 
         If the target file is not loaded yet, the rest of the validation
         happens when it loads, add_loaded_file returns the definition instead,
         and this returns the file if the caller must load it.
         """
-        target = self._validate_target_file(loaded_file, edge, source_definition)
+        target = self._validate_target_file(referencing_root, edge, source_definition)
         if target is None:
             return None
         target_file = target.full_path
@@ -102,7 +114,7 @@ class ReferenceResolver:
                 edge,
                 target_loaded_file,
                 source_definition,
-                in_source_file=target_loaded_file is loaded_file,
+                in_source_file=target_loaded_file is referencing_file,
             )
         self._deferred_edges.setdefault(target_file, []).append(
             _DeferredReferenceEdge(edge, source_definition)
@@ -114,7 +126,7 @@ class ReferenceResolver:
 
     def _validate_target_file(
         self,
-        loaded_file: file_validator.LoadedFile,
+        referencing_root: define_path.DefinePath,
         edge: reference_graph.ReferenceEdge,
         source_definition: validation_result.DefinitionValidationResult,
     ) -> file_validation_context.FileValidationContext | None:
@@ -123,7 +135,7 @@ class ReferenceResolver:
         Reports why the edge cannot resolve in the file, unless that was
         already reported elsewhere.
         """
-        target_root = self._universe_root(edge, loaded_file.context.root_prefix)
+        target_root = self._universe_root(edge, referencing_root)
         # The config error for a disabled universe was already reported.
         if target_root is None:
             return None
@@ -132,7 +144,7 @@ class ReferenceResolver:
         if self._path_tracker.is_under_failed_root(target_file):
             return None
         target_root_config = self._target_root_config(
-            edge, target_root, loaded_file.context.root_prefix
+            edge, target_root, referencing_root
         )
         if target_root_config is None:
             return None
@@ -149,7 +161,7 @@ class ReferenceResolver:
     def add_loaded_file(
         self, loaded_file: file_validator.LoadedFile
     ) -> list[ReachedDefinition]:
-        """Record a file that finished loading, and return the definitions that the edges waiting on it reach."""
+        """Record a file that finished loading, and return the definitions that the edges waiting on it reference."""
         completed_file = loaded_file.context.full_path
         self._path_tracker.set_result(completed_file, loaded_file)
         # Reference edges have to wake up by file, not by definition name.

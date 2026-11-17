@@ -7,7 +7,7 @@ import pytest
 
 from crates.source_rendering.python import rendering
 from define.compiler import constants
-from define.compiler.config import association_config, config_loader, local_deps_config
+from define.compiler.config import config_loader, local_deps_config
 from define.compiler.data_structures import define_path
 from define.compiler.parsing import test_helpers as parsing_test_helpers
 from define.compiler.validator.structural.resolver import path_tracker
@@ -82,9 +82,8 @@ class TestSubRootTracking:
         root_config = config_loader.Config(
             fqun=parsing_test_helpers.parse_fqun("my.universe"),
             sub_roots={"dep": _entry("dep", "ext/dep")},
-            associations=association_config.AssociationTable(
-                value_encodings={}, encoding_operations={}
-            ),
+            has_encodings_location=None,
+            has_encoding_operations_location=None,
         )
         tracker.register_project_root(define_path.EMPTY, root_config)
         assert tracker.project_root_for_fqun("my.universe") == (
@@ -99,9 +98,8 @@ class TestSubRootTracking:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("my.universe"),
                 sub_roots={},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         assert tracker.project_root_for_fqun("other.universe") is None
@@ -117,9 +115,8 @@ class TestSubRootTracking:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("my.universe"),
                 sub_roots={"dep": _entry("dep", "ext/dep")},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         root_config = tracker.config_for_root(define_path.EMPTY)
@@ -138,9 +135,8 @@ class TestSubRootTracking:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("my.universe"),
                 sub_roots={},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         with pytest.raises(ValueError, match="already registered"):
@@ -149,9 +145,8 @@ class TestSubRootTracking:
                 config_loader.Config(
                     fqun=parsing_test_helpers.parse_fqun("other.universe"),
                     sub_roots={},
-                    associations=association_config.AssociationTable(
-                        value_encodings={}, encoding_operations={}
-                    ),
+                    has_encodings_location=None,
+                    has_encoding_operations_location=None,
                 ),
             )
 
@@ -162,9 +157,8 @@ class TestSubRootTracking:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("my.universe"),
                 sub_roots={"dep": _entry("dep", "ext/dep")},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         assert tracker.sub_root_entry("dep", define_path.EMPTY) == _entry(
@@ -183,9 +177,8 @@ class TestSubRootTracking:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("my.universe"),
                 sub_roots={},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         with pytest.raises(KeyError):
@@ -200,9 +193,8 @@ class TestConflictDetection:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("lib.uni"),
                 sub_roots={},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         assert not tracker.is_under_failed_root(define_path.DefinePath("lib"))
@@ -221,9 +213,8 @@ class TestConflictDetection:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("root.uni"),
                 sub_roots={},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         assert (
@@ -238,9 +229,8 @@ class TestConflictDetection:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("root.uni"),
                 sub_roots={},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         tracker.register_project_root(
@@ -248,9 +238,8 @@ class TestConflictDetection:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("lib.uni"),
                 sub_roots={},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         assert tracker.find_enclosing_root(
@@ -264,9 +253,8 @@ class TestConflictDetection:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("root.uni"),
                 sub_roots={},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         tracker.register_project_root(
@@ -274,9 +262,8 @@ class TestConflictDetection:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("lib.uni"),
                 sub_roots={},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         tracker.register_project_root(
@@ -284,9 +271,8 @@ class TestConflictDetection:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("inner.uni"),
                 sub_roots={},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         assert tracker.find_enclosing_root(
@@ -340,9 +326,8 @@ class TestUniverseRoot:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("a.com:main"),
                 sub_roots={"b.com:lib": _entry("b.com:lib", "deps/lib")},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         assert tracker.universe_root(
@@ -356,9 +341,8 @@ class TestUniverseRoot:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("a.com:main"),
                 sub_roots={},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         assert tracker.universe_root("b.com:lib", define_path.EMPTY) is None
@@ -370,9 +354,8 @@ class TestUniverseRoot:
             config_loader.Config(
                 fqun=parsing_test_helpers.parse_fqun("a.com:main"),
                 sub_roots={},
-                associations=association_config.AssociationTable(
-                    value_encodings={}, encoding_operations={}
-                ),
+                has_encodings_location=None,
+                has_encoding_operations_location=None,
             ),
         )
         assert (

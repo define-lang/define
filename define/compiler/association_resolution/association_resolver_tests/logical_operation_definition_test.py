@@ -394,3 +394,21 @@ def test_encoding_operation_with_different_view_name_than_its_association(
             ),
         )
     ]
+
+
+def test_unusable_encoding_operations_config(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.all_diagnostics == [
+        diagnostics.EncodingOperationsConfigNotFoundDiagnostic(
+            location=rendering.SourceLocation(
+                line=5,
+                column=30,
+                end_line=5,
+                end_column=33,
+                file_path=".define/project/config.defcl",
+            ),
+            encoding_operations_config_path=".define/encodings/encoding_operations.defcl",
+        )
+    ]

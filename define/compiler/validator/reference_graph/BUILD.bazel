@@ -297,6 +297,7 @@ py_test(
         ":action_definition_validator",
         ":reference_graph_validator",
         "//define/compiler/association_resolution:association_resolver",
+        "//define/compiler/association_resolution:association_tables",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:program_validator",

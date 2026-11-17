@@ -20,7 +20,7 @@ if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from defcl.python import validator as defcl_validator
     from define.compiler import ast
-    from define.compiler.config import local_deps_config, project_config
+    from define.compiler.config import config_loader, local_deps_config
 
 CONFIG_FILE = config_file.ConfigFile(
     path=define_path.DefinePathFromPosix(
@@ -62,14 +62,12 @@ class EncodingOperationsConfigReader(
         super().__init__(root, source_map, CONFIG_FILE)
 
     def load(
-        self,
-        project: project_config.ProjectConfig,
-        sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry] | None,
+        self, config: config_loader.Config
     ) -> tuple[
         types.MappingProxyType[str, list[AssociatedEncodingOperation]] | None,
         list[diagnostics.FormattableDiagnostic],
     ]:
-        """Load and validate the project's Encoding Operation associations with its logical operations, given the sub-roots that the project configures.
+        """Load and validate the project's Encoding Operation associations with its logical operations.
 
         Returns an immutable mapping from each logical operation's short global
         name to its associated Encoding Operations, or None
@@ -82,13 +80,13 @@ class EncodingOperationsConfigReader(
         # association is checked only when the program uses its logical
         # operation, so one that names an unused or undefined logical operation
         # goes unreported.
-        if project.has_encoding_operations_location is None:
+        if config.has_encoding_operations_location is None:
             return _EMPTY_ENCODING_OPERATIONS, []
         # The project config says the file exists, so only then is it checked.
         if not self.exists():
             return None, [
                 diagnostics.EncodingOperationsConfigNotFoundDiagnostic(
-                    location=project.has_encoding_operations_location,
+                    location=config.has_encoding_operations_location,
                     encoding_operations_config_path=str(self.path()),
                 )
             ]
@@ -98,8 +96,8 @@ class EncodingOperationsConfigReader(
         encoding_operations, association_diagnostics = _encoding_operations(
             result.message.encoding_operations.operation_encodings,
             result.file,
-            project.fqun,
-            sub_roots,
+            config.fqun,
+            config.sub_roots,
         )
         encoding_operations_diagnostics.extend(association_diagnostics)
         return (
@@ -190,7 +188,7 @@ def _encoding_operations(
     associations: Sequence[encoding_operations_pb2.OperationEncoding],
     file: defcl_validator.ValidatedFile,
     fqun: ast.Fqun,
-    sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry] | None,
+    sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry],
 ) -> tuple[
     dict[str, list[AssociatedEncodingOperation]],
     list[diagnostics.FormattableDiagnostic],

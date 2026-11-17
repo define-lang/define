@@ -11,6 +11,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
     from crates.source_rendering.python import rendering
+    from define.compiler.config import encoding_operations_config
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.validator import validation_result
 
@@ -29,7 +30,7 @@ def check(
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         validation_result.DefinitionValidationResult,
     ],
-    associations: Iterable[validation_result.EncodingOperationAssociation],
+    associations: Iterable[encoding_operations_config.AssociatedEncodingOperation],
 ) -> list[diagnostics.Diagnostic]:
     """Return a diagnostic for each way a loaded Encoding Operation that one of the logical operation's associations names differs from that association, or from the logical operation in the direction of a view."""
     check_diagnostics: list[diagnostics.Diagnostic] = []
@@ -43,7 +44,7 @@ def check(
             _direction_diagnostics(
                 definition,
                 encoding_operation,
-                association.edge.global_name_reference.location,
+                association.reference.location,
             )
         )
     return check_diagnostics
@@ -80,7 +81,7 @@ def _direction_diagnostics(
 
 
 def _association_diagnostics(
-    association: validation_result.EncodingOperationAssociation,
+    association: encoding_operations_config.AssociatedEncodingOperation,
     encoding_operation: ast.EncodingOperationDefinition,
 ) -> list[diagnostics.Diagnostic]:
     """Return a diagnostic for each way the Interface Views that the association lists differ from the Encoding Operation's, which must match in name, encoding, and order."""
@@ -91,7 +92,7 @@ def _association_diagnostics(
     if len(association.views) != len(encoding_views):
         return [
             diagnostics.AssociationViewCountDiagnostic(
-                location=association.edge.global_name_reference.location,
+                location=association.reference.location,
                 encoding_operation_name=encoding_operation_name,
                 view_count=len(association.views),
                 encoding_operation_view_count=len(encoding_views),
@@ -145,10 +146,10 @@ def _loaded_encoding_operations(
         ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
         validation_result.DefinitionValidationResult,
     ],
-    associations: Iterable[validation_result.EncodingOperationAssociation],
+    associations: Iterable[encoding_operations_config.AssociatedEncodingOperation],
 ) -> Iterator[
     tuple[
-        validation_result.EncodingOperationAssociation,
+        encoding_operations_config.AssociatedEncodingOperation,
         ast.EncodingOperationDefinition,
     ]
 ]:
@@ -158,7 +159,7 @@ def _loaded_encoding_operations(
     it executes the logical operation.
     """
     for association in associations:
-        reference = association.edge.global_name_reference
+        reference = association.reference
         result = definition_results.get(reference)
         # A missing Encoding Operation, or a definition of another type,
         # was already reported when its reference was resolved.

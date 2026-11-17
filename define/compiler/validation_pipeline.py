@@ -5,7 +5,10 @@ from __future__ import annotations
 import typing
 from dataclasses import dataclass
 
-from define.compiler.association_resolution import association_resolver
+from define.compiler.association_resolution import (
+    association_resolver,
+    association_tables,
+)
 from define.compiler.validator.reference_graph import reference_graph_validator
 
 if typing.TYPE_CHECKING:
@@ -38,8 +41,11 @@ def validate_and_resolve_program(
     validation tests of behavior that requires such a program.
     """
     program_result = program.result
+    tables = association_tables.AssociationTables(
+        program.project_roots(), program_result.source_map
+    )
     resolver = association_resolver.AssociationResolver(
-        program_result.definition_results
+        program_result.definition_results, tables
     )
     # TODO: Make ReferenceGraphValidator return diagnostics instead of
     # adding them to definitions itself?
@@ -58,6 +64,7 @@ def validate_and_resolve_program(
     # the program after this.
     del program
     resolver.resolve_encoding_operations()
+    program_result.program_diagnostics.extend(tables.config_diagnostics())
     return CompilerValidationResult(
         program_validation=program_result,
         concrete_program=resolver.concrete_program(program_result.definition_order),

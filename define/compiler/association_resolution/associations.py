@@ -7,14 +7,14 @@ import typing
 import msgspec
 
 from define.compiler.errors import diagnostics
+from define.compiler.graphs import reference_graph
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
     from define.compiler import ast
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.graphs import reference_graph
-    from define.compiler.validator import validation_result
+    from define.compiler.association_resolution import association_tables
+    from define.compiler.config import encoding_operations_config
 
 
 class ChosenEncodingOperation(msgspec.Struct, frozen=True):
@@ -23,7 +23,9 @@ class ChosenEncodingOperation(msgspec.Struct, frozen=True):
     logical_operation: ast.LogicalOperationDefinition
     # The association of the logical operation that names the Encoding
     # Operation.
-    encoding_operation_association: validation_result.EncodingOperationAssociation
+    encoding_operation_association: (
+        encoding_operations_config.AssociatedEncodingOperation
+    )
 
 
 @typing.final
@@ -34,15 +36,9 @@ class Associations:
     others, and only after everything that reads its associations is added.
     """
 
-    def __init__(
-        self,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
-    ):
-        """Initialize with the known definitions and no associations."""
-        self._definition_results = definition_results
+    def __init__(self, tables: association_tables.AssociationTables):
+        """Initialize with each project's association table, and nothing added."""
+        self._tables = tables
         # The edge to each value quality's one encoding, by the value
         # quality's full typed name.
         self._value_encodings: dict[str, reference_graph.ReferenceEdge] = {}
@@ -53,9 +49,15 @@ class Associations:
             str,
             tuple[
                 ast.LogicalOperationDefinition,
-                dict[tuple[str, ...], validation_result.EncodingOperationAssociation],
+                dict[
+                    tuple[str, ...],
+                    encoding_operations_config.AssociatedEncodingOperation,
+                ],
             ],
         ] = {}
+        # The full typed names of the logical operations whose associations a
+        # diagnostic in their project's config files keeps from being used.
+        self._unusable_logical_operations: set[str] = set()
         # Each Encoding Operation that resolution chose, by the full typed
         # names of its logical operation and of the encodings that its
         # association lists, which identify the association, so that each
@@ -68,27 +70,40 @@ class Associations:
         self, definition: ast.ValueDefinition
     ) -> list[diagnostics.Diagnostic]:
         """Find the one encoding associated with a value quality, and return a diagnostic if it has none."""
-        associated_encodings = self._definition_results[
-            definition.typed_name
-        ].associated_encodings
-        if len(associated_encodings) > 1:
-            # TODO: Choose between a value quality's encodings when each
-            # particle is created, as the spec allows.
-            raise NotImplementedError(
-                f"{definition.typed_name.source_typed_name} has more than one encoding:"
-                + f" {[edge.target_full_typed_name for edge in associated_encodings]}"
-            )
+        name_content = definition.typed_name.name_content
+        value_encodings = self._tables.table(
+            name_content.fqun.canonical
+        ).value_encodings
+        # The diagnostic that keeps the project's Value Encoding Associations
+        # from being used is already reported.
+        if value_encodings is None:
+            return []
+        associated_encodings = value_encodings.get(name_content.path.name)
         # Only the value quality's own universe can associate it with an
         # encoding, so without one nothing can ever hold the value.
-        if not associated_encodings:
+        if associated_encodings is None:
             return [
                 diagnostics.ValueHasNoEncodingDiagnostic(
                     location=definition.typed_name.location,
                     value_quality=definition.typed_name.source_typed_name,
                 )
             ]
+        # Each encoding was in a universe that the project does not configure,
+        # which is already reported.
+        if not associated_encodings:
+            return []
+        if len(associated_encodings) > 1:
+            # TODO: Choose between a value quality's encodings when each
+            # particle is created, as the spec allows.
+            raise NotImplementedError(
+                f"{definition.typed_name.source_typed_name} has more than one encoding:"
+                + f" {[encoding.full_typed_name for encoding in associated_encodings]}"
+            )
         self._value_encodings[definition.typed_name.full_typed_name] = (
-            associated_encodings[0]
+            reference_graph.ReferenceEdge(
+                enclosing_definition=definition,
+                global_name_reference=associated_encodings[0],
+            )
         )
         return []
 
@@ -96,14 +111,23 @@ class Associations:
         self, definition: ast.LogicalOperationDefinition
     ) -> list[diagnostics.Diagnostic]:
         """Add a logical operation's associations with Encoding Operations, and return a diagnostic for each association that cannot be used."""
+        name_content = definition.typed_name.name_content
+        associated_encoding_operations = self._tables.table(
+            name_content.fqun.canonical
+        ).encoding_operations
+        # The diagnostic that keeps the project's Encoding Operation
+        # associations from being used is already reported.
+        if associated_encoding_operations is None:
+            self._unusable_logical_operations.add(definition.typed_name.full_typed_name)
+            return []
         logical_operation_name = definition.typed_name.source_typed_name
         encoding_operations: dict[
-            tuple[str, ...], validation_result.EncodingOperationAssociation
+            tuple[str, ...], encoding_operations_config.AssociatedEncodingOperation
         ] = {}
         association_diagnostics: list[diagnostics.Diagnostic] = []
-        for association in self._definition_results[
-            definition.typed_name
-        ].encoding_operation_associations:
+        for association in associated_encoding_operations.get(
+            name_content.path.name, ()
+        ):
             view_diagnostics = _view_name_diagnostics(definition, association)
             if view_diagnostics:
                 association_diagnostics.extend(view_diagnostics)
@@ -113,8 +137,8 @@ class Associations:
                 encodings.append(view.encoding.full_typed_name)
             first = encoding_operations.setdefault(tuple(encodings), association)
             if first is not association:
-                encoding_operation = association.edge.global_name_reference
-                first_encoding_operation = first.edge.global_name_reference
+                encoding_operation = association.reference
+                first_encoding_operation = first.reference
                 association_diagnostics.append(
                     diagnostics.DuplicateAssociatedEncodingOperationDiagnostic(
                         location=encoding_operation.location,
@@ -139,12 +163,23 @@ class Associations:
             return None
         return edge.global_name_reference
 
+    def has_usable_associations(
+        self, logical_operation: ast.GlobalTypedNameReference
+    ) -> bool:
+        """Whether the logical operation's associations can be used, rather than a diagnostic in its project's config files, which is already reported, keeping them from being used."""
+        return (
+            logical_operation.full_typed_name not in self._unusable_logical_operations
+        )
+
     def choose_encoding_operation(
         self,
         logical_operation: ast.GlobalTypedNameReference,
         encodings: tuple[str, ...],
     ) -> ast.GlobalTypedNameReference | None:
-        """Return the Encoding Operation whose association with the logical operation lists the encodings with the full typed names ``encodings``, in their order, if one does, and record that resolution chose it."""
+        """Return the Encoding Operation whose association with the logical operation lists the encodings with the full typed names ``encodings``, in their order, if one does, and record that resolution chose it.
+
+        The logical operation's associations must be usable.
+        """
         definition, encoding_operations = self._encoding_operations[
             logical_operation.full_typed_name
         ]
@@ -160,7 +195,7 @@ class Associations:
                 logical_operation=definition,
                 encoding_operation_association=association,
             )
-        return association.edge.global_name_reference
+        return association.reference
 
     def chosen_encoding_operations(self) -> list[ChosenEncodingOperation]:
         """Return each Encoding Operation that resolution chose, with the association that chose it, once every definition is resolved."""
@@ -170,7 +205,12 @@ class Associations:
         """Return the edge to each encoding and Encoding Operation that resolution chose, once every definition is resolved."""
         edges = list(self._value_encodings.values())
         for chosen in self._chosen_encoding_operations.values():
-            edges.append(chosen.encoding_operation_association.edge)
+            edges.append(
+                reference_graph.ReferenceEdge(
+                    enclosing_definition=chosen.logical_operation,
+                    global_name_reference=chosen.encoding_operation_association.reference,
+                )
+            )
         return edges
 
     def value_encodings(self) -> Mapping[str, ast.GlobalTypedNameReference]:
@@ -183,10 +223,10 @@ class Associations:
 
 def _view_name_diagnostics(
     definition: ast.LogicalOperationDefinition,
-    association: validation_result.EncodingOperationAssociation,
+    association: encoding_operations_config.AssociatedEncodingOperation,
 ) -> list[diagnostics.Diagnostic]:
     """Return a diagnostic for each way the views that the association lists differ from the logical operation's, which must match in name and order."""
-    encoding_operation_name = association.edge.global_name_reference.source_typed_name
+    encoding_operation_name = association.reference.source_typed_name
     logical_operation_name = definition.typed_name.source_typed_name
     logical_views = definition.views
     # Views at the same place cannot be compared meaningfully when the counts
@@ -194,7 +234,7 @@ def _view_name_diagnostics(
     if len(association.views) != len(logical_views):
         return [
             diagnostics.AssociationLogicalOperationViewCountDiagnostic(
-                location=association.edge.global_name_reference.location,
+                location=association.reference.location,
                 encoding_operation_name=encoding_operation_name,
                 view_count=len(association.views),
                 logical_operation_name=logical_operation_name,

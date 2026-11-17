@@ -567,3 +567,99 @@ File "combine/integer.dfn", line 17, column 24
     it has the encoding<standard:/number/natural/ascii>.
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^""",
     ]
+
+
+def _value_quality_files(encodings: str | None) -> dict[str, str]:
+    files = {
+        ".define/project/config.defcl": (
+            "project: {\n"
+            '  universe_name: "my.domain.com:my_lib"\n'
+            "  associations: {\n"
+            "    has_encodings: TRUE\n"
+            "  }\n"
+            "}\n"
+        ),
+        "test.dfn": (
+            "define the potential value<my.domain.com:my_lib:/test> {\n"
+            "    it supports the logical_operation<standard:/text/less_than> {\n"
+            "        it may be read.\n"
+            "    }\n"
+            "}\n"
+        ),
+    }
+    if encodings is not None:
+        files[".define/encodings/encodings.defcl"] = encodings
+    return files
+
+
+def test_encodings_config_not_found_format(validate_project: ValidateProject):
+    result = validate_project(_value_quality_files(None))
+    assert [
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
+    ] == [
+        """\
+File ".define/project/config.defcl", line 4, column 20
+    has_encodings: TRUE
+                   ^^^^
+The project says it has encoding associations, but .define/encodings/encodings.defcl was not found.""",
+    ]
+
+
+def test_unsorted_value_encoding_format(validate_project: ValidateProject):
+    encodings = (
+        "encodings: {\n"
+        "  value_encodings: [\n"
+        "    {\n"
+        '      value: "/test"\n'
+        '      encoding: "standard:/number/integer/ascii"\n'
+        "    },\n"
+        "    {\n"
+        '      value: "/number"\n'
+        '      encoding: "standard:/number/integer/ascii"\n'
+        "    }\n"
+        "  ]\n"
+        "}\n"
+    )
+    result = validate_project(_value_quality_files(encodings))
+    assert [
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
+    ] == [
+        """\
+File ".define/encodings/encodings.defcl", line 8, column 14
+    value: "/number"
+           ^^^^^^^^^
+Encoding associations must be sorted by value quality, but '/number' comes after '/test'.""",
+    ]
+
+
+def test_duplicate_value_encoding_format(validate_project: ValidateProject):
+    encodings = (
+        "encodings: {\n"
+        "  value_encodings: [\n"
+        "    {\n"
+        '      value: "/test"\n'
+        '      encoding: "standard:/number/integer/ascii"\n'
+        "    },\n"
+        "    {\n"
+        '      value: "/test"\n'
+        '      encoding: "standard:/number/integer/ascii"\n'
+        "    }\n"
+        "  ]\n"
+        "}\n"
+    )
+    result = validate_project(_value_quality_files(encodings))
+    assert [
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.all_diagnostics
+    ] == [
+        """\
+File ".define/encodings/encodings.defcl", line 7, column 5
+    {
+    ^
+Value quality '/test' is already associated with encoding 'standard:/number/integer/ascii' here:
+File ".define/encodings/encodings.defcl", line 3, column 5
+    {
+    ^""",
+    ]

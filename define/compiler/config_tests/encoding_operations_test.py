@@ -6,7 +6,7 @@ import typing
 
 from crates.source_rendering.python import rendering
 from define.compiler.config import (
-    config_loader,
+    association_config,
     encoding_operations_config,
     project_config,
 )
@@ -26,19 +26,10 @@ def test_resolves_encoding_operations(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    () = result.diagnostics
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {
-        "other.com:lib": test_helpers.declared_sub_root("other.com:lib", "lib")
-    }
-    assert (
-        test_helpers.associated_names(result.config.associations.value_encodings) == {}
-    )
-    assert test_helpers.associated_encoding_operations(
-        result.config.associations.encoding_operations
-    ) == {
+    table, table_diagnostics = test_helpers.load_association_table()
+    () = table_diagnostics
+    assert test_helpers.associated_names(table.value_encodings) == {}
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
         "/number/add": [
             (
                 "/number/integer/add",
@@ -78,9 +69,11 @@ def test_missing_encoding_operations(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    assert test_helpers.load_config() == config_loader.ConfigLoadResult(
-        config=None,
-        diagnostics=[
+    assert test_helpers.load_association_table() == (
+        association_config.AssociationTable(
+            value_encodings={}, encoding_operations=None
+        ),
+        [
             diagnostics.EncodingOperationsConfigNotFoundDiagnostic(
                 location=test_helpers.config_field_location(
                     project_config.CONFIG_FILE,
@@ -99,8 +92,8 @@ def test_logical_operation_in_another_universe(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == diagnostics.AssociationNameInAnotherUniverseDiagnostic(
         location=rendering.SourceLocation(
             line=4,
@@ -113,10 +106,7 @@ def test_logical_operation_in_another_universe(
         name="other.com:lib:/number/add",
         fqun="test.example.com:my_lib",
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert result.config.associations.encoding_operations == {}
+    assert table.encoding_operations == {}
 
 
 def test_logical_operation_that_is_not_a_global_name(
@@ -124,8 +114,8 @@ def test_logical_operation_that_is_not_a_global_name(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == syntax_errors.InvalidGlobalName(
         location=rendering.SourceLocation(
             line=4,
@@ -135,10 +125,7 @@ def test_logical_operation_that_is_not_a_global_name(
             file_path=str(encoding_operations_config.CONFIG_FILE.path),
         )
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert result.config.associations.encoding_operations == {}
+    assert table.encoding_operations == {}
 
 
 def test_logical_operation_full_name_in_own_universe(
@@ -146,8 +133,8 @@ def test_logical_operation_full_name_in_own_universe(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
         location=rendering.SourceLocation(
             line=4,
@@ -158,10 +145,7 @@ def test_logical_operation_full_name_in_own_universe(
         ),
         fqun="test.example.com:my_lib",
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert result.config.associations.encoding_operations == {}
+    assert table.encoding_operations == {}
 
 
 def test_view_encoding_that_is_not_a_global_name(
@@ -169,8 +153,8 @@ def test_view_encoding_that_is_not_a_global_name(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == syntax_errors.InvalidGlobalName(
         location=rendering.SourceLocation(
             line=14,
@@ -180,8 +164,7 @@ def test_view_encoding_that_is_not_a_global_name(
             file_path=str(encoding_operations_config.CONFIG_FILE.path),
         )
     )
-    assert result.config is not None
-    assert result.config.associations.encoding_operations == {}
+    assert table.encoding_operations == {}
 
 
 def test_encoding_operation_that_is_not_a_global_name(
@@ -189,8 +172,8 @@ def test_encoding_operation_that_is_not_a_global_name(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == syntax_errors.InvalidGlobalName(
         location=rendering.SourceLocation(
             line=6,
@@ -200,10 +183,7 @@ def test_encoding_operation_that_is_not_a_global_name(
             file_path=str(encoding_operations_config.CONFIG_FILE.path),
         )
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert result.config.associations.encoding_operations == {}
+    assert table.encoding_operations == {}
 
 
 def test_encoding_operation_full_name_in_own_universe(
@@ -211,8 +191,8 @@ def test_encoding_operation_full_name_in_own_universe(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
         location=rendering.SourceLocation(
             line=6,
@@ -223,10 +203,7 @@ def test_encoding_operation_full_name_in_own_universe(
         ),
         fqun="test.example.com:my_lib",
     )
-    assert result.config is not None
-    assert result.config.fqun.canonical == "test.example.com:my_lib"
-    assert result.config.sub_roots == {}
-    assert result.config.associations.encoding_operations == {}
+    assert table.encoding_operations == {}
 
 
 def test_unsorted_logical_operations(
@@ -234,8 +211,8 @@ def test_unsorted_logical_operations(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == diagnostics.UnsortedEncodingOperationDiagnostic(
         location=test_helpers.config_field_location(
             encoding_operations_config.CONFIG_FILE,
@@ -244,10 +221,7 @@ def test_unsorted_logical_operations(
         logical_operation="/number/add",
         previous_logical_operation="/number/negate",
     )
-    assert result.config is not None
-    assert test_helpers.associated_encoding_operations(
-        result.config.associations.encoding_operations
-    ) == {
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
         "/number/negate": [
             (
                 "/number/integer/negate",
@@ -278,8 +252,8 @@ def test_duplicate_encoding_operation(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
-    (diagnostic,) = result.diagnostics
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
     assert diagnostic == diagnostics.DuplicateEncodingOperationDiagnostic(
         location=test_helpers.config_field_location(
             encoding_operations_config.CONFIG_FILE,
@@ -292,10 +266,7 @@ def test_duplicate_encoding_operation(
             ("encoding_operations", "operation_encodings", 0),
         ),
     )
-    assert result.config is not None
-    assert test_helpers.associated_encoding_operations(
-        result.config.associations.encoding_operations
-    ) == {
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
         "/number/add": [
             (
                 "/number/integer/add",
@@ -315,9 +286,11 @@ def test_encoding_operation_missing(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    assert test_helpers.load_config() == config_loader.ConfigLoadResult(
-        config=None,
-        diagnostics=[
+    assert test_helpers.load_association_table() == (
+        association_config.AssociationTable(
+            value_encodings={}, encoding_operations=None
+        ),
+        [
             diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     encoding_operations_config.CONFIG_FILE,
@@ -345,10 +318,10 @@ def test_encoding_operation_in_unconfigured_universe(
 ):
     monkeypatch.chdir(testdata_project_directory)
 
-    result = test_helpers.load_config()
+    table, table_diagnostics = test_helpers.load_association_table()
     # Both Encoding Operations are in the same universe, which is reported
     # once.
-    (diagnostic,) = result.diagnostics
+    (diagnostic,) = table_diagnostics
     assert diagnostic == diagnostics.ExternalUniverseNotConfiguredDiagnostic(
         location=rendering.SourceLocation(
             line=6,
@@ -360,5 +333,4 @@ def test_encoding_operation_in_unconfigured_universe(
         universe="other.com:lib",
         current_universe_name="test.example.com:my_lib",
     )
-    assert result.config is not None
-    assert result.config.associations.encoding_operations == {}
+    assert table.encoding_operations == {}
