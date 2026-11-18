@@ -139,14 +139,14 @@ def test_independent_actions_validate_in_parallel():
         side_effect=synchronized_analyze,
     ):
         resolver = _association_resolver(program)
-        reference_graph_validator.ReferenceGraphValidator(
+        validated_diagnostics = reference_graph_validator.ReferenceGraphValidator(
             program.result.definition_order,
             program.result.definition_results,
             resolver,
             entry_action=program.result.entry_action,
         ).validate(max_workers=2)
 
-    assert_no_errors(program.result)
+    assert validated_diagnostics == []
     concrete_program = resolver.concrete_program(program.result.definition_order)
     assert len(concrete_program.actions) == 2
 
@@ -258,9 +258,11 @@ def test_callers_share_the_completed_callee_contract():
         autospec=True,
         side_effect=collect_contract,
     ):
-        _reference_graph_validator(program).validate(max_workers=1)
+        validated_diagnostics = _reference_graph_validator(program).validate(
+            max_workers=1
+        )
 
-    assert_no_errors(program.result)
+    assert validated_diagnostics == []
     (callee_mark,) = [
         guaranteed.guarantee
         for guaranteed in contracts[_CALLEE_NAME].guarantees

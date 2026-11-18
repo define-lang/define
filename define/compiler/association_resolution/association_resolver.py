@@ -14,6 +14,7 @@ from define.compiler.association_resolution import (
     value_operation_resolver,
 )
 from define.compiler.errors import diagnostics
+from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import abstract_program
 
 if typing.TYPE_CHECKING:
@@ -24,7 +25,6 @@ if typing.TYPE_CHECKING:
     )
     from define.compiler.data_structures import typed_name_dict
     from define.compiler.graphs import reference_graph, reference_graph_order
-    from define.compiler.validator import validation_result
 
 
 @typing.final
@@ -114,23 +114,40 @@ class AssociationResolver:
         """Return the edge to each encoding and Encoding Operation that resolution chose, once every definition is resolved."""
         return self._associations.chosen_edges()
 
-    def resolve_encoding_operations(self):
-        """Validate each loaded Encoding Operation and check each chosen association against the Encoding Operation it names, once the chosen ones are loaded, and add the diagnostics to the definitions they are about."""
+    def resolve_encoding_operations(
+        self,
+    ) -> list[validation_result.DefinitionDiagnostics]:
+        """Validate each loaded Encoding Operation and check each chosen association against the Encoding Operation it names, once the chosen ones are loaded, and return the diagnostics about each definition that has any."""
+        found: list[validation_result.DefinitionDiagnostics] = []
         for definition_result in self._definition_results.values():
             definition = definition_result.definition
-            if isinstance(definition, ast.EncodingOperationDefinition):
-                definition_result.diagnostics.extend(
-                    self._resolve_encoding_operation(definition)
+            if not isinstance(definition, ast.EncodingOperationDefinition):
+                continue
+            encoding_operation_diagnostics = self._resolve_encoding_operation(
+                definition
+            )
+            if encoding_operation_diagnostics:
+                found.append(
+                    validation_result.DefinitionDiagnostics(
+                        definition=definition,
+                        diagnostics=encoding_operation_diagnostics,
+                    )
                 )
         for chosen in self._associations.chosen_encoding_operations():
             logical_operation = chosen.logical_operation
-            self._definition_results[logical_operation.typed_name].diagnostics.extend(
-                associated_encoding_operation_checks.check(
-                    logical_operation,
-                    self._definition_results,
-                    [chosen.encoding_operation_association],
-                )
+            association_diagnostics = associated_encoding_operation_checks.check(
+                logical_operation,
+                self._definition_results,
+                [chosen.encoding_operation_association],
             )
+            if association_diagnostics:
+                found.append(
+                    validation_result.DefinitionDiagnostics(
+                        definition=logical_operation,
+                        diagnostics=association_diagnostics,
+                    )
+                )
+        return found
 
     def _resolve_encoding_operation(
         self, definition: ast.EncodingOperationDefinition

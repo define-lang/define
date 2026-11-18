@@ -9,6 +9,7 @@ from define.compiler.errors import diagnostics
 from define.compiler.graphs import (
     reference_graph_executor,
 )
+from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import (
     action_definition_validator,
     operation_definition_validator,
@@ -22,7 +23,6 @@ if typing.TYPE_CHECKING:
     from define.compiler.graphs import (
         reference_graph_order,
     )
-    from define.compiler.validator import validation_result
 
 
 def _requires_validation(
@@ -93,21 +93,34 @@ class ReferenceGraphValidator:
             allow_entry_action_occupied_implied_position_requirements
         )
 
-    def validate(self, max_workers: int | None = None):
-        """Validate every definition in direct-reference-first order, resolving each to concrete code once it is validated."""
-        definition_order = self._definition_order
-        _ = reference_graph_executor.process_definitions(
-            definition_order,
+    def validate(
+        self, max_workers: int | None = None
+    ) -> list[validation_result.DefinitionDiagnostics]:
+        """Validate every definition in direct-reference-first order, resolving each to concrete code once it is validated, and return the diagnostics about each definition that has any."""
+        found: list[validation_result.DefinitionDiagnostics] = []
+        for definition_diagnostics in reference_graph_executor.process_definitions(
+            self._definition_order,
             _requires_validation,
             self._validate_definition,
             max_workers=max_workers,
-        )
+        ):
+            if definition_diagnostics.diagnostics:
+                found.append(definition_diagnostics)
         entry_action = self._entry_action
         if (
             entry_action is not None
             and not self._allow_entry_action_occupied_implied_position_requirements
         ):
-            self._validate_entry_action_requirements(entry_action)
+            entry_action_diagnostics = self._entry_action_requirement_diagnostics(
+                entry_action
+            )
+            if entry_action_diagnostics:
+                found.append(
+                    validation_result.DefinitionDiagnostics(
+                        definition=entry_action, diagnostics=entry_action_diagnostics
+                    )
+                )
+        return found
 
     def _validate_definition(
         self,
@@ -115,11 +128,9 @@ class ReferenceGraphValidator:
         | ast.ValueOperationDefinition
         | ast.LogicalOperationDefinition
         | ast.ValueDefinition,
-    ):
-        """Validate a definition, then resolve it to concrete code."""
-        definition_diagnostics = self._definition_results[
-            definition.typed_name
-        ].diagnostics
+    ) -> validation_result.DefinitionDiagnostics:
+        """Validate a definition, then resolve it to concrete code, and return the diagnostics about it."""
+        definition_diagnostics: list[diagnostics.Diagnostic] = []
         resolver = self._association_resolver
         match definition:
             case ast.ActionDefinition():
@@ -147,6 +158,9 @@ class ReferenceGraphValidator:
                 )
             case ast.ValueDefinition():
                 definition_diagnostics.extend(resolver.resolve_value(definition))
+        return validation_result.DefinitionDiagnostics(
+            definition=definition, diagnostics=definition_diagnostics
+        )
 
     def _validate_action(
         self, definition: ast.ActionDefinition
@@ -162,11 +176,11 @@ class ReferenceGraphValidator:
         self._validation_state.publish_contract(definition.typed_name, result.contract)
         return result
 
-    def _validate_entry_action_requirements(
+    def _entry_action_requirement_diagnostics(
         self,
         entry_action: ast.ActionDefinition,
-    ):
-        definition_result = self._definition_results[entry_action.typed_name]
+    ) -> list[diagnostics.Diagnostic]:
+        requirement_diagnostics: list[diagnostics.Diagnostic] = []
         contract = self._validation_state.get_contract(entry_action.typed_name)
         for requirement in contract.occupancy_requirements:
             if (
@@ -174,9 +188,10 @@ class ReferenceGraphValidator:
                 and requirement.required_state
                 == position_occupancy.PositionOccupancyState.OCCUPIED
             ):
-                definition_result.diagnostics.append(
+                requirement_diagnostics.append(
                     diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic(
                         location=requirement.inferred_at,
                         position_name=requirement.position.source_chained_name,
                     )
                 )
+        return requirement_diagnostics

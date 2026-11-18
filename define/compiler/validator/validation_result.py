@@ -10,7 +10,7 @@ import msgspec
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable, Sequence
 
     from crates.source_rendering.python import rendering
     from define.compiler import ast
@@ -76,6 +76,27 @@ class DefinitionValidationResult(msgspec.Struct):
     # Whether each position looked at by an Operation Argument Statement in an
     # action is valid, in source order.
     looked_at_position_validity: list[bool] = msgspec.field(default_factory=list)
+
+
+class DefinitionDiagnostics(msgspec.Struct, frozen=True):
+    """The diagnostics that a stage after structural validation found about one definition, which are added to its result once the stage finishes."""
+
+    definition: ast.GlobalDefinition
+    diagnostics: list[diagnostics.Diagnostic]
+
+
+def add_definition_diagnostics(
+    definition_results: typed_name_dict.TypedNameDict[
+        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+        DefinitionValidationResult,
+    ],
+    stage_diagnostics: Iterable[DefinitionDiagnostics],
+):
+    """Add the diagnostics that a stage found to the results of the definitions they are about."""
+    for found in stage_diagnostics:
+        definition_results[found.definition.typed_name].diagnostics.extend(
+            found.diagnostics
+        )
 
 
 @dataclass

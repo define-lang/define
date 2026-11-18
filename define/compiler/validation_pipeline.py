@@ -9,11 +9,11 @@ from define.compiler.association_resolution import (
     association_resolver,
     association_tables,
 )
+from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import reference_graph_validator
 
 if typing.TYPE_CHECKING:
     from define.compiler.association_resolution import concrete_program
-    from define.compiler.validator import validation_result
     from define.compiler.validator.structural import program_validator
 
 
@@ -47,9 +47,7 @@ def validate_and_resolve_program(
     resolver = association_resolver.AssociationResolver(
         program_result.definition_results, tables
     )
-    # TODO: Make ReferenceGraphValidator return diagnostics instead of
-    # adding them to definitions itself?
-    reference_graph_validator.ReferenceGraphValidator(
+    validated_diagnostics = reference_graph_validator.ReferenceGraphValidator(
         program_result.definition_order,
         program_result.definition_results,
         resolver,
@@ -63,7 +61,12 @@ def validate_and_resolve_program(
     # otherwise be retained until code generation, but nothing loads more of
     # the program after this.
     del program
-    resolver.resolve_encoding_operations()
+    validation_result.add_definition_diagnostics(
+        program_result.definition_results, validated_diagnostics
+    )
+    validation_result.add_definition_diagnostics(
+        program_result.definition_results, resolver.resolve_encoding_operations()
+    )
     program_result.program_diagnostics.extend(tables.config_diagnostics())
     return CompilerValidationResult(
         program_validation=program_result,

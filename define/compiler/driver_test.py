@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import typing
 from pathlib import Path, PureWindowsPath
 from unittest import mock
 
@@ -15,6 +16,9 @@ from define.compiler.errors import diagnostics
 from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
+
+if typing.TYPE_CHECKING:
+    from define.compiler.validator import validation_result
 
 
 def _setup_project(tmp_path: Path, universe_name: str):
@@ -244,9 +248,9 @@ class TestSourceValidation:
         def validate_reference_graph(
             validator: reference_graph_validator.ReferenceGraphValidator,
             max_workers: int | None = None,
-        ):
+        ) -> list[validation_result.DefinitionDiagnostics]:
             assert max_workers == 3
-            reference_graph_validate(
+            return reference_graph_validate(
                 validator,
                 max_workers=max_workers,
             )
