@@ -19,7 +19,7 @@ def test_value_has_no_encoding(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ValueHasNoEncodingDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=22, end_line=1, end_column=59, file_path="unencoded.dfn"

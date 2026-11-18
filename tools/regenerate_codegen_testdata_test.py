@@ -13,10 +13,13 @@ from tools import regenerate_codegen_testdata
 @typing.final
 class _CompilationResult:
     def __init__(self, *, failed: bool):
-        self.all_diagnostics = ["compilation failed"] if failed else []
+        self._sorted_diagnostics = ["compilation failed"] if failed else []
 
     def has_errors(self) -> bool:
-        return bool(self.all_diagnostics)
+        return bool(self._sorted_diagnostics)
+
+    def sorted_diagnostics(self) -> list[str]:
+        return self._sorted_diagnostics
 
 
 def test_compile_failure_preserves_output_and_does_not_stop_later_cases(

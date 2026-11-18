@@ -28,7 +28,7 @@ def test_unread_input_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UnreadInputViewDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=16, end_line=25, end_column=27, file_path=None
@@ -42,7 +42,7 @@ def test_unwritten_output_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UnwrittenOutputViewDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=16, end_line=25, end_column=27, file_path=None
@@ -56,7 +56,7 @@ def test_executes_read_write_operation_with_input_only_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=40, column=21, end_line=40, end_column=44, file_path=None
@@ -71,7 +71,7 @@ def test_executes_read_write_operation_with_output_only_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=40, column=21, end_line=40, end_column=44, file_path=None
@@ -86,7 +86,7 @@ def test_write_to_input_only_view_is_not_also_unread(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.WriteToInputOnlyViewDiagnostic(
             location=rendering.SourceLocation(
                 line=28, column=42, end_line=28, end_column=53, file_path=None
@@ -102,7 +102,7 @@ def test_read_from_unwritten_output_view_is_not_also_unwritten(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ReadFromUnwrittenOutputViewDiagnostic(
             location=rendering.SourceLocation(
                 line=40, column=41, end_line=40, end_column=52, file_path=None
@@ -118,7 +118,7 @@ def test_output_view_looks_at_literal(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.OutputViewLooksAtLiteralDiagnostic(
             location=rendering.SourceLocation(
                 line=35, column=42, end_line=35, end_column=69, file_path=None
@@ -133,7 +133,7 @@ def test_output_view_looks_at_literal_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.OutputViewLooksAtLiteralDiagnostic(
             location=rendering.SourceLocation(
                 line=37, column=42, end_line=37, end_column=69, file_path=None
@@ -148,7 +148,7 @@ def test_unknown_view_use(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=41, column=21, end_line=41, end_column=39, file_path=None
@@ -178,7 +178,7 @@ def test_output_view_argument_error_in_destructor_does_not_report_changed_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.OperationArgumentMissingQualitiesDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=42, end_line=8, end_column=57, file_path="cleanup.dfn"
@@ -195,7 +195,7 @@ def test_read_and_written_view_requires_set_value_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UnsetValueDiagnostic(
             location=rendering.SourceLocation(
                 line=42, column=41, end_line=42, end_column=55, file_path=None
@@ -216,7 +216,7 @@ def test_unreferenced_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UnreferencedViewDiagnostic(
             location=rendering.SourceLocation(
                 line=31, column=16, end_line=31, end_column=27, file_path=None
@@ -244,7 +244,7 @@ def test_output_view_in_destructor_changes_contracted_value(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.DestructorChangesValueDiagnostic(
             location=rendering.SourceLocation(
                 line=36, column=42, end_line=36, end_column=57, file_path=None
@@ -265,8 +265,8 @@ def test_callee_without_output_view_leaves_implied_value_unset(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 35
@@ -278,7 +278,7 @@ def test_missing_operation_before_output_view_read(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=46, column=21, end_line=46, end_column=63, file_path=None
@@ -292,7 +292,7 @@ def test_output_view_written_twice(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.InterfaceViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(
                 line=90, column=42, end_line=90, end_column=53, file_path=None
@@ -311,7 +311,7 @@ def test_read_write_view_written_twice(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.InterfaceViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(
                 line=79, column=42, end_line=79, end_column=52, file_path=None
@@ -330,7 +330,7 @@ def test_read_from_written_read_write_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=106, column=41, end_line=106, end_column=51, file_path=None
@@ -349,7 +349,7 @@ def test_executes_read_write_operation(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=89, column=21, end_line=89, end_column=41, file_path=None
@@ -364,7 +364,7 @@ def test_written_twice_after_unknown_use(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
             location=rendering.SourceLocation(
                 line=88, column=21, end_line=88, end_column=39, file_path=None
@@ -390,7 +390,7 @@ def test_read_from_written_read_write_view_after_unknown_use(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
             location=rendering.SourceLocation(
                 line=95, column=21, end_line=95, end_column=39, file_path=None

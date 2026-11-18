@@ -29,8 +29,8 @@ def test_without_output_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
         diagnostic, diagnostics.LogicalOperationWithoutOutputViewDiagnostic
     )
@@ -43,8 +43,8 @@ def test_duplicate_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.LocalNameConflictDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 6
@@ -57,8 +57,8 @@ def test_invalid_view_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 3
@@ -71,8 +71,8 @@ def test_duplicate_logical_operation(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7

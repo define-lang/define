@@ -70,7 +70,7 @@ def test_local_duplicate_particle_format(
         "}\n"
     )
     result = validate_project({"test.dfn": source})
-    diags = result.program_validation.file_results[0].diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -100,7 +100,7 @@ def test_move_to_occupied_position_format(
         "}\n"
     )
     result = validate_project({"test.dfn": source})
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -128,7 +128,7 @@ def test_move_from_empty_position_format(
         "}\n"
     )
     result = validate_project({"test.dfn": source})
-    diags = result.program_validation.file_results[0].diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(result.program_validation.source_map)
     assert (
@@ -169,13 +169,14 @@ def test_deferred_position_chain_error_format(
                 "    }\n"
                 "}\n"
             ),
+            "pos_c.dfn": "define the potential position<my.domain.com:my_lib:/pos_c>.\n",
             "wrong.dfn": "define the potential position<my.domain.com:my_lib:/wrong>.\n",
         },
     )
-    assert len(result.program_validation.file_results) == 3
+    assert len(result.program_validation.file_results) == 4
     test_result = result.program_validation.file_results[0]
     assert test_result.file_path == define_path.DefinePath("test.dfn")
-    diags = test_result.diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(result.program_validation.source_map)
     assert (
@@ -227,7 +228,7 @@ def test_deferred_action_chain_error_format(
     assert len(result.program_validation.file_results) == 2
     test_result = result.program_validation.file_results[0]
     assert test_result.file_path == define_path.DefinePath("test.dfn")
-    diags = test_result.diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(result.program_validation.source_map)
     assert (
@@ -273,7 +274,7 @@ def test_action_requires_empty_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -333,7 +334,7 @@ def test_action_requires_occupied_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -460,7 +461,7 @@ def test_propagated_action_requires_empty_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
@@ -570,7 +571,7 @@ def test_requirement_carried_through_two_moves_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     # The box moved through /outer into /middle never had its required child.
@@ -690,7 +691,7 @@ def test_requirement_carried_through_actions_on_locals_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     # action</inner> and action</middle> exist only on body-local positions (gw
@@ -766,7 +767,7 @@ def test_value_setting_type_mismatch_format(
             ),
         },
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     formatted = diagnostic.format(result.program_validation.source_map)
@@ -825,7 +826,7 @@ def test_literal_cannot_be_converted_format(validate_project: ValidateProject):
             ),
         },
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -884,7 +885,7 @@ def test_literal_cannot_be_converted_to_any_literal_encoding_format(
             ),
         },
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -936,7 +937,7 @@ def test_move_missing_qualities_error_message(
             ),
         },
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -983,7 +984,7 @@ def test_move_missing_qualities_error_message_cross_universe(
         local_deps={child_fqun: "lib"},
         sub_roots={"lib": child_fqun},
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent(f"""\
@@ -1040,7 +1041,7 @@ def test_constructor_requires_empty_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -1099,7 +1100,7 @@ def test_constructor_requires_occupied_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -1162,7 +1163,7 @@ def test_destroy_in_emptied_interface_position_format(
             "test.dfn": test_source,
         },
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -1212,7 +1213,7 @@ def test_destroy_in_default_empty_interface_position_format(
             "test.dfn": test_source,
         },
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
@@ -1266,7 +1267,7 @@ def test_move_from_emptied_interface_position_format(
             "test.dfn": test_source,
         },
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -1317,7 +1318,7 @@ def test_move_from_default_empty_interface_position_format(
             "test.dfn": test_source,
         },
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
@@ -1409,7 +1410,7 @@ def test_propagated_value_requirement_format(validate_project: ValidateProject):
         ),
     }
     result = validate_project(files)
-    all_diagnostics = result.program_validation.all_diagnostics
+    all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     formatted = all_diagnostics[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -1478,7 +1479,7 @@ def test_destructor_changes_value_after_move_format(validate_project: ValidatePr
         ),
     }
     result = validate_project(files)
-    all_diagnostics = result.program_validation.all_diagnostics
+    all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     formatted = all_diagnostics[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -1563,7 +1564,7 @@ def test_undefined_operation_view_format(
             ),
         }
     )
-    diags = result.program_validation.all_diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -1616,7 +1617,7 @@ def test_operation_argument_missing_qualities_format(
             ),
         }
     )
-    diags = result.program_validation.all_diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -1682,7 +1683,7 @@ def test_operation_argument_position_missing_qualities_format(
             ),
         }
     )
-    diags = result.program_validation.all_diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -1745,7 +1746,7 @@ def test_occupied_action_interface_when_action_triggers_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
@@ -1866,7 +1867,7 @@ def test_local_view_error_messages(
     )
     formatted = [
         diagnostic.format(result.program_validation.source_map)
-        for diagnostic in result.program_validation.all_diagnostics
+        for diagnostic in result.program_validation.sorted_diagnostics()
     ]
     assert formatted == [
         textwrap.dedent("""\
@@ -1995,7 +1996,7 @@ def test_interface_view_single_assignment_error_messages(
     )
     formatted = [
         diagnostic.format(result.program_validation.source_map)
-        for diagnostic in result.program_validation.all_diagnostics
+        for diagnostic in result.program_validation.sorted_diagnostics()
     ]
     assert formatted == [
         textwrap.dedent("""\
@@ -2101,7 +2102,7 @@ def test_view_setting_written_twice_error_messages(
     )
     formatted = [
         diagnostic.format(result.program_validation.source_map)
-        for diagnostic in result.program_validation.all_diagnostics
+        for diagnostic in result.program_validation.sorted_diagnostics()
     ]
     assert formatted == [
         textwrap.dedent("""\
@@ -2180,7 +2181,7 @@ def test_view_setting_read_from_written_read_write_view_error_messages(
     )
     formatted = [
         diagnostic.format(result.program_validation.source_map)
-        for diagnostic in result.program_validation.all_diagnostics
+        for diagnostic in result.program_validation.sorted_diagnostics()
     ]
     assert formatted == [
         textwrap.dedent("""\
@@ -2253,7 +2254,7 @@ def test_executed_operation_has_read_write_view_error_messages(
     )
     formatted = [
         diagnostic.format(result.program_validation.source_map)
-        for diagnostic in result.program_validation.all_diagnostics
+        for diagnostic in result.program_validation.sorted_diagnostics()
     ]
     assert formatted == [
         textwrap.dedent("""\
@@ -2281,7 +2282,7 @@ def test_logical_operation_read_not_supported_format(
             "test.dfn": _NEGATE_TEST_FILE,
         },
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
@@ -2311,7 +2312,7 @@ def test_logical_operation_write_not_supported_format(
             "test.dfn": _NEGATE_TEST_FILE,
         },
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
@@ -2376,7 +2377,7 @@ def test_view_direction_error_messages(
     )
     formatted = [
         diagnostic.format(result.program_validation.source_map)
-        for diagnostic in result.program_validation.all_diagnostics
+        for diagnostic in result.program_validation.sorted_diagnostics()
     ]
     assert formatted == [
         textwrap.dedent("""\

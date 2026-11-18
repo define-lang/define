@@ -23,7 +23,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 4
         assert isinstance(
             diags[0],
@@ -63,7 +63,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "action<my.domain.com:my_lib:/wrong>"
@@ -77,7 +77,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
         assert diags[0].location.file_path is None
@@ -117,7 +117,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.LocalNameConflictDiagnostic)
         assert all_diags[0].local_name == "pos_a"
@@ -131,7 +131,7 @@ class TestCreateParticle:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
         assert all_diags[0].definition_type == "action"
@@ -146,7 +146,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 4
         assert isinstance(
             diags[0],
@@ -184,7 +184,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].location.file_path is None
@@ -218,7 +218,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 4
         assert isinstance(
             diags[0],
@@ -257,7 +257,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 4
         assert isinstance(
             diags[0],

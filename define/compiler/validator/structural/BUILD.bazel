@@ -80,6 +80,7 @@ py_test(
         "//define/compiler/graphs:reference_graph",
         "//define/compiler/parsing:test_helpers",
         "//define/compiler/validator:validation_result",
+        "@pypi//msgspec",
     ],
 )
 

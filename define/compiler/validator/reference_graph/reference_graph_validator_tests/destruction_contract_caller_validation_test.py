@@ -38,7 +38,7 @@ def test_parent_validation_does_not_skip_child_destructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 17
@@ -100,7 +100,7 @@ def test_propagated_child_validation_does_not_skip_parent_destructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 15
@@ -169,7 +169,7 @@ def test_destructor_diagnostic_retains_callee_local_assignment(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -223,75 +223,21 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == "test.dfn"
+    assert all_diags[0].location.file_path == "mid.dfn"
     assert (
         all_diags[0].position_name
-        == "position<outer_box>::action</mid>::position<incoming>::position</item2>"
+        == "position<box>::action</close_file>::position<target>::position</item1>"
     )
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/mid>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/close_file>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].required_value is False
     assert_propagation_chain(
         all_diags[0],
-        {
-            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/mid>",
-            "line": 22,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<incoming>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/d2>",
-            "line": 5,
-            "column": 24,
-            "file_path": "mid.dfn",
-        },
-        {
-            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/mid>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/close_file>",
-            "line": 22,
-            "column": 30,
-            "file_path": "mid.dfn",
-        },
-        {
-            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/close_file>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/d2>",
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
-        {
-            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/d2>",
-            "triggered_quality_name": None,
-            "line": 7,
-            "column": 30,
-            "file_path": "d2.dfn",
-        },
-    )
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[1].location.line == 22
-    assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == "mid.dfn"
-    assert (
-        all_diags[1].position_name
-        == "position<box>::action</close_file>::position<target>::position</item1>"
-    )
-    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/close_file>"
-    assert all_diags[1].required_empty is False
-    assert all_diags[1].required_value is False
-    assert_propagation_chain(
-        all_diags[1],
         {
             "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
@@ -333,6 +279,60 @@ def test_knower_resolves_one_destructor_and_requires_state_for_another_from_its_
             "file_path": "d1.dfn",
         },
     )
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].location.line == 22
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == "test.dfn"
+    assert (
+        all_diags[1].position_name
+        == "position<outer_box>::action</mid>::position<incoming>::position</item2>"
+    )
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/mid>"
+    assert all_diags[1].required_empty is False
+    assert all_diags[1].required_value is False
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/mid>",
+            "line": 22,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/d2>",
+            "line": 5,
+            "column": 24,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/mid>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/close_file>",
+            "line": 22,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/close_file>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/d2>",
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/d2>",
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "d2.dfn",
+        },
+    )
     assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _D1),
         (_CLOSE_FILE, _D2),
@@ -358,75 +358,21 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == "outer.dfn"
+    assert all_diags[0].location.file_path == "middle.dfn"
     assert (
         all_diags[0].position_name
-        == "position<box>::action</middle>::position<incoming>::position</p1>"
+        == "position<box>::action</close_file>::position<target>::position</p2>"
     )
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/middle>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/close_file>"
     assert all_diags[0].required_empty is False
     assert all_diags[0].required_value is False
     assert_propagation_chain(
         all_diags[0],
-        {
-            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/outer>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/middle>",
-            "line": 21,
-            "column": 30,
-            "file_path": "outer.dfn",
-        },
-        {
-            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
-            "enclosing_quality_name": "position<incoming>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
-            "line": 4,
-            "column": 24,
-            "file_path": "middle.dfn",
-        },
-        {
-            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/middle>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/close_file>",
-            "line": 21,
-            "column": 30,
-            "file_path": "middle.dfn",
-        },
-        {
-            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/close_file>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
-            "line": 7,
-            "column": 33,
-            "file_path": "close_file.dfn",
-        },
-        {
-            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/destructor>",
-            "triggered_quality_name": None,
-            "line": 8,
-            "column": 30,
-            "file_path": "destructor.dfn",
-        },
-    )
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[1].location.line == 21
-    assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == "middle.dfn"
-    assert (
-        all_diags[1].position_name
-        == "position<box>::action</close_file>::position<target>::position</p2>"
-    )
-    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/close_file>"
-    assert all_diags[1].required_empty is False
-    assert all_diags[1].required_value is False
-    assert_propagation_chain(
-        all_diags[1],
         {
             "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<incoming>",
@@ -468,6 +414,60 @@ def test_five_level_implied_requirements_resolved_across_actions_violated(
             "file_path": "destructor.dfn",
         },
     )
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].location.line == 21
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == "outer.dfn"
+    assert (
+        all_diags[1].position_name
+        == "position<box>::action</middle>::position<incoming>::position</p1>"
+    )
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/middle>"
+    assert all_diags[1].required_empty is False
+    assert all_diags[1].required_value is False
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/outer>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/middle>",
+            "line": 21,
+            "column": 30,
+            "file_path": "outer.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
+            "line": 4,
+            "column": 24,
+            "file_path": "middle.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/middle>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/close_file>",
+            "line": 21,
+            "column": 30,
+            "file_path": "middle.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/close_file>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/destructor>",
+            "line": 7,
+            "column": 33,
+            "file_path": "close_file.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/destructor>",
+            "triggered_quality_name": None,
+            "line": 8,
+            "column": 30,
+            "file_path": "destructor.dfn",
+        },
+    )
     assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DESTRUCTOR),
         (_MIDDLE, _CLOSE_FILE),
@@ -494,7 +494,7 @@ def test_six_level_destructor_knower_separate_from_resolvers_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 18
@@ -649,24 +649,24 @@ def test_owner_with_error_required_position_skips_destructor_check(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[0].location.line == 25
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == "test.dfn"
+    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[0].location.line == 4
+    assert all_diags[0].location.column == 24
+    assert all_diags[0].location.file_path == "close_file.dfn"
+    assert all_diags[0].quality_name == "position</x>"
+    assert all_diags[0].position_name == "position<target>"
+    assert isinstance(all_diags[1], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[1].location.line == 25
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == "test.dfn"
     assert (
-        all_diags[0].position_name
+        all_diags[1].position_name
         == "position<box>::action</close_file>::position<target>::position</x>"
     )
-    assert all_diags[0].is_action_interface_position is True
-    assert all_diags[0].inferred_at is None
-    assert isinstance(all_diags[1], diagnostics.DeadChildPositionDiagnostic)
-    assert all_diags[1].location.line == 4
-    assert all_diags[1].location.column == 24
-    assert all_diags[1].location.file_path == "close_file.dfn"
-    assert all_diags[1].quality_name == "position</x>"
-    assert all_diags[1].position_name == "position<target>"
+    assert all_diags[1].is_action_interface_position is True
+    assert all_diags[1].inferred_at is None
     assert action_graph(result.concrete_program) == [
         (_CLOSE_FILE, _DESTRUCTOR),
         (_TEST, _CLOSE_FILE),
@@ -677,7 +677,7 @@ def test_destroyer_callee_emptying_it_never_applied_violates_caller_destructor_r
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 18
@@ -739,7 +739,7 @@ def test_caller_callee_emptying_it_never_applied_violates_caller_destructor_requ
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 19
@@ -801,7 +801,7 @@ def test_caller_checks_failing_destructor_its_callee_left_below_particle_another
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 18
@@ -865,7 +865,7 @@ def test_caller_checks_destructor_requirement_on_position_its_callee_left_empty_
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 19
@@ -929,7 +929,7 @@ def test_caller_skips_destructor_requirement_on_position_its_callee_left_in_erro
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 9
@@ -946,7 +946,7 @@ def test_caller_checks_destructor_value_requirement_on_particle_its_callee_left_
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 19
@@ -1010,7 +1010,7 @@ def test_knower_resolves_destructor_requirement_below_position_its_callee_emptie
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 19
@@ -1131,7 +1131,7 @@ def test_knower_requires_value_of_position_no_lower_action_knows(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 22
@@ -1209,7 +1209,7 @@ def test_knower_skips_destructor_requirement_below_position_its_callee_left_in_e
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 13
@@ -1229,7 +1229,7 @@ def test_knower_skips_destructor_requirement_below_its_own_position_in_error(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 21
@@ -1248,23 +1248,30 @@ def test_knower_does_not_follow_requirements_it_gains_below_destroyed_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].required_value is False
-    assert all_diags[0].location.line == 19
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.end_line == 19
-    assert all_diags[0].location.end_column == 77
-    assert all_diags[0].location.file_path == "test.dfn"
-    assert all_diags[0].action_name == _MID
-    assert all_diags[0].required_empty is False
+    assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diags[0].location.line == 3
+    assert all_diags[0].location.column == 20
+    assert all_diags[0].location.end_line == 3
+    assert all_diags[0].location.end_column == 29
+    assert all_diags[0].location.file_path == "node.dfn"
+    assert all_diags[0].cycle == [_D, "position<my.domain.com:my_lib:/node>", _D]
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
+    assert all_diags[1].location.line == 19
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.end_line == 19
+    assert all_diags[1].location.end_column == 77
+    assert all_diags[1].location.file_path == "test.dfn"
+    assert all_diags[1].action_name == _MID
+    assert all_diags[1].required_empty is False
     assert (
-        all_diags[0].position_name
+        all_diags[1].position_name
         == "position<outer_box>::action</mid>::position<incoming>::position</node>"
     )
     assert_propagation_chain(
-        all_diags[0],
+        all_diags[1],
         {
             "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
@@ -1306,13 +1313,6 @@ def test_knower_does_not_follow_requirements_it_gains_below_destroyed_particle(
             "file_path": "d.dfn",
         },
     )
-    assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
-    assert all_diags[1].location.line == 3
-    assert all_diags[1].location.column == 20
-    assert all_diags[1].location.end_line == 3
-    assert all_diags[1].location.end_column == 29
-    assert all_diags[1].location.file_path == "node.dfn"
-    assert all_diags[1].cycle == [_D, "position<my.domain.com:my_lib:/node>", _D]
     assert action_graph(result.concrete_program) == [
         (_INNER, _D),
         (_MID, _INNER),
@@ -1324,7 +1324,7 @@ def test_knower_resolves_destructor_requirement_on_its_own_interface_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -1391,7 +1391,7 @@ def test_destructor_requirement_violation_through_constructor_names_constructor_
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 16

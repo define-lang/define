@@ -13,8 +13,9 @@ from __future__ import annotations
 import enum
 import sys
 import typing
-from dataclasses import dataclass
 from typing import TextIO
+
+import msgspec
 
 from define.compiler import constants, validation_pipeline
 from define.compiler.codegen import generator
@@ -41,11 +42,10 @@ class ExitCode(enum.IntEnum):
     ERROR = 1
 
 
-@dataclass(frozen=True, slots=True)
-class CompilationResult:
+class CompilationResult(msgspec.Struct, frozen=True):
     """Caller-facing result retained after compilation."""
 
-    all_diagnostics: list[diagnostics.FormattableDiagnostic]
+    _sorted_diagnostics: list[diagnostics.FormattableDiagnostic]
     entry_action: ast.ActionDefinition | None
     _error_strings: list[str]
 
@@ -56,14 +56,18 @@ class CompilationResult:
         """Create the compact result retained after compilation."""
         program_validation = validation.program_validation
         return cls(
-            all_diagnostics=program_validation.all_diagnostics,
+            _sorted_diagnostics=program_validation.sorted_diagnostics(),
             entry_action=program_validation.entry_action,
             _error_strings=program_validation.error_strings(),
         )
 
     def has_errors(self) -> bool:
         """Whether validation produced any diagnostics."""
-        return bool(self.all_diagnostics)
+        return bool(self._sorted_diagnostics)
+
+    def sorted_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
+        """Return every diagnostic, sorted by file and location, after those that have no location."""
+        return self._sorted_diagnostics
 
     def error_strings(self) -> list[str]:
         """Return errors formatted before detailed validation data was released."""
@@ -142,7 +146,7 @@ class Driver:
         first_file = program_validation.file_results[0]
         entry_action = program_validation.entry_action
         if entry_action is None:
-            first_file.file_diagnostics.append(
+            program_validation.diagnostics.append(
                 diagnostics.EntryPointNotConstructorDiagnostic(
                     location=first_file.definition_results[0].definition.location
                 )

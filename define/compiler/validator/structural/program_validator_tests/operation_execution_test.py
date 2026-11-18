@@ -24,7 +24,7 @@ def test_looks_at_undefined_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=41, column=42, end_line=41, end_column=54, file_path=None
@@ -38,7 +38,7 @@ def test_looks_at_invalid_view_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.InvalidLocalNameFormatDiagnostic(
             location=rendering.SourceLocation(
                 line=41, column=47, end_line=41, end_column=47, file_path=None
@@ -53,7 +53,7 @@ def test_aliased_views(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.AliasedViewDiagnostic(
             location=rendering.SourceLocation(
                 line=35, column=42, end_line=35, end_column=53, file_path=None
@@ -82,7 +82,7 @@ def test_invalid_argument_view_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.InvalidLocalNameFormatDiagnostic(
             location=rendering.SourceLocation(
                 line=40, column=23, end_line=40, end_column=23, file_path=None
@@ -97,7 +97,7 @@ def test_invalid_literal_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
             location=rendering.SourceLocation(
                 line=34, column=63, end_line=34, end_column=63, file_path=None
@@ -112,7 +112,7 @@ def test_invalid_operation_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
             location=rendering.SourceLocation(
                 line=11, column=35, end_line=11, end_column=35, file_path=None
@@ -127,7 +127,7 @@ def test_requires_short_operation_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
             location=rendering.SourceLocation(
                 line=39, column=31, end_line=39, end_column=50, file_path=None
@@ -141,7 +141,7 @@ def test_executes_itself(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.CircularGlobalReferenceDiagnostic(
             location=rendering.SourceLocation(
                 line=11, column=21, end_line=11, end_column=38, file_path=None
@@ -165,8 +165,8 @@ def test_missing_operation_file(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 11
@@ -178,8 +178,8 @@ def test_wrong_operation_definition_type(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 11
@@ -192,7 +192,7 @@ def test_duplicate_argument(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.DuplicateOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=41, column=18, end_line=41, end_column=29, file_path=None

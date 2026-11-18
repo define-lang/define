@@ -41,6 +41,9 @@ py_library(
     name = "resource_cases",
     testonly = True,
     srcs = ["resource_cases.py"],
+    deps = [
+        "@pypi//msgspec",
+    ],
 )
 
 py_test(

@@ -64,7 +64,7 @@ def test_destructor_requires_occupied_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -148,7 +148,7 @@ def test_destructor_on_particle_created_in_callee_local_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -208,7 +208,7 @@ def test_destructor_requiring_empty_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert (
@@ -273,7 +273,7 @@ def test_aware_destructor_requirement_surfaces_as_action_requires_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -334,7 +334,7 @@ def test_destructor_moved_guarantee_names_contracted_origin_format(
         },
         allow_entry_action_interface_positions=True,
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
     assert (
         all_diags[0].format(result.program_validation.source_map)
@@ -372,7 +372,7 @@ def test_destructor_occupied_guarantee_format(
     result = validate_project(
         {"test.dfn": test_source}, allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert (
         all_diags[1].format(result.program_validation.source_map)
@@ -427,7 +427,7 @@ def test_auto_destruction_destructor_requires_occupied_position_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -519,7 +519,7 @@ def test_destruction_contract_requires_occupied_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -604,7 +604,7 @@ def test_destruction_contract_auto_destruction_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -696,7 +696,7 @@ def test_destruction_contract_constructor_attacher_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -788,7 +788,7 @@ def test_destruction_contract_cascade_child_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -861,11 +861,11 @@ def test_diagnostic_in_callee_file_shows_callee_source_line_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     # test.dfn's Destructor reports this, but it is located in b.dfn.
     assert (
-        all_diags[1].format(result.program_validation.source_map)
+        all_diags[0].format(result.program_validation.source_map)
         == textwrap.dedent("""\
         File "b.dfn", line 7, column 30
             create a particle in position</out>.
@@ -949,7 +949,7 @@ def test_knower_destructor_requirement_surfaces_as_action_requires_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -1054,10 +1054,10 @@ def test_destruction_contract_assignment_in_destructor_requirement_format(
         ),
     }
     result = validate_project(files)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
     source_map = result.program_validation.source_map
-    assert all_diags[0].format(source_map) == textwrap.dedent("""\
+    assert all_diags[1].format(source_map) == textwrap.dedent("""\
         File "test.dfn", line 20, column 30
             create a particle in position<box>::action</close_file>::position<run>.
                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

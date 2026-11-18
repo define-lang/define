@@ -69,7 +69,7 @@ def test_implied_action_iface_requirement_does_not_propagate_to_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -109,7 +109,7 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)

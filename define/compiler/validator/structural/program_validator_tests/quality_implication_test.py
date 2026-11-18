@@ -31,7 +31,7 @@ def test_non_self_ref_global_in_action_body(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].location.file_path == "test.dfn"
@@ -66,7 +66,7 @@ def test_global_used_without_implication_is_unknown(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert diags[0].location.file_path is None
@@ -80,7 +80,7 @@ def test_duplicate_implication_in_action_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)
     assert diags[0].location.file_path is None
@@ -94,7 +94,7 @@ def test_three_duplicate_implication_two_errors(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)
     assert diags[0].location.file_path is None
@@ -117,7 +117,7 @@ def test_duplicate_implication_full_fqun_cross_universe(
     result = validate_testdata_structural()
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateQualityImplicationDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
@@ -139,7 +139,7 @@ def test_duplicate_via_full_form_and_short_form_implication(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diags[0].location.file_path is None
@@ -152,7 +152,7 @@ def test_implication_with_invalid_path_format_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
     assert diags[0].location.file_path is None
@@ -165,7 +165,7 @@ def test_implication_invalid_name_does_not_become_duplicate(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
     assert diags[0].location.file_path is None
@@ -183,7 +183,7 @@ def test_invalid_implication_name_used_in_body_does_not_satisfy_chain_start(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 3
     assert isinstance(diags[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
     assert diags[0].location.file_path is None
@@ -210,7 +210,7 @@ def test_circular_implication_emits_diagnostic(
     assert len(result.file_results) == 2
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[1].file_path == define_path.DefinePath("bar.dfn")
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert diags[0].location.file_path == "bar.dfn"
@@ -227,7 +227,7 @@ def test_unused_implication_in_constructor_error(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnusedQualityImplicationDiagnostic)
     assert diags[0].implication_name == "position</valid/minimal_position>"
@@ -242,7 +242,7 @@ def test_unused_implication_on_action_error(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnusedQualityImplicationDiagnostic)
     assert diags[0].location.file_path is None
@@ -255,7 +255,7 @@ def test_implication_used_only_in_quality_assignment_block_is_unused(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnusedQualityImplicationDiagnostic)
     assert diags[0].location.file_path is None
@@ -268,7 +268,7 @@ def test_two_implication_one_used_one_unused(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnusedQualityImplicationDiagnostic)
     assert diags[0].location.file_path is None
@@ -283,7 +283,7 @@ def test_implication_for_nonexistent_quality_used_in_body(
     result = validate_testdata_structural()
     assert len(result.file_results) == 1
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].location.file_path == "test.dfn"

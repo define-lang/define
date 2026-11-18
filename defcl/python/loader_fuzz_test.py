@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import dataclasses
 import string
 import sys
 
+import msgspec
 from hypothesis import event, example, given, settings
 from hypothesis import strategies as st
 
@@ -102,13 +102,11 @@ def _strings() -> st.SearchStrategy[str]:
     return st.lists(pieces, max_size=6).map(lambda parts: '"' + "".join(parts) + '"')
 
 
-@dataclasses.dataclass(frozen=True)
-class _Message:
+class _Message(msgspec.Struct, frozen=True):
     fields: list[tuple[str, _Value]]
 
 
-@dataclasses.dataclass(frozen=True)
-class _Repeated:
+class _Repeated(msgspec.Struct, frozen=True):
     elements: list[_Value]
 
 

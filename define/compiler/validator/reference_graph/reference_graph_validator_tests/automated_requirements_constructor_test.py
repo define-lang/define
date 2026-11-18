@@ -33,8 +33,8 @@ def test_non_filesystem_entry_occupied_implied_position_is_rejected(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
         diagnostic, diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic
     )
@@ -55,8 +55,8 @@ def test_non_filesystem_entry_transitive_occupied_requirement_is_rejected(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
         diagnostic, diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic
     )
@@ -70,8 +70,8 @@ def test_non_filesystem_entry_filesystem_occupied_requirement_is_rejected(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
         diagnostic, diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic
     )
@@ -100,7 +100,7 @@ def test_entry_point_occupied_implied_position_requirement_reports_diagnostic(
         }
     )
 
-    all_diagnostics = result.program_validation.all_diagnostics
+    all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
     assert isinstance(
@@ -143,7 +143,7 @@ def test_entry_point_transitive_occupied_requirement_reports_diagnostic(
         }
     )
 
-    all_diagnostics = result.program_validation.all_diagnostics
+    all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
     assert isinstance(
@@ -159,7 +159,7 @@ def test_occupied_interface_requirement_always_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -224,7 +224,7 @@ def test_constructor_empty_violation_via_create_in_implied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -278,7 +278,7 @@ def test_constructor_empty_violation_via_create_in_child_of_implied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)

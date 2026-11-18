@@ -23,7 +23,7 @@ def test_constructor_duplicate_local_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diags[0].position_name == "position<local>"
@@ -43,7 +43,7 @@ def test_duplicate_local_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -66,7 +66,7 @@ def test_undefined_position_not_tracked_for_duplicates(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
@@ -91,7 +91,7 @@ def test_two_actions_same_name_one_duplicate_one_clean(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    all_diags = result.all_diagnostics
+    all_diags = result.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.file_path is None
@@ -114,7 +114,7 @@ def test_definition_block_position_enforced(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diags[0].location.file_path is None

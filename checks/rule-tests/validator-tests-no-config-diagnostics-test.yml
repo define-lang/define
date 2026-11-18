@@ -1,7 +1,7 @@
 id: validator-tests-no-config-diagnostics
 valid:
   - |
-    assert result.all_diagnostics == [diagnostic]
+    assert result.sorted_diagnostics() == [diagnostic]
 invalid:
   - |
     assert result.config_diagnostics == [diagnostic]

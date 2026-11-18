@@ -27,7 +27,7 @@ def test_read_not_supported(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.LogicalOperationReadNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=18, column=41, end_line=18, end_column=52, file_path="test.dfn"
@@ -43,7 +43,7 @@ def test_write_not_supported(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=19, column=42, end_line=19, end_column=54, file_path="test.dfn"
@@ -59,7 +59,7 @@ def test_logical_operation_not_supported(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.LogicalOperationReadNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=18, column=41, end_line=18, end_column=52, file_path="test.dfn"
@@ -83,7 +83,7 @@ def test_write_to_input_only_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.WriteToInputOnlyViewDiagnostic(
             location=rendering.SourceLocation(
                 line=19, column=42, end_line=19, end_column=52, file_path="test.dfn"
@@ -99,7 +99,7 @@ def test_read_from_unwritten_output_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ReadFromUnwrittenOutputViewDiagnostic(
             location=rendering.SourceLocation(
                 line=18, column=37, end_line=18, end_column=47, file_path="test.dfn"
@@ -115,7 +115,7 @@ def test_undefined_logical_operation_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=17, column=21, end_line=17, end_column=62, file_path="test.dfn"
@@ -138,7 +138,7 @@ def test_argument_order(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.OperationArgumentOrderDiagnostic(
             location=rendering.SourceLocation(
                 line=19, column=18, end_line=19, end_column=24, file_path="test.dfn"
@@ -154,7 +154,7 @@ def test_missing_argument(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=11, column=21, end_line=11, end_column=62, file_path="test.dfn"
@@ -169,7 +169,7 @@ def test_looks_at_undefined_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=12, column=37, end_line=12, end_column=49, file_path="test.dfn"
@@ -183,7 +183,7 @@ def test_missing_logical_operation(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=17, column=21, end_line=17, end_column=63, file_path="test.dfn"
@@ -197,7 +197,7 @@ def test_missing_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=6, column=24, end_line=6, end_column=54, file_path="test.dfn"
@@ -211,7 +211,7 @@ def test_view_without_value_quality(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewMissingValueQualityDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=16, end_line=3, end_column=27, file_path="test.dfn"

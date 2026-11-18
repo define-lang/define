@@ -26,7 +26,7 @@ def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.chdir(tmp_path)
     result = program_validator.validate_program(PurePosixPath("test.dfn")).result
     assert result.file_results == []
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.NotRunFromProjectRootDiagnostic(
             config_path=".define/project/config.defcl",
         )
@@ -50,7 +50,7 @@ def test_invalid_project_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
 
     result = program_validator.validate_program(PurePosixPath("test.dfn")).result
     assert result.file_results == []
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ConfigViolationDiagnostic(
             location=config_test_helpers.config_field_location(
                 project_config.CONFIG_FILE, ("project", "universe_name")
@@ -82,7 +82,7 @@ def test_project_config_with_layout_error_is_still_used(
     monkeypatch.chdir(tmp_path)
 
     result = program_validator.validate_program(PurePosixPath("test.dfn")).result
-    blank_line, duplicate_definition = result.all_diagnostics
+    blank_line, duplicate_definition = result.sorted_diagnostics()
     assert type(blank_line) is errors.SyntaxDiagnostic
     assert blank_line.kind == error_types.SyntaxDiagnosticKind.BLANK_LINE
     assert blank_line.location == rendering.SourceLocation(

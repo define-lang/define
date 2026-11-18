@@ -34,7 +34,7 @@ pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 def test_reserved_universe_name_format():
     source = "define the potential position<standard:/path>.\n"
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.file_results[0].diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
     assert formatted == textwrap.dedent("""\
@@ -56,7 +56,7 @@ def test_invalid_fqun_format_format(validate_project: ValidateProject):
             )
         }
     )
-    [load_failure] = result.program_validation.all_diagnostics
+    [load_failure] = result.program_validation.sorted_diagnostics()
     assert isinstance(load_failure, syntax_errors.GlobalNameInvalidFqunFormat)
     assert (
         load_failure.format(result.program_validation.source_map)
@@ -75,7 +75,7 @@ def test_path_mismatch_format(validate_project: ValidateProject):
         entry_file="foo/bar.dfn",
     )
     assert len(result.program_validation.file_results) == 1
-    diags = result.program_validation.file_results[0].diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -104,7 +104,7 @@ def test_circular_reference_format(validate_project: ValidateProject):
             ),
         }
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -130,7 +130,7 @@ def test_incorrect_indentation_format(validate_project: ValidateProject):
             "child.dfn": "define the potential position<my.domain.com:my_lib:/child>.\n",
         }
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     formatted = all_diags[0].format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
@@ -167,7 +167,7 @@ def test_referenced_definition_not_found_format(validate_project: ValidateProjec
     assert len(result.program_validation.file_results) == 2
     test_result = result.program_validation.file_results[0]
     assert test_result.file_path == define_path.DefinePath("test.dfn")
-    diags = test_result.diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     formatted = diags[0].format(result.program_validation.source_map)
@@ -190,7 +190,7 @@ def test_referenced_file_not_found_format(validate_project: ValidateProject):
         "}\n"
     )
     result = validate_project({"test.dfn": source})
-    diags = result.program_validation.all_diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     formatted = diags[0].format(result.program_validation.source_map)
@@ -220,7 +220,7 @@ def test_path_inside_other_universe_format(validate_project: ValidateProject):
         local_deps={child_universe: "lib"},
         sub_roots={"lib": child_universe},
     )
-    diags = result.program_validation.all_diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.PathInsideOtherUniverseDiagnostic)
     formatted = diags[0].format(result.program_validation.source_map)
@@ -243,7 +243,7 @@ def test_external_universe_not_configured_format(validate_project: ValidateProje
         "}\n"
     )
     result = validate_project({"test.dfn": source})
-    diags = result.program_validation.all_diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     formatted = diags[0].format(result.program_validation.source_map)
@@ -266,7 +266,7 @@ def test_standard_definition_not_found_format():
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.all_diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.StandardDefinitionNotFoundDiagnostic)
     formatted = diags[0].format(program_result.source_map)
@@ -288,7 +288,7 @@ def test_unreferenced_position_format():
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.all_diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
     formatted = diags[0].format(program_result.source_map)
@@ -315,7 +315,7 @@ def test_local_position_name_conflict_format():
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.all_diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
     formatted = diags[0].format(program_result.source_map)
@@ -332,7 +332,7 @@ def test_duplicate_definition_format():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.file_results[0].diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
     assert formatted == textwrap.dedent("""\
@@ -354,7 +354,7 @@ def test_duplicate_logical_operation_support_format():
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.file_results[0].diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
     assert (
@@ -379,7 +379,7 @@ def test_logical_operation_support_order_format():
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.file_results[0].diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
     assert (
@@ -413,7 +413,7 @@ def test_local_view_error_messages():
     program_result = program_validator.validate_program_non_filesystem(source).result
     formatted = [
         diagnostic.format(program_result.source_map)
-        for diagnostic in program_result.file_results[0].diagnostics
+        for diagnostic in program_result.sorted_diagnostics()
     ]
     assert formatted == [
         textwrap.dedent("""\
@@ -450,7 +450,7 @@ def test_non_filesystem_diagnostics_have_no_file_name():
         "define the potential position<my.domain.com:my_lib:/same>.\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.file_results[0].diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[0].location.file_path is None
@@ -475,7 +475,7 @@ def test_move_to_same_position_format():
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.file_results[0].diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 1
     formatted = diags[0].format(program_result.source_map)
     assert (
@@ -500,7 +500,7 @@ def test_invalid_local_name_character_format():
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.file_results[0].diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
     assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
@@ -524,7 +524,7 @@ def test_invalid_local_name_characters_format():
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.file_results[0].diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
     assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
@@ -568,7 +568,7 @@ def test_move_into_defining_position_format(validate_project: ValidateProject):
     assert len(result.program_validation.file_results) == 3
     test_result = result.program_validation.file_results[0]
     assert test_result.file_path == define_path.DefinePath("test.dfn")
-    diags = test_result.diagnostics
+    diags = result.program_validation.sorted_diagnostics()
     assert len(diags) == 2
     assert isinstance(diags[1], diagnostics.MoveIntoDefiningPositionDiagnostic)
     formatted = diags[1].format(result.program_validation.source_map)
@@ -608,7 +608,7 @@ def test_sub_root_fqun_mismatch_error_message(
         sub_roots={"lib": wrong_child_universe},
     )
     program_result = result.program_validation
-    (diagnostic,) = program_result.all_diagnostics
+    (diagnostic,) = program_result.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.SubRootFqunMismatchDiagnostic)
     assert (
         diagnostic.format(program_result.source_map)
@@ -639,7 +639,7 @@ def test_invalid_config_format_for_supplied_source(
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    (missing_universe_name,) = program_result.all_diagnostics
+    (missing_universe_name,) = program_result.sorted_diagnostics()
     assert isinstance(missing_universe_name, diagnostics.ConfigViolationDiagnostic)
     assert missing_universe_name.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/deps/local.defcl", line 3, column 5
@@ -661,7 +661,7 @@ def test_external_universe_not_configured_format_for_supplied_source_project(
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.all_diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
     formatted = diags[0].format(program_result.source_map)
@@ -687,7 +687,7 @@ def test_no_project_root_format_for_supplied_source(
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.all_diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(
         diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
@@ -716,7 +716,7 @@ def test_no_project_root_for_definition_not_in_supplied_source_format(
         "}\n"
     )
     program_result = program_validator.validate_program_non_filesystem(source).result
-    diags = program_result.all_diagnostics
+    diags = program_result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(
         diags[0], diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic
@@ -740,7 +740,7 @@ def test_not_project_root_error_message_for_project_root(
     program_result = program_validator.validate_program(
         PurePosixPath("test.dfn")
     ).result
-    (diagnostic,) = program_result.all_diagnostics
+    (diagnostic,) = program_result.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.NotRunFromProjectRootDiagnostic)
     assert (
         diagnostic.format(program_result.source_map)
@@ -770,7 +770,7 @@ def test_not_project_root_error_message_for_subroot(
         max_workers=1,
     )
     program_result = result.program_validation
-    (diagnostic,) = program_result.all_diagnostics
+    (diagnostic,) = program_result.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.SubRootNotProjectRootDiagnostic)
     assert (
         diagnostic.format(program_result.source_map)
@@ -797,7 +797,7 @@ def test_sub_root_path_already_declared_error_message(
         },
     )
     program_result = result.program_validation
-    (diagnostic,) = program_result.all_diagnostics
+    (diagnostic,) = program_result.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.SubRootPathAlreadyDeclaredDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/deps/local.defcl", line 9, column 13
@@ -819,7 +819,7 @@ def test_local_dependency_on_own_universe_error_message(
         local_deps={parent_universe: "lib"},
     )
     program_result = result.program_validation
-    (diagnostic,) = program_result.all_diagnostics
+    (diagnostic,) = program_result.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.LocalDependencyOnOwnUniverseDiagnostic)
     assert diagnostic.format(program_result.source_map) == (
         'File ".define/deps/local.defcl", line 4, column 22\n'
@@ -866,7 +866,7 @@ def test_duplicate_fqun_error_message(tmp_path: Path, monkeypatch: pytest.Monkey
     program_result = program_validator.validate_program(
         PurePosixPath("test.dfn"), max_workers=1
     ).result
-    (diagnostic,) = program_result.all_diagnostics
+    (diagnostic,) = program_result.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.DuplicateFqunDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File "lib/nested/.define/project/config.defcl", line 2, column 19
@@ -883,7 +883,7 @@ def test_source_file_not_found_error_message(
 ):
     result = validate_project({}, entry_file="nonexistent.dfn")
     assert len(result.program_validation.file_results) == 1
-    [load_failure] = result.program_validation.all_diagnostics
+    [load_failure] = result.program_validation.sorted_diagnostics()
     assert isinstance(load_failure, syntax_errors.SourceFileNotFound)
     assert load_failure.file_path == "nonexistent.dfn"
     assert (
@@ -908,7 +908,7 @@ def test_config_syntax_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     program_result = program_validator.validate_program(
         PurePosixPath("test.dfn")
     ).result
-    (diagnostic,) = program_result.all_diagnostics
+    (diagnostic,) = program_result.sorted_diagnostics()
     assert isinstance(diagnostic, defcl_errors.SyntaxDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/project/config.defcl", line 2, column 16
@@ -935,7 +935,7 @@ def test_config_schema_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyP
     program_result = program_validator.validate_program(
         PurePosixPath("test.dfn")
     ).result
-    (diagnostic,) = program_result.all_diagnostics
+    (diagnostic,) = program_result.sorted_diagnostics()
     assert isinstance(diagnostic, defcl_errors.UnknownFieldNameDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/project/config.defcl", line 3, column 3
@@ -964,7 +964,7 @@ def test_config_validation_error_message(
     program_result = program_validator.validate_program(
         PurePosixPath("test.dfn")
     ).result
-    (diagnostic,) = program_result.all_diagnostics
+    (diagnostic,) = program_result.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.ConfigViolationDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/project/config.defcl", line 2, column 18
@@ -1007,7 +1007,7 @@ def test_duplicate_local_dependency_error_message(
     program_result = program_validator.validate_program(
         PurePosixPath("test.dfn")
     ).result
-    (diagnostic,) = program_result.all_diagnostics
+    (diagnostic,) = program_result.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.DuplicateLocalDependencyDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/deps/local.defcl", line 8, column 22
@@ -1044,7 +1044,7 @@ def test_config_field_error_message_for_a_changed_config_file(
         encoding="utf-8",
         newline="\n",
     )
-    (diagnostic,) = program_result.all_diagnostics
+    (diagnostic,) = program_result.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.ConfigViolationDiagnostic)
     assert diagnostic.format(program_result.source_map) == textwrap.dedent("""\
         File ".define/project/config.defcl", line 2, column 18
@@ -1062,7 +1062,7 @@ def test_invalid_utf8_error_message(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     program_result = program_validator.validate_program(
         PurePosixPath("test.dfn")
     ).result
-    [syntax_error] = program_result.all_diagnostics
+    [syntax_error] = program_result.sorted_diagnostics()
     assert isinstance(syntax_error, syntax_errors.InvalidEncodingError)
     assert syntax_error.format(program_result.source_map) == textwrap.dedent("""\
         File "test.dfn", line 2, column 6

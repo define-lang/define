@@ -30,8 +30,8 @@ def test_invalid_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diagnostic.location.line == 2
     assert diagnostic.location.column == 46
@@ -44,8 +44,8 @@ def test_duplicate_encoding(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
     assert diagnostic.location.column == 1
     assert diagnostic.location.file_path is None
@@ -65,8 +65,8 @@ def test_same_name_different_quality(
 
 def test_path_mismatch(validate_testdata_structural: ValidateTestdataStructural):
     result = validate_testdata_structural()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.PathMismatchDiagnostic)
     assert diagnostic.location.line == 2
     assert diagnostic.location.column == 42
@@ -77,8 +77,8 @@ def test_path_mismatch(validate_testdata_structural: ValidateTestdataStructural)
 
 def test_fqun_mismatch(validate_testdata_structural: ValidateTestdataStructural):
     result = validate_testdata_structural()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.FqunMismatchDiagnostic)
     assert diagnostic.location.line == 2
     assert diagnostic.location.column == 21
@@ -91,8 +91,8 @@ def test_requires_fqun(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    syntax_error = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    syntax_error = result.sorted_diagnostics()[0]
     assert isinstance(
         syntax_error, syntax_errors.DefinitionGlobalNameContentRequiresFqun
     )

@@ -37,7 +37,7 @@ def test_occupied_implied_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -89,7 +89,7 @@ def test_destructor_requiring_empty_implied_position_is_reported(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
@@ -105,7 +105,7 @@ def test_destructor_in_constructor_checks_implied_requirement_locally(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False

@@ -33,7 +33,7 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -91,21 +91,26 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].required_value is False
-    assert all_diags[0].location.line == 24
-    assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == "test.dfn"
-    assert all_diags[0].action_name == _OUTER
-    assert all_diags[0].required_empty is True
+    assert isinstance(all_diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert all_diags[0].position_name == "position<extra>"
+    assert all_diags[0].location.line == 4
+    assert all_diags[0].location.column == 16
+    assert all_diags[0].location.file_path == "inner.dfn"
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
+    assert all_diags[1].location.line == 24
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == "test.dfn"
+    assert all_diags[1].action_name == _OUTER
+    assert all_diags[1].required_empty is True
     assert (
-        all_diags[0].position_name
+        all_diags[1].position_name
         == "position<outer_holder>::action</outer>::position<iface>::position</extra>"
     )
     assert_propagation_chain(
-        all_diags[0],
+        all_diags[1],
         {
             "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<outer_holder>::action</outer>::position<iface>::position</extra>",
@@ -131,11 +136,6 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
             "file_path": "outer.dfn",
         },
     )
-    assert isinstance(all_diags[1], diagnostics.UnreferencedPositionDiagnostic)
-    assert all_diags[1].position_name == "position<extra>"
-    assert all_diags[1].location.line == 4
-    assert all_diags[1].location.column == 16
-    assert all_diags[1].location.file_path == "inner.dfn"
     assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
@@ -146,9 +146,14 @@ def test_requirement_inferred_when_trigger_moved_to_local(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    diag = all_diags[0]
+    assert isinstance(all_diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert all_diags[0].position_name == "position<extra>"
+    assert all_diags[0].location.line == 3
+    assert all_diags[0].location.column == 16
+    assert all_diags[0].location.file_path == "inner.dfn"
+    diag = all_diags[1]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
     assert diag.required_value is False
     assert diag.location.line == 25
@@ -187,11 +192,6 @@ def test_requirement_inferred_when_trigger_moved_to_local(
             "file_path": "outer.dfn",
         },
     )
-    assert isinstance(all_diags[1], diagnostics.UnreferencedPositionDiagnostic)
-    assert all_diags[1].position_name == "position<extra>"
-    assert all_diags[1].location.line == 3
-    assert all_diags[1].location.column == 16
-    assert all_diags[1].location.file_path == "inner.dfn"
     assert action_graph(result.concrete_program) == [
         (_OUTER, _INNER),
         (_TEST, _OUTER),
@@ -202,7 +202,7 @@ def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -261,7 +261,7 @@ def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_loc
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -320,7 +320,7 @@ def test_complex_chain_interaction_iface(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -379,7 +379,7 @@ def test_caller_cannot_occupy_implied_action_interface_when_implied_moved_to_loc
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic
@@ -406,7 +406,7 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -464,7 +464,7 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -523,7 +523,7 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -582,7 +582,7 @@ def test_complex_chain_interaction_implied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -651,7 +651,7 @@ def test_diagnostic_when_interface_moved_to_sibling_interface_source_unfilled(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -693,7 +693,7 @@ def test_caller_sees_requirement_when_interface_moved_to_implied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -761,7 +761,7 @@ def test_diagnostic_when_implied_moved_to_implied_source_unfilled(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)

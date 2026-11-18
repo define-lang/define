@@ -34,7 +34,7 @@ def test_cross_fqun_inner_requirement_renders_correctly(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -104,7 +104,7 @@ def test_cross_fqun_occupied_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -154,7 +154,7 @@ def test_complex_chain_same_fqun_position_name(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -221,7 +221,7 @@ def test_complex_chain_cross_fqun_position_name(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)

@@ -129,7 +129,7 @@ class TestFullDriver:
 
         result = driver.Driver().validate_source(source).program_validation
 
-        assert result.all_diagnostics == []
+        assert result.sorted_diagnostics() == []
 
 
 @pytest.mark.parametrize(("interval", "expected"), [(1, 4), (2, 8), (0, 12)])
@@ -149,7 +149,7 @@ def test_bottleneck_layers(interval: int, expected: int):
         + "\n"
     )
     result = driver.Driver().validate_source(source).program_validation
-    assert result.all_diagnostics == []
+    assert result.sorted_diagnostics() == []
     assert len(result.definitions) == expected + 1
 
 
@@ -211,7 +211,7 @@ def test_destructor_cascades():
         + "\n"
     )
     result = driver.Driver().validate_source(source).program_validation
-    assert result.all_diagnostics == []
+    assert result.sorted_diagnostics() == []
     assert source.count("this particle is being destroyed.") == 4
     assert len(result.definitions) == 7
 

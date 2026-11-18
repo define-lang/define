@@ -35,8 +35,8 @@ def test_unread_input_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnreadInputViewDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 21
@@ -48,8 +48,8 @@ def test_unwritten_output_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnwrittenOutputViewDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 15
@@ -61,7 +61,7 @@ def test_executes_read_write_operation_with_input_only_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=30, column=21, end_line=30, end_column=53
@@ -76,7 +76,7 @@ def test_executes_read_write_operation_with_output_only_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=30, column=21, end_line=30, end_column=53
@@ -91,8 +91,8 @@ def test_out_of_order(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.OperationArgumentOrderDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 37
@@ -106,8 +106,8 @@ def test_missing_argument(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.MissingOperationArgumentDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 29
@@ -120,8 +120,8 @@ def test_missing_encoding(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
         diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
     )
@@ -145,8 +145,8 @@ def test_literal_without_literal_parser(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.LiteralCannotBeConvertedDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 31
@@ -161,8 +161,8 @@ def test_invalid_literal_content(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InvalidLiteralContentDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 30
@@ -177,8 +177,8 @@ def test_output_view_looks_at_literal(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.OutputViewLooksAtLiteralDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 31
@@ -191,8 +191,8 @@ def test_literal_in_every_view_encoding(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.LiteralCannotBeConvertedDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 32
@@ -207,8 +207,8 @@ def test_missing_potential_literal(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.file_path == "missing.dfn"
@@ -220,8 +220,8 @@ def test_literal_for_view_with_value_quality(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
         diagnostic, diagnostics.EncodingOperationViewValueQualityDiagnostic
     )
@@ -242,7 +242,7 @@ def test_local_view_read_before_write(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=35, column=37, end_line=35, end_column=49
@@ -272,7 +272,7 @@ def test_executes_read_write_operation(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=35, column=21, end_line=35, end_column=50

@@ -34,7 +34,7 @@ def test_read_before_write(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=23, column=37, end_line=23, end_column=49, file_path="test.dfn"
@@ -50,7 +50,7 @@ def test_written_twice(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.LocalViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(
                 line=28, column=42, end_line=28, end_column=54, file_path="test.dfn"
@@ -69,7 +69,7 @@ def test_unread(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UnreadLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=17, column=20, end_line=17, end_column=32, file_path="test.dfn"
@@ -83,7 +83,7 @@ def test_write_not_supported(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=24, column=42, end_line=24, end_column=54, file_path="test.dfn"
@@ -99,7 +99,7 @@ def test_value_quality_mismatch(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=24, column=42, end_line=24, end_column=54, file_path="test.dfn"
@@ -124,7 +124,7 @@ def test_written_by_missing_logical_operation(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=22, column=21, end_line=22, end_column=63, file_path="test.dfn"
@@ -138,7 +138,7 @@ def test_duplicate_name(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.LocalNameConflictDiagnostic(
             location=rendering.SourceLocation(
                 line=22, column=20, end_line=22, end_column=32, file_path="test.dfn"
@@ -153,7 +153,7 @@ def test_unreferenced(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UnreferencedLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=22, column=20, end_line=22, end_column=31, file_path="test.dfn"
@@ -167,7 +167,7 @@ def test_missing_logical_operation_looks_at_undefined_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=17, column=21, end_line=17, end_column=63, file_path="test.dfn"
@@ -187,7 +187,7 @@ def test_written_twice_after_unknown_use(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=26, column=39, end_line=26, end_column=46, file_path="test.dfn"
@@ -212,7 +212,7 @@ def test_passed_to_read_write_view_after_write(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=26, column=21, end_line=26, end_column=47, file_path="test.dfn"
@@ -227,7 +227,7 @@ def test_passed_to_read_write_view_before_write(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=16, column=21, end_line=16, end_column=47, file_path="test.dfn"

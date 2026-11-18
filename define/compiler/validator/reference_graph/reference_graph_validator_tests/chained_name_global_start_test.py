@@ -23,7 +23,7 @@ class TestUnnecessarySelfReference:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].definition_name == (
@@ -40,7 +40,7 @@ class TestUnnecessarySelfReference:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].location.file_path is None
@@ -53,7 +53,7 @@ class TestUnnecessarySelfReference:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].location.file_path is None
@@ -66,7 +66,7 @@ class TestUnnecessarySelfReference:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
         assert diags[0].location.file_path is None
@@ -79,7 +79,7 @@ class TestUnnecessarySelfReference:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 2
         assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert diags[0].location.file_path is None
@@ -101,7 +101,7 @@ class TestUnknownGlobalChainStart:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "action</other>"
@@ -117,7 +117,7 @@ class TestImpliedQualityChainStart:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert (
@@ -148,7 +148,7 @@ class TestImpliedQualityChainStart:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/z>"
@@ -169,7 +169,7 @@ class TestImpliedQualityChainStart:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
@@ -196,7 +196,7 @@ class TestMissingDefinitionInChain:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph()
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
         assert all_diags[0].file_path == "middle.dfn"

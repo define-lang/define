@@ -123,9 +123,12 @@ class StructurallyValidatedProgram:
         """Load and validate what the edges of associations reference, and everything that it references, and add it to the program's result.
 
         Each edge starts at a validated logical operation or value quality.
+        Replaces the result's file results and diagnostics, so later stages
+        add their diagnostics after this.
         """
         self._run.load_associated(edges, max_workers=max_workers)
         self.result.file_results = self._run.file_results()
+        self.result.diagnostics = self._run.diagnostics()
 
     def project_roots(
         self,
@@ -216,7 +219,7 @@ class _ProgramValidationRun:
             definitions=self._definitions,
             structural_results=self._definition_results,
             encoding_operations=self._encoding_operations,
-            program_diagnostics=self._resolver.program_diagnostics(),
+            diagnostics=self.diagnostics(),
             source_map=self._source_map,
         )
 
@@ -272,6 +275,17 @@ class _ProgramValidationRun:
                 definition_result.reference_edges.clear()
             file_results.append(file_result)
         return file_results
+
+    def diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
+        """Return every diagnostic that structural validation found, about the program, each loaded file, and each validated definition."""
+        found = list(self._resolver.program_diagnostics())
+        for loaded_file in self._resolver.completed_files():
+            if loaded_file.load_failure is not None:
+                found.append(loaded_file.load_failure)
+            found.extend(loaded_file.file_diagnostics)
+            for definition_result in self._validated_definition_results(loaded_file):
+                found.extend(definition_result.diagnostics)
+        return found
 
     def _validated_definition_results(
         self, loaded_file: file_validator.LoadedFile

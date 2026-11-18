@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import dataclasses
 from pathlib import PurePosixPath
+
+import msgspec
 
 COMPILER_RESOURCES_DIRECTORY = PurePosixPath("define/testdata/compiler_resources")
 
 
-@dataclasses.dataclass(kw_only=True)
-class RetainedMemoryCase:
+class RetainedMemoryCase(msgspec.Struct, kw_only=True):
     """A large program whose compile must stay within a resident memory bound."""
 
     name: str
@@ -49,8 +49,7 @@ RETAINED_MEMORY_CASES = [
 ]
 
 
-@dataclasses.dataclass(kw_only=True)
-class CpuGrowthCase:
+class CpuGrowthCase(msgspec.Struct, kw_only=True):
     """A small control program and a larger adversarial variant of it."""
 
     name: str

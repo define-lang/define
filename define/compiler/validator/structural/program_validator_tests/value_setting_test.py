@@ -25,8 +25,8 @@ def test_same_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingSamePositionDiagnostic)
     assert diagnostic.position_name == "position<item>"
     assert diagnostic.location.file_path is None
@@ -38,8 +38,8 @@ def test_same_chained_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.ValueSettingSamePositionDiagnostic)
     assert diagnostic.position_name == "position<item>::position</child>"
     assert diagnostic.location.file_path is None
@@ -72,8 +72,8 @@ def test_undefined_positions(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 2
-    target, source = result.all_diagnostics
+    assert len(result.sorted_diagnostics()) == 2
+    target, source = result.sorted_diagnostics()
     assert isinstance(target, diagnostics.UndefinedLocalNameDiagnostic)
     assert target.local_name == "position<target>"
     assert target.location.file_path is None
@@ -90,8 +90,8 @@ def test_invalid_local_chains(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 2
-    target, source = result.all_diagnostics
+    assert len(result.sorted_diagnostics()) == 2
+    target, source = result.sorted_diagnostics()
     assert isinstance(target, diagnostics.ChainedLocalNameRequiresActionDiagnostic)
     assert target.preceding_name == "position<target>"
     assert target.local_name == "position<target_child>"
@@ -110,8 +110,8 @@ def test_unknown_global_positions(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 2
-    target, source = result.all_diagnostics
+    assert len(result.sorted_diagnostics()) == 2
+    target, source = result.sorted_diagnostics()
     assert isinstance(target, diagnostics.UnknownGlobalNameDiagnostic)
     assert target.full_global_name == "position<my.domain.com:my_lib:/target>"
     assert target.source_global_name == "position</target>"

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import enum
 import typing
-from dataclasses import dataclass, field
 
 import msgspec
 
@@ -402,17 +401,14 @@ class ChildState(msgspec.Struct, frozen=True):
         return False, None
 
 
-@dataclass(frozen=True, slots=True)
-class DestructionContracts:
+class DestructionContracts(msgspec.Struct, frozen=True):
     """Contracts for particles sharing destruction-time state and propagation history."""
 
     # Particles destroyed together share their destruction-time occupancy.
     child_state: ChildState
     particles: list[destruction_contract.DestructionContract]
     # Callers repeatedly need membership checks while validating child positions.
-    positions: set[chained_name.ChainedNameTuple] = field(
-        default_factory=set, init=False
-    )
+    positions: set[chained_name.ChainedNameTuple] = msgspec.field(default_factory=set)
     # The trigger hops, in execution order, from the validating definition's
     # immediate callee down to the destroying action must remain available for
     # diagnostics without copying every earlier hop during propagation.

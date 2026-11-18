@@ -19,7 +19,7 @@ def test_move_from_child_of_unoccupied_local_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 11
@@ -33,7 +33,7 @@ def test_move_to_child_of_unoccupied_local_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 12
@@ -47,7 +47,7 @@ def test_both_source_and_target_have_unoccupied_parents(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 15

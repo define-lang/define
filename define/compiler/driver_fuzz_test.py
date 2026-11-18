@@ -1817,14 +1817,13 @@ def _materialize_project_case(tmp_path: Path, project_case: ProjectCase):
 
 
 def _assert_results_are_clean(
-    results: list[validation_result.FileValidationResult], source_hint: str
+    result: validation_result.ProgramValidationResult, source_hint: str
 ):
-    for result in results:
-        if result.diagnostics:
-            pytest.fail(
-                f"Expected clean validation results, got:\n{results!r}\n\nProject:\n{source_hint}",
-                pytrace=False,
-            )
+    if result.diagnostics:
+        pytest.fail(
+            f"Expected clean validation results, got:\n{result.sorted_diagnostics()!r}\n\nProject:\n{source_hint}",
+            pytrace=False,
+        )
 
 
 def _assert_reports_problems_as_diagnostics(entrypoint: Path):
@@ -1834,7 +1833,7 @@ def _assert_reports_problems_as_diagnostics(entrypoint: Path):
         result = driver.Driver().compile_program(entrypoint, Path(output_dir))
     _ = result.error_strings()
     file_lines: dict[str, list[str]] = {}
-    for diagnostic in result.all_diagnostics:
+    for diagnostic in result.sorted_diagnostics():
         assert isinstance(diagnostic, msgspec.Struct)
         values: tuple[object, ...] = msgspec.structs.astuple(diagnostic)
         for value in values:
@@ -2214,8 +2213,8 @@ def test_valid_syntax_validates_cleanly(fuzz_project: Path, source: str):
     file_path = fuzz_project / "test.dfn"
     file_path.write_text(source, encoding="utf-8", newline="\n")
     d = driver.Driver()
-    results = d.validate_program(Path("test.dfn")).program_validation.file_results
-    _assert_results_are_clean(results, _escape_content(source))
+    result = d.validate_program(Path("test.dfn")).program_validation
+    _assert_results_are_clean(result, _escape_content(source))
 
 
 @settings(
@@ -2244,10 +2243,8 @@ def test_valid_projects_validate_cleanly(
 
     d = driver.Driver()
     debug_source = _project_case_debug_text(project_case)
-    results = d.validate_program(
-        Path(project_case.entrypoint)
-    ).program_validation.file_results
-    _assert_results_are_clean(results, debug_source)
+    result = d.validate_program(Path(project_case.entrypoint)).program_validation
+    _assert_results_are_clean(result, debug_source)
 
 
 @settings(

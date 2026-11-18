@@ -20,7 +20,7 @@ def test_move_to_chained_dest_missing_qualities(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 13
@@ -51,7 +51,7 @@ def test_move_from_chained_to_local_missing_qualities(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 23
@@ -75,7 +75,7 @@ def test_move_from_local_without_qualities_to_chained_position_with_qualities(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 13
@@ -94,7 +94,7 @@ def test_definition_local_to_chained_violates(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 12
@@ -122,7 +122,7 @@ def test_chained_to_definition_local_violates(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 23
@@ -169,7 +169,7 @@ def test_move_three_element_chain_to_three_element_chain_violates(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 20
@@ -186,38 +186,40 @@ def test_move_from_local_local_chain(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
+    diags = result.sorted_diagnostics()
+    assert len(diags) == 1
     assert isinstance(
-        result.all_diagnostics[0],
+        diags[0],
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
-    assert result.all_diagnostics[0].location.line == 9
-    assert result.all_diagnostics[0].location.column == 43
-    assert result.all_diagnostics[0].location.file_path is None
-    assert result.all_diagnostics[0].local_name == "position<b>"
-    assert result.all_diagnostics[0].preceding_name == "position<a>"
+    assert diags[0].location.line == 9
+    assert diags[0].location.column == 43
+    assert diags[0].location.file_path is None
+    assert diags[0].local_name == "position<b>"
+    assert diags[0].preceding_name == "position<a>"
 
 
 def test_move_from_local_local_local_chain(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 2
+    diags = result.sorted_diagnostics()
+    assert len(diags) == 2
     assert isinstance(
-        result.all_diagnostics[0],
+        diags[0],
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
-    assert result.all_diagnostics[0].location.line == 11
-    assert result.all_diagnostics[0].location.column == 43
-    assert result.all_diagnostics[0].location.file_path is None
-    assert result.all_diagnostics[0].local_name == "position<b>"
-    assert result.all_diagnostics[0].preceding_name == "position<a>"
+    assert diags[0].location.line == 11
+    assert diags[0].location.column == 43
+    assert diags[0].location.file_path is None
+    assert diags[0].local_name == "position<b>"
+    assert diags[0].preceding_name == "position<a>"
     assert isinstance(
-        result.all_diagnostics[1],
+        diags[1],
         diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
-    assert result.all_diagnostics[1].location.line == 11
-    assert result.all_diagnostics[1].location.column == 56
-    assert result.all_diagnostics[1].location.file_path is None
-    assert result.all_diagnostics[1].local_name == "position<c>"
-    assert result.all_diagnostics[1].preceding_name == "position<b>"
+    assert diags[1].location.line == 11
+    assert diags[1].location.column == 56
+    assert diags[1].location.file_path is None
+    assert diags[1].local_name == "position<c>"
+    assert diags[1].preceding_name == "position<b>"

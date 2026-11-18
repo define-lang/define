@@ -100,7 +100,7 @@ def test_create_does_not_fire_non_constructor_action_quality(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
     assert all_diags[0].location.line == 7
@@ -123,7 +123,7 @@ def test_missing_constructor_file_is_reported_and_skipped(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
     assert all_diags[0].location.line == 7
@@ -137,7 +137,7 @@ def test_create_parent_not_occupied_does_not_fire_constructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
     assert all_diags[0].location.line == 9

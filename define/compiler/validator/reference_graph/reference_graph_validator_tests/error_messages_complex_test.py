@@ -263,7 +263,7 @@ def test_destruction_contract_traces_every_trigger_hop(
         (_TEST, _HOLDER),
         (_TEST, _OUTER),
     ]
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)

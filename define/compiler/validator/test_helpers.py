@@ -21,14 +21,13 @@ def standard_library_file(relative_path: str) -> str:
 
 
 class _ValidationErrors(Protocol):
-    @property
-    def all_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]: ...
+    def sorted_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]: ...
 
 
 def assert_no_errors(result: _ValidationErrors):
     """Assert that a validation result has no diagnostics."""
     __tracebackhide__ = True
-    all_diagnostics = result.all_diagnostics
+    all_diagnostics = result.sorted_diagnostics()
     assert not all_diagnostics, (
         f"Expected no diagnostics, but got {len(all_diagnostics)}:\n"
         + "\n".join(f"  {pformat(d)}" for d in all_diagnostics)

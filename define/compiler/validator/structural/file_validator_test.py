@@ -9,6 +9,8 @@ import types
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+import msgspec
+
 from crates.source_rendering.python import rendering
 from define.compiler.config import config_loader, local_deps_config
 from define.compiler.data_structures import define_path
@@ -50,20 +52,38 @@ def _make_context(
     )
 
 
+class _ValidatedFile(msgspec.Struct, frozen=True):
+    load_failure: syntax_errors.FileLoadFailureDiagnostic | None
+    # The load failure, if any, then the file's diagnostics, then each
+    # definition's, in the order they were found.
+    diagnostics: list[diagnostics.BaseDiagnostic]
+    definition_results: list[validation_result.DefinitionValidationResult]
+
+
 def _load_and_validate_every_definition(
     context: file_validation_context.FileValidationContext,
-) -> validation_result.FileValidationResult:
+) -> _ValidatedFile:
     loaded_file = file_validator.FileStructuralValidator(
         rendering.SourceMap()
     ).load_file(context)
+    found: list[diagnostics.BaseDiagnostic] = []
+    if loaded_file.load_failure is not None:
+        found.append(loaded_file.load_failure)
+    found.extend(loaded_file.file_diagnostics)
     definition_results: list[validation_result.DefinitionValidationResult] = []
     for definition in loaded_file.definitions.values():
-        definition_results.append(loaded_file.validate_definition(definition))
-    return loaded_file.build_file_validation_result(definition_results)
+        definition_result = loaded_file.validate_definition(definition)
+        definition_results.append(definition_result)
+        found.extend(definition_result.diagnostics)
+    return _ValidatedFile(
+        load_failure=loaded_file.load_failure,
+        diagnostics=found,
+        definition_results=definition_results,
+    )
 
 
 def _reference_edges(
-    result: validation_result.FileValidationResult,
+    result: _ValidatedFile,
 ) -> list[reference_graph.ReferenceEdge]:
     return [
         edge

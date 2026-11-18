@@ -25,7 +25,7 @@ def test_missing_encoding_operation(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_validation.all_diagnostics == [
+    assert result.program_validation.sorted_diagnostics() == [
         diagnostics.MissingEncodingOperationDiagnostic(
             location=rendering.SourceLocation(
                 line=22,
@@ -68,7 +68,7 @@ def test_missing_encoding_operation_in_executed_value_operation(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_validation.all_diagnostics == [
+    assert result.program_validation.sorted_diagnostics() == [
         diagnostics.MissingEncodingOperationDiagnostic(
             location=rendering.SourceLocation(
                 line=22,
@@ -122,7 +122,7 @@ def test_executed_value_operation_with_diagnostics(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_validation.all_diagnostics == [
+    assert result.program_validation.sorted_diagnostics() == [
         diagnostics.LogicalOperationReadNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=17,

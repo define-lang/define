@@ -19,8 +19,8 @@ def test_unused_encoding_is_dead(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.DeadEncodingQualityAssignmentDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 8
@@ -54,8 +54,8 @@ def test_callee_without_qualities_does_not_keep_encoding_alive(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.DeadEncodingQualityAssignmentDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 28

@@ -18,35 +18,40 @@ def test_interface_position_is_rejected(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert len(result.all_diagnostics) == 1
+    diags = result.sorted_diagnostics()
+    assert len(diags) == 1
     assert isinstance(
-        result.all_diagnostics[0], diagnostics.EntryPointInterfacePositionDiagnostic
+        diags[0],
+        diagnostics.EntryPointInterfacePositionDiagnostic,
     )
-    assert result.all_diagnostics[0].position_name == "position<input>"
-    assert result.all_diagnostics[0].location.line == 2
-    assert result.all_diagnostics[0].location.column == 16
-    assert result.all_diagnostics[0].location.file_path == "test.dfn"
+    assert diags[0].position_name == "position<input>"
+    assert diags[0].location.line == 2
+    assert diags[0].location.column == 16
+    assert diags[0].location.file_path == "test.dfn"
 
 
 def test_each_interface_position_is_rejected(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert len(result.all_diagnostics) == 2
+    diags = result.sorted_diagnostics()
+    assert len(diags) == 2
     assert isinstance(
-        result.all_diagnostics[0], diagnostics.EntryPointInterfacePositionDiagnostic
+        diags[0],
+        diagnostics.EntryPointInterfacePositionDiagnostic,
     )
-    assert result.all_diagnostics[0].position_name == "position<run>"
-    assert result.all_diagnostics[0].location.line == 2
-    assert result.all_diagnostics[0].location.column == 16
-    assert result.all_diagnostics[0].location.file_path == "test.dfn"
+    assert diags[0].position_name == "position<run>"
+    assert diags[0].location.line == 2
+    assert diags[0].location.column == 16
+    assert diags[0].location.file_path == "test.dfn"
     assert isinstance(
-        result.all_diagnostics[1], diagnostics.EntryPointInterfacePositionDiagnostic
+        diags[1],
+        diagnostics.EntryPointInterfacePositionDiagnostic,
     )
-    assert result.all_diagnostics[1].position_name == "position<input>"
-    assert result.all_diagnostics[1].location.line == 3
-    assert result.all_diagnostics[1].location.column == 16
-    assert result.all_diagnostics[1].location.file_path == "test.dfn"
+    assert diags[1].position_name == "position<input>"
+    assert diags[1].location.line == 3
+    assert diags[1].location.column == 16
+    assert diags[1].location.file_path == "test.dfn"
 
 
 def test_validation_escape_allows_interface_positions(
@@ -67,8 +72,9 @@ def test_non_filesystem_only_last_constructor_interfaces_are_rejected(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 2
-    first, second = result.all_diagnostics
+    diags = result.sorted_diagnostics()
+    assert len(diags) == 2
+    first, second = diags
     assert isinstance(first, diagnostics.EntryPointInterfacePositionDiagnostic)
     assert isinstance(second, diagnostics.EntryPointInterfacePositionDiagnostic)
     assert first.position_name == "position<input>"

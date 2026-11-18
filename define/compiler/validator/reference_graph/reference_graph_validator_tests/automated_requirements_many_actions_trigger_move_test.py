@@ -34,7 +34,7 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -86,7 +86,7 @@ def test_inner_action_requirement_propagates_after_move(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -144,7 +144,7 @@ def test_three_deep_action_requirement_propagates_after_move(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -219,7 +219,7 @@ def test_two_moves_without_the_input_violate_the_triggered_inner(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -287,7 +287,7 @@ def test_carrying_no_input_into_the_implied_middle_violates_the_triggered_inner(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -355,7 +355,7 @@ def test_replacement_child_does_not_satisfy_requirement_on_moved_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diagnostics = result.program_validation.all_diagnostics
+    all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -408,7 +408,7 @@ def test_missing_middle_child_violates_inner_requirement_after_move(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diagnostics = result.program_validation.all_diagnostics
+    all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)

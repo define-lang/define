@@ -9,7 +9,6 @@ from define.compiler.errors import diagnostics
 from define.compiler.graphs import (
     reference_graph_executor,
 )
-from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import (
     action_definition_validator,
     operation_definition_validator,
@@ -24,6 +23,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.graphs import (
         reference_graph_order,
     )
+    from define.compiler.validator import validation_result
 
 
 def _requires_validation(
@@ -91,33 +91,22 @@ class ReferenceGraphValidator:
             allow_entry_action_occupied_implied_position_requirements
         )
 
-    def validate(
-        self, max_workers: int | None = None
-    ) -> list[validation_result.DefinitionDiagnostics]:
-        """Validate every definition in direct-reference-first order, resolving each to concrete code once it is validated, and return the diagnostics about each definition that has any."""
-        found: list[validation_result.DefinitionDiagnostics] = []
+    def validate(self, max_workers: int | None = None) -> list[diagnostics.Diagnostic]:
+        """Validate every definition in direct-reference-first order, resolving each to concrete code once it is validated, and return the diagnostics."""
+        found: list[diagnostics.Diagnostic] = []
         for definition_diagnostics in reference_graph_executor.process_definitions(
             self._definition_order,
             _requires_validation,
             self._validate_definition,
             max_workers=max_workers,
         ):
-            if definition_diagnostics.diagnostics:
-                found.append(definition_diagnostics)
+            found.extend(definition_diagnostics)
         entry_action = self._entry_action
         if (
             entry_action is not None
             and not self._allow_entry_action_occupied_implied_position_requirements
         ):
-            entry_action_diagnostics = self._entry_action_requirement_diagnostics(
-                entry_action
-            )
-            if entry_action_diagnostics:
-                found.append(
-                    validation_result.DefinitionDiagnostics(
-                        definition=entry_action, diagnostics=entry_action_diagnostics
-                    )
-                )
+            found.extend(self._entry_action_requirement_diagnostics(entry_action))
         return found
 
     def _validate_definition(
@@ -126,7 +115,7 @@ class ReferenceGraphValidator:
         | ast.ValueOperationDefinition
         | ast.LogicalOperationDefinition
         | ast.ValueDefinition,
-    ) -> validation_result.DefinitionDiagnostics:
+    ) -> list[diagnostics.Diagnostic]:
         """Validate a definition, then resolve it to concrete code, and return the diagnostics about it."""
         definition_diagnostics: list[diagnostics.Diagnostic] = []
         resolver = self._association_resolver
@@ -160,9 +149,7 @@ class ReferenceGraphValidator:
                 )
             case ast.ValueDefinition():
                 definition_diagnostics.extend(resolver.resolve_value(definition))
-        return validation_result.DefinitionDiagnostics(
-            definition=definition, diagnostics=definition_diagnostics
-        )
+        return definition_diagnostics
 
     def _validate_action(
         self, definition: ast.ActionDefinition

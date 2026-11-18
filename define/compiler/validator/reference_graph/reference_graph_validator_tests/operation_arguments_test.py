@@ -28,7 +28,7 @@ def test_undefined_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UndefinedOperationViewDiagnostic(
             location=rendering.SourceLocation(
                 line=43, column=18, end_line=43, end_column=28, file_path=None
@@ -44,7 +44,7 @@ def test_out_of_order(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.OperationArgumentOrderDiagnostic(
             location=rendering.SourceLocation(
                 line=41, column=18, end_line=41, end_column=29, file_path=None
@@ -60,7 +60,7 @@ def test_many_out_of_order(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.OperationArgumentOrderDiagnostic(
             location=rendering.SourceLocation(
                 line=57, column=18, end_line=57, end_column=28, file_path=None
@@ -81,7 +81,7 @@ def test_missing_argument(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=33, column=21, end_line=33, end_column=36, file_path=None
@@ -96,7 +96,7 @@ def test_duplicate_argument(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.DuplicateOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=41, column=18, end_line=41, end_column=29, file_path=None
@@ -111,7 +111,7 @@ def test_invalid_argument_view_name(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.InvalidLocalNameFormatDiagnostic(
             location=rendering.SourceLocation(
                 line=40, column=23, end_line=40, end_column=23, file_path=None
@@ -126,7 +126,7 @@ def test_invalid_argument_view_name_in_encoding_operation(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.InvalidLocalNameFormatDiagnostic(
             location=rendering.SourceLocation(
                 line=36, column=23, end_line=36, end_column=23, file_path=None
@@ -141,8 +141,8 @@ def test_missing_operation(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 11
@@ -155,7 +155,7 @@ def test_missing_standard_operation_with_literal_argument(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=13, column=21, end_line=13, end_column=55
@@ -169,8 +169,8 @@ def test_duplicate_executed_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.LocalNameConflictDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 9
@@ -190,7 +190,7 @@ def test_undefined_view_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UndefinedOperationViewDiagnostic(
             location=rendering.SourceLocation(
                 line=44, column=18, end_line=44, end_column=28, file_path=None
@@ -206,7 +206,7 @@ def test_missing_argument_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=35, column=21, end_line=35, end_column=36, file_path=None
@@ -221,7 +221,7 @@ def test_out_of_order_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.OperationArgumentOrderDiagnostic(
             location=rendering.SourceLocation(
                 line=43, column=18, end_line=43, end_column=29, file_path=None
@@ -237,8 +237,8 @@ def test_duplicate_argument_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.DuplicateOperationArgumentDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 23
@@ -251,8 +251,8 @@ def test_invalid_argument_view_name_in_action(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 23

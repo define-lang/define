@@ -35,7 +35,7 @@ def test_interface_to_local_occupied_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -90,7 +90,7 @@ def test_implied_to_local_occupied_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -145,21 +145,30 @@ def test_interface_to_implied_occupied_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].required_value is False
+    # Moving the particle into the Destructor's implied position, the
+    # point of this test, also requires that position to be empty.
+    assert isinstance(
+        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.line == 12
-    assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == "test.dfn"
-    assert all_diags[0].required_empty is False
-    assert all_diags[0].action_name == _DESTRUCTOR
+    assert all_diags[0].location.column == 50
+    assert all_diags[0].location.file_path == "destructor.dfn"
+    assert all_diags[0].position_name == "position</dest_marker>"
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
+    assert all_diags[1].location.line == 12
+    assert all_diags[1].location.column == 33
+    assert all_diags[1].location.file_path == "test.dfn"
+    assert all_diags[1].required_empty is False
+    assert all_diags[1].action_name == _DESTRUCTOR
     assert (
-        all_diags[0].position_name
+        all_diags[1].position_name
         == "position<box>::action</destructor>::position<source>::position</child>"
     )
     assert_propagation_chain(
-        all_diags[0],
+        all_diags[1],
         {
             "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
@@ -194,36 +203,36 @@ def test_interface_to_implied_occupied_violated(
         },
     )
     assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
-    # Moving the particle into the Destructor's implied position, the
-    # point of this test, also requires that position to be empty.
-    assert isinstance(
-        all_diags[1], diagnostics.DestructorRequiresEmptyPositionDiagnostic
-    )
-    assert all_diags[1].location.line == 12
-    assert all_diags[1].location.column == 50
-    assert all_diags[1].location.file_path == "destructor.dfn"
-    assert all_diags[1].position_name == "position</dest_marker>"
 
 
 def test_implied_to_implied_occupied_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].required_value is False
-    assert all_diags[0].location.line == 13
-    assert all_diags[0].location.column == 33
-    assert all_diags[0].location.file_path == "test.dfn"
-    assert all_diags[0].required_empty is False
-    assert all_diags[0].action_name == _DESTRUCTOR
+    # Moving the particle into the Destructor's implied position, the
+    # point of this test, also requires that position to be empty.
+    assert isinstance(
+        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 8
+    assert all_diags[0].location.column == 58
+    assert all_diags[0].location.file_path == "destructor.dfn"
+    assert all_diags[0].position_name == "position</dest_marker>"
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
+    assert all_diags[1].location.line == 13
+    assert all_diags[1].location.column == 33
+    assert all_diags[1].location.file_path == "test.dfn"
+    assert all_diags[1].required_empty is False
+    assert all_diags[1].action_name == _DESTRUCTOR
     assert (
-        all_diags[0].position_name
+        all_diags[1].position_name
         == "position<box>::position</source_marker>::position</child>"
     )
     assert_propagation_chain(
-        all_diags[0],
+        all_diags[1],
         {
             "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
             "enclosing_quality_name": "position<box>",
@@ -258,12 +267,3 @@ def test_implied_to_implied_occupied_violated(
         },
     )
     assert action_graph(result.concrete_program) == [(_TEST, _DESTRUCTOR)]
-    # Moving the particle into the Destructor's implied position, the
-    # point of this test, also requires that position to be empty.
-    assert isinstance(
-        all_diags[1], diagnostics.DestructorRequiresEmptyPositionDiagnostic
-    )
-    assert all_diags[1].location.line == 8
-    assert all_diags[1].location.column == 58
-    assert all_diags[1].location.file_path == "destructor.dfn"
-    assert all_diags[1].position_name == "position</dest_marker>"

@@ -60,10 +60,8 @@ class LoadedFile(msgspec.Struct):
     ) -> validation_result.FileValidationResult:
         """Return the file's result, given the results of its validated definitions in source order."""
         return validation_result.FileValidationResult(
-            load_failure=self.load_failure,
             file_path=self.context.full_path,
             root_prefix=self.context.root_prefix,
-            file_diagnostics=self.file_diagnostics,
             definition_results=definition_results,
         )
 

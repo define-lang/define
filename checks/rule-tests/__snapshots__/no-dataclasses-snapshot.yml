@@ -1,0 +1,20 @@
+id: no-dataclasses
+snapshots:
+  "from dataclasses import dataclass\n":
+    labels:
+    - source: from dataclasses import dataclass
+      style: primary
+      start: 0
+      end: 33
+  "from dataclasses import dataclass, field\n":
+    labels:
+    - source: from dataclasses import dataclass, field
+      style: primary
+      start: 0
+      end: 40
+  "import dataclasses\n":
+    labels:
+    - source: import dataclasses
+      style: primary
+      start: 0
+      end: 18

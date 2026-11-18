@@ -139,7 +139,7 @@ class TestFullDriver:
 
         result = driver.Driver().validate_source(source).program_validation
 
-        assert result.all_diagnostics == []
+        assert result.sorted_diagnostics() == []
 
 
 def test_malformed_eof_preserves_valid_prefix():

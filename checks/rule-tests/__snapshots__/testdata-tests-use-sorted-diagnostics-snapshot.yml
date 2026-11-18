@@ -1,4 +1,4 @@
-id: testdata-tests-use-all-diagnostics
+id: testdata-tests-use-sorted-diagnostics
 snapshots:
   "class TestCase:\n    def test_method(self, testdata_project_directory):\n        result = run(testdata_project_directory)\n        assert result.diagnostics == []\n":
     labels:

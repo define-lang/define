@@ -74,6 +74,7 @@ py_library(
         "//define/compiler/codegen:generator",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator/structural:program_validator",
+        "@pypi//msgspec",
     ],
 )
 
@@ -117,7 +118,6 @@ py_test(
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",
@@ -201,6 +201,7 @@ py_library(
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
+        "@pypi//msgspec",
     ],
 )
 

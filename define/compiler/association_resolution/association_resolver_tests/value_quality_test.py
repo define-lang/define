@@ -75,7 +75,7 @@ def test_encoding_only_in_unconfigured_universe(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_validation.all_diagnostics == [
+    assert result.program_validation.sorted_diagnostics() == [
         diagnostics.ExternalUniverseNotConfiguredDiagnostic(
             location=rendering.SourceLocation(
                 line=5,
@@ -94,7 +94,7 @@ def test_value_quality_without_project_root(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ValueHasNoEncodingDiagnostic(
             location=rendering.SourceLocation(
                 line=2,

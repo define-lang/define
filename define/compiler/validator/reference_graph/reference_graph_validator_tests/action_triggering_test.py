@@ -30,7 +30,7 @@ def test_self_constructor_reference_reports_circular_reference(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph(max_workers=1)
-    all_diagnostics = result.all_diagnostics
+    all_diagnostics = result.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     assert isinstance(all_diagnostics[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert all_diagnostics[0].location.column == 28
@@ -43,7 +43,7 @@ def test_destroy_with_unresolved_action_quality_reports_reference_error(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph(max_workers=1)
-    all_diagnostics = result.all_diagnostics
+    all_diagnostics = result.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     assert isinstance(
         all_diagnostics[0],
@@ -138,7 +138,7 @@ def test_move_from_trigger_position_to_itself_does_not_retrigger(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
     assert all_diags[0].location.line == 12
@@ -197,21 +197,17 @@ def test_self_trigger(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    assert len(result.program_validation.all_diagnostics) == 1
+    diags = result.program_validation.sorted_diagnostics()
+    assert len(diags) == 1
     assert isinstance(
-        result.program_validation.all_diagnostics[0],
+        diags[0],
         diagnostics.ActionSelfTriggerDiagnostic,
     )
-    assert result.program_validation.all_diagnostics[0].location.line == 8
-    assert result.program_validation.all_diagnostics[0].location.column == 30
-    assert result.program_validation.all_diagnostics[0].location.file_path == "test.dfn"
-    assert (
-        result.program_validation.all_diagnostics[0].action_name
-        == "action<my.domain.com:my_lib:/test>"
-    )
-    assert (
-        result.program_validation.all_diagnostics[0].position_name == "position<my_pos>"
-    )
+    assert diags[0].location.line == 8
+    assert diags[0].location.column == 30
+    assert diags[0].location.file_path == "test.dfn"
+    assert diags[0].action_name == "action<my.domain.com:my_lib:/test>"
+    assert diags[0].position_name == "position<my_pos>"
     assert action_graph(result.concrete_program) == []
 
 
@@ -219,17 +215,18 @@ def test_duplicate_action_does_not_add_trigger_edges(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert len(result.program_validation.all_diagnostics) == 1
+    diags = result.program_validation.sorted_diagnostics()
+    assert len(diags) == 1
     assert isinstance(
-        result.program_validation.all_diagnostics[0],
+        diags[0],
         diagnostics.DuplicateDefinitionDiagnostic,
     )
-    assert result.program_validation.all_diagnostics[0].location.file_path == "test.dfn"
-    assert result.program_validation.all_diagnostics[0].definition_type == "action"
-    assert result.program_validation.all_diagnostics[0].path == "/test"
-    assert result.program_validation.all_diagnostics[0].first_definition_line == 1
-    assert result.program_validation.all_diagnostics[0].location.line == 9
-    assert result.program_validation.all_diagnostics[0].location.column == 1
+    assert diags[0].location.file_path == "test.dfn"
+    assert diags[0].definition_type == "action"
+    assert diags[0].path == "/test"
+    assert diags[0].first_definition_line == 1
+    assert diags[0].location.line == 9
+    assert diags[0].location.column == 1
     assert action_graph(result.concrete_program) == []
 
 
@@ -245,47 +242,43 @@ def test_no_body_effect_when_create_target_has_error_state(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert len(result.program_validation.all_diagnostics) == 1
+    diags = result.program_validation.sorted_diagnostics()
+    assert len(diags) == 1
     assert isinstance(
-        result.program_validation.all_diagnostics[0],
+        diags[0],
         diagnostics.MoveFromEmptyPositionDiagnostic,
     )
-    assert result.program_validation.all_diagnostics[0].location.file_path == "test.dfn"
-    assert result.program_validation.all_diagnostics[0].position_name == "position<a>"
-    assert result.program_validation.all_diagnostics[0].location.line == 7
-    assert result.program_validation.all_diagnostics[0].location.column == 30
-    assert (
-        result.program_validation.all_diagnostics[0].is_action_interface_position
-        is False
-    )
-    assert result.program_validation.all_diagnostics[0].inferred_at is None
+    assert diags[0].location.file_path == "test.dfn"
+    assert diags[0].position_name == "position<a>"
+    assert diags[0].location.line == 7
+    assert diags[0].location.column == 30
+    assert diags[0].is_action_interface_position is False
+    assert diags[0].inferred_at is None
 
 
 def test_no_body_effect_when_move_target_has_error_state(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert len(result.program_validation.all_diagnostics) == 1
+    diags = result.program_validation.sorted_diagnostics()
+    assert len(diags) == 1
     assert isinstance(
-        result.program_validation.all_diagnostics[0],
+        diags[0],
         diagnostics.MoveFromEmptyPositionDiagnostic,
     )
-    assert result.program_validation.all_diagnostics[0].location.file_path == "test.dfn"
-    assert result.program_validation.all_diagnostics[0].position_name == "position<a>"
-    assert result.program_validation.all_diagnostics[0].location.line == 7
-    assert result.program_validation.all_diagnostics[0].location.column == 30
-    assert (
-        result.program_validation.all_diagnostics[0].is_action_interface_position
-        is False
-    )
-    assert result.program_validation.all_diagnostics[0].inferred_at is None
+    assert diags[0].location.file_path == "test.dfn"
+    assert diags[0].position_name == "position<a>"
+    assert diags[0].location.line == 7
+    assert diags[0].location.column == 30
+    assert diags[0].is_action_interface_position is False
+    assert diags[0].inferred_at is None
 
 
 def test_no_trigger_edge_on_unknown_global_chain_start(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].location.line == 5
@@ -328,34 +321,34 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
     assert all_diags[0].cycle == [
         "action<my.domain.com:my_lib:/test>",
-        "action<my.domain.com:my_lib:/test>",
-    ]
-    assert all_diags[0].location.line == 11
-    assert all_diags[0].location.column == 61
-    assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
-    assert all_diags[1].action_name == "action</test>"
-    assert (
-        all_diags[1].position_name
-        == "position<run>::position</pos>::action</test>::position<run>"
-    )
-    assert all_diags[1].location.line == 11
-    assert all_diags[1].location.column == 61
-    assert all_diags[1].location.file_path == "test.dfn"
-    assert isinstance(all_diags[2], diagnostics.CircularGlobalReferenceDiagnostic)
-    assert all_diags[2].cycle == [
-        "action<my.domain.com:my_lib:/test>",
         "position<my.domain.com:my_lib:/pos>",
         "action<my.domain.com:my_lib:/test>",
     ]
-    assert all_diags[2].location.line == 3
-    assert all_diags[2].location.column == 20
-    assert all_diags[2].location.file_path == "pos.dfn"
+    assert all_diags[0].location.line == 3
+    assert all_diags[0].location.column == 20
+    assert all_diags[0].location.file_path == "pos.dfn"
+    assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert all_diags[1].cycle == [
+        "action<my.domain.com:my_lib:/test>",
+        "action<my.domain.com:my_lib:/test>",
+    ]
+    assert all_diags[1].location.line == 11
+    assert all_diags[1].location.column == 61
+    assert all_diags[1].location.file_path == "test.dfn"
+    assert isinstance(all_diags[2], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert all_diags[2].action_name == "action</test>"
+    assert (
+        all_diags[2].position_name
+        == "position<run>::position</pos>::action</test>::position<run>"
+    )
+    assert all_diags[2].location.line == 11
+    assert all_diags[2].location.column == 61
+    assert all_diags[2].location.file_path == "test.dfn"
 
 
 def test_records_statement_triggers_including_constructors(
@@ -375,16 +368,12 @@ def test_action_requirement_for_unparseable_child_position_reports_errors(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diagnostics = result.program_validation.all_diagnostics
+    all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 3
-    assert isinstance(
-        all_diagnostics[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic
-    )
-    assert all_diagnostics[0].location.line == 2
-    assert all_diagnostics[0].location.column == 25
-    assert all_diagnostics[0].location.file_path == "initialize.dfn"
-    assert all_diagnostics[0].file_path == "child.dfn"
-    assert all_diagnostics[0].definition_name == "position<my.domain.com:my_lib:/child>"
+    assert isinstance(all_diagnostics[0], syntax_errors.ExpectedGlobalDefinition)
+    assert all_diagnostics[0].location.line == 1
+    assert all_diagnostics[0].location.column == 1
+    assert all_diagnostics[0].location.file_path == "child.dfn"
     assert isinstance(
         all_diagnostics[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic
     )
@@ -393,7 +382,11 @@ def test_action_requirement_for_unparseable_child_position_reports_errors(
     assert all_diagnostics[1].location.file_path == "cleanup.dfn"
     assert all_diagnostics[1].file_path == "child.dfn"
     assert all_diagnostics[1].definition_name == "position<my.domain.com:my_lib:/child>"
-    assert isinstance(all_diagnostics[2], syntax_errors.ExpectedGlobalDefinition)
-    assert all_diagnostics[2].location.line == 1
-    assert all_diagnostics[2].location.column == 1
-    assert all_diagnostics[2].location.file_path == "child.dfn"
+    assert isinstance(
+        all_diagnostics[2], diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
+    assert all_diagnostics[2].location.line == 2
+    assert all_diagnostics[2].location.column == 25
+    assert all_diagnostics[2].location.file_path == "initialize.dfn"
+    assert all_diagnostics[2].file_path == "child.dfn"
+    assert all_diagnostics[2].definition_name == "position<my.domain.com:my_lib:/child>"

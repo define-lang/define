@@ -28,8 +28,8 @@ def test_duplicate_caller_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.LocalNameConflictDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 28
@@ -42,7 +42,7 @@ def test_value_mismatch(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.OperationArgumentMissingQualitiesDiagnostic(
             location=rendering.SourceLocation(
                 line=17, column=42, end_line=17, end_column=53, file_path="double.dfn"
@@ -59,14 +59,14 @@ def test_literal_for_view_without_value(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 2
-    first = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 2
+    first = result.sorted_diagnostics()[0]
     assert isinstance(first, diagnostics.ViewMissingValueQualityDiagnostic)
     assert first.location.file_path is None
     assert first.location.line == 3
     assert first.location.column == 16
     assert first.view_name == "view<source>"
-    second = result.all_diagnostics[1]
+    second = result.sorted_diagnostics()[1]
     assert isinstance(second, diagnostics.ValueOperationViewEncodingDiagnostic)
     assert second.location.file_path is None
     assert second.location.line == 6
@@ -78,7 +78,7 @@ def test_looks_at_undefined_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=34, column=42, end_line=34, end_column=54, file_path=None
@@ -92,7 +92,7 @@ def test_position_missing_value_quality(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.OperationArgumentMissingQualitiesDiagnostic(
             location=rendering.SourceLocation(
                 line=39, column=42, end_line=39, end_column=57, file_path=None
@@ -109,7 +109,7 @@ def test_position_value_mismatch(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.OperationArgumentMissingQualitiesDiagnostic(
             location=rendering.SourceLocation(
                 line=18, column=42, end_line=18, end_column=57, file_path="run.dfn"
@@ -133,8 +133,8 @@ def test_comparison_result_value_mismatch(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
         diagnostic, diagnostics.OperationArgumentMissingQualitiesDiagnostic
     )

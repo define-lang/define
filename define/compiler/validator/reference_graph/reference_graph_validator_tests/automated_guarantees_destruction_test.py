@@ -87,7 +87,7 @@ def test_callee_guarantees_creating_destructor_are_applied_for_destroyed_particl
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -152,9 +152,16 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    diagnostic = all_diags[0]
+    assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.column == 33
+    assert all_diags[0].location.end_line == 9
+    assert all_diags[0].location.end_column == 47
+    assert all_diags[0].location.file_path == "fill_1.dfn"
+    assert all_diags[0].position_name == "position<spare>"
+    diagnostic = all_diags[1]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
@@ -211,20 +218,13 @@ def test_unrelated_callee_error_does_not_hide_destructor_requirement(
             "file_path": "cleanup.dfn",
         },
     )
-    assert isinstance(all_diags[1], diagnostics.DestroyInEmptyPositionDiagnostic)
-    assert all_diags[1].location.line == 9
-    assert all_diags[1].location.column == 33
-    assert all_diags[1].location.end_line == 9
-    assert all_diags[1].location.end_column == 47
-    assert all_diags[1].location.file_path == "fill_1.dfn"
-    assert all_diags[1].position_name == "position<spare>"
 
 
 def test_deep_callee_creating_destructor_below_child_particle_is_applied_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -289,7 +289,7 @@ def test_deep_callee_creating_destructor_on_same_particle_is_applied_for_destroy
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -354,7 +354,7 @@ def test_callee_guarantees_below_caller_particle_are_applied_for_destroyed_parti
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -419,7 +419,7 @@ def test_callee_guarantee_over_recorded_state_is_applied_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -484,7 +484,7 @@ def test_callee_of_pending_guarantee_empties_recorded_particle_for_destroyed_par
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -557,7 +557,7 @@ def test_unresolved_quality_does_not_prevent_dropping_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
@@ -577,7 +577,7 @@ def test_caller_resolves_several_pending_callee_guarantees_below_destroyed_parti
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -642,7 +642,7 @@ def test_pending_callee_on_own_particle_creating_failing_destructor_is_applied_f
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
@@ -707,18 +707,9 @@ def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    untriggered = all_diags[0]
-    assert isinstance(untriggered, diagnostics.UntriggeredActionDiagnostic)
-    assert untriggered.location.line == 7
-    assert untriggered.location.column == 28
-    assert untriggered.location.end_line == 7
-    assert untriggered.location.end_column == 42
-    assert untriggered.location.file_path == "cleanup.dfn"
-    assert untriggered.quality_name == "action</fill_1>"
-    assert untriggered.position_name == "position<dependency>"
-    circular = all_diags[1]
+    circular = all_diags[0]
     assert isinstance(circular, diagnostics.CircularGlobalReferenceDiagnostic)
     assert circular.location.line == 3
     assert circular.location.column == 20
@@ -732,6 +723,15 @@ def test_unpublished_destructor_contract_is_skipped_for_destroyed_particle(
         "position<my.domain.com:my_lib:/child_2>",
         _CLEANUP,
     ]
+    untriggered = all_diags[1]
+    assert isinstance(untriggered, diagnostics.UntriggeredActionDiagnostic)
+    assert untriggered.location.line == 7
+    assert untriggered.location.column == 28
+    assert untriggered.location.end_line == 7
+    assert untriggered.location.end_column == 42
+    assert untriggered.location.file_path == "cleanup.dfn"
+    assert untriggered.quality_name == "action</fill_1>"
+    assert untriggered.position_name == "position<dependency>"
 
 
 def test_callee_particle_whose_destructor_requirements_hold_is_not_expanded_when_destroyed(
@@ -814,7 +814,7 @@ def test_destructor_value_requirement_inside_what_a_callee_left_fails_when_destr
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    (diagnostic,) = result.program_validation.all_diagnostics
+    (diagnostic,) = result.program_validation.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
@@ -908,7 +908,7 @@ def test_destructor_requirement_below_empty_position_a_callee_left_fails_when_de
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    (diagnostic,) = result.program_validation.all_diagnostics
+    (diagnostic,) = result.program_validation.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
@@ -994,7 +994,7 @@ def test_destructor_requirement_on_position_a_callee_never_filled_fails_when_des
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    inner, value = result.program_validation.all_diagnostics
+    inner, value = result.program_validation.sorted_diagnostics()
     assert isinstance(inner, diagnostics.InferredRequirementViolationDiagnostic)
     assert inner.location.line == 12
     assert inner.location.column == 30
@@ -1134,7 +1134,7 @@ def test_destructor_requirement_on_position_a_callee_left_in_error_does_not_prev
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    (diagnostic,) = result.program_validation.all_diagnostics
+    (diagnostic,) = result.program_validation.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 49
@@ -1167,7 +1167,7 @@ def test_destructor_requirement_on_position_the_caller_emptied_fails_when_destro
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    (diagnostic,) = result.program_validation.all_diagnostics
+    (diagnostic,) = result.program_validation.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 30
@@ -1253,7 +1253,7 @@ def test_destructor_requirement_on_position_the_caller_left_in_error_does_not_pr
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    (diagnostic,) = result.program_validation.all_diagnostics
+    (diagnostic,) = result.program_validation.sorted_diagnostics()
     assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 49

@@ -1,0 +1,14 @@
+id: no-dataclasses
+valid:
+  - |
+    import msgspec
+
+    class Record(msgspec.Struct, frozen=True):
+        name: str
+invalid:
+  - |
+    import dataclasses
+  - |
+    from dataclasses import dataclass
+  - |
+    from dataclasses import dataclass, field

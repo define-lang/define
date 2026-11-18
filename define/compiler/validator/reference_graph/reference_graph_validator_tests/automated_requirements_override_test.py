@@ -67,59 +67,21 @@ def test_doubly_nested_both_outer_and_caller_fill(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
-    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == "test.dfn"
+    assert all_diags[0].location.file_path == "outer.dfn"
     assert all_diags[0].required_empty is True
-    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/outer>"
+    assert all_diags[0].action_name == "action<my.domain.com:my_lib:/middle>"
     assert (
         all_diags[0].position_name
-        == "position<box>::action</outer>::position<out_iface>::position</mid_input>"
-    )
-    assert_propagation_chain(
-        all_diags[0],
-        {
-            "kind": propagation_step.PropagationKind.FILL_SITE,
-            "enclosing_quality_name": "position<box>::action</outer>::position<out_iface>::position</mid_input>",
-            "triggered_quality_name": None,
-            "line": 12,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
-            "triggered_quality_name": "action<my.domain.com:my_lib:/outer>",
-            "line": 13,
-            "column": 30,
-            "file_path": "test.dfn",
-        },
-        {
-            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
-            "enclosing_quality_name": "action<my.domain.com:my_lib:/outer>",
-            "triggered_quality_name": None,
-            "line": 12,
-            "column": 30,
-            "file_path": "outer.dfn",
-        },
-    )
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[1].required_value is False
-    assert all_diags[1].location.line == 15
-    assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == "outer.dfn"
-    assert all_diags[1].required_empty is True
-    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/middle>"
-    assert (
-        all_diags[1].position_name
         == "position<out_iface>::action</middle>::position<mid_iface>::position</value>"
     )
     assert_propagation_chain(
-        all_diags[1],
+        all_diags[0],
         {
             "kind": propagation_step.PropagationKind.FILL_SITE,
             "enclosing_quality_name": "position<out_iface>::action</middle>::position<mid_iface>::position</value>",
@@ -151,6 +113,44 @@ def test_doubly_nested_both_outer_and_caller_fill(
             "line": 11,
             "column": 30,
             "file_path": "inner.dfn",
+        },
+    )
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
+    assert all_diags[1].location.line == 13
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == "test.dfn"
+    assert all_diags[1].required_empty is True
+    assert all_diags[1].action_name == "action<my.domain.com:my_lib:/outer>"
+    assert (
+        all_diags[1].position_name
+        == "position<box>::action</outer>::position<out_iface>::position</mid_input>"
+    )
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": propagation_step.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<box>::action</outer>::position<out_iface>::position</mid_input>",
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/outer>",
+            "line": 13,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/outer>",
+            "triggered_quality_name": None,
+            "line": 12,
+            "column": 30,
+            "file_path": "outer.dfn",
         },
     )
     assert action_graph(result.concrete_program) == [

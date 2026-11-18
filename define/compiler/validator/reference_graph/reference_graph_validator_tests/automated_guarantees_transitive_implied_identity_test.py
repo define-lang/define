@@ -39,7 +39,7 @@ def test_implied_to_implied_identity_blocks_move_to_unrelated_quality_through_tr
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 27
@@ -77,7 +77,7 @@ def test_implied_to_interface_identity_blocks_move_to_unrelated_quality_through_
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 26
@@ -118,7 +118,7 @@ def test_interface_to_interface_identity_blocks_move_to_unrelated_quality_throug
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].location.line == 25

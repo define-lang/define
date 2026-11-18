@@ -1,9 +1,9 @@
-id: testdata-tests-use-all-diagnostics
+id: testdata-tests-use-sorted-diagnostics
 valid:
   - |
-    def test_all_diagnostics(validate_testdata_structural):
+    def test_sorted_diagnostics(validate_testdata_structural):
         result = validate_testdata_structural()
-        assert result.all_diagnostics == []
+        assert result.sorted_diagnostics() == []
   - |
     def test_no_errors(validate_testdata_project_with_reference_graph):
         assert_no_errors(validate_testdata_project_with_reference_graph().program_result)
@@ -14,7 +14,7 @@ valid:
     class TestCase:
         def test_method(self, validate_testdata_non_filesystem_with_reference_graph: conftest.ValidateTestdataNonFilesystemWithReferenceGraph):
             result = validate_testdata_non_filesystem_with_reference_graph()
-            assert len(result.program_result.all_diagnostics) == 1
+            assert len(result.program_result.sorted_diagnostics()) == 1
 invalid:
   - |
     def test_file_diagnostics(validate_testdata_structural):

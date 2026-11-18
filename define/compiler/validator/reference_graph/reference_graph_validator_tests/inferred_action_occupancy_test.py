@@ -77,7 +77,7 @@ def test_move_to_occupied_interface_chained(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 13
@@ -105,7 +105,7 @@ def test_create_twice_in_interface_chained(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 11
@@ -150,7 +150,7 @@ def test_create_twice_in_trigger_chained(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 11
@@ -177,7 +177,7 @@ def test_3_item_position_chain_via_moved_local_infers_occupied(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 17

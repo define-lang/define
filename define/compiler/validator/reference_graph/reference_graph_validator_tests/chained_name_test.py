@@ -71,7 +71,7 @@ class TestCreateParticle:
         validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
     ):
         result = validate_testdata_project_with_reference_graph().program_validation
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 1
         assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert diags[0].source_global_name == "position</valid/minimal_position>"
@@ -90,7 +90,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 2
         assert isinstance(
             diags[0], diagnostics.ChainedLocalNameRequiresActionDiagnostic
@@ -112,7 +112,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 6
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].location.file_path is None
@@ -155,7 +155,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
         assert diags[0].location.file_path is None
@@ -180,7 +180,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].location.file_path is None
@@ -206,7 +206,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].location.file_path is None
@@ -232,7 +232,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].location.file_path is None
@@ -270,7 +270,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "position</other>"
@@ -292,7 +292,7 @@ class TestCreateParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].location.file_path is None
@@ -328,7 +328,7 @@ class TestMoveParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 3
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].local_name == "action<act_other>"
@@ -358,7 +358,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[0].location.line == 11
@@ -372,7 +372,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[0].location.line == 12
@@ -386,7 +386,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "action</act_x>"
@@ -406,7 +406,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
         assert all_diags[0].source_global_name == "action</act_y>"
@@ -435,7 +435,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
@@ -458,7 +458,7 @@ class TestMoveParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"
@@ -474,7 +474,7 @@ class TestDestroyParticle:
         validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
     ):
         result = validate_testdata_non_filesystem_with_reference_graph()
-        diags = result.all_diagnostics
+        diags = result.sorted_diagnostics()
         assert len(diags) == 4
         assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].local_name == "position<no_pos>"

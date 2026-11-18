@@ -1,12 +1,13 @@
-id: testdata-tests-use-all-diagnostics
+id: testdata-tests-use-sorted-diagnostics
 language: python
 severity: error
 message:
-  A data-backed test must assert on all_diagnostics, not on one file's
-  diagnostics or load_failure.
+  A data-backed test must assert on sorted_diagnostics(), not on an unsorted
+  list of diagnostics or a load_failure.
 note:
-  all_diagnostics holds every diagnostic of the program, so asserting on it
-  cannot miss a diagnostic in another file or a file that failed to load.
+  sorted_diagnostics() returns every diagnostic of the program in a stable
+  order, so asserting on it cannot miss a diagnostic or depend on the order
+  that stages found them in.
 files:
   - "**/*_test.py"
 # Loading a project's config has no per-file diagnostics, and

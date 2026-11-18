@@ -34,7 +34,7 @@ def test_child_operation_with_unfilled_required_parent(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -108,7 +108,7 @@ def test_occupied_requirement_is_not_inferred_after_action_in_chain(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -129,7 +129,7 @@ def test_occupied_requirement_is_not_inferred_after_action_on_local_position(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -150,7 +150,7 @@ def test_occupied_requirement_is_not_inferred_after_action_on_interface_position
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
@@ -171,7 +171,7 @@ def test_requirement_inference_stops_at_first_empty_interface_in_long_chain(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(diagnostic, diagnostics.ParentPositionNotOccupiedDiagnostic)
@@ -212,7 +212,7 @@ def test_violate_occupied_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -250,7 +250,7 @@ def test_caller_violates_occupied_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -300,7 +300,7 @@ def test_caller_violates_empty_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -348,7 +348,7 @@ def test_empty_requirement_with_error_state_is_silent(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 15
@@ -375,7 +375,7 @@ def test_occupied_requirement_with_error_state_is_silent(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 15
@@ -402,7 +402,7 @@ def test_error_requirement_does_not_skip_later_unsatisfied_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 19
@@ -464,21 +464,28 @@ def test_error_at_child_name_does_not_hide_parent_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert all_diags[0].required_value is False
-    assert all_diags[0].action_name == _CLOSE_FILE
-    assert all_diags[0].required_empty is False
-    assert all_diags[0].location.line == 22
+    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
-    assert all_diags[0].location.file_path == "test.dfn"
+    assert all_diags[0].location.file_path == "close_file.dfn"
+    assert all_diags[0].position_name == "position<spare>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
+    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert all_diags[1].required_value is False
+    assert all_diags[1].action_name == _CLOSE_FILE
+    assert all_diags[1].required_empty is False
+    assert all_diags[1].location.line == 22
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == "test.dfn"
     assert (
-        all_diags[0].position_name
+        all_diags[1].position_name
         == "position<box>::action</close_file>::position<target>::position</parent>"
     )
     assert_propagation_chain(
-        all_diags[0],
+        all_diags[1],
         {
             "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
             "enclosing_quality_name": _TEST,
@@ -496,13 +503,6 @@ def test_error_at_child_name_does_not_hide_parent_requirement(
             "file_path": "close_file.dfn",
         },
     )
-    assert isinstance(all_diags[1], diagnostics.MoveFromEmptyPositionDiagnostic)
-    assert all_diags[1].location.line == 12
-    assert all_diags[1].location.column == 30
-    assert all_diags[1].location.file_path == "close_file.dfn"
-    assert all_diags[1].position_name == "position<spare>"
-    assert all_diags[1].is_action_interface_position is False
-    assert all_diags[1].inferred_at is None
 
 
 def test_multiple_requirements_one_empty_one_occupied(
@@ -555,7 +555,7 @@ def test_constructor_violates_occupied_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -593,7 +593,7 @@ def test_constructor_violates_empty_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -656,7 +656,7 @@ def test_empty_child_of_locally_created_parent_is_a_local_violation(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.DestroyInEmptyPositionDiagnostic)
@@ -672,7 +672,7 @@ def test_no_requirement_check_on_unknown_global_chain_start(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].location.line == 6
@@ -696,7 +696,7 @@ def test_trigger_chain_occupied_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -774,7 +774,7 @@ def test_trigger_chain_empty_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -823,7 +823,7 @@ def test_trigger_chain_parent_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -863,7 +863,7 @@ def test_destroy_infers_occupied_requirement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -901,7 +901,7 @@ def test_inner_action_local_failure_does_not_propagate_to_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 7

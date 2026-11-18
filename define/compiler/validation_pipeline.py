@@ -3,22 +3,22 @@
 from __future__ import annotations
 
 import typing
-from dataclasses import dataclass
+
+import msgspec
 
 from define.compiler.association_resolution import (
     association_resolver,
     association_tables,
 )
-from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import reference_graph_validator
 
 if typing.TYPE_CHECKING:
     from define.compiler.association_resolution import concrete_program
+    from define.compiler.validator import validation_result
     from define.compiler.validator.structural import program_validator
 
 
-@dataclass
-class CompilerValidationResult:
+class CompilerValidationResult(msgspec.Struct):
     """Result of completing every compiler validation stage."""
 
     program_validation: validation_result.ProgramValidationResult
@@ -62,14 +62,11 @@ def validate_and_resolve_program(
     # otherwise be retained until code generation, but nothing loads more of
     # the program after this.
     del program
-    validation_result.add_definition_diagnostics(
-        program_result.file_results,
-        [
-            *validated_diagnostics,
-            *resolver.resolve_encoding_operations(program_result.encoding_operations),
-        ],
+    program_result.diagnostics.extend(validated_diagnostics)
+    program_result.diagnostics.extend(
+        resolver.resolve_encoding_operations(program_result.encoding_operations)
     )
-    program_result.program_diagnostics.extend(tables.config_diagnostics())
+    program_result.diagnostics.extend(tables.config_diagnostics())
     return CompilerValidationResult(
         program_validation=program_result,
         concrete_program=resolver.concrete_program(program_result.definition_order),

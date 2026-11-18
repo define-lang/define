@@ -30,7 +30,7 @@ def test_unreferenced_views(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UnreferencedViewDiagnostic(
             location=rendering.SourceLocation(
                 line=31, column=16, end_line=31, end_column=27, file_path=None
@@ -50,8 +50,8 @@ def test_duplicate_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.LocalNameConflictDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 9
@@ -64,7 +64,7 @@ def test_invalid_view_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UnreferencedViewDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=16, end_line=3, end_column=27, file_path=None
@@ -85,8 +85,8 @@ def test_view_position_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.ViewPositionOrActionQualityDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7
@@ -98,8 +98,8 @@ def test_view_action_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.ViewPositionOrActionQualityDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7
@@ -111,14 +111,14 @@ def test_view_missing_value_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 2
-    first = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 2
+    first = result.sorted_diagnostics()[0]
     assert isinstance(first, diagnostics.ViewMissingValueQualityDiagnostic)
     assert first.location.file_path is None
     assert first.location.line == 3
     assert first.location.column == 16
     assert first.view_name == "view<number>"
-    second = result.all_diagnostics[1]
+    second = result.sorted_diagnostics()[1]
     assert isinstance(second, diagnostics.ValueOperationViewEncodingDiagnostic)
     assert second.location.file_path is None
     assert second.location.line == 6
@@ -130,8 +130,8 @@ def test_view_value_and_encoding_quality_assignments(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.ValueOperationViewEncodingDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7
@@ -143,8 +143,8 @@ def test_view_multiple_value_qualities(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.ViewMultipleValueQualitiesDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 13
@@ -157,8 +157,8 @@ def test_view_duplicate_quality_assignment(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.DuplicateQualityAssignmentDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7
@@ -171,7 +171,7 @@ def test_duplicate_operation(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.DuplicateDefinitionDiagnostic(
             location=rendering.SourceLocation(
                 line=24, column=1, end_line=45, end_column=1, file_path=None
@@ -187,7 +187,7 @@ def test_without_execution(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UnreferencedViewDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=16, end_line=4, end_column=27, file_path=None

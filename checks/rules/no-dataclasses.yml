@@ -1,0 +1,14 @@
+id: no-dataclasses
+language: python
+severity: error
+message: Use msgspec.Struct for record types, not dataclasses.
+note:
+  The compiler and defcl define every record type as a msgspec.Struct, which
+  supports frozen, keyword-only, and __post_init__ as dataclasses do.
+files:
+  - "defcl/**/*.py"
+  - "define/**/*.py"
+rule:
+  any:
+    - pattern: import dataclasses
+    - pattern: from dataclasses import $$$NAMES

@@ -23,8 +23,8 @@ def test_new_particle_is_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 18
@@ -57,8 +57,8 @@ def test_move_preserves_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
@@ -70,8 +70,8 @@ def test_replacement_is_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 24
@@ -90,8 +90,8 @@ def test_trigger_requires_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 18
@@ -143,8 +143,8 @@ def test_transitive_requirement_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 18
@@ -203,8 +203,8 @@ def test_transitive_implied_requirement_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 14
@@ -261,8 +261,8 @@ def test_implied_requirement_after_move(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 14
@@ -311,8 +311,8 @@ def test_guarantee_new_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 15
@@ -333,8 +333,14 @@ def test_guarantee_existing_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 2
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 2
+    diagnostic = result.sorted_diagnostics()[0]
+    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
+    assert diagnostic.location.file_path == "provide.dfn"
+    assert diagnostic.location.line == 11
+    assert diagnostic.location.column == 26
+    assert diagnostic.position_name == "position<item>"
+    diagnostic = result.sorted_diagnostics()[1]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
@@ -342,12 +348,6 @@ def test_guarantee_existing_unset(
     assert (
         diagnostic.position_name == "position<worker>::action</provide>::position<item>"
     )
-    diagnostic = result.all_diagnostics[1]
-    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
-    assert diagnostic.location.file_path == "provide.dfn"
-    assert diagnostic.location.line == 11
-    assert diagnostic.location.column == 26
-    assert diagnostic.position_name == "position<item>"
 
 
 def test_guarantee_unchanged_set(
@@ -361,8 +361,8 @@ def test_guarantee_unchanged_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
@@ -383,8 +383,8 @@ def test_guarantee_moved_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
@@ -405,8 +405,8 @@ def test_destructor_direct_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 14
@@ -471,8 +471,8 @@ def test_destructor_contract_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
@@ -533,8 +533,8 @@ def test_destructor_contract_set_set(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
     assert diagnostic.location.file_path == "close.dfn"
     assert diagnostic.location.line == 10
@@ -546,8 +546,8 @@ def test_destructor_contract_set_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
     assert diagnostic.location.file_path == "close.dfn"
     assert diagnostic.location.line == 10
@@ -559,8 +559,14 @@ def test_destructor_contract_replace_set(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 2
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 2
+    diagnostic = result.sorted_diagnostics()[0]
+    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
+    assert diagnostic.location.file_path == "close.dfn"
+    assert diagnostic.location.line == 10
+    assert diagnostic.location.column == 26
+    assert diagnostic.position_name == "position<input>::position</value>"
+    diagnostic = result.sorted_diagnostics()[1]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 21
@@ -615,20 +621,20 @@ def test_destructor_contract_replace_set(
             "file_path": "cleanup.dfn",
         },
     )
-    diagnostic = result.all_diagnostics[1]
-    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
-    assert diagnostic.location.file_path == "close.dfn"
-    assert diagnostic.location.line == 10
-    assert diagnostic.location.column == 26
-    assert diagnostic.position_name == "position<input>::position</value>"
 
 
 def test_destructor_contract_replace_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 2
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 2
+    diagnostic = result.sorted_diagnostics()[0]
+    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
+    assert diagnostic.location.file_path == "close.dfn"
+    assert diagnostic.location.line == 10
+    assert diagnostic.location.column == 26
+    assert diagnostic.position_name == "position<input>::position</value>"
+    diagnostic = result.sorted_diagnostics()[1]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
@@ -683,12 +689,6 @@ def test_destructor_contract_replace_unset(
             "file_path": "cleanup.dfn",
         },
     )
-    diagnostic = result.all_diagnostics[1]
-    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
-    assert diagnostic.location.file_path == "close.dfn"
-    assert diagnostic.location.line == 10
-    assert diagnostic.location.column == 26
-    assert diagnostic.position_name == "position<input>::position</value>"
 
 
 def test_destructor_contract_untouched_set(
@@ -702,8 +702,8 @@ def test_destructor_contract_untouched_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
@@ -771,8 +771,8 @@ def test_transitive_implied_guarantee_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
@@ -791,8 +791,8 @@ def test_constructor_guarantee_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 15
@@ -811,8 +811,8 @@ def test_requirement_after_move_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 18
@@ -864,8 +864,8 @@ def test_destructor_transitive_requirement_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
@@ -941,8 +941,8 @@ def test_destructor_untouched_requirement_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
@@ -1018,8 +1018,8 @@ def test_destructor_replaced_child_identity_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 31
@@ -1080,8 +1080,8 @@ def test_destructor_callee_cannot_set_contracted_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
     assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 6
@@ -1093,8 +1093,8 @@ def test_destructor_cannot_set_contracted_value(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
     assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 6
@@ -1106,8 +1106,8 @@ def test_multiple_value_requirements(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 2
-    first, second = result.all_diagnostics
+    assert len(result.sorted_diagnostics()) == 2
+    first, second = result.sorted_diagnostics()
     assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
     assert isinstance(second, diagnostics.InferredRequirementViolationDiagnostic)
     assert first.location.file_path == "test.dfn"
@@ -1193,8 +1193,8 @@ def test_interfaces_stop_value_inference(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     ).program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 12
@@ -1245,8 +1245,8 @@ def test_destructor_transitive_replaced_identity_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 31
@@ -1322,8 +1322,8 @@ def test_multiple_destructor_requirements_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 2
-    first, second = result.all_diagnostics
+    assert len(result.sorted_diagnostics()) == 2
+    first, second = result.sorted_diagnostics()
     assert isinstance(second, diagnostics.InferredRequirementViolationDiagnostic)
     assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
     assert second.location.file_path == "test.dfn"
@@ -1454,8 +1454,8 @@ def test_destructor_multiple_value_requirements(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 2
-    first, second = result.all_diagnostics
+    assert len(result.sorted_diagnostics()) == 2
+    first, second = result.sorted_diagnostics()
     assert isinstance(first, diagnostics.InferredRequirementViolationDiagnostic)
     assert isinstance(second, diagnostics.InferredRequirementViolationDiagnostic)
     assert first.location.file_path == "test.dfn"
@@ -1593,8 +1593,8 @@ def test_knower_requires_occupancy_and_value_of_its_caller_unset(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 22
@@ -1663,8 +1663,8 @@ def test_repeated_unset_reads(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 17
@@ -1676,8 +1676,8 @@ def test_value_error_preserves_occupancy(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 2
-    first, second = result.all_diagnostics
+    assert len(result.sorted_diagnostics()) == 2
+    first, second = result.sorted_diagnostics()
     assert isinstance(first, diagnostics.UnsetValueDiagnostic)
     assert isinstance(second, diagnostics.ValueSettingEmptyPositionDiagnostic)
     assert first.location.file_path == "test.dfn"
@@ -1696,8 +1696,8 @@ def test_repeated_interface_value_requirement(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     ).program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 13
@@ -1741,8 +1741,8 @@ def test_value_error_new_guarantee(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "provide.dfn"
     assert diagnostic.location.line == 18
@@ -1754,8 +1754,8 @@ def test_value_error_existing_guarantee(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "provide.dfn"
     assert diagnostic.location.line == 17
@@ -1767,14 +1767,14 @@ def test_value_error_recovered_by_literal(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 2
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 2
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 48
     assert diagnostic.position_name == "position<source>"
-    diagnostic = result.all_diagnostics[1]
+    diagnostic = result.sorted_diagnostics()[1]
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
     assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 13
@@ -1786,8 +1786,8 @@ def test_destructor_value_error(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 12
@@ -1799,14 +1799,14 @@ def test_value_error_recovered_by_copy(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.all_diagnostics) == 2
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 2
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 48
     assert diagnostic.position_name == "position<source>"
-    diagnostic = result.all_diagnostics[1]
+    diagnostic = result.sorted_diagnostics()[1]
     assert isinstance(diagnostic, diagnostics.DestructorChangesValueDiagnostic)
     assert diagnostic.location.file_path == "cleanup.dfn"
     assert diagnostic.location.line == 14
@@ -1818,7 +1818,7 @@ def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_de
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 14

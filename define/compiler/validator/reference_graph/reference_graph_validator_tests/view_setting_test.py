@@ -20,7 +20,7 @@ def test_interface_view_written_twice(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewSettingInterfaceViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(
                 line=21,
@@ -45,7 +45,7 @@ def test_local_view_written_twice(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewSettingLocalViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(
                 line=22, column=26, end_line=22, end_column=35, file_path="double.dfn"
@@ -62,7 +62,7 @@ def test_output_only_target(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewSettingOutputOnlyTargetDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=26, end_line=25, end_column=38, file_path="negate.dfn"
@@ -76,7 +76,7 @@ def test_read_from_unwritten_local_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewSettingReadFromUnwrittenLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=20, column=42, end_line=20, end_column=56, file_path="double.dfn"
@@ -98,7 +98,7 @@ def test_read_from_unwritten_output_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewSettingReadFromUnwrittenOutputViewDiagnostic(
             location=rendering.SourceLocation(
                 line=15, column=42, end_line=15, end_column=53, file_path="negate.dfn"
@@ -112,7 +112,7 @@ def test_read_from_written_read_write_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewSettingReadFromWrittenReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=35,
@@ -156,7 +156,7 @@ def test_read_write_target_after_missing_logical_operation(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=16,
@@ -174,7 +174,7 @@ def test_read_write_target_after_undefined_executed_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=16,
@@ -205,7 +205,7 @@ def test_read_write_target_not_read(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewSettingReadWriteTargetNotFromExecutionDiagnostic(
             location=rendering.SourceLocation(
                 line=36,
@@ -224,7 +224,7 @@ def test_read_write_target_source_not_local(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewSettingReadWriteTargetSourceNotLocalDiagnostic(
             location=rendering.SourceLocation(
                 line=27,
@@ -243,7 +243,7 @@ def test_read_write_target_source_not_written(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewSettingReadWriteTargetNotFromExecutionDiagnostic(
             location=rendering.SourceLocation(
                 line=42,
@@ -262,7 +262,7 @@ def test_read_write_target_without_execution(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewSettingReadWriteTargetWithoutExecutionDiagnostic(
             location=rendering.SourceLocation(
                 line=31,
@@ -280,7 +280,7 @@ def test_same_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewSettingSameViewDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=45, end_line=25, end_column=57, file_path="negate.dfn"
@@ -294,7 +294,7 @@ def test_undefined_source(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=21, column=42, end_line=21, end_column=54, file_path="double.dfn"
@@ -308,7 +308,7 @@ def test_undefined_target(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=26, end_line=25, end_column=38, file_path="negate.dfn"

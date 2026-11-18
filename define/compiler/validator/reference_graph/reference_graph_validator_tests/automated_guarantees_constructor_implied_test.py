@@ -22,7 +22,7 @@ def test_nested_constructor_guarantees(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 14
@@ -62,7 +62,7 @@ def test_inferred_occupied_does_not_apply_constructor_guarantees(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
     assert all_diags[0].location.line == 10
@@ -76,7 +76,7 @@ def test_caller_sees_constructor_child_guarantees_through_action(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 16
@@ -95,7 +95,7 @@ def test_nested_quality_guarantees_visible_through_action_chain(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 17
@@ -118,7 +118,7 @@ def test_cross_universe_quality_assignment_triggers_constructor(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 12
@@ -153,7 +153,7 @@ def test_constructor_applies_after_non_constructor_action_in_quality_assignments
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 18
@@ -175,7 +175,7 @@ def test_assigned_constructor_assigns_implied_in_parent(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 8

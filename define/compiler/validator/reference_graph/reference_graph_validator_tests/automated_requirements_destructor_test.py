@@ -57,7 +57,7 @@ def test_occupied_interface_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -112,7 +112,7 @@ def test_destructor_requiring_empty_interface_position_is_reported(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
@@ -128,7 +128,7 @@ def test_intermediate_position_requirement_violated(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -185,7 +185,7 @@ def test_locally_created_interface_particle_fires_destructor_locally(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -240,7 +240,7 @@ def test_locally_created_destructor_parent_propagates_requirement_from_moved_chi
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
     assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
@@ -298,7 +298,7 @@ def test_destructor_in_constructor_checks_interface_requirement_locally(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -356,7 +356,7 @@ def test_callee_attached_destructor_requirement_validated_at_owning_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -414,10 +414,17 @@ def test_destructor_requirement_checked_when_another_destructor_changes_contract
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
 
-    first_violation = all_diags[0]
+    emptied_p = all_diags[0]
+    assert isinstance(emptied_p, diagnostics.DestructorProducesEmptyGuaranteeDiagnostic)
+    assert emptied_p.location.line == 7
+    assert emptied_p.location.column == 30
+    assert emptied_p.location.file_path == "first_destructor.dfn"
+    assert emptied_p.position_name == "position</p>"
+
+    first_violation = all_diags[1]
     assert isinstance(
         first_violation, diagnostics.InferredRequirementViolationDiagnostic
     )
@@ -464,7 +471,7 @@ def test_destructor_requirement_checked_when_another_destructor_changes_contract
         },
     )
 
-    second_violation = all_diags[1]
+    second_violation = all_diags[2]
     assert isinstance(
         second_violation, diagnostics.InferredRequirementViolationDiagnostic
     )
@@ -510,10 +517,3 @@ def test_destructor_requirement_checked_when_another_destructor_changes_contract
             "file_path": "second_destructor.dfn",
         },
     )
-
-    emptied_p = all_diags[2]
-    assert isinstance(emptied_p, diagnostics.DestructorProducesEmptyGuaranteeDiagnostic)
-    assert emptied_p.location.line == 7
-    assert emptied_p.location.column == 30
-    assert emptied_p.location.file_path == "first_destructor.dfn"
-    assert emptied_p.position_name == "position</p>"

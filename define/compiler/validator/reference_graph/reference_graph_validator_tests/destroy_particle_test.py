@@ -60,7 +60,7 @@ def test_destroy_empty_local_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -73,7 +73,7 @@ def test_destroy_already_emptied_interface_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
@@ -92,7 +92,7 @@ def test_destroy_parent_not_occupied(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 10
@@ -106,7 +106,7 @@ def test_destroy_prunes_children_within_action(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.line == 14
@@ -120,7 +120,7 @@ def test_destroy_clears_error_state_on_children(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 14
@@ -152,7 +152,7 @@ def test_destroy_chained_name_not_assigned(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
     assert all_diags[0].location.line == 10
@@ -168,7 +168,7 @@ def test_destroy_chained_name_not_in_action(
     result = validate_testdata_project_with_reference_graph(
         allow_entry_action_interface_positions=True
     )
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic

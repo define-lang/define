@@ -33,7 +33,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"
@@ -49,7 +49,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/pos_c>"
@@ -74,7 +74,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
@@ -94,7 +94,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
@@ -112,7 +112,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
@@ -148,7 +148,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainGlobalNameAfterActionDiagnostic
@@ -166,7 +166,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
             all_diags[0], diagnostics.ChainGlobalNameAfterActionDiagnostic
@@ -184,7 +184,7 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph(
             allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
         assert all_diags[0].location.line == 10
@@ -200,7 +200,7 @@ class TestChainActionValidation:
         result = validate_testdata_project_with_reference_graph(
             max_workers=1, allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 2
         assert isinstance(all_diags[0], diagnostics.LocalActionNameDiagnostic)
         assert all_diags[0].local_name == "bad"
@@ -219,7 +219,7 @@ class TestChainActionValidation:
         result = validate_testdata_project_with_reference_graph(
             max_workers=1, allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"
@@ -244,7 +244,7 @@ class TestChainActionValidation:
         result = validate_testdata_project_with_reference_graph(
             max_workers=1, allow_entry_action_interface_positions=True
         )
-        all_diags = result.program_validation.all_diagnostics
+        all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/leaf>"

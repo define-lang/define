@@ -20,7 +20,7 @@ def parse_and_validate_file(
     source: str | bytes,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-) -> validation_result.FileValidationResult:
+) -> validation_result.ProgramValidationResult:
     """Write source as the program's only file and structurally validate it."""
     relative_path = PurePosixPath("test.dfn")
     source_path = tmp_path / relative_path
@@ -30,6 +30,6 @@ def parse_and_validate_file(
     else:
         _ = source_path.write_bytes(source)
     monkeypatch.chdir(tmp_path)
-    results = program_validator.validate_program(relative_path).result.file_results
-    assert len(results) == 1
-    return results[0]
+    result = program_validator.validate_program(relative_path).result
+    assert len(result.file_results) == 1
+    return result

@@ -33,7 +33,7 @@ def test_constructor_occupied_guarantee_conflicts_with_caller_create(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert all_diags[0].populated_at.column == 30

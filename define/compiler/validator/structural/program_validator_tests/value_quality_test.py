@@ -35,8 +35,8 @@ def test_duplicate_value(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.DuplicateQualityAssignmentDiagnostic)
     assert diagnostic.location.column == 20
     assert diagnostic.location.file_path is None
@@ -49,8 +49,8 @@ def test_multiple_values(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 2
-    first, second = result.all_diagnostics
+    assert len(result.sorted_diagnostics()) == 2
+    first, second = result.sorted_diagnostics()
     assert isinstance(first, diagnostics.PositionMultipleValueQualitiesDiagnostic)
     assert first.location.file_path is None
     assert isinstance(second, diagnostics.PositionMultipleValueQualitiesDiagnostic)
@@ -69,8 +69,8 @@ def test_multiple_values_in_local_position(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.PositionMultipleValueQualitiesDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.first_value_name == "value</number>"
@@ -83,8 +83,8 @@ def test_invalid_name_does_not_count_as_value_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 27
@@ -97,8 +97,8 @@ def test_same_fqun_requires_short_form(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 26
@@ -121,8 +121,8 @@ def test_reference_to_wrong_type(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
     result = validate_testdata_structural()
-    assert len(result.all_diagnostics) == 1
-    diagnostic = result.all_diagnostics[0]
+    assert len(result.sorted_diagnostics()) == 1
+    diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
     assert diagnostic.location.line == 4
     assert diagnostic.location.column == 20

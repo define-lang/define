@@ -17,7 +17,7 @@ def test_undefined_local_position_in_create(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
@@ -30,7 +30,7 @@ def test_empty_action_statements_block(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.EmptyActionStatementsBlockDiagnostic)
     assert diags[0].location.line == 4

@@ -23,7 +23,10 @@ _DIAGNOSTIC_MODULE_NAMES = frozenset(
 # A defcl diagnostic's message is a field, and tests assert on the fields that
 # the message is made from instead.
 _DEFCL_MESSAGE_FIELD = "message"
-_DIAGNOSTIC_LISTS = frozenset({"all_diagnostics", "diagnostics"})
+# The attributes that hold a list of diagnostics, and the methods that return
+# one.
+_DIAGNOSTIC_LISTS = frozenset({"diagnostics"})
+_DIAGNOSTIC_LIST_METHODS = frozenset({"sorted_diagnostics"})
 _MESSAGE_PROPERTY = "message"
 _LOCATION_TYPE = "SourceLocation"
 _LOCATION_FIELDS = ("line", "column", "file_path")
@@ -208,6 +211,12 @@ class _TestFunctionAssertions:
                 case ast.Subscript(value=ast.Attribute(attr=list_name)) as element if (
                     list_name in _DIAGNOSTIC_LISTS
                 ):
+                    _ = self._diagnostic_uses.setdefault(ast.unparse(element), line)
+                case (
+                    ast.Subscript(
+                        value=ast.Call(func=ast.Attribute(attr=method_name))
+                    ) as element
+                ) if method_name in _DIAGNOSTIC_LIST_METHODS:
                     _ = self._diagnostic_uses.setdefault(ast.unparse(element), line)
                 case _:
                     pass

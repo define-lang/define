@@ -30,7 +30,7 @@ def _compile_case(
         )
         if result.has_errors():
             print(f"  {case_dir.relative_to(testdata_root).as_posix()}: FAILED")
-            for diag in result.all_diagnostics:
+            for diag in result.sorted_diagnostics():
                 print(f"    {diag}")
             return False
         if expected_dir.exists():

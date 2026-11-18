@@ -30,7 +30,7 @@ def test_missing_value_quality(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.LocalViewMissingValueQualityDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=20, end_line=25, end_column=32
@@ -50,7 +50,7 @@ def test_encoding(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.LocalViewNonValueQualityDiagnostic(
             location=rendering.SourceLocation(
                 line=28, column=28, end_line=28, end_column=67
@@ -64,7 +64,7 @@ def test_multiple_value_qualities(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.ViewMultipleValueQualitiesDiagnostic(
             location=rendering.SourceLocation(
                 line=28, column=28, end_line=28, end_column=58
@@ -79,7 +79,7 @@ def test_invalid_view_name(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UnreferencedLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=20, end_line=25, end_column=32
@@ -100,7 +100,7 @@ def test_conflicts_with_interface_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.LocalNameConflictDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=20, end_line=25, end_column=31
@@ -115,7 +115,7 @@ def test_duplicate_local_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.LocalNameConflictDiagnostic(
             location=rendering.SourceLocation(
                 line=30, column=20, end_line=30, end_column=32
@@ -130,7 +130,7 @@ def test_unreferenced_local_view(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UnreferencedLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=30, column=20, end_line=30, end_column=31
@@ -144,7 +144,7 @@ def test_referenced_before_definition(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
-    assert result.all_diagnostics == [
+    assert result.sorted_diagnostics() == [
         diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=27, column=42, end_line=27, end_column=54

@@ -20,7 +20,7 @@ def test_move_from_empty_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -35,7 +35,7 @@ def test_move_to_occupied_position(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -59,7 +59,7 @@ def test_cannot_create_in_position_that_was_moved_into(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -82,7 +82,7 @@ def test_same_move_twice_in_a_row(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -106,7 +106,7 @@ def test_round_trip_move_fails_second_return(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -130,7 +130,7 @@ def test_two_actions_same_name_one_empty_error_one_clean(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    all_diags = result.all_diagnostics
+    all_diags = result.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path is None
@@ -145,7 +145,7 @@ def test_two_actions_same_name_one_occupied_error_one_clean(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    all_diags = result.all_diagnostics
+    all_diags = result.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.file_path is None
@@ -169,7 +169,7 @@ def test_move_from_empty_marks_both_positions_error(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -184,7 +184,7 @@ def test_move_to_occupied_marks_both_positions_error(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -201,7 +201,7 @@ def test_both_from_empty_and_to_occupied_marks_error(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -225,7 +225,7 @@ def test_error_state_does_not_affect_other_positions(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 2
     assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -249,7 +249,7 @@ def test_single_error_position_marks_both_error(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    diags = result.all_diagnostics
+    diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert diags[0].location.file_path is None
@@ -266,7 +266,7 @@ def test_move_from_chained_to_occupied_local_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.file_path == "test.dfn"
@@ -283,7 +283,7 @@ def test_move_from_empty_local_chained(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 12
@@ -298,7 +298,7 @@ def test_move_to_occupied_local_chained(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].location.line == 14
@@ -315,7 +315,7 @@ def test_double_move_from_local_chained_fails(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 15
@@ -351,7 +351,7 @@ def test_error_state_on_child_position_moves_with_particle(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == "test.dfn"
@@ -364,7 +364,7 @@ def test_error_state_on_child_position_does_not_stay_at_move_source(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == "test.dfn"
@@ -382,7 +382,7 @@ def test_move_clears_error_state_below_target(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.file_path == "test.dfn"

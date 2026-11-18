@@ -80,6 +80,7 @@ py_test(
         ":loader",
         "//defcl/testdata/valid/schemas:every_field_type_proto_py",
         "@pypi//hypothesis",
+        "@pypi//msgspec",
     ],
 )
 

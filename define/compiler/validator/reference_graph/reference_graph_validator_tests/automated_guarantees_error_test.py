@@ -33,7 +33,7 @@ def test_error_interface_position_stays_error_after_trigger(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.file_path == "test.dfn"
@@ -60,7 +60,7 @@ def test_post_trigger_error_guarantee_suppresses_create_diagnostic(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position<item>"
@@ -78,7 +78,7 @@ def test_post_trigger_error_guarantee_suppresses_move_from_diagnostic(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position<item>"
@@ -96,7 +96,7 @@ def test_post_trigger_error_guarantee_suppresses_move_to_diagnostic(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position<item>"
@@ -114,7 +114,7 @@ def test_post_trigger_error_chain_guarantee_suppresses_create_diagnostic(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position<trigger_pos>::position</x>"
@@ -132,7 +132,7 @@ def test_post_trigger_error_chain_guarantee_suppresses_move_from_diagnostic(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position<trigger_pos>::position</x>"
@@ -150,7 +150,7 @@ def test_post_trigger_error_chain_guarantee_suppresses_move_to_diagnostic(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position<trigger_pos>::position</x>"
@@ -168,7 +168,7 @@ def test_error_from_move_to_occupied_interface_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
     assert all_diags[0].position_name == "position<item>"
@@ -188,7 +188,7 @@ def test_error_from_missing_quality_on_interface_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
     assert all_diags[0].source_position == "position<without_qualities>"
@@ -206,7 +206,7 @@ def test_error_propagation_from_local_to_interface_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position<local>"
@@ -224,7 +224,7 @@ def test_error_from_prefix_move_on_interface_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert all_diags[0].source_position == "position<iface>"
@@ -244,7 +244,7 @@ def test_error_below_particle_callee_created_prevents_cascading_diagnostics(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
     assert all_diags[0].source_position == "position</box>::position</inner>"
@@ -264,7 +264,7 @@ def test_callee_guarantee_below_position_caller_emptied_does_not_make_it_error(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].location.line == 17
@@ -311,7 +311,7 @@ def test_unknown_global_chain_start_treats_action_guarantees_as_error(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].location.column == 30
@@ -331,7 +331,7 @@ def test_post_trigger_error_guarantee_on_child_position(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position<item>::position</child_q>"
@@ -349,7 +349,7 @@ def test_post_trigger_existing_guarantee_error_origin_with_children(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].position_name == "position<item>"
@@ -367,7 +367,7 @@ def test_caller_prefills_child_without_parent_then_triggers(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
     assert all_diags[0].location.file_path == "test.dfn"
@@ -400,7 +400,7 @@ def test_swap_guarantee_both_positions_unfilled(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -465,7 +465,7 @@ def test_swap_guarantee_one_position_unfilled(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -518,7 +518,7 @@ def test_each_unfilled_required_parent_independently_makes_caller_position_error
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 4
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -648,7 +648,7 @@ def test_move_from_emptied_origin_leaves_destination_error_in_caller(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
     assert all_diags[0].required_value is False
@@ -688,7 +688,7 @@ def test_occupied_by_existing_destination_the_caller_filled_becomes_error(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
 
     assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
@@ -764,7 +764,7 @@ def test_swap_propagates_prior_error_state_from_origin_to_destination(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
     assert all_diags[0].location.line == 18
@@ -797,29 +797,23 @@ def test_unfilled_implied_action_interface_leaves_its_other_interface_positions_
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    all_diags = result.program_validation.all_diagnostics
+    all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 6
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
-    assert all_diags[0].location.line == 9
-    assert all_diags[0].location.column == 28
-    assert all_diags[0].location.end_line == 9
-    assert all_diags[0].location.end_column == 40
-    assert all_diags[0].location.file_path == "test.dfn"
-    assert all_diags[0].quality_name == "action</impl>"
-    assert all_diags[0].position_name == "position<box>"
-    assert isinstance(
-        all_diags[1], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
-    )
-    assert all_diags[1].location.line == 14
-    assert all_diags[1].location.column == 33
-    assert all_diags[1].location.end_line == 14
-    assert all_diags[1].location.end_column == 83
-    assert all_diags[1].location.file_path == "test.dfn"
-    assert (
-        all_diags[1].position_name
-        == "position<box>::action</impl>::position<trigger_pos>"
-    )
-    assert all_diags[1].inferred_at is None
+    assert isinstance(all_diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert all_diags[0].location.line == 3
+    assert all_diags[0].location.column == 16
+    assert all_diags[0].location.end_line == 3
+    assert all_diags[0].location.end_column == 26
+    assert all_diags[0].location.file_path == "impl.dfn"
+    assert all_diags[0].position_name == "position<q>"
+    assert isinstance(all_diags[1], diagnostics.DeadChildPositionDiagnostic)
+    assert all_diags[1].location.line == 5
+    assert all_diags[1].location.column == 24
+    assert all_diags[1].location.end_line == 5
+    assert all_diags[1].location.end_column == 35
+    assert all_diags[1].location.file_path == "impl.dfn"
+    assert all_diags[1].quality_name == "position</c>"
+    assert all_diags[1].position_name == "position<q>"
     assert isinstance(all_diags[2], diagnostics.UntriggeredImpliedActionDiagnostic)
     assert all_diags[2].location.line == 2
     assert all_diags[2].location.column == 25
@@ -835,18 +829,24 @@ def test_unfilled_implied_action_interface_leaves_its_other_interface_positions_
     assert all_diags[3].location.file_path == "other.dfn"
     assert all_diags[3].position_name == "action</impl>::position<q>::position</c>"
     assert all_diags[3].parent_position_name == "action</impl>::position<q>"
-    assert isinstance(all_diags[4], diagnostics.UnreferencedPositionDiagnostic)
-    assert all_diags[4].location.line == 3
-    assert all_diags[4].location.column == 16
-    assert all_diags[4].location.end_line == 3
-    assert all_diags[4].location.end_column == 26
-    assert all_diags[4].location.file_path == "impl.dfn"
-    assert all_diags[4].position_name == "position<q>"
-    assert isinstance(all_diags[5], diagnostics.DeadChildPositionDiagnostic)
-    assert all_diags[5].location.line == 5
-    assert all_diags[5].location.column == 24
-    assert all_diags[5].location.end_line == 5
-    assert all_diags[5].location.end_column == 35
-    assert all_diags[5].location.file_path == "impl.dfn"
-    assert all_diags[5].quality_name == "position</c>"
-    assert all_diags[5].position_name == "position<q>"
+    assert isinstance(all_diags[4], diagnostics.UntriggeredActionDiagnostic)
+    assert all_diags[4].location.line == 9
+    assert all_diags[4].location.column == 28
+    assert all_diags[4].location.end_line == 9
+    assert all_diags[4].location.end_column == 40
+    assert all_diags[4].location.file_path == "test.dfn"
+    assert all_diags[4].quality_name == "action</impl>"
+    assert all_diags[4].position_name == "position<box>"
+    assert isinstance(
+        all_diags[5], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
+    )
+    assert all_diags[5].location.line == 14
+    assert all_diags[5].location.column == 33
+    assert all_diags[5].location.end_line == 14
+    assert all_diags[5].location.end_column == 83
+    assert all_diags[5].location.file_path == "test.dfn"
+    assert (
+        all_diags[5].position_name
+        == "position<box>::action</impl>::position<trigger_pos>"
+    )
+    assert all_diags[5].inferred_at is None
