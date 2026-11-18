@@ -110,9 +110,14 @@ def _outcomes(store: pathlib.Path) -> list[str]:
         with_culprit = f"{result.outcome} by {result.culprit}: {result.name}"
         # Several actions fail for some mutants, and which fails first varies
         # from run to run, so the expected outcomes name a culprit only when
-        # one is certain.
+        # one is certain. Otherwise they may name what rejected the mutant,
+        # which every such action reports.
+        evidence = (result.culprit or "").partition(" (")[2].removesuffix(")")
+        with_evidence = f"{result.outcome} ({evidence}): {result.name}"
         if with_culprit in expected:
             outcomes.append(with_culprit)
+        elif evidence and with_evidence in expected:
+            outcomes.append(with_evidence)
         else:
             outcomes.append(f"{result.outcome}: {result.name}")
     return sorted(outcomes)

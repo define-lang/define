@@ -26,6 +26,8 @@ class Run(msgspec.Struct, frozen=True):
     area: list[str]
     test_timeout: int
     """The timeout of every test, in seconds."""
+    allowed_lints: list[str]
+    """The lints that the run allows in every Rust target, sorted."""
 
 
 class Result(msgspec.Struct, frozen=True):
@@ -68,7 +70,13 @@ class Store:
     def _load(self, path: pathlib.Path, run: Run):
         data = path.read_bytes()
         header, _, body = data.partition(b"\n")
-        stored_run = msgspec.json.decode(header, type=Run)
+        try:
+            stored_run = msgspec.json.decode(header, type=Run)
+        except msgspec.ValidationError as error:
+            raise MismatchedRunError(
+                f"{path} was made by an older tester ({error}). "
+                + "Delete it or choose another store."
+            ) from error
         if stored_run != run:
             raise MismatchedRunError(
                 f"{path} holds the results of {stored_run}, not {run}. "

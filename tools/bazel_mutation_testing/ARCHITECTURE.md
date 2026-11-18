@@ -58,16 +58,72 @@ section. Started 2026-11-16.
   test runs at once.
 - **Format each mutant before testing it**, since formatting never makes a
   change impossible to commit. Build the formatter once per run and run its
-  binary on the one mutated file, not through `bazelisk run`.
+  binary on the one mutated file, not through `bazelisk run`. A mutant that the
+  formatter rejects no longer parses, such as `||` in a `let` chain, so it is
+  killed, with the formatter as its culprit. The formatter's errors have no
+  structured form, so when it fails, it formats the unchanged file too: if that
+  fails as well, the formatter itself is broken, and the run stops rather than
+  record a kill that a broken tool caused.
 - **Turn off only the lints that reject mutants for their shape.** Some lints,
   such as unused-variable lints, reject a mutant because of how the mutation is
   written, not because of the bug it stands for. Mutation runs turn those lints
   off. Choose them by counting which lints kill mutants and checking examples of
-  each.
+  each. `bzl/lint_settings.bzl` lists the lints turned off.
+  - The test for each lint: could a developer write the same wrong behavior in a
+    form the lint accepts? If so, its kill would claim our checks catch a bug
+    they do not, and mutation runs turn it off. If not, the lint is what would
+    catch that bug, and its kill is valid.
+  - Turned off: lints about what deleted code leaves behind, such as unused
+    variables, imports and helpers, or a function that could now be `const`.
+    Also lints about how code is spelled, and the repository's ban on `/`, which
+    `checked_div` gets around.
+  - So far, no lint passes the test, so every reviewed lint is turned off. Even
+    a lint that finds a comparison that always holds rejects only one spelling:
+    `value >= 0` on an unsigned value is rejected, but `true`, which behaves the
+    same, is not. Compile errors and unparseable mutants are always valid kills.
+  - The choice is per lint, so turning one off loses the rare real bug it would
+    catch. It holds for the mutants that cargo-mutants makes, whose
+    unused-variable kills all come from replacing a body. Review the lints again
+    for a new generator, such as mutmut's.
+- **Name the lints that kill each mutant in its culprit,** read from the failed
+  action's own standard error. With
+  `--experimental_build_event_upload_strategy=local`, the action's build event
+  names it as a local file, rather than a blob in the remote cache, so nothing
+  reads Bazel's console. Mutation runs set rules_rust's `error_format` and
+  `clippy_error_format` to `json`, and `//tools/bzl:lint_json`, which makes the
+  ast-grep and Ruff aspects report JSON lines. Each tool then names each error's
+  lint, rule or code in a field, rather than in text meant for people. A culprit
+  says `unidentified error` when it cannot name what failed, so that no
+  unreviewed failure looks like a reviewed one. A lint matters only when it
+  fails first: if a test fails first, the lint changed nothing. A run whose
+  culprits name only reviewed lints shows the lint settings are complete.
+- **Rejected: a separate tally that builds every mutant with `--keep_going`** to
+  find every lint that rejects it. It answers more than the review needs, for a
+  second pass over every mutant. One partial tally, over 1,435 mutants, chose
+  the lint settings.
+- **Turn lints off through every Rust target's lint config.** `lint_config()`
+  names a lint config in `//tools/bzl` that wraps the one from `Cargo.toml`, and
+  appends an `--allow` flag for each lint that
+  `--//tools/bzl:allowed_rust_lints` names. The flags then come after every
+  other lint flag, for rustc and clippy alike. A run passes its turned-off
+  lints, sorted, as that flag, and the results store records them. The flag is
+  generic, so that mutation testing's lists stay in this package, and nothing
+  outside it depends on this package. Without the flag the lint config is
+  unchanged, so ordinary builds keep their cache.
+- **Rejected: building the lint config only from rules_rust's public rules,**
+  with `extract_cargo_lints` on a copy of `Cargo.toml` that allows the
+  turned-off lints. It replaces rules_rs's generated lint config, rebuilds every
+  Rust action once, and needs a TOML rewriter, to avoid loading `LintsInfo` from
+  rules_rust's private providers, which rules_rs loads too.
+- **Rejected: rules_rust's `extra_rustc_flag` setting** to turn lints off. It
+  comes before a target's lint config, so it cannot turn off a lint that
+  `Cargo.toml` names, such as `unused_crate_dependencies`.
 - **Test which mutants the lints let through.** A test holds example mutants,
   each expected to pass or fail them, and runs only the lints and type checks on
   them with mutation runs' settings. It fails when a lint change rejects a
-  realistic mutant, or lets through one that could never be committed.
+  realistic mutant, or lets through one that could never be committed. It runs
+  the toolchain's rustc and clippy-driver directly, with the lint config's flags
+  in the order rules_rust passes them, so that it runs in ordinary test runs.
 - **Run mutants in parallel with a fixed pool of worktrees, one Bazel server
   each,** created once per run and reused across mutants. All workers execute on
   the local RBE service, which also shares cached results between them.

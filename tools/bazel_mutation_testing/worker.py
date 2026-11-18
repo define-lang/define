@@ -2,23 +2,34 @@
 
 from __future__ import annotations
 
+import contextlib
 import subprocess
 import time
 from typing import TYPE_CHECKING, final
 
-from tools.bazel_mutation_testing import bazel, build_events, results
+from tools.bazel_mutation_testing import bazel, build_events, diagnostics, results
 
 if TYPE_CHECKING:
     import pathlib
+    from collections.abc import Generator
 
     from tools.bazel_mutation_testing import mutant
 
 _BAZEL_EXIT_BUILD_FAILED = 1
 _BAZEL_EXIT_TESTS_FAILED = 3
+_BAZEL_EXIT_REMOTE_ERROR = 34
 
 
 class BaselineFailedError(Exception):
     """The area's tests fail without any mutant."""
+
+
+class UnformattableMutantError(Exception):
+    """The formatter rejects a mutated file, which no longer parses."""
+
+
+class FormatterError(Exception):
+    """The formatter failed for a reason other than the mutated file."""
 
 
 class UnchangedMutantError(Exception):
@@ -44,6 +55,25 @@ def _git(directory: pathlib.Path, *arguments: str, stdin: str | None = None) -> 
     ).stdout
 
 
+def commit_id(repository: pathlib.Path, commit: str) -> str:
+    """Return the full ID of the commit that `commit` names."""
+    return _git(repository, "rev-parse", "--verify", f"{commit}^{{commit}}").strip()
+
+
+def _is_failed_build(
+    exit_code: int, failure: build_events.ActionFailure | build_events.TestFailure
+) -> bool:
+    if exit_code in {_BAZEL_EXIT_BUILD_FAILED, _BAZEL_EXIT_TESTS_FAILED}:
+        return True
+    # Over remote execution, an action that does not create a declared output
+    # fails the build with Bazel's remote error, as an outage does.
+    return (
+        exit_code == _BAZEL_EXIT_REMOTE_ERROR
+        and isinstance(failure, build_events.ActionFailure)
+        and failure.outputs_missing
+    )
+
+
 def outcome(
     failure: build_events.ActionFailure | build_events.TestFailure,
 ) -> results.Outcome:
@@ -61,10 +91,10 @@ class Worker:
         self,
         *,
         repository: pathlib.Path,
-        worktree: pathlib.Path,
         run: results.Run,
     ):
-        """Test `run`'s mutants in the worktree at `worktree`."""
+        """Test `run`'s mutants in a worktree of `repository`."""
+        worktree = repository / ".mutation_testing/worker-0"
         self.worktree = worktree
         self._repository = repository
         self._run = run
@@ -120,22 +150,24 @@ class Worker:
         """Test `mutated`, and revert it.
 
         Raises:
+            FormatterError: The formatter failed for another reason than the
+                mutated file.
             UnchangedMutantError: Formatting the mutated file undid the mutant.
             DirtyWorktreeError: Reverting the mutant left the worktree changed.
         """
-        path = self.worktree / mutated.path
-        original = path.read_bytes()
         try:
-            _ = _git(self.worktree, "apply", stdin=mutated.patch)
-            self._format(mutated.path)
-            if path.read_bytes() == original:
-                raise UnchangedMutantError(mutated.name)
-            start = time.monotonic()
-            completed, failure = self._run_tests()
-            seconds = time.monotonic() - start
-        finally:
-            _ = path.write_bytes(original)
-        self._require_clean()
+            with self._applied(mutated):
+                start = time.monotonic()
+                completed, failure = self._run_tests()
+                seconds = time.monotonic() - start
+        except UnformattableMutantError:
+            # Such a mutant could never be committed, as any failure shows.
+            return results.Result(
+                name=mutated.name,
+                outcome=results.Outcome.KILLED,
+                culprit="the formatter",
+                seconds=0.0,
+            )
         if completed.returncode == 0:
             return results.Result(
                 name=mutated.name,
@@ -143,20 +175,48 @@ class Worker:
                 culprit=None,
                 seconds=seconds,
             )
-        if failure is None or completed.returncode not in {
-            _BAZEL_EXIT_BUILD_FAILED,
-            _BAZEL_EXIT_TESTS_FAILED,
-        }:
+        if failure is None or not _is_failed_build(completed.returncode, failure):
             raise bazel.BazelError(["test", *self._run.area], completed)
+        culprit = failure.describe()
+        if isinstance(failure, build_events.ActionFailure):
+            found = diagnostics.action_rejections(failure.mnemonic, failure.stderr)
+            if found:
+                culprit += f" ({', '.join(sorted(found))})"
         return results.Result(
             name=mutated.name,
             outcome=outcome(failure),
-            culprit=failure.describe(),
+            culprit=culprit,
             seconds=seconds,
         )
 
-    def _format(self, path: str):
-        _ = subprocess.run(
+    @contextlib.contextmanager
+    def _applied(self, mutated: mutant.Mutant) -> Generator[None]:
+        path = self.worktree / mutated.path
+        original = path.read_bytes()
+        try:
+            _ = _git(self.worktree, "apply", stdin=mutated.patch)
+            formatted = self._format(mutated.path)
+            if formatted.returncode != 0:
+                # The formatter's errors have no structured form, so it
+                # formats the unchanged file to tell whether the mutant or the
+                # formatter is at fault.
+                _ = path.write_bytes(original)
+                if self._format(mutated.path).returncode != 0:
+                    raise FormatterError(
+                        f"Formatting {mutated.path} failed:\n{formatted.stderr}"
+                    )
+                raise UnformattableMutantError(mutated.name)
+            if path.read_bytes() == original:
+                raise UnchangedMutantError(mutated.name)
+            yield
+        finally:
+            _ = path.write_bytes(original)
+            # Also when a mutant fails partway, the next one needs a clean
+            # worktree.
+            self._require_clean()
+
+    def _format(self, path: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
             [self._formatter, path],
             cwd=self.worktree,
             env=bazel.child_environment(
@@ -164,7 +224,8 @@ class Worker:
                 BUILD_WORKING_DIRECTORY=str(self.worktree),
             ),
             capture_output=True,
-            check=True,
+            text=True,
+            check=False,
         )
 
     def _run_tests(
@@ -185,6 +246,14 @@ class Worker:
                 "--notest_keep_going",
                 f"--test_timeout={self._run.test_timeout}",
                 f"--build_event_json_file={self._build_event_file}",
+                "--//tools/bzl:allowed_rust_lints=" + ",".join(self._run.allowed_lints),
+                # So that a failed action names what rejected the mutant.
+                "--@rules_rust//rust/settings:error_format=json",
+                "--@rules_rust//rust/settings:clippy_error_format=json",
+                "--//tools/bzl:lint_json",
+                # So that each failed action's build event names a file that
+                # holds its standard error.
+                "--experimental_build_event_upload_strategy=local",
                 "--",
                 *self._run.area,
             ],

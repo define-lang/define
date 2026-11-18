@@ -1,10 +1,19 @@
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "string_list_flag")
 load("@protobuf//bazel/toolchains:proto_lang_toolchain.bzl", "proto_lang_toolchain")
 load("@rules_rust//extensions/prost:defs.bzl", "rust_prost_toolchain")
 load("@rules_rust//rust:defs.bzl", "rust_library_group")
 load("@rules_rust_pyo3//:defs.bzl", "rust_pyo3_toolchain")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load(":build_file_checks_test.bzl", "build_file_checks_test_suite")
+load(":rust_lints.bzl", "rust_lint_config")
+
+# Lints to allow in every Rust target, after Cargo.toml's lints. Mutation runs
+# set it.
+string_list_flag(
+    name = "allowed_rust_lints",
+    build_setting_default = [],
+)
 
 bzl_library(
     name = "ast_grep",
@@ -39,6 +48,13 @@ alias(
 bzl_library(
     name = "lint_batches",
     srcs = ["lint_batches.bzl"],
+)
+
+# Makes the ast-grep and Ruff aspects report their findings as JSON lines, for
+# tools that read them, such as the mutation tester.
+bool_flag(
+    name = "lint_json",
+    build_setting_default = False,
 )
 
 bzl_library(
@@ -155,6 +171,20 @@ alias(
         ":coverage_enabled": "@llvm//tools:llvm-profdata",
         "//conditions:default": "//:pyproject.toml",
     }),
+    visibility = ["//visibility:public"],
+)
+
+# Every Rust target's lint config: the one from Cargo.toml, with the lints that
+# :allowed_rust_lints names allowed.
+rust_lint_config(
+    name = "rust_lint_config",
+    lint_config = "@crates//:workspace_cargo_lints",
+    visibility = ["//visibility:public"],
+)
+
+bzl_library(
+    name = "rust_lints",
+    srcs = ["rust_lints.bzl"],
     visibility = ["//visibility:public"],
 )
 

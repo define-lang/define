@@ -1,50 +1,51 @@
+killed (E0277): tools/bazel_mutation_testing/testdata/rust/fails_to_compile/lib.rs:8:5: replace first_token -> Token with Default::default()
 killed by //tools/bazel_mutation_testing/testdata/rust/killed_by_py_test:extension_test: tools/bazel_mutation_testing/testdata/rust/killed_by_py_test/extension.rs:10:14: replace > with < in extension::is_larger
 killed by //tools/bazel_mutation_testing/testdata/rust/killed_by_py_test:extension_test: tools/bazel_mutation_testing/testdata/rust/killed_by_py_test/extension.rs:10:14: replace > with == in extension::is_larger
 killed by //tools/bazel_mutation_testing/testdata/rust/killed_by_py_test:extension_test: tools/bazel_mutation_testing/testdata/rust/killed_by_py_test/extension.rs:10:14: replace > with >= in extension::is_larger
+killed by //tools/bazel_mutation_testing/testdata/rust/killed_by_py_test:extension_test: tools/bazel_mutation_testing/testdata/rust/killed_by_py_test/extension.rs:10:9: replace extension::is_larger -> bool with false
+killed by //tools/bazel_mutation_testing/testdata/rust/killed_by_py_test:extension_test: tools/bazel_mutation_testing/testdata/rust/killed_by_py_test/extension.rs:10:9: replace extension::is_larger -> bool with true
 killed by //tools/bazel_mutation_testing/testdata/rust/killed_by_rust_test:killed_by_rust_test_test: tools/bazel_mutation_testing/testdata/rust/killed_by_rust_test/lib.rs:5:10: replace > with < in is_larger
 killed by //tools/bazel_mutation_testing/testdata/rust/killed_by_rust_test:killed_by_rust_test_test: tools/bazel_mutation_testing/testdata/rust/killed_by_rust_test/lib.rs:5:10: replace > with == in is_larger
 killed by //tools/bazel_mutation_testing/testdata/rust/killed_by_rust_test:killed_by_rust_test_test: tools/bazel_mutation_testing/testdata/rust/killed_by_rust_test/lib.rs:5:10: replace > with >= in is_larger
-killed by //tools/bazel_mutation_testing/testdata/rust/rejected_by_clippy:rejected_by_clippy_test: tools/bazel_mutation_testing/testdata/rust/rejected_by_clippy/lib.rs:5:11: replace * with + in tripled
+killed by //tools/bazel_mutation_testing/testdata/rust/killed_by_rust_test:killed_by_rust_test_test: tools/bazel_mutation_testing/testdata/rust/killed_by_rust_test/lib.rs:5:5: replace is_larger -> bool with false
+killed by //tools/bazel_mutation_testing/testdata/rust/killed_by_rust_test:killed_by_rust_test_test: tools/bazel_mutation_testing/testdata/rust/killed_by_rust_test/lib.rs:5:5: replace is_larger -> bool with true
 killed by //tools/bazel_mutation_testing/testdata/rust/survives:survives_test: tools/bazel_mutation_testing/testdata/rust/survives/lib.rs:5:10: replace > with < in is_larger
 killed by //tools/bazel_mutation_testing/testdata/rust/survives:survives_test: tools/bazel_mutation_testing/testdata/rust/survives/lib.rs:5:10: replace > with == in is_larger
+killed by //tools/bazel_mutation_testing/testdata/rust/survives:survives_test: tools/bazel_mutation_testing/testdata/rust/survives/lib.rs:5:5: replace is_larger -> bool with false
+killed by //tools/bazel_mutation_testing/testdata/rust/survives:survives_test: tools/bazel_mutation_testing/testdata/rust/survives/lib.rs:5:5: replace is_larger -> bool with true
+killed by //tools/bazel_mutation_testing/testdata/rust/times_out:times_out_test: tools/bazel_mutation_testing/testdata/rust/times_out/lib.rs:5:5: replace first_multiple_from -> u32 with 0
+killed by //tools/bazel_mutation_testing/testdata/rust/times_out:times_out_test: tools/bazel_mutation_testing/testdata/rust/times_out/lib.rs:5:5: replace first_multiple_from -> u32 with 1
 killed by //tools/bazel_mutation_testing/testdata/rust/times_out:times_out_test: tools/bazel_mutation_testing/testdata/rust/times_out/lib.rs:7:17: replace < with <= in first_multiple_from
 killed by //tools/bazel_mutation_testing/testdata/rust/times_out:times_out_test: tools/bazel_mutation_testing/testdata/rust/times_out/lib.rs:7:17: replace < with == in first_multiple_from
 killed by //tools/bazel_mutation_testing/testdata/rust/times_out:times_out_test: tools/bazel_mutation_testing/testdata/rust/times_out/lib.rs:7:17: replace < with > in first_multiple_from
 killed by //tools/bazel_mutation_testing/testdata/rust/times_out:times_out_test: tools/bazel_mutation_testing/testdata/rust/times_out/lib.rs:8:15: replace += with -= in first_multiple_from
+killed by //tools/bazel_mutation_testing/testdata/rust/unparseable:unparseable_test: tools/bazel_mutation_testing/testdata/rust/unparseable/lib.rs:6:5: replace nonzero_first -> Option<u32> with None
+killed by //tools/bazel_mutation_testing/testdata/rust/unparseable:unparseable_test: tools/bazel_mutation_testing/testdata/rust/unparseable/lib.rs:6:5: replace nonzero_first -> Option<u32> with Some(0)
+killed by //tools/bazel_mutation_testing/testdata/rust/unparseable:unparseable_test: tools/bazel_mutation_testing/testdata/rust/unparseable/lib.rs:6:5: replace nonzero_first -> Option<u32> with Some(1)
+killed by //tools/bazel_mutation_testing/testdata/rust/unparseable:unparseable_test: tools/bazel_mutation_testing/testdata/rust/unparseable/lib.rs:7:18: replace != with == in nonzero_first
+killed by Genrule //tools/bazel_mutation_testing/testdata/rust/killed_by_build_action:greeting (an output was not created): tools/bazel_mutation_testing/testdata/rust/killed_by_build_action/main.rs:11:5: replace main -> ExitCode with Default::default()
 killed by Genrule //tools/bazel_mutation_testing/testdata/rust/killed_by_build_action:greeting: tools/bazel_mutation_testing/testdata/rust/killed_by_build_action/main.rs:12:13: replace != with == in main
 killed by Genrule //tools/bazel_mutation_testing/testdata/rust/killed_by_build_action:greeting: tools/bazel_mutation_testing/testdata/rust/killed_by_build_action/main.rs:7:5: replace greeting -> &'static str with ""
 killed by Genrule //tools/bazel_mutation_testing/testdata/rust/killed_by_build_action:greeting: tools/bazel_mutation_testing/testdata/rust/killed_by_build_action/main.rs:7:5: replace greeting -> &'static str with "xyzzy"
+killed by Genrule //tools/bazel_mutation_testing/testdata/rust/unused_build_action:greeting (an output was not created): tools/bazel_mutation_testing/testdata/rust/unused_build_action/main.rs:11:5: replace main -> ExitCode with Default::default()
+killed by Genrule //tools/bazel_mutation_testing/testdata/rust/unused_build_action:greeting: tools/bazel_mutation_testing/testdata/rust/unused_build_action/main.rs:12:13: replace != with == in main
+killed by Genrule //tools/bazel_mutation_testing/testdata/rust/unused_build_action:greeting: tools/bazel_mutation_testing/testdata/rust/unused_build_action/main.rs:7:5: replace greeting -> &'static str with ""
+killed by Genrule //tools/bazel_mutation_testing/testdata/rust/unused_build_action:greeting: tools/bazel_mutation_testing/testdata/rust/unused_build_action/main.rs:7:5: replace greeting -> &'static str with "xyzzy"
+killed by the formatter: tools/bazel_mutation_testing/testdata/rust/unparseable/lib.rs:7:9: replace && with || in nonzero_first
 survived: tools/bazel_mutation_testing/testdata/rust/no_coverage_test_only/lib.rs:5:10: replace > with < in is_larger
 survived: tools/bazel_mutation_testing/testdata/rust/no_coverage_test_only/lib.rs:5:10: replace > with == in is_larger
 survived: tools/bazel_mutation_testing/testdata/rust/no_coverage_test_only/lib.rs:5:10: replace > with >= in is_larger
+survived: tools/bazel_mutation_testing/testdata/rust/no_coverage_test_only/lib.rs:5:5: replace is_larger -> bool with false
+survived: tools/bazel_mutation_testing/testdata/rust/no_coverage_test_only/lib.rs:5:5: replace is_larger -> bool with true
 survived: tools/bazel_mutation_testing/testdata/rust/outside_area/lib.rs:5:10: replace > with < in is_larger
 survived: tools/bazel_mutation_testing/testdata/rust/outside_area/lib.rs:5:10: replace > with == in is_larger
 survived: tools/bazel_mutation_testing/testdata/rust/outside_area/lib.rs:5:10: replace > with >= in is_larger
+survived: tools/bazel_mutation_testing/testdata/rust/outside_area/lib.rs:5:5: replace is_larger -> bool with false
+survived: tools/bazel_mutation_testing/testdata/rust/outside_area/lib.rs:5:5: replace is_larger -> bool with true
 survived: tools/bazel_mutation_testing/testdata/rust/survives/lib.rs:5:10: replace > with >= in is_larger
 survived: tools/bazel_mutation_testing/testdata/rust/unreached/lib.rs:5:10: replace > with < in is_larger
 survived: tools/bazel_mutation_testing/testdata/rust/unreached/lib.rs:5:10: replace > with == in is_larger
 survived: tools/bazel_mutation_testing/testdata/rust/unreached/lib.rs:5:10: replace > with >= in is_larger
-killed by Genrule //tools/bazel_mutation_testing/testdata/rust/unused_build_action:greeting: tools/bazel_mutation_testing/testdata/rust/unused_build_action/main.rs:12:13: replace != with == in main
-killed by Genrule //tools/bazel_mutation_testing/testdata/rust/unused_build_action:greeting: tools/bazel_mutation_testing/testdata/rust/unused_build_action/main.rs:7:5: replace greeting -> &'static str with ""
-killed by Genrule //tools/bazel_mutation_testing/testdata/rust/unused_build_action:greeting: tools/bazel_mutation_testing/testdata/rust/unused_build_action/main.rs:7:5: replace greeting -> &'static str with "xyzzy"
+survived: tools/bazel_mutation_testing/testdata/rust/unreached/lib.rs:5:5: replace is_larger -> bool with false
+survived: tools/bazel_mutation_testing/testdata/rust/unreached/lib.rs:5:5: replace is_larger -> bool with true
 timed out by //tools/bazel_mutation_testing/testdata/rust/times_out:times_out_test: tools/bazel_mutation_testing/testdata/rust/times_out/lib.rs:8:15: replace += with *= in first_multiple_from
-killed: tools/bazel_mutation_testing/testdata/rust/fails_to_compile/lib.rs:8:5: replace first_token -> Token with Default::default()
-killed: tools/bazel_mutation_testing/testdata/rust/killed_by_build_action/main.rs:11:5: replace main -> ExitCode with Default::default()
-killed: tools/bazel_mutation_testing/testdata/rust/killed_by_py_test/extension.rs:10:9: replace extension::is_larger -> bool with false
-killed: tools/bazel_mutation_testing/testdata/rust/killed_by_py_test/extension.rs:10:9: replace extension::is_larger -> bool with true
-killed: tools/bazel_mutation_testing/testdata/rust/killed_by_rust_test/lib.rs:5:5: replace is_larger -> bool with false
-killed: tools/bazel_mutation_testing/testdata/rust/killed_by_rust_test/lib.rs:5:5: replace is_larger -> bool with true
-killed: tools/bazel_mutation_testing/testdata/rust/no_coverage_test_only/lib.rs:5:5: replace is_larger -> bool with false
-killed: tools/bazel_mutation_testing/testdata/rust/no_coverage_test_only/lib.rs:5:5: replace is_larger -> bool with true
-killed: tools/bazel_mutation_testing/testdata/rust/outside_area/lib.rs:5:5: replace is_larger -> bool with false
-killed: tools/bazel_mutation_testing/testdata/rust/outside_area/lib.rs:5:5: replace is_larger -> bool with true
-killed: tools/bazel_mutation_testing/testdata/rust/rejected_by_clippy/lib.rs:5:11: replace * with / in tripled
-killed: tools/bazel_mutation_testing/testdata/rust/rejected_by_clippy/lib.rs:5:5: replace tripled -> u32 with 0
-killed: tools/bazel_mutation_testing/testdata/rust/rejected_by_clippy/lib.rs:5:5: replace tripled -> u32 with 1
-killed: tools/bazel_mutation_testing/testdata/rust/survives/lib.rs:5:5: replace is_larger -> bool with false
-killed: tools/bazel_mutation_testing/testdata/rust/survives/lib.rs:5:5: replace is_larger -> bool with true
-killed: tools/bazel_mutation_testing/testdata/rust/times_out/lib.rs:5:5: replace first_multiple_from -> u32 with 0
-killed: tools/bazel_mutation_testing/testdata/rust/times_out/lib.rs:5:5: replace first_multiple_from -> u32 with 1
-killed: tools/bazel_mutation_testing/testdata/rust/unreached/lib.rs:5:5: replace is_larger -> bool with false
-killed: tools/bazel_mutation_testing/testdata/rust/unreached/lib.rs:5:5: replace is_larger -> bool with true
-killed: tools/bazel_mutation_testing/testdata/rust/unused_build_action/main.rs:11:5: replace main -> ExitCode with Default::default()

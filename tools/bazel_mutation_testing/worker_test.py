@@ -15,7 +15,10 @@ _TEST = "//crates/example:example_test"
 
 def test_failed_action_kills():
     failure = build_events.ActionFailure(
-        label="//crates/example:example", mnemonic="Clippy"
+        label="//crates/example:example",
+        mnemonic="Clippy",
+        outputs_missing=False,
+        stderr="",
     )
     assert worker.outcome(failure) == results.Outcome.KILLED
 
@@ -58,11 +61,12 @@ def _repository(directory: pathlib.Path) -> pathlib.Path:
     return source
 
 
-def _prepare(repository: pathlib.Path, worktree: pathlib.Path):
+def _prepare(repository: pathlib.Path):
     worker.Worker(
         repository=repository,
-        worktree=worktree,
-        run=results.Run(commit="HEAD", area=["//..."], test_timeout=60),
+        run=results.Run(
+            commit="HEAD", area=["//..."], test_timeout=60, allowed_lints=[]
+        ),
     ).prepare()
 
 
@@ -71,7 +75,7 @@ def test_directory_that_is_not_a_worktree_is_refused(tmp_path: pathlib.Path):
     directory = tmp_path / ".mutation_testing/worker-0"
     directory.mkdir(parents=True)
     with pytest.raises(worker.NotAWorktreeError):
-        _prepare(tmp_path, directory)
+        _prepare(tmp_path)
     assert source.read_text(encoding="utf-8") == "edited\n"
 
 
@@ -81,5 +85,5 @@ def test_symlink_to_the_repository_is_refused(tmp_path: pathlib.Path):
     link.parent.mkdir()
     link.symlink_to(tmp_path)
     with pytest.raises(worker.NotAWorktreeError):
-        _prepare(tmp_path, link)
+        _prepare(tmp_path)
     assert source.read_text(encoding="utf-8") == "edited\n"

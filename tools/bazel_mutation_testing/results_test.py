@@ -9,7 +9,9 @@ from tools.bazel_mutation_testing import results
 if TYPE_CHECKING:
     import pathlib
 
-_RUN = results.Run(commit="0123abcd", area=["//crates/..."], test_timeout=60)
+_RUN = results.Run(
+    commit="0123abcd", area=["//crates/..."], test_timeout=60, allowed_lints=[]
+)
 _KILLED = results.Result(
     name="crates/example/lib.rs:5:10: replace > with == in is_larger",
     outcome=results.Outcome.KILLED,
@@ -45,7 +47,13 @@ def test_store_of_another_run_is_refused(tmp_path: pathlib.Path):
         pass
     with pytest.raises(results.MismatchedRunError):
         _ = results.Store(
-            path, results.Run(commit="0123abcd", area=["//crates/..."], test_timeout=10)
+            path,
+            results.Run(
+                commit="0123abcd",
+                area=["//crates/..."],
+                test_timeout=10,
+                allowed_lints=[],
+            ),
         )
 
 
@@ -68,4 +76,15 @@ def test_duplicate_results_are_refused(tmp_path: pathlib.Path):
         store.add(_KILLED)
         store.add(_KILLED)
     with pytest.raises(results.DuplicateResultError):
+        _ = results.Store(path, _RUN)
+
+
+def test_store_of_an_older_tester_is_refused(tmp_path: pathlib.Path):
+    path = tmp_path / "results.jsonl"
+    _ = path.write_text(
+        '{"commit":"0123abcd","area":["//crates/..."],"test_timeout":60}\n',
+        encoding="utf-8",
+        newline="\n",
+    )
+    with pytest.raises(results.MismatchedRunError, match="older tester"):
         _ = results.Store(path, _RUN)

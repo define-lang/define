@@ -5,15 +5,15 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:rust.bzl", "lint_config")
 
 rust_library(
-    name = "rejected_by_clippy",
+    name = "unparseable",
     srcs = ["lib.rs"],
     lint_config = lint_config(),
 )
 
 rust_test(
-    name = "rejected_by_clippy_test",
+    name = "unparseable_test",
     size = "small",
-    crate = ":rejected_by_clippy",
+    crate = ":unparseable",
     lint_config = lint_config(),
     deps = ["@crates//:googletest"],
 )
@@ -26,8 +26,8 @@ rust_clippy_test(
         "clippy",
     ],
     targets = [
-        ":rejected_by_clippy",
-        ":rejected_by_clippy_test",
+        ":unparseable",
+        ":unparseable_test",
     ],
 )
 

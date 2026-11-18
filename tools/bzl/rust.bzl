@@ -6,8 +6,9 @@ def lint_config():
     Every Rust target passes it as its `lint_config`, which is what the clippy
     aspect reads. `lint_config` from `@crates//:defs.bzl` returns None for
     every package except the Cargo package `define`, so it applies no lints.
+    Mutation runs turn some of its lints off.
     """
-    return Label("@crates//:workspace_cargo_lints")
+    return Label("//tools/bzl:rust_lint_config")
 
 def binary_rustc_flags():
     """Return the `rustc_flags` that every rust_binary sets."""

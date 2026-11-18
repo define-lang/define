@@ -2,7 +2,7 @@
 
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
-load(":build_file_checks.bzl", "build_file_violations")
+load(":build_file_checks.bzl", "build_file_violations", "resolved_lint_configs")
 load(":rust.bzl", "binary_rustc_flags", "lint_config")
 
 _LINT_CONFIG = str(lint_config())
@@ -311,6 +311,34 @@ _rust_targets_must_use_the_lint_config_test = unittest.make(
     _rust_targets_must_use_the_lint_config_impl,
 )
 
+def _in_parsing(label):
+    if label.startswith(":"):
+        return Label("//define/compiler/parsing" + label)
+    return Label(label)
+
+def _lint_config_in_another_package_is_refused_impl(ctx):
+    env = unittest.begin(ctx)
+    rules = [
+        ("scanner", {"kind": "rust_library", "lint_config": ":rust_lint_config"}),
+        ("scanner_test", {"kind": "rust_test", "lint_config": _LINT_CONFIG, "size": "small"}),
+        ("clippy_test", {
+            "kind": "rust_clippy_test",
+            "tags": ["clippy"],
+            "targets": [
+                "//define/compiler/parsing:scanner",
+                "//define/compiler/parsing:scanner_test",
+            ],
+        }),
+    ]
+    asserts.equals(env, [
+        'Rust target "scanner" must set lint_config = lint_config() from //tools/bzl:rust.bzl',
+    ], build_file_violations("parsing", resolved_lint_configs(rules, _in_parsing)))
+    return unittest.end(env)
+
+_lint_config_in_another_package_is_refused_test = unittest.make(
+    _lint_config_in_another_package_is_refused_impl,
+)
+
 def _rust_binaries_must_use_the_binary_rustc_flags_impl(ctx):
     env = unittest.begin(ctx)
     rules = [
@@ -374,6 +402,7 @@ def build_file_checks_test_suite(name):
                 _clippy_tests_must_have_the_clippy_tag_test,
                 _rust_targets_must_be_in_clippy_test_test,
                 _rust_targets_must_use_the_lint_config_test,
+                _lint_config_in_another_package_is_refused_test,
                 _rust_binaries_must_use_the_binary_rustc_flags_test,
             ]
         ]

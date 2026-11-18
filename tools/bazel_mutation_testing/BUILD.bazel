@@ -19,7 +19,23 @@ py_test(
     name = "build_events_test",
     size = "small",
     srcs = ["build_events_test.py"],
-    deps = [":build_events"],
+    deps = [
+        ":build_events",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "diagnostics",
+    srcs = ["diagnostics.py"],
+    deps = ["@pypi//msgspec"],
+)
+
+py_test(
+    name = "diagnostics_test",
+    size = "small",
+    srcs = ["diagnostics_test.py"],
+    deps = [":diagnostics"],
 )
 
 py_test(
@@ -28,15 +44,17 @@ py_test(
     data = [
         "testdata/expected_outcomes.txt",
         ":tester",
+        "//tools/bazel_mutation_testing/bzl:rust_lint_flags",
         "@multitool//tools/cargo-mutants",
         "@rules_rust//cargo:current_cargo_toolchain",
     ],
     # A py_binary's env applies only under `bazel run`, so the tester gets
-    # CARGO and CARGO_MUTANTS from this test.
+    # CARGO, CARGO_MUTANTS and LINT_FLAGS from this test.
     env = {
         "CARGO": "$(rlocationpath @rules_rust//cargo:current_cargo_toolchain)",
         "CARGO_MUTANTS": "$(rlocationpath @multitool//tools/cargo-mutants)",
         "EXPECTED_OUTCOMES": "$(rlocationpath testdata/expected_outcomes.txt)",
+        "LINT_FLAGS": "$(rlocationpath //tools/bazel_mutation_testing/bzl:rust_lint_flags)",
         "TESTER": "$(rlocationpath :tester)",
     },
     # The tester runs bazelisk and Git from PATH, and bazelisk keeps its
@@ -53,6 +71,51 @@ py_test(
         "//tools:runfiles",
         "@pypi//msgspec",
         "@pypi//pytest",
+    ],
+)
+
+filegroup(
+    name = "lint_examples",
+    srcs = glob(["lint_examples/*.rs"]),
+)
+
+py_test(
+    name = "lint_examples_test",
+    size = "small",
+    srcs = ["lint_examples_test.py"],
+    data = [
+        ":lint_examples",
+        "//:clippy.toml",
+        "//tools/bazel_mutation_testing/bzl:rust_lint_flags",
+        "@rules_rust//rust/toolchain:current_clippy_files",
+        "@rules_rust//rust/toolchain:current_rust_stdlib_files",
+        "@rules_rust//rust/toolchain:current_rustc_files",
+        "@rules_rust//rust/toolchain:current_rustc_lib_files",
+    ],
+    env = {
+        "CLIPPY_CONFIGURATION": "$(rlocationpath //:clippy.toml)",
+        "CLIPPY_DRIVER": "$(rlocationpath @rules_rust//rust/toolchain:current_clippy_files)",
+        "LINT_EXAMPLES": "$(rlocationpaths :lint_examples)",
+        "RUSTC": "$(rlocationpath @rules_rust//rust/toolchain:current_rustc_files)",
+        "LINT_FLAGS": "$(rlocationpath //tools/bazel_mutation_testing/bzl:rust_lint_flags)",
+    },
+    # The Windows VM gets the Linux rustc from the cross build. The lints are
+    # the same on every platform, so Linux checks them.
+    tags = ["no_windows_vm"],
+    deps = [
+        ":diagnostics",
+        ":lint_flags",
+        "//tools:runfiles",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "lint_flags",
+    srcs = ["lint_flags.py"],
+    deps = [
+        "//tools:runfiles",
+        "@pypi//msgspec",
     ],
 )
 
@@ -83,15 +146,17 @@ py_binary(
     name = "tester",
     srcs = ["tester.py"],
     data = [
+        "//tools/bazel_mutation_testing/bzl:rust_lint_flags",
         "@multitool//tools/cargo-mutants",
         "@rules_rust//cargo:current_cargo_toolchain",
     ],
     env = {
         "CARGO": "$(rlocationpath @rules_rust//cargo:current_cargo_toolchain)",
         "CARGO_MUTANTS": "$(rlocationpath @multitool//tools/cargo-mutants)",
+        "LINT_FLAGS": "$(rlocationpath //tools/bazel_mutation_testing/bzl:rust_lint_flags)",
     },
     deps = [
-        ":bazel",
+        ":lint_flags",
         ":mutant",
         ":results",
         ":worker",
@@ -109,6 +174,7 @@ py_library(
     deps = [
         ":bazel",
         ":build_events",
+        ":diagnostics",
         ":mutant",
         ":results",
     ],
@@ -135,7 +201,11 @@ pyright_test(
         ":bazel",
         ":build_events",
         ":build_events_test",
+        ":diagnostics",
+        ":diagnostics_test",
         ":fixtures_test",
+        ":lint_examples_test",
+        ":lint_flags",
         ":mutant",
         ":results",
         ":results_test",

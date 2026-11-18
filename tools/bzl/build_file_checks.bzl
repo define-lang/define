@@ -18,7 +18,7 @@ _CLIPPY_CHECKED_KINDS = ["rust_binary", "rust_cdylib_library", "rust_library", "
 
 # How native.existing_rules() shows the lint config that every Rust target
 # must have.
-_LINT_CONFIG = str(lint_config())
+_LINT_CONFIG = lint_config()
 
 # Codegen testdata packages provide these targets to the generator integration
 # tests. Their expected outputs are generated Python, which must type-check.
@@ -173,8 +173,33 @@ def _lint_config_violations(rules):
     return [
         'Rust target "%s" must set lint_config = lint_config() from //tools/bzl:rust.bzl' % rule_name
         for rule_name, rule in rules
-        if rule["kind"] in _CLIPPY_CHECKED_KINDS and str(rule.get("lint_config")) != _LINT_CONFIG
+        if rule["kind"] in _CLIPPY_CHECKED_KINDS and not _is_lint_config(rule.get("lint_config"))
     ]
+
+def _is_lint_config(value):
+    return value != None and Label(str(value)) == _LINT_CONFIG
+
+def resolved_lint_configs(rules, resolve_label):
+    """Return rules whose `lint_config` names a label in any package.
+
+    A rule's label attribute can name a label relative to its own package, which
+    this file would otherwise resolve relative to //tools/bzl.
+
+    Args:
+        rules: (name, attributes) pairs from native.existing_rules()
+        resolve_label: resolves a label relative to the rules' package, as
+            native.package_relative_label does.
+
+    Returns:
+        The rules, with each `lint_config` resolved.
+    """
+    resolved = []
+    for name, attributes in rules:
+        if attributes.get("lint_config") != None:
+            attributes = dict(attributes)
+            attributes["lint_config"] = str(resolve_label(attributes["lint_config"]))
+        resolved.append((name, attributes))
+    return resolved
 
 def _binary_rustc_flags_violations(rules):
     return [
@@ -217,7 +242,10 @@ def build_file_violations(package_name, rules):
 def _check_build_file_impl(name, visibility):  # buildifier: disable=unused-variable
     violations = build_file_violations(
         native.package_name().split("/")[-1],
-        native.existing_rules().items(),
+        resolved_lint_configs(
+            native.existing_rules().items(),
+            native.package_relative_label,
+        ),
     )
     if violations:
         fail("BUILD file conventions in //%s:\n  %s" % (

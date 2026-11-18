@@ -11,13 +11,12 @@ import contextlib
 import fcntl
 import os
 import pathlib
-import subprocess
 from typing import TYPE_CHECKING
 
 import click
 
 from tools import runfiles
-from tools.bazel_mutation_testing import bazel, results, worker
+from tools.bazel_mutation_testing import lint_flags, results, worker
 from tools.bazel_mutation_testing.rust import canary, crates, generator
 
 if TYPE_CHECKING:
@@ -27,7 +26,7 @@ if TYPE_CHECKING:
 
 
 class RunInProgressError(Exception):
-    """Another run is using the repository's worker."""
+    """Another run is using the repository's workers."""
 
 
 class CanaryNotKilledError(Exception):
@@ -67,7 +66,15 @@ def _list_mutants(
 
 
 @contextlib.contextmanager
-def _exclusive(lock_path: pathlib.Path) -> Generator[None]:
+def _exclusive(repository: pathlib.Path) -> Generator[None]:
+    """Hold the lock on the repository's workers until the block ends.
+
+    Raises:
+        RunInProgressError: Another run holds the lock.
+    """
+    # Runs share the workers' worktrees, so two runs at once would revert each
+    # other's mutants.
+    lock_path = repository / ".mutation_testing/lock"
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     with lock_path.open("ab") as lock:
         try:
@@ -105,18 +112,14 @@ def main(area: tuple[str, ...], store: pathlib.Path, commit: str, test_timeout: 
     tests on each mutant.
     """
     repository = pathlib.Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
-    commit_id = subprocess.run(
-        [bazel.executable("git"), "rev-parse", "--verify", f"{commit}^{{commit}}"],
-        cwd=repository,
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
-    run = results.Run(commit=commit_id, area=list(area), test_timeout=test_timeout)
+    run = results.Run(
+        commit=worker.commit_id(repository, commit),
+        area=list(area),
+        test_timeout=test_timeout,
+        allowed_lints=sorted(lint_flags.load().turned_off),
+    )
     with (
-        # One worker serves every run, so two runs at once would revert each
-        # other's mutants.
-        _exclusive(repository / ".mutation_testing/lock"),
+        _exclusive(repository),
         results.Store(repository / store, run) as results_store,
     ):
         _test_area(repository, run, results_store)
@@ -126,11 +129,7 @@ def main(area: tuple[str, ...], store: pathlib.Path, commit: str, test_timeout: 
 def _test_area(
     repository: pathlib.Path, run: results.Run, results_store: results.Store
 ):
-    work = worker.Worker(
-        repository=repository,
-        worktree=repository / ".mutation_testing/worker-0",
-        run=run,
-    )
+    work = worker.Worker(repository=repository, run=run)
     work.prepare()
     work.test_baseline()
     area_crates = crates.find(work.worktree, run.area)

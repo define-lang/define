@@ -14,6 +14,7 @@ ast_grep = lint_ast_grep_aspect(
 ```
 """
 
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("//tools/bzl:lint_batches.bzl", "lint_batches")
 
 _AstGrepInfo = provider(
@@ -41,6 +42,7 @@ def _ast_grep_aspect_impl(target, ctx):
     if not srcs:
         return []
 
+    report = "--json=stream" if ctx.attr._lint_json[BuildSettingInfo].value else "--report-style=short"
     outputs = []
     for index, batch in enumerate(lint_batches(srcs)):
         output = ctx.actions.declare_file("{}.{}.ast_grep".format(target.label.name, index))
@@ -50,9 +52,10 @@ def _ast_grep_aspect_impl(target, ctx):
             inputs = batch + [ctx.file._config, ctx.file._rules],
             outputs = [output],
             tools = [ctx.executable._ast_grep],
-            command = "{ast_grep} scan --config={config} --report-style=short \"$@\" && touch {output}".format(
+            command = "{ast_grep} scan --config={config} {report} \"$@\" && touch {output}".format(
                 ast_grep = ctx.executable._ast_grep.path,
                 config = ctx.file._config.path,
+                report = report,
                 output = output.path,
             ),
             arguments = [args],
@@ -93,6 +96,9 @@ def lint_ast_grep_aspect(binary, config, rules, rule_kinds):
             ),
             "_rule_kinds": attr.string_list(
                 default = rule_kinds,
+            ),
+            "_lint_json": attr.label(
+                default = Label("//tools/bzl:lint_json"),
             ),
         },
     )

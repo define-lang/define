@@ -16,6 +16,7 @@ Filegroups tagged `lint-with-ruff` are also linted, and targets tagged
 `no-lint` are not.
 """
 
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("//tools/bzl:lint_batches.bzl", "lint_batches")
 
 def _should_lint(rule, rule_kinds):
@@ -31,6 +32,7 @@ def _ruff_aspect_impl(target, ctx):
     srcs = [src for src in ctx.rule.files.srcs if src.is_source and src.owner.workspace_name == ""]
     if not srcs:
         return []
+    output_format = "json-lines" if ctx.attr._lint_json[BuildSettingInfo].value else "concise"
     outputs = []
     for index, batch in enumerate(lint_batches(srcs)):
         output = ctx.actions.declare_file("{}.{}.ruff".format(target.label.name, index))
@@ -42,8 +44,9 @@ def _ruff_aspect_impl(target, ctx):
             tools = [ctx.executable._ruff],
             # --force-exclude applies the configuration's exclusions even to
             # paths named on the command line.
-            command = "{ruff} check --force-exclude --quiet --output-format=concise \"$@\" && touch {output}".format(
+            command = "{ruff} check --force-exclude --quiet --output-format={output_format} \"$@\" && touch {output}".format(
                 ruff = ctx.executable._ruff.path,
+                output_format = output_format,
                 output = output.path,
             ),
             arguments = [args],
@@ -76,6 +79,9 @@ def lint_ruff_aspect(binary, config, rule_kinds):
             ),
             "_rule_kinds": attr.string_list(
                 default = rule_kinds,
+            ),
+            "_lint_json": attr.label(
+                default = Label("//tools/bzl:lint_json"),
             ),
         },
     )

@@ -1,0 +1,27 @@
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load(":lint_flags.bzl", "lint_flags")
+
+bzl_library(
+    name = "lint_flags",
+    srcs = ["lint_flags.bzl"],
+    deps = [
+        ":lint_settings",
+        "//tools/bzl:rust_lints",
+    ],
+)
+
+bzl_library(
+    name = "lint_settings",
+    srcs = ["lint_settings.bzl"],
+)
+
+# The repository's Rust lint flags, those of mutation runs, and the lints that
+# mutation runs turn off, which the tester and lint_examples_test read.
+lint_flags(
+    name = "rust_lint_flags",
+    lint_config = "@crates//:workspace_cargo_lints",
+    visibility = ["//tools/bazel_mutation_testing:__pkg__"],
+)
+
+check_build_file()

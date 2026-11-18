@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+
+import pytest
 
 from tools.bazel_mutation_testing import build_events
 
@@ -11,12 +13,24 @@ if TYPE_CHECKING:
 
 _LIBRARY = "//crates/example:example"
 _TEST = "//crates/example:example_test"
+_GENRULE = "//crates/example:generated"
 
 
-def _action(label: str, mnemonic: str, *, success: bool) -> dict[str, object]:
+def _action(
+    label: str,
+    mnemonic: str,
+    *,
+    success: bool,
+    failure_detail: dict[str, object] | None = None,
+    stderr: pathlib.Path | None = None,
+) -> dict[str, object]:
     action: dict[str, object] = {"type": mnemonic, "label": label, "exitCode": 1}
     if success:
         action["success"] = True
+    if failure_detail is not None:
+        action["failureDetail"] = failure_detail
+    if stderr is not None:
+        action["stderr"] = {"name": "stderr", "uri": stderr.as_uri()}
     return {"id": {"actionCompleted": {"label": label}}, "action": action}
 
 
@@ -56,7 +70,7 @@ def test_failed_action(tmp_path: pathlib.Path):
         ],
     )
     assert build_events.first_failure(events) == build_events.ActionFailure(
-        label=_LIBRARY, mnemonic="Clippy"
+        label=_LIBRARY, mnemonic="Clippy", outputs_missing=False, stderr=""
     )
 
 
@@ -85,7 +99,61 @@ def test_timed_out_test(tmp_path: pathlib.Path):
 
 def test_descriptions():
     assert (
-        build_events.ActionFailure(label=_LIBRARY, mnemonic="Rustc").describe()
+        build_events.ActionFailure(
+            label=_LIBRARY, mnemonic="Rustc", outputs_missing=False, stderr=""
+        ).describe()
         == f"Rustc {_LIBRARY}"
     )
+    assert (
+        build_events.ActionFailure(
+            label=_GENRULE, mnemonic="Genrule", outputs_missing=True, stderr=""
+        ).describe()
+        == f"Genrule {_GENRULE} (an output was not created)"
+    )
     assert build_events.TestFailure(label=_TEST, timed_out=False).describe() == _TEST
+
+
+def test_outputs_missing_locally(tmp_path: pathlib.Path):
+    detail: dict[str, object] = {"execution": {"code": "ACTION_OUTPUTS_NOT_CREATED"}}
+    events = _write(
+        tmp_path / "events.json",
+        [_action(_GENRULE, "Genrule", success=False, failure_detail=detail)],
+    )
+    assert build_events.first_failure(events) == build_events.ActionFailure(
+        label=_GENRULE, mnemonic="Genrule", outputs_missing=True, stderr=""
+    )
+
+
+def test_outputs_missing_remotely(tmp_path: pathlib.Path):
+    detail: dict[str, object] = {
+        "message": "remote spawn failed: mandatory output example.txt was not created",
+        "spawn": {"code": "EXECUTION_FAILED"},
+    }
+    events = _write(
+        tmp_path / "events.json",
+        [_action(_GENRULE, "Genrule", success=False, failure_detail=detail)],
+    )
+    assert build_events.first_failure(events) == build_events.ActionFailure(
+        label=_GENRULE, mnemonic="Genrule", outputs_missing=True, stderr=""
+    )
+
+
+def test_failed_action_stderr(tmp_path: pathlib.Path):
+    stderr = tmp_path / "stderr-5"
+    _ = stderr.write_text("error: unused variable\n", encoding="utf-8", newline="\n")
+    events = _write(
+        tmp_path / "events.json",
+        [_action(_LIBRARY, "Rustc", success=False, stderr=stderr)],
+    )
+    failure = build_events.first_failure(events)
+    assert isinstance(failure, build_events.ActionFailure)
+    assert failure.stderr == "error: unused variable\n"
+
+
+def test_remote_stderr_is_refused(tmp_path: pathlib.Path):
+    event = _action(_LIBRARY, "Rustc", success=False)
+    action = cast("dict[str, object]", event["action"])
+    action["stderr"] = {"name": "stderr", "uri": "bytestream://rbe/blobs/abc/5"}
+    events = _write(tmp_path / "events.json", [event])
+    with pytest.raises(ValueError, match="not local"):
+        _ = build_events.first_failure(events)
