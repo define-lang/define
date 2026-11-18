@@ -228,43 +228,6 @@ norecursedirs = [
   "mutants",
 ]
 
-[tool.mutmut]
-source_paths = [
-  "defcl/python/",
-  "define/compiler/",
-  "define/runtime/",
-]
-also_copy = [
-  "buf",
-  "defcl/testdata",
-  "define/config",
-  "define/reserved_words",
-  "define/testdata",
-]
-do_not_mutate = [
-  "*_test.py",
-  "*_pb2.py",
-  "**/conftest.py",
-  "**/test_helpers.py",
-  "**/testdata/**",
-]
-pytest_add_cli_args_test_selection = [
-  "defcl/python",
-  "define/compiler",
-  "define/runtime",
-]
-pytest_add_cli_args = [
-  # These tests execute subprocesses, which do not exercise mutmut's
-  # in-process mutated code and therefore provide no mutation coverage.
-  "--ignore=define/compiler/codegen/callee_codegen_independence_integration_test.py",
-  "--ignore=define/compiler/driver_fuzz_test.py",
-  "--ignore=define/compiler/driver_integration_test.py",
-  "--ignore=define/compiler/main_integration_test.py",
-  "--deselect=define/compiler/codegen/tracing_integration_test.py::test_generated_trace_matches_expected_artifacts",
-  "--deselect=define/compiler/codegen/tracing_integration_test.py::test_concurrent_runtime_respects_resolved_operation_dependencies",
-  "--deselect=define/compiler/codegen/generator_integration_test.py::test_expected_output_runs",
-]
-
 [tool.coverage.run]
 branch = true
 
