@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import subprocess
 from typing import TYPE_CHECKING
 
 import pytest
 
-from tools.bazel_mutation_testing import bazel
 from tools.bazel_mutation_testing.rust import canary, crates
 
 if TYPE_CHECKING:
@@ -31,13 +29,7 @@ def test_canary_goes_in_the_first_crate_with_tests(tmp_path: pathlib.Path):
     _ = source.write_text("pub const ONE: u32 = 1;\n", encoding="utf-8", newline="\n")
 
     made = canary.make([_UNTESTED, _TESTED], tmp_path)
-    _ = subprocess.run(
-        [bazel.executable("git"), "apply"],
-        cwd=tmp_path,
-        input=made.mutant.patch,
-        text=True,
-        check=True,
-    )
+    made.mutant.apply(tmp_path)
 
     assert made.tests == _TESTED.tests
     assert made.mutant.path == _TESTED.root

@@ -25,6 +25,12 @@ startup:windows --windows_enable_symlinks
 # Build for Windows from Linux.
 build:windows_cross --platforms=//tools/platforms:windows_x86_64_msvc
 build:windows_cross --host_platform=//tools/platforms:local_linux_for_windows_cross
+# The Linux platform comes first, so that actions with no constraints of their
+# own run here. Test actions get the Windows platform, because their default
+# test toolchain requires the target platform's constraints. A tool that a
+# Windows test runs from its runfiles, such as the mutation tester's Cargo,
+# resolves its toolchain for the Windows platform too.
+build:windows_cross --extra_execution_platforms=//tools/platforms:local_linux_for_windows_cross,//tools/platforms:windows_x86_64_msvc
 # common:windows applies only on Windows hosts, but Windows programs built from
 # Linux need runfiles directories for the same reasons.
 build:windows_cross --enable_runfiles
@@ -40,10 +46,6 @@ build:windows_vm --remote_executor=grpc://localhost:2223
 # Linux Bazel has no tw.exe or xml.exe, which Windows test actions run. See
 # //tools/windows_vm:bazel_tools_override, which makes this directory.
 build:windows_vm --override_repository=bazel_tools=%workspace%/.windows_vm/bazel_tools
-# The Linux platform comes first, so that actions with no constraints of their
-# own keep running here. Test actions get the VM's platform, because their
-# default test toolchain requires the target platform's constraints.
-build:windows_vm --extra_execution_platforms=//tools/platforms:local_linux_for_windows_cross,//tools/platforms:windows_x86_64_msvc
 # The VM can run only test actions. Everything else runs here, and stays out of
 # the VM's cache.
 build:windows_vm --spawn_strategy=worker,sandboxed,local

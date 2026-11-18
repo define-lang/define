@@ -45,13 +45,13 @@ py_test(
         "testdata/expected_outcomes.txt",
         ":tester",
         "//tools/bazel_mutation_testing/bzl:rust_lint_flags",
+        "//tools/bazel_mutation_testing/rust:runtime_cargo",
         "@multitool//tools/cargo-mutants",
-        "@rules_rust//cargo:current_cargo_toolchain",
     ],
     # A py_binary's env applies only under `bazel run`, so the tester gets
     # CARGO, CARGO_MUTANTS and LINT_FLAGS from this test.
     env = {
-        "CARGO": "$(rlocationpath @rules_rust//cargo:current_cargo_toolchain)",
+        "CARGO": "$(rlocationpath //tools/bazel_mutation_testing/rust:runtime_cargo)",
         "CARGO_MUTANTS": "$(rlocationpath @multitool//tools/cargo-mutants)",
         "EXPECTED_OUTCOMES": "$(rlocationpath testdata/expected_outcomes.txt)",
         "LINT_FLAGS": "$(rlocationpath //tools/bazel_mutation_testing/bzl:rust_lint_flags)",
@@ -123,7 +123,10 @@ py_library(
     name = "mutant",
     srcs = ["mutant.py"],
     visibility = ["//tools/bazel_mutation_testing:__subpackages__"],
-    deps = ["@pypi//msgspec"],
+    deps = [
+        ":bazel",
+        "@pypi//msgspec",
+    ],
 )
 
 py_library(
@@ -147,11 +150,11 @@ py_binary(
     srcs = ["tester.py"],
     data = [
         "//tools/bazel_mutation_testing/bzl:rust_lint_flags",
+        "//tools/bazel_mutation_testing/rust:runtime_cargo",
         "@multitool//tools/cargo-mutants",
-        "@rules_rust//cargo:current_cargo_toolchain",
     ],
     env = {
-        "CARGO": "$(rlocationpath @rules_rust//cargo:current_cargo_toolchain)",
+        "CARGO": "$(rlocationpath //tools/bazel_mutation_testing/rust:runtime_cargo)",
         "CARGO_MUTANTS": "$(rlocationpath @multitool//tools/cargo-mutants)",
         "LINT_FLAGS": "$(rlocationpath //tools/bazel_mutation_testing/bzl:rust_lint_flags)",
     },

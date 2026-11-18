@@ -1,4 +1,5 @@
 load("@rules_py//py:defs.bzl", "py_library")
+load("@rules_rust//cargo:cargo_toolchain.bzl", "cargo_toolchain_alias")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
@@ -21,7 +22,6 @@ py_test(
     deps = [
         ":canary",
         ":crates",
-        "//tools/bazel_mutation_testing:bazel",
         "@pypi//pytest",
     ],
 )
@@ -63,19 +63,35 @@ py_test(
     size = "small",
     srcs = ["generator_test.py"],
     data = [
+        ":runtime_cargo",
         "@multitool//tools/cargo-mutants",
-        "@rules_rust//cargo:current_cargo_toolchain",
     ],
     env = {
-        "CARGO": "$(rlocationpath @rules_rust//cargo:current_cargo_toolchain)",
+        "CARGO": "$(rlocationpath :runtime_cargo)",
         "CARGO_MUTANTS": "$(rlocationpath @multitool//tools/cargo-mutants)",
     },
     deps = [
         ":crates",
         ":generator",
         "//tools:runfiles",
-        "//tools/bazel_mutation_testing:bazel",
     ],
+)
+
+# The Cargo toolchain resolves for the build execution platform. cargo-mutants
+# needs Cargo for the platform where the tester or test itself runs.
+alias(
+    name = "runtime_cargo",
+    actual = select({
+        "@platforms//os:windows": ":windows_cargo",
+        "//conditions:default": "@rules_rust//cargo:current_cargo_toolchain",
+    }),
+    visibility = ["//tools/bazel_mutation_testing:__pkg__"],
+)
+
+cargo_toolchain_alias(
+    name = "windows_cargo",
+    exec_compatible_with = ["@platforms//os:windows"],
+    target_compatible_with = ["@platforms//os:windows"],
 )
 
 # --- Type-checking ---

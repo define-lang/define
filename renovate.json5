@@ -44,6 +44,13 @@
         '{"releases": releases[$contains(version, /^"\\d+\\.\\d+\\.\\d+": \\{$/)].{"version": $substringBefore($substring(version, 1), "\\"")}}',
       ],
     },
+    // The same formula can publish several bottles at different digests.
+    // The package name includes the bottle key so each one has its own lookup.
+    homebrew_bottle: {
+      transformTemplates: [
+        '($digest := $lookup(bottle.stable.files, "{{{replace \'^.*/\' \'\' packageName}}}").sha256; {"releases": [$exists($digest) ? {"version": versions.stable & (revision > 0 ? "_" & $string(revision) : ""), "digest": $digest}]})',
+      ],
+    },
   },
   customManagers: [
     {
@@ -148,8 +155,37 @@
       // version without it everywhere in the match.
       autoReplaceStringTemplate: "{{{replace currentDigest newDigest (replace (replace '\\.' '\\.' (replace '^v' '' currentValue)) (replace '^v' '' newValue) replaceString)}}}",
     },
+    {
+      customType: "regex",
+      managerFilePatterns: ["/^tools/multitool\\.lock\\.json$/"],
+      matchStrings: [
+        '"homebrewBottle": "(?<bottle>[a-z0-9_]+)",\\s*"url": "https://ghcr\\.io/v2/homebrew/core/[^"]+/blobs/sha256:[0-9a-f]{64}",(?:[^{}]|\\{[^{}]*\\})*?"file": "(?<depName>[A-Za-z0-9_.+@-]+)/(?<currentValue>[0-9._]+)/[^"]+",\\s*"sha256": "(?<currentDigest>[0-9a-f]{64})"',
+      ],
+      packageNameTemplate: "{{{depName}}}/{{{bottle}}}",
+      registryUrlTemplate: "https://formulae.brew.sh/api/formula/{{{depName}}}.json",
+      datasourceTemplate: "custom.homebrew_bottle",
+      versioningTemplate: "regex:^(?<major>\\d+)(?:\\.(?<minor>\\d+))?(?:\\.(?<patch>\\d+))?(?:_(?<build>\\d+))?$",
+      autoReplaceStringTemplate: "{{{replace currentDigest newDigest (replace (replace '\\.' '\\.' currentValue) newValue replaceString)}}}",
+    },
   ],
   packageRules: [
+    {
+      matchDatasources: ["custom.homebrew_bottle"],
+      minimumReleaseAgeBehaviour: "timestamp-optional",
+    },
+    {
+      // Wait for all three upstream binaries and the Homebrew bottle of the
+      // same version. Homebrew revisions can update on their own.
+      matchFileNames: ["tools/multitool.lock.json"],
+      matchDepNames: ["cargo-mutants", "sourcefrog/cargo-mutants"],
+      matchUpdateTypes: ["major", "minor", "patch"],
+      matchJsonata: [
+        "$replace(newValue, /(^v|_[0-9]+$)/, '') != $replace(currentValue, /(^v|_[0-9]+$)/, '')",
+      ],
+      groupName: "cargo-mutants",
+      groupSlug: "cargo-mutants-{{{replace '(^v|_[0-9]+$)' '' newValue}}}",
+      minimumGroupSize: 4,
+    },
     {
       // Lockfile maintenance has no release timestamp, so requiring one leaves
       // renovate/stability-days pending forever.

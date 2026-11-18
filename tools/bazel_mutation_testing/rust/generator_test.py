@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import subprocess
 from typing import TYPE_CHECKING
 
 from tools import runfiles
-from tools.bazel_mutation_testing import bazel
 from tools.bazel_mutation_testing.rust import crates, generator
 
 if TYPE_CHECKING:
@@ -56,13 +54,7 @@ def test_mutants_of_tracked_file(tmp_path: pathlib.Path):
 def test_patches_apply_at_the_workspace_top(tmp_path: pathlib.Path):
     workspace = _workspace(tmp_path)
     mutants = _list_mutants(workspace, frozenset({_CRATE.root}))
-    _ = subprocess.run(
-        [bazel.executable("git"), "apply"],
-        cwd=workspace,
-        input=mutants[2].patch,
-        text=True,
-        check=True,
-    )
+    mutants[2].apply(workspace)
     assert "left == /* ~ changed by cargo-mutants ~ */ right" in (
         workspace / _CRATE.root
     ).read_text(encoding="utf-8")

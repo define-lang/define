@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
+import subprocess
+from typing import TYPE_CHECKING
+
 import msgspec
+
+from tools.bazel_mutation_testing import bazel
+
+if TYPE_CHECKING:
+    import pathlib
 
 
 class Mutant(msgspec.Struct, frozen=True):
@@ -15,3 +23,14 @@ class Mutant(msgspec.Struct, frozen=True):
     """The workspace-relative path of the changed file."""
     patch: str
     """A patch that `git apply` applies at the workspace's top."""
+
+    def apply(self, workspace: pathlib.Path):
+        """Change the file in `workspace`, a checkout of the repository."""
+        # Text-mode stdin changes LF to CRLF on Windows, even for LF source
+        # files.
+        _ = subprocess.run(
+            [bazel.executable("git"), "apply"],
+            cwd=workspace,
+            input=self.patch.encode("utf-8"),
+            check=True,
+        )

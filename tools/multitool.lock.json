@@ -147,6 +147,19 @@
       },
       {
         "kind": "archive",
+        "homebrewBottle": "arm64_sequoia",
+        "url": "https://ghcr.io/v2/homebrew/core/cargo-mutants/blobs/sha256:ab41e4212d8574327a5e869cfed4c57adb297a99e137896865dddb6ddda77201",
+        "type": "tar.gz",
+        "headers": {
+          "Authorization": "Bearer QQ=="
+        },
+        "file": "cargo-mutants/27.1.0/bin/cargo-mutants",
+        "sha256": "ab41e4212d8574327a5e869cfed4c57adb297a99e137896865dddb6ddda77201",
+        "os": "macos",
+        "cpu": "arm64"
+      },
+      {
+        "kind": "archive",
         "url": "https://github.com/sourcefrog/cargo-mutants/releases/download/v27.1.0/cargo-mutants-x86_64-apple-darwin.tar.gz",
         "file": "cargo-mutants",
         "sha256": "7109a9e9673fe0b977f622e6f32383b6d1cbbf3fbb63b7c30db3267462c74670",

@@ -44,11 +44,10 @@ class DirtyWorktreeError(Exception):
     """A worktree has changes after a mutant was reverted."""
 
 
-def _git(directory: pathlib.Path, *arguments: str, stdin: str | None = None) -> str:
+def _git(directory: pathlib.Path, *arguments: str) -> str:
     return subprocess.run(
         [bazel.executable("git"), *arguments],
         cwd=directory,
-        input=stdin,
         capture_output=True,
         text=True,
         check=True,
@@ -194,7 +193,7 @@ class Worker:
         path = self.worktree / mutated.path
         original = path.read_bytes()
         try:
-            _ = _git(self.worktree, "apply", stdin=mutated.patch)
+            mutated.apply(self.worktree)
             formatted = self._format(mutated.path)
             if formatted.returncode != 0:
                 # The formatter's errors have no structured form, so it
