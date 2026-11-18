@@ -1,0 +1,51 @@
+load("@rules_py//py:defs.bzl", "py_library")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyo3.bzl", "pyo3_extension")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "extension",
+    srcs = ["extension.pyi"],
+    deps = [
+        ":extension_module",  # keep
+    ],
+)
+
+pyo3_extension(
+    name = "extension_module",
+    srcs = ["extension.rs"],
+    crate_root = "extension.rs",
+    module_name = "extension",
+    stubs = False,
+)
+
+py_test(
+    name = "extension_test",
+    size = "small",
+    srcs = ["extension_test.py"],
+    deps = [":extension"],
+)
+
+# --- Linting ---
+
+rust_clippy_test(
+    name = "clippy_test",
+    tags = [
+        "clippy",
+    ],
+    targets = [":extension_module_shared"],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":extension",
+        ":extension_test",
+    ],
+)
+
+check_build_file()

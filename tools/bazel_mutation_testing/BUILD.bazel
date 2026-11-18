@@ -1,0 +1,148 @@
+load("@rules_py//py:defs.bzl", "py_binary", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "bazel",
+    srcs = ["bazel.py"],
+    visibility = ["//tools/bazel_mutation_testing:__subpackages__"],
+)
+
+py_library(
+    name = "build_events",
+    srcs = ["build_events.py"],
+    deps = ["@pypi//msgspec"],
+)
+
+py_test(
+    name = "build_events_test",
+    size = "small",
+    srcs = ["build_events_test.py"],
+    deps = [":build_events"],
+)
+
+py_test(
+    name = "fixtures_test",
+    srcs = ["fixtures_test.py"],
+    data = [
+        "testdata/expected_outcomes.txt",
+        ":tester",
+        "@multitool//tools/cargo-mutants",
+        "@rules_rust//cargo:current_cargo_toolchain",
+    ],
+    # A py_binary's env applies only under `bazel run`, so the tester gets
+    # CARGO and CARGO_MUTANTS from this test.
+    env = {
+        "CARGO": "$(rlocationpath @rules_rust//cargo:current_cargo_toolchain)",
+        "CARGO_MUTANTS": "$(rlocationpath @multitool//tools/cargo-mutants)",
+        "EXPECTED_OUTCOMES": "$(rlocationpath testdata/expected_outcomes.txt)",
+        "TESTER": "$(rlocationpath :tester)",
+    },
+    # The tester runs bazelisk and Git from PATH, and bazelisk keeps its
+    # downloads in HOME.
+    env_inherit = [
+        "HOME",
+        "PATH",
+    ],
+    # It runs Bazel on the workspace, so it runs only through `bazel run`.
+    tags = ["manual"],
+    deps = [
+        ":bazel",
+        ":results",
+        "//tools:runfiles",
+        "@pypi//msgspec",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "mutant",
+    srcs = ["mutant.py"],
+    visibility = ["//tools/bazel_mutation_testing:__subpackages__"],
+    deps = ["@pypi//msgspec"],
+)
+
+py_library(
+    name = "results",
+    srcs = ["results.py"],
+    deps = ["@pypi//msgspec"],
+)
+
+py_test(
+    name = "results_test",
+    size = "small",
+    srcs = ["results_test.py"],
+    deps = [
+        ":results",
+        "@pypi//pytest",
+    ],
+)
+
+py_binary(
+    name = "tester",
+    srcs = ["tester.py"],
+    data = [
+        "@multitool//tools/cargo-mutants",
+        "@rules_rust//cargo:current_cargo_toolchain",
+    ],
+    env = {
+        "CARGO": "$(rlocationpath @rules_rust//cargo:current_cargo_toolchain)",
+        "CARGO_MUTANTS": "$(rlocationpath @multitool//tools/cargo-mutants)",
+    },
+    deps = [
+        ":bazel",
+        ":mutant",
+        ":results",
+        ":worker",
+        "//tools:runfiles",
+        "//tools/bazel_mutation_testing/rust:canary",
+        "//tools/bazel_mutation_testing/rust:crates",
+        "//tools/bazel_mutation_testing/rust:generator",
+        "@pypi//click",
+    ],
+)
+
+py_library(
+    name = "worker",
+    srcs = ["worker.py"],
+    deps = [
+        ":bazel",
+        ":build_events",
+        ":mutant",
+        ":results",
+    ],
+)
+
+py_test(
+    name = "worker_test",
+    size = "small",
+    srcs = ["worker_test.py"],
+    deps = [
+        ":bazel",
+        ":build_events",
+        ":results",
+        ":worker",
+        "@pypi//pytest",
+    ],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":bazel",
+        ":build_events",
+        ":build_events_test",
+        ":fixtures_test",
+        ":mutant",
+        ":results",
+        ":results_test",
+        ":tester",
+        ":worker",
+        ":worker_test",
+    ],
+)
+
+check_build_file()

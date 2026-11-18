@@ -1,0 +1,31 @@
+load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:rust.bzl", "binary_rustc_flags", "lint_config")
+
+rust_binary(
+    name = "generate_greeting",
+    srcs = ["main.rs"],
+    lint_config = lint_config(),
+    rustc_flags = binary_rustc_flags(),
+)
+
+# No test depends on this.
+genrule(
+    name = "greeting",
+    outs = ["greeting.txt"],
+    cmd = "$(execpath :generate_greeting) $@",
+    tools = [":generate_greeting"],
+)
+
+# --- Linting ---
+
+rust_clippy_test(
+    name = "clippy_test",
+    tags = [
+        "clippy",
+    ],
+    targets = [":generate_greeting"],
+)
+
+check_build_file()

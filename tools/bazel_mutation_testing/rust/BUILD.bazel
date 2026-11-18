@@ -1,0 +1,95 @@
+load("@rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "canary",
+    srcs = ["canary.py"],
+    visibility = ["//tools/bazel_mutation_testing:__pkg__"],
+    deps = [
+        ":crates",
+        "//tools/bazel_mutation_testing:mutant",
+        "@pypi//msgspec",
+    ],
+)
+
+py_test(
+    name = "canary_test",
+    size = "small",
+    srcs = ["canary_test.py"],
+    deps = [
+        ":canary",
+        ":crates",
+        "//tools/bazel_mutation_testing:bazel",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "crates",
+    srcs = ["crates.py"],
+    visibility = ["//tools/bazel_mutation_testing:__pkg__"],
+    deps = [
+        "//tools/bazel_mutation_testing:bazel",
+        "@pypi//msgspec",
+    ],
+)
+
+py_test(
+    name = "crates_test",
+    size = "small",
+    srcs = ["crates_test.py"],
+    deps = [
+        ":crates",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "generator",
+    srcs = ["generator.py"],
+    visibility = ["//tools/bazel_mutation_testing:__pkg__"],
+    deps = [
+        ":crates",
+        "//tools/bazel_mutation_testing:bazel",
+        "//tools/bazel_mutation_testing:mutant",
+        "@pypi//msgspec",
+    ],
+)
+
+py_test(
+    name = "generator_test",
+    size = "small",
+    srcs = ["generator_test.py"],
+    data = [
+        "@multitool//tools/cargo-mutants",
+        "@rules_rust//cargo:current_cargo_toolchain",
+    ],
+    env = {
+        "CARGO": "$(rlocationpath @rules_rust//cargo:current_cargo_toolchain)",
+        "CARGO_MUTANTS": "$(rlocationpath @multitool//tools/cargo-mutants)",
+    },
+    deps = [
+        ":crates",
+        ":generator",
+        "//tools:runfiles",
+        "//tools/bazel_mutation_testing:bazel",
+    ],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":canary",
+        ":canary_test",
+        ":crates",
+        ":crates_test",
+        ":generator",
+        ":generator_test",
+    ],
+)
+
+check_build_file()

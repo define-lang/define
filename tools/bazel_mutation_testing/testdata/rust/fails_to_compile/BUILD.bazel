@@ -1,0 +1,34 @@
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+load("@rules_rs//rs:rust_test.bzl", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:rust.bzl", "lint_config")
+
+rust_library(
+    name = "fails_to_compile",
+    srcs = ["lib.rs"],
+    lint_config = lint_config(),
+)
+
+rust_test(
+    name = "fails_to_compile_test",
+    size = "small",
+    crate = ":fails_to_compile",
+    lint_config = lint_config(),
+    deps = ["@crates//:googletest"],
+)
+
+# --- Linting ---
+
+rust_clippy_test(
+    name = "clippy_test",
+    tags = [
+        "clippy",
+    ],
+    targets = [
+        ":fails_to_compile",
+        ":fails_to_compile_test",
+    ],
+)
+
+check_build_file()

@@ -1,0 +1,23 @@
+load("@rules_rs//rs:rust_library.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:rust.bzl", "lint_config")
+
+rust_library(
+    name = "outside_area",
+    srcs = ["lib.rs"],
+    lint_config = lint_config(),
+    visibility = ["//tools/bazel_mutation_testing/testdata/outside_area_test:__pkg__"],
+)
+
+# --- Linting ---
+
+rust_clippy_test(
+    name = "clippy_test",
+    tags = [
+        "clippy",
+    ],
+    targets = [":outside_area"],
+)
+
+check_build_file()

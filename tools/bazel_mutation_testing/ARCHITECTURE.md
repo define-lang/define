@@ -33,34 +33,26 @@ section. Started 2026-11-16.
   killed, so most runs end early. No `rdeps` query or `--test_filter` is needed.
   A mutant tested before costs about 2 seconds, since every action it needs is
   cached.
-- **Build only what the tests need**, with `--build_tests_only`. Otherwise a
-  mutant that breaks a build action no test depends on, such as compiling a
-  Define example program, would count as a kill.
+- **Build everything in the area, not only what the tests need.** A mutant that
+  breaks any build action in the area is killed. The ruff and ast-grep lint
+  aspects apply only to the targets a command names, so `--build_tests_only`
+  would skip them on every library. On a sample of `crates/source_scanning`
+  mutants, building everything added about 0.1 seconds per mutant.
 - **Skip the tests tagged `no-coverage`.** They are the tests that find cases
   the other tests must then cover, and the resource tests, which measure what
   compiling costs rather than what it does. They were also the slowest tests,
   and running them with the others overloaded the machine. A separate
   `no-mutation` tag is not needed.
 - **Flaky tests may count as kills.** The repository has no known flaky tests.
-- **Only report mutants that could really be committed.** A mutant that the
-  compiler, a type checker or a lint rejects is unviable: neither killed nor
-  survived.
-- **Classify each mutant from the build events of its one test run.** Exit 0 is
-  a survivor. Otherwise the first failure decides: compiling or linting the
-  target that owns the mutated file, or the lint or type-check tests of that
-  file's package, makes the mutant unviable, and any other failing action or
-  test kills it. Record the test or action that killed each mutant. Timeouts
-  count as kills but are reported separately. Since the run stops at the first
-  failure, a mutant that both a lint and a behavior test reject may be counted
-  either way. That never makes a false survivor.
-- **Rejected: classifying by exit code alone.** Exit 1 does not mean unviable:
-  code generators, such as the one that writes the parser's `ast.rs` from
-  `define/compiler/ast.py`, run as build actions, so a mutant that breaks one
-  fails the build, and that is a kill.
-- **Rejected: a separate viability check before each test run**, building the
-  owning targets and running their lint and type-check tests first. The build
-  events of the one test run tell the same thing, apart from the
-  killed-or-unviable mutants above.
+- **Any failure kills a mutant**, whether a test, a build action, the compiler
+  or a lint fails. Exit 0 is a survivor. Otherwise record the test or action
+  that failed first, from the build events. Timeouts count as kills but are
+  reported separately.
+- **Rejected: a separate outcome for mutants that the compiler or a lint
+  rejects.** Since the run stops at the first failure, a mutant that both a lint
+  and a test reject got whichever outcome failed first, which varied from run to
+  run. A lint that rejects mutants only for their shape is a lint setting to
+  change, below.
 - **Use a 60-second test timeout** for every test size. Without the
   `no-coverage` tests, the slowest test takes under 8 seconds even when every
   test runs at once.
@@ -70,12 +62,12 @@ section. Started 2026-11-16.
 - **Turn off only the lints that reject mutants for their shape.** Some lints,
   such as unused-variable lints, reject a mutant because of how the mutation is
   written, not because of the bug it stands for. Mutation runs turn those lints
-  off. Choose them by counting which lints make mutants unviable and checking
-  examples of each.
+  off. Choose them by counting which lints kill mutants and checking examples of
+  each.
 - **Test which mutants the lints let through.** A test holds example mutants,
-  each expected to be viable or unviable, and runs only the lints and type
-  checks on them with mutation runs' settings. It fails when a lint change
-  rejects a realistic mutant, or lets through one that could never be committed.
+  each expected to pass or fail them, and runs only the lints and type checks on
+  them with mutation runs' settings. It fails when a lint change rejects a
+  realistic mutant, or lets through one that could never be committed.
 - **Run mutants in parallel with a fixed pool of worktrees, one Bazel server
   each,** created once per run and reused across mutants. All workers execute on
   the local RBE service, which also shares cached results between them.
@@ -104,3 +96,17 @@ section. Started 2026-11-16.
 - **Mutate only files Git tracks.** Builds write some generated Rust files, such
   as the parser's `ast.rs`, into the source tree, where a crate's module tree
   reaches them. Their generators are mutated instead.
+- **Test a commit, by default `HEAD`**, checked out in each worker's worktree,
+  rather than the working tree. The results store records the commit, the area
+  and the test timeout, and a run resumes only from a store with the same ones.
+- **Check every run with a canary**: a failing test appended to a crate root
+  that a `rust_test` the run tests with compiles. The canary passes the
+  repository's lints, and the run requires that test to be what fails, since a
+  lint or compile failure would not show that the tests detect a change.
+- **Find an area's crates with `bazel query`, including targets tagged
+  `manual`.** Each PyO3 extension's crate is compiled only by a manual
+  `rust_cdylib_library`. Tests still follow `bazel test`'s patterns, which skip
+  manual tests unless named.
+- **Allow one run at a time per repository.** Runs share the workers' worktrees,
+  so a second run would revert the first run's mutants mid-test. Each run holds
+  a lock in `.mutation_testing` until it ends.
