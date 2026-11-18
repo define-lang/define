@@ -13,11 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from define.compiler.codegen import (
-    generated_program_runner,
-    test_helpers,
-    testdata_cases,
-)
+from define.compiler.codegen import test_helpers, testdata_cases
 from define.compiler.validator.test_helpers import assert_no_errors
 
 _TEST_CASES = test_helpers.codegen_test_cases()
@@ -40,15 +36,3 @@ def test_generates_expected_output(test_case_dir: Path):
 
     assert_no_errors(result)
     test_helpers.assert_generated_directory_matches(expected_dir, output_dir)
-
-
-@pytest.mark.parametrize(
-    "test_case_dir",
-    _TEST_CASES,
-    ids=test_helpers.codegen_test_case_id,
-)
-def test_expected_output_runs(test_case_dir: Path):
-    expected_dir = test_case_dir / "expected"
-    result = generated_program_runner.run_generated_program(expected_dir)
-    if result.returncode != 0:
-        pytest.fail(result.stderr)

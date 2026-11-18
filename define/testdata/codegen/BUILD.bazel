@@ -4,10 +4,7 @@ load("//tools/bzl:package_checks.bzl", "require_subpackages")
 
 require_subpackages(["**"])
 
-_CODEGEN_MODULES = subpackages(
-    include = ["*"],
-    exclude = ["generator"],
-)
+_CODEGEN_MODULES = subpackages(include = ["*"])
 
 filegroup(
     name = "codegen",
@@ -32,10 +29,20 @@ generator_integration_tests(
     deps = ["//define/compiler/codegen:generator_integration_test"],
 )
 
+filegroup(
+    name = "tracing",
+    testonly = True,
+    srcs = [
+        "//define/testdata/codegen/%s:tracing_testdata" % package
+        for package in _CODEGEN_MODULES
+    ],
+    visibility = ["//define/compiler/codegen:__pkg__"],
+)
+
 generator_integration_tests(
     name = "tracing_integration_tests",
     test_module = "define/compiler/codegen/tracing_integration_test.py",
-    testdata_packages = _CODEGEN_MODULES + ["generator"],
+    testdata_packages = _CODEGEN_MODULES,
     testdata_target = "tracing_testdata",
     visibility = ["//define/compiler/codegen:__pkg__"],
     deps = ["//define/compiler/codegen:tracing_integration_test"],

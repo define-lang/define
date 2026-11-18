@@ -2,7 +2,7 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 filegroup(
-    name = "generator",
+    name = "codegen_testdata",
     testonly = True,
     srcs = glob(
         ["**"],
@@ -14,6 +14,7 @@ filegroup(
     visibility = [
         "//define/compiler/codegen:__pkg__",
         "//define/testdata:__pkg__",
+        "//define/testdata/codegen:__pkg__",
     ],
 )
 

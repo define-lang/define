@@ -53,7 +53,7 @@ py_test(
     size = "small",
     srcs = ["path_resolver_test.py"],
     data = [
-        "//define/testdata/codegen/generator",
+        "//define/testdata/codegen/generator:codegen_testdata",
         "//define/testdata/driver/driver_run",
         "//define/testdata/reference_graph/create_particle",
     ],

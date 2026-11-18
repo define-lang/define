@@ -43,12 +43,12 @@ def _run_case(
     expected_dir: Path,
     *,
     testdata_root: Path,
-    operation_trace_file: Path | None = None,
+    operation_trace_file: Path,
 ) -> bool:
     case_dir = expected_dir.parent
     runtime_result = generated_program_runner.run_generated_program(
         expected_dir,
-        operation_trace_file=operation_trace_file,
+        environment={"DEFINE_OPERATION_TRACE_FILE": str(operation_trace_file)},
     )
     if runtime_result.returncode != 0:
         print(f"  {case_dir.relative_to(testdata_root).as_posix()}: FAILED")

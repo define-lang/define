@@ -28,6 +28,26 @@ py_library(
     srcs = ["__init__.py"],
 )
 
+py_test(
+    name = "expected_programs_run_test",
+    size = "small",
+    srcs = ["expected_programs_run_test.py"],
+    data = [
+        "//define/testdata/codegen",
+        "//define/testdata/codegen:tracing",
+    ],
+    shard_count = 4,
+    # The test runs only checked-in programs, in subprocesses, which coverage
+    # does not measure.
+    tags = ["no-coverage"],
+    deps = [
+        ":generated_program_runner",
+        ":test_helpers",
+        "//define/runtime:literal",  # keep
+        "@pypi//pytest",
+    ],
+)
+
 py_library(
     name = "generated_program_runner",
     srcs = ["generated_program_runner.py"],
@@ -51,7 +71,6 @@ py_library(
     srcs = ["generator_integration_test.py"],
     visibility = ["//define/testdata/codegen:__pkg__"],
     deps = [
-        ":generated_program_runner",
         ":test_helpers",
         ":testdata_cases",
         "//define/compiler/validator:test_helpers",
@@ -70,7 +89,7 @@ py_test(
     name = "generator_test",
     size = "small",
     srcs = ["generator_test.py"],
-    data = ["//define/testdata/codegen/generator"],
+    data = ["//define/testdata/codegen/generator:codegen_testdata"],
     deps = [
         ":generator",
         ":test_helpers",
@@ -125,7 +144,6 @@ py_library(
     srcs = ["tracing_integration_test.py"],
     visibility = ["//define/testdata/codegen:__pkg__"],
     deps = [
-        ":generated_program_runner",
         ":test_helpers",
         ":testdata_cases",
         "//define/compiler/validator:test_helpers",
@@ -147,6 +165,7 @@ pyright_test(
     deps = [
         ":callee_codegen_independence_integration_test",
         ":codegen",
+        ":expected_programs_run_test",
         ":generated_program_runner",
         ":generator",
         ":generator_integration_test",

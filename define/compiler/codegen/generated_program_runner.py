@@ -6,17 +6,21 @@ import os
 import subprocess
 import sys
 import tempfile
+import types
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from pathlib import Path
+
+_NO_ENVIRONMENT: Mapping[str, str] = types.MappingProxyType({})
 
 
 def run_generated_program(
     generated_dir: Path,
     entry_script: str = "__main__.py",
     *,
-    operation_trace_file: Path | None = None,
+    environment: Mapping[str, str] = _NO_ENVIRONMENT,
 ) -> subprocess.CompletedProcess[str]:
     """Execute a generated program and capture its process result.
 
@@ -24,16 +28,14 @@ def run_generated_program(
         generated_dir: The directory a program was generated into.
         entry_script: A script in that directory to run instead of the generated
             entry point, for a test that needs to start the program differently.
-        operation_trace_file: A file to receive the generated program's ordered
-            Particle Operation trace.
+        environment: Variables to add to the program's environment, such as
+            DEFINE_OPERATION_TRACE_FILE.
     """
     generated_dir = generated_dir.resolve()
     generated_environment = {
         "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHONPATH": os.pathsep.join([str(generated_dir), *sys.path]),
     }
-    if operation_trace_file is not None:
-        generated_environment["DEFINE_OPERATION_TRACE_FILE"] = str(operation_trace_file)
     # Windows can't start a program from a path of 260 characters or more, or
     # in a working directory that long, and a test's venv and testdata can be
     # that deep. The venv's python is a link to an interpreter with a shorter
@@ -46,7 +48,7 @@ def run_generated_program(
         [interpreter, str(generated_dir / entry_script)],
         executable="\\\\?\\" + interpreter if os.name == "nt" else None,
         cwd=tempfile.gettempdir(),
-        env=os.environ | generated_environment,
+        env=os.environ | generated_environment | dict(environment),
         capture_output=True,
         text=True,
         check=False,
