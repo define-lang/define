@@ -23,7 +23,6 @@ if typing.TYPE_CHECKING:
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
     from define.compiler.validator.structural import (
-        file_validation_context,
         file_validator,
     )
 
@@ -66,23 +65,19 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         referencing_file: file_validator.LoadedFile | None,
         edge: reference_graph.ReferenceEdge,
         source_definition: validation_result.DefinitionValidationResult,
-    ) -> (
-        reference_resolver.ReachedDefinition
-        | file_validation_context.FileValidationContext
-        | None
-    ):
+    ) -> reference_resolver.ReferenceOutcome:
         if referencing_file is self._source_file:
             if not self._source_reference_resolvable(edge):
-                return None
+                return reference_resolver.UNRESOLVED
         else:
             # A definition from the supplied source has no file path to
             # resolve.
-            source_definition_reached = self._source_file.definitions.get(
+            definition_in_source = self._source_file.definitions.get(
                 edge.global_name_reference.full_typed_name
             )
-            if source_definition_reached is not None:
-                return reference_resolver.ReachedDefinition(
-                    self._source_file, source_definition_reached
+            if definition_in_source is not None:
+                return reference_resolver.ResolvedDefinition(
+                    self._source_file, definition_in_source
                 )
         return super().validate_reference(
             referencing_root, referencing_file, edge, source_definition

@@ -29,7 +29,6 @@ from define.compiler.errors import diagnostics
 from define.compiler.graphs import reference_graph, reference_graph_order
 from define.compiler.validator import validation_result
 from define.compiler.validator.structural import (
-    file_validation_context,
     file_validator,
 )
 from define.compiler.validator.structural.resolver import (
@@ -327,9 +326,9 @@ class _ProgramValidationRun:
     def _process_loaded_file(
         self, loaded_file: file_validator.LoadedFile, pool: work_pool.WorkPool
     ):
-        for reached_definition in self._resolver.add_loaded_file(loaded_file):
+        for resolved_definition in self._resolver.add_loaded_file(loaded_file):
             self.request_definition(
-                reached_definition.loaded_file, reached_definition.definition, pool
+                resolved_definition.loaded_file, resolved_definition.definition, pool
             )
 
     def _register_definition(
@@ -398,21 +397,19 @@ class _ProgramValidationRun:
         match self._resolver.validate_reference(
             referencing_root, referencing_file, edge, definition_result
         ):
-            case reference_resolver.ReachedDefinition() as reached_definition:
+            case reference_resolver.ResolvedDefinition() as resolved_definition:
                 self.request_definition(
-                    reached_definition.loaded_file,
-                    reached_definition.definition,
+                    resolved_definition.loaded_file,
+                    resolved_definition.definition,
                     pool,
                 )
-            case file_validation_context.FileValidationContext() as file_to_load:
+            case reference_resolver.LoadFile(context=file_to_load):
                 pool.submit(
                     self._file_validator.load_file,
                     file_to_load,
                     handle_result=self._process_loaded_file,
                 )
-            case None:
-                # Nothing to do for this reference now: it waits for a file
-                # that is already loading, or it was reported or skipped.
+            case reference_resolver.AwaitingFile() | reference_resolver.Unresolved():
                 pass
 
     def _add_reference_edge(

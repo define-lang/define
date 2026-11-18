@@ -119,7 +119,6 @@ py_library(
         "//tools:__subpackages__",
     ],
     deps = [
-        ":file_validation_context",
         ":file_validator",
         "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",

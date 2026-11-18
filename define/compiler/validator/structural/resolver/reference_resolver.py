@@ -28,11 +28,34 @@ if typing.TYPE_CHECKING:
     )
 
 
-class ReachedDefinition(msgspec.Struct):
+class ResolvedDefinition(msgspec.Struct, frozen=True):
     """A definition that a reference resolved to, and the file that holds it."""
 
     loaded_file: file_validator.LoadedFile
     definition: ast.GlobalDefinition
+
+
+class LoadFile(msgspec.Struct, frozen=True):
+    """A file that the caller must load before the reference can resolve."""
+
+    context: file_validation_context.FileValidationContext
+
+
+class AwaitingFile(msgspec.Struct, frozen=True):
+    """A reference that waits for a file that is already loading, and resolves when add_loaded_file records it."""
+
+
+class Unresolved(msgspec.Struct, frozen=True):
+    """A reference that cannot resolve, whose diagnostic, if any, is already recorded."""
+
+
+# Neither outcome has data, so every reference shares one of each.
+AWAITING_FILE = AwaitingFile()
+UNRESOLVED = Unresolved()
+
+# What validating a reference found: the definition it names, a file to load
+# first, or why there is neither.
+type ReferenceOutcome = ResolvedDefinition | LoadFile | AwaitingFile | Unresolved
 
 
 class _DeferredReferenceEdge(msgspec.Struct):
@@ -87,8 +110,8 @@ class ReferenceResolver:
         referencing_file: file_validator.LoadedFile | None,
         edge: reference_graph.ReferenceEdge,
         source_definition: validation_result.DefinitionValidationResult,
-    ) -> ReachedDefinition | file_validation_context.FileValidationContext | None:
-        """Validate an edge from the project root referencing_root, and return the definition it names if its file is loaded.
+    ) -> ReferenceOutcome:
+        """Validate an edge from the project root referencing_root, and return what it found.
 
         referencing_file is the file that holds the edge, which must not name
         an earlier definition in it, or None for an edge from an association,
@@ -96,12 +119,12 @@ class ReferenceResolver:
         to source_definition.
 
         If the target file is not loaded yet, the rest of the validation
-        happens when it loads, add_loaded_file returns the definition instead,
-        and this returns the file if the caller must load it.
+        happens when it loads, and add_loaded_file returns the definition
+        instead.
         """
         target = self._validate_target_file(referencing_root, edge, source_definition)
         if target is None:
-            return None
+            return UNRESOLVED
         target_file = target.full_path
 
         # With the thread pool, work completes in arbitrary order. If files
@@ -120,9 +143,9 @@ class ReferenceResolver:
             _DeferredReferenceEdge(edge, source_definition)
         )
         if self._path_tracker.is_tracked(target_file):
-            return None
+            return AWAITING_FILE
         self._path_tracker.mark_in_progress(target_file)
-        return target
+        return LoadFile(target)
 
     def _validate_target_file(
         self,
@@ -160,8 +183,8 @@ class ReferenceResolver:
 
     def add_loaded_file(
         self, loaded_file: file_validator.LoadedFile
-    ) -> list[ReachedDefinition]:
-        """Record a file that finished loading, and return the definitions that the edges waiting on it reference."""
+    ) -> list[ResolvedDefinition]:
+        """Record a file that finished loading, and return the definitions that the edges waiting on it resolve to."""
         completed_file = loaded_file.context.full_path
         self._path_tracker.set_result(completed_file, loaded_file)
         # Reference edges have to wake up by file, not by definition name.
@@ -180,9 +203,9 @@ class ReferenceResolver:
         # completed_file preserves the real dependency: an edge is blocked on
         # one exact file finishing loading, and only that file gets to
         # satisfy or fail the deferred edge.
-        reached_definitions: list[ReachedDefinition] = []
+        resolved_definitions: list[ResolvedDefinition] = []
         for deferred_edge in self._deferred_edges.pop(completed_file, []):
-            reached_definition = self._validate_reference_against_target(
+            outcome = self._validate_reference_against_target(
                 deferred_edge.edge,
                 loaded_file,
                 deferred_edge.source_definition,
@@ -190,9 +213,9 @@ class ReferenceResolver:
                 # are validated, so no edge ever waits for its own file.
                 in_source_file=False,
             )
-            if reached_definition is not None:
-                reached_definitions.append(reached_definition)
-        return reached_definitions
+            if isinstance(outcome, ResolvedDefinition):
+                resolved_definitions.append(outcome)
+        return resolved_definitions
 
     def _target_root_config(
         self,
@@ -271,8 +294,8 @@ class ReferenceResolver:
         source_definition: validation_result.DefinitionValidationResult,
         *,
         in_source_file: bool,
-    ) -> ReachedDefinition | None:
-        """Validate a reference edge against a loaded target file, and return the definition it names.
+    ) -> ResolvedDefinition | Unresolved:
+        """Validate a reference edge against a loaded target file, and return the definition it names, if it can resolve.
 
         in_source_file is whether the target file holds the edge.
         """
@@ -299,14 +322,14 @@ class ReferenceResolver:
             if isinstance(target_load_failure, syntax_errors.SourceFileNotFound):
                 self._path_tracker.mark_not_found(target_file)
             elif target_definition is not None:
-                return ReachedDefinition(target_loaded_file, target_definition)
+                return ResolvedDefinition(target_loaded_file, target_definition)
             source_definition.diagnostics.append(
                 diagnostics.StandardDefinitionNotFoundDiagnostic(
                     location=edge.global_name_reference.location,
                     definition_name=edge.global_name_reference.full_typed_name,
                 )
             )
-            return None
+            return UNRESOLVED
 
         if isinstance(target_load_failure, syntax_errors.SourceFileNotFound):
             source_definition.diagnostics.append(
@@ -316,7 +339,7 @@ class ReferenceResolver:
                 )
             )
             self._path_tracker.mark_not_found(target_file)
-            return None
+            return UNRESOLVED
 
         # Reported at the reference, like a missing file, rather than as the
         # file's own load failure, which has no location.
@@ -329,7 +352,7 @@ class ReferenceResolver:
                 )
             )
             self._path_tracker.mark_not_found(target_file)
-            return None
+            return UNRESOLVED
 
         if target_definition is None:
             source_definition.diagnostics.append(
@@ -339,8 +362,8 @@ class ReferenceResolver:
                     definition_name=edge.global_name_reference.full_typed_name,
                 )
             )
-            return None
-        return ReachedDefinition(target_loaded_file, target_definition)
+            return UNRESOLVED
+        return ResolvedDefinition(target_loaded_file, target_definition)
 
     def _load_root_config(
         self,
