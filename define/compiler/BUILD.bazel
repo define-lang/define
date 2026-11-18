@@ -195,9 +195,12 @@ py_library(
     srcs = ["validation_pipeline.py"],
     visibility = ["//define/compiler/test_fixtures:__pkg__"],
     deps = [
+        ":ast",
         "//define/compiler/association_resolution:association_resolver",
         "//define/compiler/association_resolution:association_tables",
         "//define/compiler/association_resolution:concrete_program",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/graphs:reference_graph_executor",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",

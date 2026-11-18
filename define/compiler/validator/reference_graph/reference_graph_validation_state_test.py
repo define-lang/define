@@ -50,7 +50,6 @@ def test_contract_access():
 
     assert state.get_contract_or_none(action_name) is None
     state.publish_contract(action_name, contract)
-    assert state.get_contract(action_name) is contract
     assert state.get_contract_or_none(action_name) is contract
 
 

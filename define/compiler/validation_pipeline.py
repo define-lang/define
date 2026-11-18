@@ -10,10 +10,13 @@ from define.compiler.association_resolution import (
     association_resolver,
     association_tables,
 )
+from define.compiler.graphs import reference_graph_executor
 from define.compiler.validator.reference_graph import reference_graph_validator
 
 if typing.TYPE_CHECKING:
+    from define.compiler import ast
     from define.compiler.association_resolution import concrete_program
+    from define.compiler.errors import diagnostics
     from define.compiler.validator import validation_result
     from define.compiler.validator.structural import program_validator
 
@@ -47,22 +50,41 @@ def validate_and_resolve_program(
     resolver = association_resolver.AssociationResolver(
         program_result.definitions, tables
     )
-    validated_diagnostics = reference_graph_validator.ReferenceGraphValidator(
+    validation = reference_graph_validator.ReferenceGraphValidator(
         program_result.definition_order,
         program_result.definitions,
         program_result.structural_results,
-        resolver,
         entry_action=program_result.entry_action,
         allow_entry_action_occupied_implied_position_requirements=(
             allow_entry_action_occupied_implied_position_requirements
         ),
     ).validate(max_workers=max_workers)
+    found_diagnostics = validation.diagnostics
+    abstract_definitions = validation.abstract_definitions
+
+    def resolve(definition: ast.GlobalDefinition) -> list[diagnostics.Diagnostic]:
+        abstract = abstract_definitions.get(definition.typed_name.full_typed_name)
+        # A Value Operation whose steps validation could not work out has
+        # nothing to resolve.
+        if abstract is None:
+            return []
+        return resolver.resolve(abstract)
+
+    # TODO: Resolve each definition as soon as it and what it references are
+    # validated, instead of after validating every definition (commit 7c).
+    for resolution_diagnostics in reference_graph_executor.process_definitions(
+        program_result.definition_order,
+        reference_graph_validator.requires_validation,
+        resolve,
+        max_workers=max_workers,
+    ):
+        found_diagnostics.extend(resolution_diagnostics)
     program.load_associated(resolver.chosen_edges(), max_workers=max_workers)
     # The structural run's state, such as its resolver and loaded paths, would
     # otherwise be retained until code generation, but nothing loads more of
     # the program after this.
     del program
-    program_result.diagnostics.extend(validated_diagnostics)
+    program_result.diagnostics.extend(found_diagnostics)
     program_result.diagnostics.extend(
         resolver.resolve_encoding_operations(program_result.encoding_operations)
     )

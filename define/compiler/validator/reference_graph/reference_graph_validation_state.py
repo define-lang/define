@@ -52,12 +52,6 @@ class ReferenceGraphValidationState:
         """Publish a validated action's contract."""
         self._contract_by_name[action_name.full_typed_name] = contract
 
-    def get_contract(
-        self, action_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]]
-    ) -> action_contract.ActionContract:
-        """Return a previously published action contract."""
-        return self._contract_by_name[action_name.full_typed_name]
-
     def get_contract_or_none(
         self, action_name: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]]
     ) -> action_contract.ActionContract | None:

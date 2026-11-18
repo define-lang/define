@@ -264,16 +264,18 @@ py_library(
         "//tools:__subpackages__",
     ],
     deps = [
+        ":abstract_program",
+        ":action_contract",
         ":action_definition_validator",
         ":operation_definition_validator",
         ":position_occupancy",
         ":reference_graph_validation_state",
         "//define/compiler:ast",
-        "//define/compiler/association_resolution:association_resolver",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/graphs:reference_graph_executor",
         "//define/compiler/graphs:reference_graph_order",
         "//define/compiler/validator:validation_result",
+        "@pypi//msgspec",
     ],
 )
 
@@ -285,8 +287,6 @@ py_test(
         ":action_contract",
         ":action_definition_validator",
         ":reference_graph_validator",
-        "//define/compiler/association_resolution:association_resolver",
-        "//define/compiler/association_resolution:association_tables",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:program_validator",

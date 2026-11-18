@@ -11,10 +11,6 @@ from unittest import mock
 
 import pytest
 
-from define.compiler.association_resolution import (
-    association_resolver,
-    association_tables,
-)
 from define.compiler.validator.reference_graph import (
     action_contract,
     action_definition_validator,
@@ -96,17 +92,6 @@ def _structural_program(source: str) -> program_validator.StructurallyValidatedP
     return program
 
 
-def _association_resolver(
-    program: program_validator.StructurallyValidatedProgram,
-) -> association_resolver.AssociationResolver:
-    return association_resolver.AssociationResolver(
-        program.result.definitions,
-        association_tables.AssociationTables(
-            program.project_roots(), program.result.source_map
-        ),
-    )
-
-
 def _reference_graph_validator(
     program: program_validator.StructurallyValidatedProgram,
 ) -> reference_graph_validator.ReferenceGraphValidator:
@@ -115,7 +100,6 @@ def _reference_graph_validator(
         structural_result.definition_order,
         structural_result.definitions,
         structural_result.structural_results,
-        _association_resolver(program),
         entry_action=structural_result.entry_action,
     )
 
@@ -139,18 +123,10 @@ def test_independent_actions_validate_in_parallel():
         autospec=True,
         side_effect=synchronized_analyze,
     ):
-        resolver = _association_resolver(program)
-        validated_diagnostics = reference_graph_validator.ReferenceGraphValidator(
-            program.result.definition_order,
-            program.result.definitions,
-            program.result.structural_results,
-            resolver,
-            entry_action=program.result.entry_action,
-        ).validate(max_workers=2)
+        validation = _reference_graph_validator(program).validate(max_workers=2)
 
-    assert validated_diagnostics == []
-    concrete_program = resolver.concrete_program(program.result.definition_order)
-    assert len(concrete_program.actions) == 2
+    assert validation.diagnostics == []
+    assert len(validation.abstract_definitions) == 2
 
 
 def test_referenced_action_finishes_before_referencing_action_starts():
@@ -260,11 +236,9 @@ def test_callers_share_the_completed_callee_contract():
         autospec=True,
         side_effect=collect_contract,
     ):
-        validated_diagnostics = _reference_graph_validator(program).validate(
-            max_workers=1
-        )
+        validation = _reference_graph_validator(program).validate(max_workers=1)
 
-    assert validated_diagnostics == []
+    assert validation.diagnostics == []
     (callee_mark,) = [
         guaranteed.guarantee
         for guaranteed in contracts[_CALLEE_NAME].guarantees

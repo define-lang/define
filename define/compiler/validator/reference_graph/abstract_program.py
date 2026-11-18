@@ -141,3 +141,21 @@ type ValueOperationStep = (
     | LogicalOperationExecution
     | ValueOperationExecution
 )
+
+
+class AbstractValueOperation(msgspec.Struct):
+    """A valid Value Operation's steps, before association resolution."""
+
+    definition: ast.ValueOperationDefinition
+    steps: list[ValueOperationStep]
+
+
+# What reference graph validation hands to association resolution for one
+# definition. Logical operations and value qualities need nothing from
+# validation but their definitions.
+type AbstractDefinition = (
+    AbstractAction
+    | AbstractValueOperation
+    | ast.LogicalOperationDefinition
+    | ast.ValueDefinition
+)

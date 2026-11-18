@@ -244,7 +244,7 @@ class TestSourceValidation:
         def validate_reference_graph(
             validator: reference_graph_validator.ReferenceGraphValidator,
             max_workers: int | None = None,
-        ) -> list[diagnostics.Diagnostic]:
+        ) -> reference_graph_validator.ReferenceGraphValidation:
             assert max_workers == 3
             return reference_graph_validate(
                 validator,
