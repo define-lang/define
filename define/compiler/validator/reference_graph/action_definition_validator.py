@@ -586,13 +586,13 @@ class ActionDefinitionValidator:
 
     def analyze(
         self,
-    ) -> validation_result.ActionPostorderValidationResult:
+    ) -> validation_result.ActionValidatorResult:
         """Validate the action, and return its diagnostics, its contract, and its abstract steps."""
         contract, guaranteed_particle_destructors = self._analyze_action_definition()
         destruction_contracts: list[destruction_contract.DestructionContract] = []
         for contracts in contract.destruction_contracts:
             destruction_contracts.extend(contracts.particles)
-        return validation_result.ActionPostorderValidationResult(
+        return validation_result.ActionValidatorResult(
             diagnostics=self._diagnostics,
             contract=contract,
             action=abstract_program.AbstractAction(

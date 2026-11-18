@@ -31,7 +31,7 @@ class _ViewArgument(typing.NamedTuple):
 
 class OperationDefinitionValidator[
     DefinitionT: ast.OperationDefinition,
-    ResultT: validation_result.PostorderValidationResult,
+    ResultT: validation_result.DefinitionValidatorResult,
 ](abc.ABC):
     """Validates the execution statements of an operation definition against the operations and logical operations they execute."""
 
@@ -303,7 +303,7 @@ class OperationDefinitionValidator[
 class ValueOperationDefinitionValidator(
     OperationDefinitionValidator[
         ast.ValueOperationDefinition,
-        validation_result.ValueOperationPostorderValidationResult,
+        validation_result.ValueOperationValidatorResult,
     ]
 ):
     """Validates a Value Operation definition and collects its steps, which are independent of the encodings of what an execution of it looks at."""
@@ -371,8 +371,8 @@ class ValueOperationDefinitionValidator(
     @override
     def _build_result(
         self,
-    ) -> validation_result.ValueOperationPostorderValidationResult:
-        return validation_result.ValueOperationPostorderValidationResult(
+    ) -> validation_result.ValueOperationValidatorResult:
+        return validation_result.ValueOperationValidatorResult(
             diagnostics=self._diagnostics,
             steps=None if self._has_diagnostics() else self._steps,
         )

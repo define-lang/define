@@ -145,7 +145,7 @@ class ReferenceGraphValidator:
 
     def _validate_action(
         self, definition: ast.ActionDefinition
-    ) -> validation_result.ActionPostorderValidationResult:
+    ) -> validation_result.ActionValidatorResult:
         definition_result = self._structural_results[
             definition.typed_name.full_typed_name
         ]

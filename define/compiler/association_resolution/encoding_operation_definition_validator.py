@@ -20,7 +20,7 @@ if typing.TYPE_CHECKING:
 class EncodingOperationDefinitionValidator(
     operation_definition_validator.OperationDefinitionValidator[
         ast.EncodingOperationDefinition,
-        validation_result.EncodingOperationPostorderValidationResult,
+        validation_result.EncodingOperationValidatorResult,
     ]
 ):
     """Validates an Encoding Operation definition and collects its steps for code generation."""
@@ -41,7 +41,7 @@ class EncodingOperationDefinitionValidator(
         self._computer_operation = None
 
     @override
-    def analyze(self) -> validation_result.EncodingOperationPostorderValidationResult:
+    def analyze(self) -> validation_result.EncodingOperationValidatorResult:
         # The parser allows `execute the computer operation.` only as the one
         # statement of an Encoding Operation. It reads and writes every
         # interface view, so there are no view uses to check.
@@ -131,8 +131,8 @@ class EncodingOperationDefinitionValidator(
     @override
     def _build_result(
         self,
-    ) -> validation_result.EncodingOperationPostorderValidationResult:
-        return validation_result.EncodingOperationPostorderValidationResult(
+    ) -> validation_result.EncodingOperationValidatorResult:
+        return validation_result.EncodingOperationValidatorResult(
             diagnostics=self._diagnostics,
             encoding_operation=concrete_program.ConcreteEncodingOperation(
                 definition=self._definition,

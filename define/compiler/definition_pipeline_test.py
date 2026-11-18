@@ -134,7 +134,7 @@ def test_independent_actions_validate_in_parallel():
 
     def synchronized_analyze(
         validator: action_definition_validator.ActionDefinitionValidator,
-    ) -> validation_result.ActionPostorderValidationResult:
+    ) -> validation_result.ActionValidatorResult:
         validation_barrier.wait(timeout=5)
         return original_analyze(validator)
 
@@ -159,7 +159,7 @@ def test_referenced_action_finishes_before_referencing_action_starts():
 
     def record_order(
         validator: action_definition_validator.ActionDefinitionValidator,
-    ) -> validation_result.ActionPostorderValidationResult:
+    ) -> validation_result.ActionValidatorResult:
         action_name = validator._definition.typed_name.full_typed_name  # pyright: ignore[reportPrivateUsage]
         if action_name == _CALLER_NAME:
             with completed_actions_lock:
@@ -190,7 +190,7 @@ def test_shared_referenced_definition_is_validated_once():
 
     def count_validation(
         validator: action_definition_validator.ActionDefinitionValidator,
-    ) -> validation_result.ActionPostorderValidationResult:
+    ) -> validation_result.ActionValidatorResult:
         action_name = validator._definition.typed_name.full_typed_name  # pyright: ignore[reportPrivateUsage]
         with validation_count_lock:
             validation_count_by_action[action_name] = (
@@ -247,7 +247,7 @@ def test_callers_share_the_completed_callee_contract():
 
     def collect_contract(
         validator: action_definition_validator.ActionDefinitionValidator,
-    ) -> validation_result.ActionPostorderValidationResult:
+    ) -> validation_result.ActionValidatorResult:
         result = original_analyze(validator)
         contracts[result.action.definition.typed_name.full_typed_name] = result.contract
         return result
@@ -296,7 +296,7 @@ def test_reference_failure_prevents_referencing_action_validation():
 
     def fail_callee(
         validator: action_definition_validator.ActionDefinitionValidator,
-    ) -> validation_result.ActionPostorderValidationResult:
+    ) -> validation_result.ActionValidatorResult:
         action_name = validator._definition.typed_name.full_typed_name  # pyright: ignore[reportPrivateUsage]
         analyzed_actions.add(action_name)
         if action_name == _CALLER_NAME:

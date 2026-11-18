@@ -28,20 +28,20 @@ class ParticleStatementValidity(msgspec.Struct, frozen=True):
     from_is_prefix_of_to: bool = False
 
 
-class PostorderValidationResult(msgspec.Struct):
+class DefinitionValidatorResult(msgspec.Struct):
     """Result of validating a single definition after everything it directly references is validated."""
 
     diagnostics: list[diagnostics.Diagnostic]
 
 
-class ActionPostorderValidationResult(PostorderValidationResult):
+class ActionValidatorResult(DefinitionValidatorResult):
     """Result of validating a single action definition after everything it directly references is validated."""
 
     contract: action_contract.ActionContract
     action: abstract_program.AbstractAction
 
 
-class ValueOperationPostorderValidationResult(PostorderValidationResult):
+class ValueOperationValidatorResult(DefinitionValidatorResult):
     """Result of validating a Value Operation definition."""
 
     # None when either validation phase reported anything about the Value
@@ -51,7 +51,7 @@ class ValueOperationPostorderValidationResult(PostorderValidationResult):
     steps: list[abstract_program.ValueOperationStep] | None
 
 
-class EncodingOperationPostorderValidationResult(PostorderValidationResult):
+class EncodingOperationValidatorResult(DefinitionValidatorResult):
     """Result of validating a single Encoding Operation definition."""
 
     encoding_operation: concrete_program.ConcreteEncodingOperation
