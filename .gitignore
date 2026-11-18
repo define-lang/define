@@ -243,3 +243,6 @@ __marimo__/
 
 # Cargo build artifacts; dependencies are pinned in Cargo.lock.
 /target/
+
+# Mutation testing worktrees and results; see tools/bazel_mutation_testing.
+/.mutation_testing/

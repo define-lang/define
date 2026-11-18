@@ -5,3 +5,4 @@ vendored/re2
 target
 tmp
 .windows_vm
+.mutation_testing

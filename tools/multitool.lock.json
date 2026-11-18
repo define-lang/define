@@ -135,6 +135,34 @@
       }
     ]
   },
+  "cargo-mutants": {
+    "binaries": [
+      {
+        "kind": "archive",
+        "url": "https://github.com/sourcefrog/cargo-mutants/releases/download/v27.1.0/cargo-mutants-x86_64-unknown-linux-gnu.tar.gz",
+        "file": "cargo-mutants",
+        "sha256": "dfe6dc37d0342c891d2829b5a695aa57c2d0edecef7e7d0399a30cc6e206411e",
+        "os": "linux",
+        "cpu": "x86_64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/sourcefrog/cargo-mutants/releases/download/v27.1.0/cargo-mutants-x86_64-apple-darwin.tar.gz",
+        "file": "cargo-mutants",
+        "sha256": "7109a9e9673fe0b977f622e6f32383b6d1cbbf3fbb63b7c30db3267462c74670",
+        "os": "macos",
+        "cpu": "x86_64"
+      },
+      {
+        "kind": "archive",
+        "url": "https://github.com/sourcefrog/cargo-mutants/releases/download/v27.1.0/cargo-mutants-x86_64-pc-windows-msvc.zip",
+        "file": "cargo-mutants.exe",
+        "sha256": "2a2f00e47d4b458262a41501b0820aa26015fd35779903d2c8b30b2993f36791",
+        "os": "windows",
+        "cpu": "x86_64"
+      }
+    ]
+  },
   "dprint": {
     "binaries": [
       {
