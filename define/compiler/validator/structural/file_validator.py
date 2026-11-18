@@ -11,8 +11,6 @@ from typing import TYPE_CHECKING
 
 import msgspec
 
-from define.compiler import ast
-from define.compiler.data_structures import typed_name_dict
 from define.compiler.errors import diagnostics
 from define.compiler.parsing import parser
 from define.compiler.validator import validation_result
@@ -23,12 +21,8 @@ from define.compiler.validator.structural import (
 
 if TYPE_CHECKING:
     from crates.source_rendering.python import rendering
+    from define.compiler import ast
     from define.compiler.errors import syntax_errors
-
-
-type FileDefinitions = typed_name_dict.TypedNameDict[
-    ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]], ast.GlobalDefinition
-]
 
 
 class LoadedFile(msgspec.Struct):
@@ -38,9 +32,10 @@ class LoadedFile(msgspec.Struct):
     # The diagnostic that kept the file from loading or parsing, if any.
     load_failure: syntax_errors.FileLoadFailureDiagnostic | None
     file_diagnostics: list[diagnostics.Diagnostic]
-    # The first definition of each typed name in the file. It does not change
-    # after loading, so definitions can be validated concurrently.
-    definitions: FileDefinitions
+    # The first definition of each typed name in the file, by its full typed
+    # name. It does not change after loading, so definitions can be validated
+    # concurrently.
+    definitions: dict[str, ast.GlobalDefinition]
 
     def earlier_definition(
         self,
@@ -48,7 +43,7 @@ class LoadedFile(msgspec.Struct):
         referencing_definition: ast.GlobalDefinition,
     ) -> ast.GlobalDefinition | None:
         """Return the file's definition of a referenced name if it comes before the referencing definition."""
-        definition = self.definitions.get(reference)
+        definition = self.definitions.get(reference.full_typed_name)
         if definition is None:
             return None
         location = definition.location
@@ -129,7 +124,7 @@ class FileStructuralValidator:
                 context=context,
                 load_failure=parse_result.load_failure,
                 file_diagnostics=parse_result.diagnostics,
-                definitions=typed_name_dict.TypedNameDict(),
+                definitions={},
             )
 
         if parse_result.program is None:
@@ -139,13 +134,14 @@ class FileStructuralValidator:
         program = parse_result.program
 
         file_diagnostics = parse_result.diagnostics
-        definitions: FileDefinitions = typed_name_dict.TypedNameDict()
+        definitions: dict[str, ast.GlobalDefinition] = {}
         for definition in program.definitions:
             file_diagnostics.extend(_path_mismatch_diagnostics(definition, context))
             file_diagnostics.extend(_fqun_mismatch_diagnostics(definition, context))
-            first_definition = definitions.get(definition.typed_name)
+            definition_name = definition.typed_name.full_typed_name
+            first_definition = definitions.get(definition_name)
             if first_definition is None:
-                definitions[definition.typed_name] = definition
+                definitions[definition_name] = definition
                 continue
             file_diagnostics.append(
                 diagnostics.DuplicateDefinitionDiagnostic(

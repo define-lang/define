@@ -78,7 +78,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
             # A definition from the supplied source has no file path to
             # resolve.
             source_definition_reached = self._source_file.definitions.get(
-                edge.global_name_reference
+                edge.global_name_reference.full_typed_name
             )
             if source_definition_reached is not None:
                 return reference_resolver.ReachedDefinition(

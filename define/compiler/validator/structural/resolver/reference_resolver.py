@@ -279,7 +279,7 @@ class ReferenceResolver:
         target_file = target_loaded_file.context.full_path
         target_load_failure = target_loaded_file.load_failure
         target_definition = target_loaded_file.definitions.get(
-            edge.global_name_reference
+            edge.global_name_reference.full_typed_name
         )
         # A definition can reference only definitions that come before it in
         # its own file.

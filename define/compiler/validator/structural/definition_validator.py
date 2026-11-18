@@ -10,7 +10,6 @@ from define.compiler import (
     name_types,
 )
 from define.compiler.config import global_names
-from define.compiler.data_structures import typed_name_dict
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import reference_graph
 from define.compiler.validator import scope_tracker, validation_result
@@ -42,16 +41,11 @@ class DefinitionStructuralValidator:
     _particle_statement_validity: list[validation_result.ParticleStatementValidity]
     _looked_at_position_validity: list[bool]
     _unknown_fquns: set[str]
-    _implied_qualities: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedNameReference, ast.QualityImplicationStatement
-    ]
+    _implied_qualities: dict[str, ast.QualityImplicationStatement]
     _used_implied_qualities: set[str]
-    _unreferenced_positions: typed_name_dict.TypedNameDict[
-        ast.LocalTypedNameReference, ast.LocalPositionDefinition
-    ]
-    _unreferenced_views: typed_name_dict.TypedNameDict[
-        ast.LocalTypedNameReference,
-        ast.InterfaceViewDefinition | ast.LocalViewDefinition,
+    _unreferenced_positions: dict[str, ast.LocalPositionDefinition]
+    _unreferenced_views: dict[
+        str, ast.InterfaceViewDefinition | ast.LocalViewDefinition
     ]
 
     def __init__(
@@ -69,10 +63,10 @@ class DefinitionStructuralValidator:
         self._particle_statement_validity = []
         self._looked_at_position_validity = []
         self._unknown_fquns = set()
-        self._implied_qualities = typed_name_dict.TypedNameDict()
+        self._implied_qualities = {}
         self._used_implied_qualities = set()
-        self._unreferenced_positions = typed_name_dict.TypedNameDict()
-        self._unreferenced_views = typed_name_dict.TypedNameDict()
+        self._unreferenced_positions = {}
+        self._unreferenced_views = {}
 
     def validate_definition(self) -> validation_result.DefinitionValidationResult:
         """Validate one top-level definition and return its validation result."""
@@ -327,7 +321,7 @@ class DefinitionStructuralValidator:
         ],
     ):
         if self._validate_view_name(view, views):
-            self._unreferenced_views[view.typed_name] = view
+            self._unreferenced_views[view.typed_name.full_typed_name] = view
         if isinstance(view, ast.LocalViewDefinition) and isinstance(
             definition, ast.EncodingOperationDefinition
         ):
@@ -478,9 +472,7 @@ class DefinitionStructuralValidator:
     def _validate_logical_operation_support_statements(
         self, statements: Sequence[ast.LogicalOperationSupportStatement]
     ):
-        seen_lines: typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, int] = (
-            typed_name_dict.TypedNameDict()
-        )
+        seen_lines: dict[str, int] = {}
         greatest_name: str | None = None
         for statement in statements:
             logical_operation = statement.logical_operation
@@ -488,7 +480,7 @@ class DefinitionStructuralValidator:
             self._diagnostics.extend(reference_diagnostics)
             if reference_diagnostics:
                 continue
-            first_line = seen_lines.get(logical_operation)
+            first_line = seen_lines.get(logical_operation.full_typed_name)
             if first_line is not None:
                 self._diagnostics.append(
                     diagnostics.DuplicateLogicalOperationSupportDiagnostic(
@@ -498,7 +490,9 @@ class DefinitionStructuralValidator:
                     )
                 )
                 continue
-            seen_lines[logical_operation] = logical_operation.location.line
+            seen_lines[logical_operation.full_typed_name] = (
+                logical_operation.location.line
+            )
             # Comparing full typed names keeps the order the same whether or
             # not a reference is written in short form.
             name = logical_operation.full_typed_name
@@ -566,9 +560,7 @@ class DefinitionStructuralValidator:
         validate_looked_at: Callable[[LookedAt], bool],
     ):
         looked_at_lines: dict[str, int] = {}
-        argument_lines: typed_name_dict.TypedNameDict[
-            ast.LocalTypedNameReference, int
-        ] = typed_name_dict.TypedNameDict()
+        argument_lines: dict[str, int] = {}
         for argument in arguments:
             view_name_diagnostics = name_validators.validate_local_name_format(
                 argument.view.name_content
@@ -613,9 +605,9 @@ class DefinitionStructuralValidator:
     def _check_duplicate_argument(
         self,
         view: ast.LocalTypedNameReference,
-        argument_lines: typed_name_dict.TypedNameDict[ast.LocalTypedNameReference, int],
+        argument_lines: dict[str, int],
     ):
-        first_line = argument_lines.get(view)
+        first_line = argument_lines.get(view.full_typed_name)
         if first_line is not None:
             self._diagnostics.append(
                 diagnostics.DuplicateOperationArgumentDiagnostic(
@@ -625,7 +617,7 @@ class DefinitionStructuralValidator:
                 )
             )
             return
-        argument_lines[view] = view.location.line
+        argument_lines[view.full_typed_name] = view.location.line
 
     def _validate_looked_at_view(
         self,
@@ -646,8 +638,7 @@ class DefinitionStructuralValidator:
                 )
             )
             return False
-        if view in self._unreferenced_views:
-            del self._unreferenced_views[view]
+        _ = self._unreferenced_views.pop(view.full_typed_name, None)
         return True
 
     def _validate_trigger_conditions(
@@ -766,7 +757,7 @@ class DefinitionStructuralValidator:
             )
             return
         scope.add_definition(local_def)
-        self._unreferenced_positions[local_def.typed_name] = local_def
+        self._unreferenced_positions[local_def.typed_name.full_typed_name] = local_def
 
     def _validate_create_particle(
         self,
@@ -874,8 +865,8 @@ class DefinitionStructuralValidator:
         last_typed_name = chain.typed_names[-1]
         may_continue = True
 
-        if ast.is_local_reference(first) and first in self._unreferenced_positions:
-            del self._unreferenced_positions[first]
+        if ast.is_local_reference(first):
+            _ = self._unreferenced_positions.pop(first.full_typed_name, None)
 
         is_self_reference = (
             first.full_typed_name == self._definition.typed_name.source_typed_name
@@ -900,7 +891,7 @@ class DefinitionStructuralValidator:
             may_continue = False
 
         if not is_self_reference and ast.is_global_reference(first):
-            if first in self._implied_qualities:
+            if first.full_typed_name in self._implied_qualities:
                 self._used_implied_qualities.add(first.full_typed_name)
             else:
                 self._diagnostics.append(
@@ -992,9 +983,7 @@ class DefinitionStructuralValidator:
         *,
         multiple_values_diagnostic: type[diagnostics.MultipleValueQualitiesDiagnostic],
     ):
-        seen_lines: typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, int] = (
-            typed_name_dict.TypedNameDict()
-        )
+        seen_lines: dict[str, int] = {}
         first_value: ast.GlobalTypedNameReference | None = None
         for statement in statements:
             reference_diagnostics = self._typed_name_diagnostics(
@@ -1003,7 +992,7 @@ class DefinitionStructuralValidator:
             self._diagnostics.extend(reference_diagnostics)
             if reference_diagnostics:
                 continue
-            first_line = seen_lines.get(statement.typed_global_name)
+            first_line = seen_lines.get(statement.typed_global_name.full_typed_name)
             if first_line is not None:
                 self._diagnostics.append(
                     diagnostics.DuplicateQualityAssignmentDiagnostic(
@@ -1013,7 +1002,7 @@ class DefinitionStructuralValidator:
                     )
                 )
                 continue
-            seen_lines[statement.typed_global_name] = (
+            seen_lines[statement.typed_global_name.full_typed_name] = (
                 statement.typed_global_name.location.line
             )
             if statement.typed_global_name.name_type == name_types.NameType.VALUE:
@@ -1033,9 +1022,7 @@ class DefinitionStructuralValidator:
         self,
         implications: Iterable[ast.QualityImplicationStatement],
     ):
-        seen_lines: typed_name_dict.TypedNameDict[ast.GlobalTypedNameReference, int] = (
-            typed_name_dict.TypedNameDict()
-        )
+        seen_lines: dict[str, int] = {}
         for implication in implications:
             name_diagnostics = self._typed_name_diagnostics(
                 implication.typed_global_name
@@ -1043,7 +1030,7 @@ class DefinitionStructuralValidator:
             self._diagnostics.extend(name_diagnostics)
             if name_diagnostics:
                 continue
-            first_line = seen_lines.get(implication.typed_global_name)
+            first_line = seen_lines.get(implication.typed_global_name.full_typed_name)
             if first_line is not None:
                 self._diagnostics.append(
                     diagnostics.DuplicateQualityImplicationDiagnostic(
@@ -1053,10 +1040,12 @@ class DefinitionStructuralValidator:
                     )
                 )
                 continue
-            seen_lines[implication.typed_global_name] = (
+            seen_lines[implication.typed_global_name.full_typed_name] = (
                 implication.typed_global_name.location.line
             )
-            self._implied_qualities[implication.typed_global_name] = implication
+            self._implied_qualities[implication.typed_global_name.full_typed_name] = (
+                implication
+            )
             self._process_reference(implication.typed_global_name)
 
     def _check_unreferenced_positions(self):
@@ -1070,7 +1059,7 @@ class DefinitionStructuralValidator:
 
     def _check_unused_quality_implications(self):
         for implied_name, implication in self._implied_qualities.items():
-            if implied_name.full_typed_name in self._used_implied_qualities:
+            if implied_name in self._used_implied_qualities:
                 continue
             self._diagnostics.append(
                 diagnostics.UnusedQualityImplicationDiagnostic(
