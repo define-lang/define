@@ -64,6 +64,42 @@ py_library(
 )
 
 py_library(
+    name = "definition_pipeline",
+    srcs = ["definition_pipeline.py"],
+    deps = [
+        ":ast",
+        ":work_pool",
+        "//define/compiler/association_resolution:association_resolver",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/graphs:reference_graph_order",
+        "//define/compiler/validator/reference_graph:abstract_program",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+    ],
+)
+
+py_test(
+    name = "definition_pipeline_test",
+    size = "small",
+    srcs = ["definition_pipeline_test.py"],
+    deps = [
+        ":ast",
+        ":definition_pipeline",
+        ":work_pool",
+        "//define/compiler/association_resolution:association_resolver",
+        "//define/compiler/association_resolution:association_tables",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator:validation_result",
+        "//define/compiler/validator/reference_graph:abstract_program",
+        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/reference_graph:action_definition_validator",
+        "//define/compiler/validator/reference_graph:reference_graph_validator",
+        "//define/compiler/validator/structural:program_validator",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
     name = "driver",
     srcs = ["driver.py"],
     visibility = ["//visibility:public"],
@@ -115,10 +151,10 @@ py_test(
     srcs = ["driver_test.py"],
     deps = [
         ":driver",
+        ":validation_pipeline",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",
     ],
@@ -195,12 +231,11 @@ py_library(
     srcs = ["validation_pipeline.py"],
     visibility = ["//define/compiler/test_fixtures:__pkg__"],
     deps = [
-        ":ast",
+        ":definition_pipeline",
+        ":work_pool",
         "//define/compiler/association_resolution:association_resolver",
         "//define/compiler/association_resolution:association_tables",
         "//define/compiler/association_resolution:concrete_program",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/graphs:reference_graph_executor",
         "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
@@ -235,6 +270,8 @@ pyright_test(
         ":chained_name_test",
         ":compiler",
         ":constants",
+        ":definition_pipeline",
+        ":definition_pipeline_test",
         ":driver",
         ":driver_fuzz_test",
         ":driver_run_test",

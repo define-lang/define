@@ -29,13 +29,13 @@ class ParticleStatementValidity(msgspec.Struct, frozen=True):
 
 
 class PostorderValidationResult(msgspec.Struct):
-    """Result of validating a single definition during the DFS post-order walk."""
+    """Result of validating a single definition after everything it directly references is validated."""
 
     diagnostics: list[diagnostics.Diagnostic]
 
 
 class ActionPostorderValidationResult(PostorderValidationResult):
-    """Result of validating a single action definition during the DFS post-order walk."""
+    """Result of validating a single action definition after everything it directly references is validated."""
 
     contract: action_contract.ActionContract
     action: abstract_program.AbstractAction
@@ -52,7 +52,7 @@ class ValueOperationPostorderValidationResult(PostorderValidationResult):
 
 
 class EncodingOperationPostorderValidationResult(PostorderValidationResult):
-    """Result of validating a single Encoding Operation definition during the DFS post-order walk."""
+    """Result of validating a single Encoding Operation definition."""
 
     encoding_operation: concrete_program.ConcreteEncodingOperation
 

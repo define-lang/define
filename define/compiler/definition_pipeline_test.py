@@ -1,6 +1,6 @@
 # This module is only for unit testing the mechanics implemented in
-# reference_graph_validator.py itself. Define behavior belongs in data-backed
-# tests under reference_graph_validator_tests/.
+# definition_pipeline.py itself: when each stage of each definition runs.
+# Define behavior belongs in data-backed tests.
 # pyright: reportUnusedCallResult=false
 
 from __future__ import annotations
@@ -11,6 +11,11 @@ from unittest import mock
 
 import pytest
 
+from define.compiler import definition_pipeline, work_pool
+from define.compiler.association_resolution import (
+    association_resolver,
+    association_tables,
+)
 from define.compiler.validator.reference_graph import (
     action_contract,
     action_definition_validator,
@@ -20,7 +25,12 @@ from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
+    from define.compiler import ast
+    from define.compiler.errors import diagnostics
     from define.compiler.validator import validation_result
+    from define.compiler.validator.reference_graph import (
+        abstract_program,
+    )
 
 _ACTION_TEMPLATE = (
     "define the potential action<my.domain.com:my_lib:/{name}> {{\n"
@@ -92,16 +102,27 @@ def _structural_program(source: str) -> program_validator.StructurallyValidatedP
     return program
 
 
-def _reference_graph_validator(
-    program: program_validator.StructurallyValidatedProgram,
-) -> reference_graph_validator.ReferenceGraphValidator:
+def _run_pipeline(
+    program: program_validator.StructurallyValidatedProgram, *, max_workers: int
+) -> tuple[list[diagnostics.Diagnostic], association_resolver.AssociationResolver]:
+    """Validate and resolve every definition, and return the diagnostics and the resolver."""
     structural_result = program.result
-    return reference_graph_validator.ReferenceGraphValidator(
-        structural_result.definition_order,
+    resolver = association_resolver.AssociationResolver(
+        structural_result.definitions,
+        association_tables.AssociationTables(
+            program.project_roots(), structural_result.source_map
+        ),
+    )
+    validator = reference_graph_validator.ReferenceGraphValidator(
         structural_result.definitions,
         structural_result.structural_results,
         entry_action=structural_result.entry_action,
     )
+    with work_pool.WorkPool(max_workers) as pool:
+        found_diagnostics = definition_pipeline.DefinitionPipeline(
+            structural_result.definition_order, validator, resolver, pool
+        ).run()
+    return found_diagnostics, resolver
 
 
 def test_independent_actions_validate_in_parallel():
@@ -123,10 +144,11 @@ def test_independent_actions_validate_in_parallel():
         autospec=True,
         side_effect=synchronized_analyze,
     ):
-        validation = _reference_graph_validator(program).validate(max_workers=2)
+        found_diagnostics, resolver = _run_pipeline(program, max_workers=2)
 
-    assert validation.diagnostics == []
-    assert len(validation.abstract_definitions) == 2
+    assert found_diagnostics == []
+    concrete_program = resolver.concrete_program(program.result.definition_order)
+    assert len(concrete_program.actions) == 2
 
 
 def test_referenced_action_finishes_before_referencing_action_starts():
@@ -153,7 +175,7 @@ def test_referenced_action_finishes_before_referencing_action_starts():
         autospec=True,
         side_effect=record_order,
     ):
-        _reference_graph_validator(program).validate(max_workers=2)
+        _run_pipeline(program, max_workers=2)
 
     assert completed_actions == {_CALLEE_NAME, _CALLER_NAME}
 
@@ -182,7 +204,7 @@ def test_shared_referenced_definition_is_validated_once():
         autospec=True,
         side_effect=count_validation,
     ):
-        _reference_graph_validator(program).validate(max_workers=3)
+        _run_pipeline(program, max_workers=3)
 
     assert validation_count_by_action == {
         _CALLEE_NAME: 1,
@@ -236,9 +258,9 @@ def test_callers_share_the_completed_callee_contract():
         autospec=True,
         side_effect=collect_contract,
     ):
-        validation = _reference_graph_validator(program).validate(max_workers=1)
+        found_diagnostics, _ = _run_pipeline(program, max_workers=1)
 
-    assert validation.diagnostics == []
+    assert found_diagnostics == []
     (callee_mark,) = [
         guaranteed.guarantee
         for guaranteed in contracts[_CALLEE_NAME].guarantees
@@ -290,7 +312,70 @@ def test_reference_failure_prevents_referencing_action_validation():
         ),
         pytest.raises(RuntimeError, match="/callee> validation failed"),
     ):
-        _reference_graph_validator(program).validate(max_workers=1)
+        _run_pipeline(program, max_workers=1)
 
     # One worker validates /callee first, and its failure stops the rest.
     assert analyzed_actions == {_CALLEE_NAME}
+
+
+def test_definition_resolves_after_its_validation_and_referenced_resolutions():
+    program = _structural_program(_CALLEE_AND_CALLER_SOURCE)
+    events: list[tuple[str, str]] = []
+    events_lock = threading.Lock()
+    original_validate = (
+        reference_graph_validator.ReferenceGraphValidator.validate_definition
+    )
+    original_resolve = association_resolver.AssociationResolver.resolve_action
+
+    def record_validation(
+        validator: reference_graph_validator.ReferenceGraphValidator,
+        definition: ast.ActionDefinition
+        | ast.ValueOperationDefinition
+        | ast.LogicalOperationDefinition
+        | ast.ValueDefinition,
+    ) -> reference_graph_validator.DefinitionValidation:
+        validation = original_validate(validator, definition)
+        with events_lock:
+            events.append(("validated", definition.typed_name.full_typed_name))
+        return validation
+
+    def record_resolution(
+        resolver: association_resolver.AssociationResolver,
+        action: abstract_program.AbstractAction,
+    ) -> list[diagnostics.Diagnostic]:
+        name = action.definition.typed_name.full_typed_name
+        with events_lock:
+            events.append(("resolving", name))
+        resolution_diagnostics = original_resolve(resolver, action)
+        with events_lock:
+            events.append(("resolved", name))
+        return resolution_diagnostics
+
+    with (
+        mock.patch.object(
+            reference_graph_validator.ReferenceGraphValidator,
+            "validate_definition",
+            autospec=True,
+            side_effect=record_validation,
+        ),
+        mock.patch.object(
+            association_resolver.AssociationResolver,
+            "resolve_action",
+            autospec=True,
+            side_effect=record_resolution,
+        ),
+    ):
+        found_diagnostics, _ = _run_pipeline(program, max_workers=4)
+
+    assert found_diagnostics == []
+    # The caller's resolution starts only once the callee's has finished, and
+    # each resolution only once its own validation has.
+    assert events.index(("resolving", _CALLER_NAME)) > events.index(
+        ("resolved", _CALLEE_NAME)
+    )
+    assert events.index(("resolving", _CALLEE_NAME)) > events.index(
+        ("validated", _CALLEE_NAME)
+    )
+    assert events.index(("resolving", _CALLER_NAME)) > events.index(
+        ("validated", _CALLER_NAME)
+    )

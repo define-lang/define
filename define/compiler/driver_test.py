@@ -9,10 +9,9 @@ from unittest import mock
 
 import pytest
 
-from define.compiler import driver
+from define.compiler import driver, validation_pipeline
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
-from define.compiler.validator.reference_graph import reference_graph_validator
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -229,9 +228,7 @@ class TestSourceValidation:
     def test_max_threads_configures_both_validation_phases(self):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
         structural_validate = program_validator.validate_program_non_filesystem
-        reference_graph_validate = (
-            reference_graph_validator.ReferenceGraphValidator.validate
-        )
+        validate_and_resolve = validation_pipeline.validate_and_resolve_program
 
         def validate_structurally(
             source: str,
@@ -241,15 +238,13 @@ class TestSourceValidation:
             assert max_workers == 3
             return structural_validate(source, max_workers=max_workers)
 
-        def validate_reference_graph(
-            validator: reference_graph_validator.ReferenceGraphValidator,
+        def validate_reference_graph_and_resolve(
+            program: program_validator.StructurallyValidatedProgram,
+            *,
             max_workers: int | None = None,
-        ) -> reference_graph_validator.ReferenceGraphValidation:
+        ) -> validation_pipeline.CompilerValidationResult:
             assert max_workers == 3
-            return reference_graph_validate(
-                validator,
-                max_workers=max_workers,
-            )
+            return validate_and_resolve(program, max_workers=max_workers)
 
         with (
             mock.patch.object(
@@ -259,10 +254,10 @@ class TestSourceValidation:
                 side_effect=validate_structurally,
             ),
             mock.patch.object(
-                reference_graph_validator.ReferenceGraphValidator,
-                "validate",
+                validation_pipeline,
+                "validate_and_resolve_program",
                 autospec=True,
-                side_effect=validate_reference_graph,
+                side_effect=validate_reference_graph_and_resolve,
             ),
         ):
             driver_result = driver.Driver().validate_source(source, max_threads=3)

@@ -1,4 +1,4 @@
-"""Post-order validation for a single action definition during the reference graph DFS walk."""
+"""Reference graph validation of a single action definition, after everything it directly references is validated."""
 
 from __future__ import annotations
 
@@ -57,7 +57,7 @@ if typing.TYPE_CHECKING:
 
 
 class ActionDefinitionValidator:
-    """Validates an action definition during a DFS post-order walk of the reference graph."""
+    """Validates an action definition once everything it directly references is validated."""
 
     _definition: ast.ActionDefinition
     _particle_statement_validity: Sequence[validation_result.ParticleStatementValidity]
@@ -587,7 +587,7 @@ class ActionDefinitionValidator:
     def analyze(
         self,
     ) -> validation_result.ActionPostorderValidationResult:
-        """Run post-order validation and return diagnostics, contract, and the action's abstract steps."""
+        """Validate the action, and return its diagnostics, its contract, and its abstract steps."""
         contract, guaranteed_particle_destructors = self._analyze_action_definition()
         destruction_contracts: list[destruction_contract.DestructionContract] = []
         for contracts in contract.destruction_contracts:

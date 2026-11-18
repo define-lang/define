@@ -8,9 +8,6 @@ import msgspec
 
 from define.compiler import ast
 from define.compiler.errors import diagnostics
-from define.compiler.graphs import (
-    reference_graph_executor,
-)
 from define.compiler.validator.reference_graph import (
     abstract_program,
     action_definition_validator,
@@ -22,32 +19,19 @@ from define.compiler.validator.reference_graph import (
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from define.compiler.graphs import (
-        reference_graph_order,
-    )
     from define.compiler.validator import validation_result
     from define.compiler.validator.reference_graph import (
         action_contract,
     )
 
 
-class ValidatedDefinition(msgspec.Struct, frozen=True):
+class DefinitionValidation(msgspec.Struct, frozen=True):
     """What validating one definition found: its diagnostics, and what association resolution resolves, if anything."""
 
-    definition: ast.GlobalDefinition
     diagnostics: list[diagnostics.Diagnostic]
     # None for a Value Operation whose steps validation could not work out,
     # which nothing can resolve.
     abstract: abstract_program.AbstractDefinition | None
-
-
-class ReferenceGraphValidation(msgspec.Struct, frozen=True):
-    """What validating every definition found."""
-
-    diagnostics: list[diagnostics.Diagnostic]
-    # What association resolution resolves for each definition that has
-    # anything to resolve, by its full typed name.
-    abstract_definitions: dict[str, abstract_program.AbstractDefinition]
 
 
 def requires_validation(
@@ -76,12 +60,13 @@ def requires_validation(
 class ReferenceGraphValidator:
     """Verifies definitions using the reference graph.
 
-    This is the primary logical validator of Define. After completing structural
-    validation, this step walks through the reference graph in DFS post-order
-    and performs validations on each definition for logical correctness.
+    This is the primary logical validator of Define. After structural
+    validation, it validates each definition for logical correctness. A
+    definition must be validated only once everything it directly references
+    is, because validating an action reads the contracts of the actions it
+    triggers.
     """
 
-    _definition_order: reference_graph_order.ReferenceGraphOrder
     _definitions: Mapping[str, ast.GlobalDefinition]
     _structural_results: Mapping[str, validation_result.DefinitionValidationResult]
     _entry_action: ast.ActionDefinition | None
@@ -90,19 +75,17 @@ class ReferenceGraphValidator:
 
     def __init__(
         self,
-        definition_order: reference_graph_order.ReferenceGraphOrder,
         definitions: Mapping[str, ast.GlobalDefinition],
         structural_results: Mapping[str, validation_result.DefinitionValidationResult],
         *,
         entry_action: ast.ActionDefinition | None,
         allow_entry_action_occupied_implied_position_requirements: bool = False,
     ):
-        """Initialize with the definition order, the program's definitions by full typed name, and the structural result of each definition by full typed name.
+        """Initialize with the program's definitions by full typed name, and the structural result of each definition by full typed name.
 
         allow_entry_action_occupied_implied_position_requirements exists only
         for validation tests of behavior that requires such a program.
         """
-        self._definition_order = definition_order
         self._definitions = definitions
         self._structural_results = structural_results
         self._entry_action = entry_action
@@ -113,33 +96,17 @@ class ReferenceGraphValidator:
             allow_entry_action_occupied_implied_position_requirements
         )
 
-    def validate(self, max_workers: int | None = None) -> ReferenceGraphValidation:
-        """Validate every definition in direct-reference-first order, and return what validation found."""
-        found_diagnostics: list[diagnostics.Diagnostic] = []
-        abstract_definitions: dict[str, abstract_program.AbstractDefinition] = {}
-        for validated in reference_graph_executor.process_definitions(
-            self._definition_order,
-            requires_validation,
-            self._validate_definition,
-            max_workers=max_workers,
-        ):
-            found_diagnostics.extend(validated.diagnostics)
-            if validated.abstract is not None:
-                abstract_definitions[
-                    validated.definition.typed_name.full_typed_name
-                ] = validated.abstract
-        return ReferenceGraphValidation(
-            diagnostics=found_diagnostics, abstract_definitions=abstract_definitions
-        )
-
-    def _validate_definition(
+    def validate_definition(
         self,
         definition: ast.ActionDefinition
         | ast.ValueOperationDefinition
         | ast.LogicalOperationDefinition
         | ast.ValueDefinition,
-    ) -> ValidatedDefinition:
-        """Validate a definition, and return what validation found."""
+    ) -> DefinitionValidation:
+        """Validate a definition, and return what validation found.
+
+        Safe to call on any worker thread.
+        """
         match definition:
             case ast.ActionDefinition():
                 action_result = self._validate_action(definition)
@@ -150,8 +117,7 @@ class ReferenceGraphValidator:
                             action_result.contract
                         )
                     )
-                return ValidatedDefinition(
-                    definition=definition,
+                return DefinitionValidation(
                     diagnostics=definition_diagnostics,
                     abstract=action_result.action,
                 )
@@ -166,8 +132,7 @@ class ReferenceGraphValidator:
                     ).analyze()
                 )
                 steps = value_operation_result.steps
-                return ValidatedDefinition(
-                    definition=definition,
+                return DefinitionValidation(
                     diagnostics=value_operation_result.diagnostics,
                     abstract=None
                     if steps is None
@@ -176,9 +141,7 @@ class ReferenceGraphValidator:
                     ),
                 )
             case ast.LogicalOperationDefinition() | ast.ValueDefinition():
-                return ValidatedDefinition(
-                    definition=definition, diagnostics=[], abstract=definition
-                )
+                return DefinitionValidation(diagnostics=[], abstract=definition)
 
     def _validate_action(
         self, definition: ast.ActionDefinition

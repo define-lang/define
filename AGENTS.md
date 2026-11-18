@@ -59,6 +59,30 @@ See [define/spec/spec.md] for the language specification.
   > case. Subclasses extend this for cases that depend on definition shape
   > (interface positions, trigger position, self-reference, etc.).
 
+## Writing Comments and Docstrings
+
+- Write short, plain sentences that a reader understands on the first pass. Do
+  not compress an idea into one dense sentence.
+- Name what each sentence is about. Do not refer back to something in an earlier
+  sentence with a pronoun like "it" or a phrase like "this order". Repeat the
+  specific noun.
+- Use verbs that say exactly what happens. Avoid vague verbs like "keep",
+  "handle", or "deal with".
+- State a condition directly instead of putting it at the end with words like
+  "only after" or "unless".
+- Do not leave out a verb that the reader has to supply. Write "has finished
+  that stage", not "has".
+- Explain only what a reader of the code needs. Do not explain how Define works
+  beyond the one fact that the explanation depends on.
+- For example, this sentence is hard to read:
+
+  > It still finishes that stage only after the definitions it references have.
+
+  This says the same thing clearly:
+
+  > A definition can't finish a stage until every definition it references has
+  > finished that stage.
+
 ## Code Style
 
 - Do not use non-descriptive variable names like `ref`.

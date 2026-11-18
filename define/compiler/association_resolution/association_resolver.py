@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast
 from define.compiler.association_resolution import (
     associated_encoding_operation_checks,
     associations,
@@ -19,6 +18,7 @@ from define.compiler.validator.reference_graph import abstract_program
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
+    from define.compiler import ast
     from define.compiler.association_resolution import (
         association_tables,
     )
@@ -50,23 +50,27 @@ class AssociationResolver:
             str, concrete_program.ConcreteEncodingOperation
         ] = {}
 
-    def resolve(
-        self, abstract: abstract_program.AbstractDefinition
+    def resolve_value(
+        self, definition: ast.ValueDefinition
     ) -> list[diagnostics.Diagnostic]:
-        """Resolve a validated definition to concrete code, once everything it references is resolved, and return the diagnostics about it."""
-        match abstract:
-            case abstract_program.AbstractAction():
-                return self._resolve_action(abstract)
-            case abstract_program.AbstractValueOperation():
-                return self._value_operations.add_value_operation(
-                    abstract.definition, abstract.steps
-                )
-            case ast.LogicalOperationDefinition():
-                return self._associations.add_logical_operation(abstract)
-            case ast.ValueDefinition():
-                return self._associations.add_value(abstract)
+        """Find the one encoding associated with a value quality, and return a diagnostic if it has none."""
+        return self._associations.add_value(definition)
 
-    def _resolve_action(
+    def resolve_logical_operation(
+        self, definition: ast.LogicalOperationDefinition
+    ) -> list[diagnostics.Diagnostic]:
+        """Add a logical operation's associations with Encoding Operations, and return the diagnostics about them."""
+        return self._associations.add_logical_operation(definition)
+
+    def resolve_value_operation(
+        self, value_operation: abstract_program.AbstractValueOperation
+    ) -> list[diagnostics.Diagnostic]:
+        """Encode the literals in the steps of a valid Value Operation, once everything it references is resolved, and return the diagnostics about the ones that cannot be encoded."""
+        return self._value_operations.add_value_operation(
+            value_operation.definition, value_operation.steps
+        )
+
+    def resolve_action(
         self, action: abstract_program.AbstractAction
     ) -> list[diagnostics.Diagnostic]:
         """Encode the action's literals and choose what each of its executions of a Value Operation runs, and return the diagnostics about them."""
