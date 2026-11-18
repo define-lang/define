@@ -1243,6 +1243,16 @@ class ReferencedFileNotFoundDiagnostic(Diagnostic):
     )
 
 
+class ReferencedFileUnreadableDiagnostic(Diagnostic):
+    """Diagnostic for when a referenced file exists but cannot be read, for the reason that the operating system gives."""
+
+    file_path: str
+    reason: str
+    message_format: ClassVar[str] = (
+        "cannot read the file '{self.file_path}': {self.reason}"
+    )
+
+
 class ExternalUniverseNotConfiguredDiagnostic(Diagnostic):
     """Diagnostic for when a cross-universe reference targets an unconfigured universe."""
 

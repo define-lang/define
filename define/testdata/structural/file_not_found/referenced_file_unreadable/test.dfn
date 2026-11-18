@@ -1,0 +1,7 @@
+# A referenced file that exists but cannot be read, here because it is a
+# directory, is reported at the reference, like a missing file.
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the position</target>.
+    }
+}

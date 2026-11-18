@@ -43,6 +43,21 @@ def test_referenced_file_not_found(
     assert diag.location.column == 29
 
 
+def test_referenced_file_unreadable(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural()
+    (diagnostic,) = result.sorted_diagnostics()
+    # The reason is the operating system's, whose words differ by platform.
+    assert isinstance(diagnostic, diagnostics.ReferencedFileUnreadableDiagnostic)
+    assert diagnostic.reason
+    assert diagnostic.location.file_path == "test.dfn"
+    assert diagnostic.location.line == 5
+    assert diagnostic.location.column == 29
+    assert diagnostic.file_path == "target.dfn"
+    assert len(result.file_results) == 1
+
+
 def test_referenced_file_not_found_via_already_completed_target(
     validate_testdata_structural: ValidateTestdataStructural,
 ):

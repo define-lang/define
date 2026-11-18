@@ -318,6 +318,19 @@ class ReferenceResolver:
             self._path_tracker.mark_not_found(target_file)
             return None
 
+        # Reported at the reference, like a missing file, rather than as the
+        # file's own load failure, which has no location.
+        if isinstance(target_load_failure, syntax_errors.SourceFileUnreadable):
+            source_definition.diagnostics.append(
+                diagnostics.ReferencedFileUnreadableDiagnostic(
+                    location=edge.global_name_reference.name_content.path.location,
+                    file_path=str(target_file),
+                    reason=target_load_failure.reason,
+                )
+            )
+            self._path_tracker.mark_not_found(target_file)
+            return None
+
         if target_definition is None:
             source_definition.diagnostics.append(
                 diagnostics.ReferencedDefinitionNotFoundDiagnostic(
