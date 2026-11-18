@@ -21,12 +21,11 @@ from define.compiler.validator.reference_graph.destruction import (
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from define.compiler import ast
-    from define.compiler.data_structures import typed_name_dict
     from define.compiler.errors import diagnostics
-    from define.compiler.validator import scope_tracker, validation_result
+    from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph import (
         reference_graph_validation_state,
     )
@@ -54,10 +53,7 @@ class Destroyer:
     def __init__(
         self,
         definition: ast.ActionDefinition,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
         tracker: particle_tracker.ParticleTracker,
         callee_execution_validator: callee_execution_validator.CalleeExecutionValidator,
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
@@ -65,7 +61,7 @@ class Destroyer:
         """Destroy particles for ``definition`` in the state ``tracker`` holds."""
         self._definition = definition
         self._walker = destruction_walk.DestructionWalker(
-            tracker, definition_results, validation_state
+            tracker, definitions, validation_state
         )
         self._tracker = tracker
         self._callee_execution_validator = callee_execution_validator

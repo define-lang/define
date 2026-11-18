@@ -44,9 +44,9 @@ from define.compiler.validator.reference_graph.particles import (
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
-    from define.compiler.data_structures import interned_set, typed_name_dict
+    from define.compiler.data_structures import interned_set
     from define.compiler.validator.reference_graph import (
         quality_assignment,
         reference_graph_validation_state,
@@ -62,10 +62,7 @@ class ActionDefinitionValidator:
     _definition: ast.ActionDefinition
     _particle_statement_validity: Sequence[validation_result.ParticleStatementValidity]
     _looked_at_position_validity: Sequence[bool]
-    _definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ]
+    _definitions: Mapping[str, ast.GlobalDefinition]
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
     _diagnostics: list[diagnostics.Diagnostic]
     _destruction_contracts: list[action_contract.DestructionContracts]
@@ -77,17 +74,14 @@ class ActionDefinitionValidator:
             validation_result.ParticleStatementValidity
         ],
         looked_at_position_validity: Sequence[bool],
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     ):
         """Initialize with the Action Definition, statement validity, known definitions, and the state that action validators share."""
         self._definition = definition
         self._particle_statement_validity = particle_statement_validity
         self._looked_at_position_validity = looked_at_position_validity
-        self._definition_results = definition_results
+        self._definitions = definitions
         self._validation_state = validation_state
         self._diagnostics = []
         self._destruction_contracts = []
@@ -112,7 +106,7 @@ class ActionDefinitionValidator:
     @cached_property
     def _chained_name_validator(self) -> chained_name_validator.ChainedNameValidator:
         return chained_name_validator.ChainedNameValidator(
-            self._definition_results, self._tracker
+            self._definitions, self._tracker
         )
 
     @cached_property
@@ -121,7 +115,7 @@ class ActionDefinitionValidator:
     ) -> position_quality_resolver.PositionQualityResolver:
         return position_quality_resolver.PositionQualityResolver(
             self._definition,
-            self._definition_results,
+            self._definitions,
             self._validation_state,
         )
 
@@ -136,7 +130,7 @@ class ActionDefinitionValidator:
         self,
     ) -> dead_quality_assignment_validator.DeadQualityAssignmentValidator:
         return dead_quality_assignment_validator.DeadQualityAssignmentValidator(
-            self._definition_results,
+            self._definitions,
             self._tracker,
             self._position_quality_resolver,
         )
@@ -157,7 +151,7 @@ class ActionDefinitionValidator:
     ) -> callee_execution_validator.CalleeExecutionValidator:
         return callee_execution_validator.CalleeExecutionValidator(
             self._definition,
-            self._definition_results,
+            self._definitions,
             self._validation_state,
             self._tracker,
             self._requirement_validator,
@@ -171,7 +165,7 @@ class ActionDefinitionValidator:
     ) -> action_operation_execution_validator.ActionOperationExecutionValidator:
         return action_operation_execution_validator.ActionOperationExecutionValidator(
             self._definition,
-            self._definition_results,
+            self._definitions,
             self._tracker,
             self._chained_name_validator,
             self._requirement_validator,
@@ -184,7 +178,7 @@ class ActionDefinitionValidator:
     def _destroyer(self) -> destroyer.Destroyer:
         return destroyer.Destroyer(
             self._definition,
-            self._definition_results,
+            self._definitions,
             self._tracker,
             self._callee_execution_validator,
             self._validation_state,
@@ -206,10 +200,10 @@ class ActionDefinitionValidator:
         self, quality: ast.GlobalTypedNameReference
     ) -> ast.ActionDefinition | None:
         """Return the definition of an action quality, or None if it is unresolved."""
-        definition_result = self._definition_results.get(quality)
-        if definition_result is None:
+        definition = self._definitions.get(quality.full_typed_name)
+        if definition is None:
             return None
-        return typing.cast("ast.ActionDefinition", definition_result.definition)
+        return typing.cast("ast.ActionDefinition", definition)
 
     def _run_constructors(
         self,
@@ -680,7 +674,7 @@ class ActionDefinitionValidator:
             guaranteed_particle_destruction.guaranteed_particle_destruction(
                 self._definition,
                 self._implied_quality_names,
-                self._definition_results,
+                self._definitions,
                 self._validation_state,
                 self._tracker,
             )

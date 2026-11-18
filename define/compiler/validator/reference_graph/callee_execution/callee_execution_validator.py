@@ -16,12 +16,11 @@ from define.compiler.validator.reference_graph.destruction import (
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from crates.source_rendering.python import rendering
     from define.compiler import chained_name
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import scope_tracker, validation_result
+    from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph import (
         action_contract,
         action_requirement_validator,
@@ -55,10 +54,7 @@ class CalleeExecutionValidator:
     def __init__(
         self,
         definition: ast.ActionDefinition,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
         tracker: particle_tracker.ParticleTracker,
         requirement_validator: action_requirement_validator.ActionRequirementValidator,
@@ -73,7 +69,7 @@ class CalleeExecutionValidator:
         self._dead_value_write_validator = dead_value_write_validator
         self._destruction_contract_validator = (
             destruction_contract_validator.DestructionContractValidator(
-                definition, definition_results, validation_state, tracker
+                definition, definitions, validation_state, tracker
             )
         )
 

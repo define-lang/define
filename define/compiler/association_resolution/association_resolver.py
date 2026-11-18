@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import ast
 from define.compiler.association_resolution import (
     associated_encoding_operation_checks,
     associations,
@@ -18,12 +17,12 @@ from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import abstract_program
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Collection
+    from collections.abc import Collection, Iterable, Mapping
 
+    from define.compiler import ast
     from define.compiler.association_resolution import (
         association_tables,
     )
-    from define.compiler.data_structures import typed_name_dict
     from define.compiler.graphs import reference_graph, reference_graph_order
 
 
@@ -37,16 +36,13 @@ class AssociationResolver:
 
     def __init__(
         self,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
         tables: association_tables.AssociationTables,
     ):
-        """Initialize with the known definitions and each project's association table."""
-        self._definition_results = definition_results
+        """Initialize with the program's definitions by full typed name, and each project's association table."""
+        self._definitions = definitions
         self._associations = associations.Associations(tables)
-        self._literal_encoder = literal_encoder.LiteralEncoder(definition_results)
+        self._literal_encoder = literal_encoder.LiteralEncoder(definitions)
         self._value_operations = value_operation_resolver.ValueOperationResolver(
             self._associations, self._literal_encoder
         )
@@ -115,14 +111,11 @@ class AssociationResolver:
         return self._associations.chosen_edges()
 
     def resolve_encoding_operations(
-        self,
+        self, encoding_operations: Iterable[ast.EncodingOperationDefinition]
     ) -> list[validation_result.DefinitionDiagnostics]:
         """Validate each loaded Encoding Operation and check each chosen association against the Encoding Operation it names, once the chosen ones are loaded, and return the diagnostics about each definition that has any."""
         found: list[validation_result.DefinitionDiagnostics] = []
-        for definition_result in self._definition_results.values():
-            definition = definition_result.definition
-            if not isinstance(definition, ast.EncodingOperationDefinition):
-                continue
+        for definition in encoding_operations:
             encoding_operation_diagnostics = self._resolve_encoding_operation(
                 definition
             )
@@ -137,7 +130,7 @@ class AssociationResolver:
             logical_operation = chosen.logical_operation
             association_diagnostics = associated_encoding_operation_checks.check(
                 logical_operation,
-                self._definition_results,
+                self._definitions,
                 [chosen.encoding_operation_association],
             )
             if association_diagnostics:
@@ -154,7 +147,7 @@ class AssociationResolver:
     ) -> list[diagnostics.Diagnostic]:
         """Validate an Encoding Operation, add it to the concrete program, and return the diagnostics about it."""
         result = encoding_operation_definition_validator.EncodingOperationDefinitionValidator(
-            definition, self._definition_results
+            definition, self._definitions
         ).analyze()
         self._encoding_operations[definition.typed_name.full_typed_name] = (
             result.encoding_operation

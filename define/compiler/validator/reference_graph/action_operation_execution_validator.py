@@ -15,11 +15,10 @@ from define.compiler.validator.reference_graph import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Collection, Iterator
+    from collections.abc import Collection, Iterator, Mapping
 
-    from define.compiler.data_structures import typed_name_dict
     from define.compiler.errors import diagnostics
-    from define.compiler.validator import scope_tracker, validation_result
+    from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph import (
         action_requirement_validator,
         chained_name_validator,
@@ -56,10 +55,7 @@ class ActionOperationExecutionValidator:
     def __init__(
         self,
         action: ast.ActionDefinition,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
         tracker: particle_tracker.ParticleTracker,
         chained_name_validator: chained_name_validator.ChainedNameValidator,
         requirement_validator: action_requirement_validator.ActionRequirementValidator,
@@ -77,7 +73,7 @@ class ActionOperationExecutionValidator:
         self._operation_validator = operation_validator
         self._arguments_validator = (
             operation_arguments_validator.OperationArgumentsValidator(
-                definition_results, self._enclosing_fqun
+                definitions, self._enclosing_fqun
             )
         )
 

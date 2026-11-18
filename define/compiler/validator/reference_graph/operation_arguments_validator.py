@@ -12,29 +12,20 @@ from define.compiler.validator.structural import name_validators
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Mapping, Sequence
 
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import validation_result
-
 
 class OperationArgumentsValidator:
     """Validates Operation Argument Statements against the views of the operations and logical operations they execute."""
 
-    _definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ]
+    _definitions: Mapping[str, ast.GlobalDefinition]
     _enclosing_fqun: ast.Fqun
 
     def __init__(
         self,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
         enclosing_fqun: ast.Fqun,
     ):
         """Initialize with the known definitions and the executing definition's FQUN."""
-        self._definition_results = definition_results
+        self._definitions = definitions
         self._enclosing_fqun = enclosing_fqun
 
     def validate(
@@ -143,25 +134,23 @@ class OperationArgumentsValidator:
         statement: ast.OperationExecutionStatement[ast.LookedAt],
     ) -> ast.OperationDefinition | None:
         """Return the operation the statement executes, if it is defined."""
-        definition_result = self._definition_results.get(statement.operation)
+        definition = self._definitions.get(statement.operation.full_typed_name)
         # A missing operation, or a definition of another type, was already
         # reported when its reference was resolved.
-        if definition_result is None:
+        if definition is None:
             return None
-        return typing.cast("ast.OperationDefinition", definition_result.definition)
+        return typing.cast("ast.OperationDefinition", definition)
 
     def get_executed_logical_operation(
         self, statement: ast.LogicalOperationExecutionStatement
     ) -> ast.LogicalOperationDefinition | None:
         """Return the logical operation the statement executes, if it is defined."""
-        definition_result = self._definition_results.get(statement.logical_operation)
+        definition = self._definitions.get(statement.logical_operation.full_typed_name)
         # A missing logical operation, or a definition of another type, was
         # already reported when its reference was resolved.
-        if definition_result is None:
+        if definition is None:
             return None
-        return typing.cast(
-            "ast.LogicalOperationDefinition", definition_result.definition
-        )
+        return typing.cast("ast.LogicalOperationDefinition", definition)
 
     @staticmethod
     def _collect_arguments[LookedAtT: ast.LookedAt](
@@ -287,7 +276,7 @@ class OperationArgumentsValidator:
             quality = statement.typed_global_name
             # A missing quality was already reported when its reference was
             # resolved, and no particle could have it.
-            if quality not in self._definition_results:
+            if quality.full_typed_name not in self._definitions:
                 continue
             if quality.full_typed_name not in qualities:
                 missing.append(quality.source_form_in_universe(self._enclosing_fqun))

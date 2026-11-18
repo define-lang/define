@@ -25,7 +25,6 @@ if typing.TYPE_CHECKING:
 
 
 from define.compiler import ast, work_pool
-from define.compiler.data_structures import typed_name_dict
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import reference_graph, reference_graph_order
 from define.compiler.validator import validation_result
@@ -150,10 +149,11 @@ class _ProgramValidationRun:
     # The graph of the definitions that the current run validates, which
     # exists only during a run.
     _reference_graph: reference_graph.ReferenceGraph
-    _definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ]
+    # The result of each validated definition, by its full typed name.
+    _definition_results: dict[str, validation_result.DefinitionValidationResult]
+    # Each validated definition, by its full typed name.
+    _definitions: dict[str, ast.GlobalDefinition]
+    _encoding_operations: list[ast.EncodingOperationDefinition]
     # The full typed names of definitions submitted for validation.
     _requested_definition_names: set[str]
     _allow_entry_action_interface_positions: bool
@@ -170,7 +170,9 @@ class _ProgramValidationRun:
         self._source_map = source_map
         self._file_validator = file_validator.FileStructuralValidator(source_map)
         self._reference_graph = reference_graph.ReferenceGraph()
-        self._definition_results = typed_name_dict.TypedNameDict()
+        self._definition_results = {}
+        self._definitions = {}
+        self._encoding_operations = []
         self._requested_definition_names = set()
         self._allow_entry_action_interface_positions = (
             allow_entry_action_interface_positions
@@ -211,7 +213,9 @@ class _ProgramValidationRun:
             file_results=file_results,
             entry_action=entry_action,
             definition_order=definition_order,
-            definition_results=self._definition_results,
+            definitions=self._definitions,
+            structural_results=self._definition_results,
+            encoding_operations=self._encoding_operations,
             program_diagnostics=self._resolver.program_diagnostics(),
             source_map=self._source_map,
         )
@@ -239,7 +243,9 @@ class _ProgramValidationRun:
                 self._follow_reference(
                     referencing_root,
                     None,
-                    self._definition_results[edge.enclosing_definition.typed_name],
+                    self._definition_results[
+                        edge.enclosing_definition.typed_name.full_typed_name
+                    ],
                     edge,
                     pool,
                 )
@@ -273,7 +279,9 @@ class _ProgramValidationRun:
         """Return the results of a file's validated definitions, in source order."""
         definition_results: list[validation_result.DefinitionValidationResult] = []
         for definition in loaded_file.definitions.values():
-            definition_result = self._definition_results.get(definition.typed_name)
+            definition_result = self._definition_results.get(
+                definition.typed_name.full_typed_name
+            )
             # Two files can define the same typed name when a definition's path
             # does not match its file. Only the first of them to be requested
             # is validated, so the result for this typed name may be for a
@@ -317,9 +325,12 @@ class _ProgramValidationRun:
         pool: work_pool.WorkPool,
     ):
         """Register a validated definition and follow its references."""
-        self._definition_results[definition_result.definition.typed_name] = (
-            definition_result
-        )
+        definition = definition_result.definition
+        definition_name = definition.typed_name.full_typed_name
+        self._definition_results[definition_name] = definition_result
+        self._definitions[definition_name] = definition
+        if isinstance(definition, ast.EncodingOperationDefinition):
+            self._encoding_operations.append(definition)
         self._reference_graph.add_definition(definition_result.definition)
         self._follow_edges(
             loaded_file, definition_result, definition_result.reference_edges, pool

@@ -19,11 +19,9 @@ from define.compiler.validator.reference_graph.destruction import (
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Mapping
 
     from define.compiler import ast, chained_name
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import validation_result
     from define.compiler.validator.reference_graph import (
         reference_graph_validation_state,
     )
@@ -59,10 +57,7 @@ class DestructionContractValidator:
     def __init__(
         self,
         definition: ast.ActionDefinition,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
         tracker: particle_tracker.ParticleTracker,
     ):
@@ -70,7 +65,7 @@ class DestructionContractValidator:
         self._definition = definition
         self._tracker = tracker
         self._walker = destruction_walk.DestructionWalker(
-            tracker, definition_results, validation_state
+            tracker, definitions, validation_state
         )
 
     def validate(

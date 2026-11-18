@@ -14,7 +14,7 @@ from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import operation_definition_validator
 
 if typing.TYPE_CHECKING:
-    from define.compiler.data_structures import typed_name_dict
+    from collections.abc import Mapping
 
 
 class EncodingOperationDefinitionValidator(
@@ -32,14 +32,11 @@ class EncodingOperationDefinitionValidator(
     def __init__(
         self,
         definition: ast.EncodingOperationDefinition,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
     ):
         """Initialize with the Encoding Operation Definition and known definitions."""
-        super().__init__(definition, definition_results)
-        self._literal_encoder = literal_encoder.LiteralEncoder(definition_results)
+        super().__init__(definition, definitions)
+        self._literal_encoder = literal_encoder.LiteralEncoder(definitions)
         self._steps = []
         self._computer_operation = None
 

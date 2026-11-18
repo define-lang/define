@@ -15,7 +15,7 @@ if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.association_resolution import concrete_program
-    from define.compiler.data_structures import define_path, typed_name_dict
+    from define.compiler.data_structures import define_path
     from define.compiler.errors import syntax_errors
     from define.compiler.graphs import reference_graph, reference_graph_order
     from define.compiler.validator.reference_graph import (
@@ -79,23 +79,34 @@ class DefinitionValidationResult(msgspec.Struct):
 
 
 class DefinitionDiagnostics(msgspec.Struct, frozen=True):
-    """The diagnostics that a stage after structural validation found about one definition, which are added to its result once the stage finishes."""
+    """The diagnostics that a stage after structural validation found about one definition, which are added to its result once every stage finishes."""
 
     definition: ast.GlobalDefinition
     diagnostics: list[diagnostics.Diagnostic]
 
 
 def add_definition_diagnostics(
-    definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        DefinitionValidationResult,
-    ],
+    file_results: Iterable[FileValidationResult],
     stage_diagnostics: Iterable[DefinitionDiagnostics],
 ):
-    """Add the diagnostics that a stage found to the results of the definitions they are about."""
+    """Add the diagnostics that the stages after structural validation found to the results of the definitions they are about."""
+    by_name: dict[str, list[diagnostics.Diagnostic]] = {}
     for found in stage_diagnostics:
-        definition_results[found.definition.typed_name].diagnostics.extend(
+        by_name.setdefault(found.definition.typed_name.full_typed_name, []).extend(
             found.diagnostics
+        )
+    if not by_name:
+        return
+    for file_result in file_results:
+        for definition_result in file_result.definition_results:
+            found_diagnostics = by_name.pop(
+                definition_result.definition.typed_name.full_typed_name, None
+            )
+            if found_diagnostics is not None:
+                definition_result.diagnostics.extend(found_diagnostics)
+    if by_name:
+        raise AssertionError(
+            f"Diagnostics about definitions that no file holds: {sorted(by_name)}"
         )
 
 
@@ -129,10 +140,15 @@ class ProgramValidationResult(msgspec.Struct):
     file_results: list[FileValidationResult]
     entry_action: ast.ActionDefinition | None
     definition_order: reference_graph_order.ReferenceGraphOrder
-    definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        DefinitionValidationResult,
-    ]
+    # Each validated definition, by its full typed name.
+    definitions: dict[str, ast.GlobalDefinition]
+    # The result of each validated definition, by its full typed name, which
+    # reference graph validation reads for each action and Value Operation
+    # that it validates.
+    structural_results: dict[str, DefinitionValidationResult]
+    # Each validated Encoding Operation, which association resolution
+    # validates once the ones it chooses are loaded.
+    encoding_operations: list[ast.EncodingOperationDefinition]
     # The diagnostics about the program rather than one of its files: the
     # entry file path's, and those of every project config that was loaded,
     # each reported once however many files depend on its config.

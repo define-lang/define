@@ -10,10 +10,7 @@ from define.compiler import ast, name_types
 from define.compiler.validator.reference_graph import quality_assignment
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable
-
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import validation_result
+    from collections.abc import Iterable, Mapping
 
 
 class DeadQualityAssignmentCandidate(msgspec.Struct, frozen=True):
@@ -88,10 +85,7 @@ class DeadQualityAssignmentTracker:
     def register_position_quality_assignments(
         self,
         position_definition: ast.LocalPositionDefinition,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
     ):
         """Register a local or interface position's directly-written quality assignments as pending-dead candidates (DLP 42).
 
@@ -100,12 +94,12 @@ class DeadQualityAssignmentTracker:
         destroyed.
         """
         for quality in position_definition.assigned_qualities:
-            definition_result = definition_results.get(quality)
-            if definition_result is None:
+            definition = definitions.get(quality.full_typed_name)
+            if definition is None:
                 continue
             if (
-                isinstance(definition_result.definition, ast.ActionDefinition)
-                and definition_result.definition.is_destructor
+                isinstance(definition, ast.ActionDefinition)
+                and definition.is_destructor
             ):
                 continue
             self.register_quality_assignment(position_definition.typed_name, quality)

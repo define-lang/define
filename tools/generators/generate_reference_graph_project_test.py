@@ -180,7 +180,7 @@ def test_structured_projects_load_every_definition(
     monkeypatch.chdir(output)
     validation = driver.Driver().validate_program(Path("test.dfn"), max_threads=1)
     assert validation.program_validation.all_diagnostics == []
-    assert len(validation.program_validation.definition_results) == modules + 1
+    assert len(validation.program_validation.definitions) == modules + 1
 
 
 @pytest.mark.parametrize(
@@ -312,7 +312,7 @@ def test_depth_update_shape_references_all_positions_then_predecessors(
         .program_validation
     )
     assert result.all_diagnostics == []
-    assert len(result.definition_results) == modules + 1
+    assert len(result.definitions) == modules + 1
 
 
 @pytest.mark.parametrize("shape", [gen.Shape.CYCLES, gen.Shape.MISSING])

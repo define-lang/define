@@ -8,12 +8,10 @@ from define.compiler import ast
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterable, Iterator, Mapping
 
     from crates.source_rendering.python import rendering
     from define.compiler.config import encoding_operations_config
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import validation_result
 
 
 def _direction(view: ast.ViewDefinition) -> str:
@@ -26,16 +24,13 @@ def _direction(view: ast.ViewDefinition) -> str:
 
 def check(
     definition: ast.LogicalOperationDefinition,
-    definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ],
+    definitions: Mapping[str, ast.GlobalDefinition],
     associations: Iterable[encoding_operations_config.AssociatedEncodingOperation],
 ) -> list[diagnostics.Diagnostic]:
     """Return a diagnostic for each way a loaded Encoding Operation that one of the logical operation's associations names differs from that association, or from the logical operation in the direction of a view."""
     check_diagnostics: list[diagnostics.Diagnostic] = []
     for association, encoding_operation in _loaded_encoding_operations(
-        definition_results, associations
+        definitions, associations
     ):
         check_diagnostics.extend(
             _association_diagnostics(association, encoding_operation)
@@ -142,10 +137,7 @@ def _association_diagnostics(
 
 
 def _loaded_encoding_operations(
-    definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ],
+    definitions: Mapping[str, ast.GlobalDefinition],
     associations: Iterable[encoding_operations_config.AssociatedEncodingOperation],
 ) -> Iterator[
     tuple[
@@ -160,10 +152,8 @@ def _loaded_encoding_operations(
     """
     for association in associations:
         reference = association.reference
-        result = definition_results.get(reference)
+        definition = definitions.get(reference.full_typed_name)
         # A missing Encoding Operation, or a definition of another type,
         # was already reported when its reference was resolved.
-        if result is not None and isinstance(
-            result.definition, ast.EncodingOperationDefinition
-        ):
-            yield association, result.definition
+        if isinstance(definition, ast.EncodingOperationDefinition):
+            yield association, definition

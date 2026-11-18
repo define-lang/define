@@ -15,10 +15,9 @@ from define.compiler.validator.reference_graph.destruction import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
-    from define.compiler.data_structures import interned_set, typed_name_dict
-    from define.compiler.validator import validation_result
+    from define.compiler.data_structures import interned_set
     from define.compiler.validator.reference_graph import (
         reference_graph_validation_state,
     )
@@ -42,10 +41,7 @@ class GuaranteedParticleDestruction(msgspec.Struct):
 def guaranteed_particle_destruction(
     definition: ast.ActionDefinition,
     implied_quality_names: interned_set.InternedSet,
-    definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ],
+    definitions: Mapping[str, ast.GlobalDefinition],
     validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     tracker: particle_tracker.ParticleTracker,
 ) -> GuaranteedParticleDestruction:
@@ -56,7 +52,7 @@ def guaranteed_particle_destruction(
     """
     return _GuaranteedParticleDestructionBuilder(
         definition,
-        destroyed_particles.DestroyedParticles(tracker, definition_results),
+        destroyed_particles.DestroyedParticles(tracker, definitions),
         validation_state,
         tracker,
     ).build(implied_quality_names)

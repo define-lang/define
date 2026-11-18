@@ -150,7 +150,7 @@ def test_bottleneck_layers(interval: int, expected: int):
     )
     result = driver.Driver().validate_source(source).program_validation
     assert result.all_diagnostics == []
-    assert len(result.definition_results) == expected + 1
+    assert len(result.definitions) == expected + 1
 
 
 def test_negative_bottleneck_interval():
@@ -213,7 +213,7 @@ def test_destructor_cascades():
     result = driver.Driver().validate_source(source).program_validation
     assert result.all_diagnostics == []
     assert source.count("this particle is being destroyed.") == 4
-    assert len(result.definition_results) == 7
+    assert len(result.definitions) == 7
 
 
 def test_invalid_destructor_depth():

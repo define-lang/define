@@ -9,10 +9,9 @@ from define.compiler.data_structures import interned_set
 from define.compiler.validator.reference_graph import quality_assignment
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import scope_tracker, validation_result
+    from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph import (
         reference_graph_validation_state,
     )
@@ -22,24 +21,18 @@ class PositionQualityResolver:
     """Resolve Position quality assignments and their transitive Quality implications."""
 
     _definition: ast.ActionDefinition
-    _definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ]
+    _definitions: Mapping[str, ast.GlobalDefinition]
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
 
     def __init__(
         self,
         definition: ast.ActionDefinition,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     ):
         """Initialize with the current Action Definition, known definitions, and shared cache."""
         self._definition = definition
-        self._definition_results = definition_results
+        self._definitions = definitions
         self._validation_state = validation_state
 
     def get_direct_required_qualities(
@@ -88,8 +81,9 @@ class PositionQualityResolver:
             parent = typing.cast(
                 "ast.GlobalTypedNameReference", position.typed_names[-2]
             )
-            action_def = self._definition_results[parent].definition
-            action_def = typing.cast("ast.ActionDefinition", action_def)
+            action_def = typing.cast(
+                "ast.ActionDefinition", self._definitions[parent.full_typed_name]
+            )
             return (
                 action_def.interface_positions_by_name[
                     last_element.full_typed_name
@@ -101,12 +95,10 @@ class PositionQualityResolver:
 
         # This can be None if the last element in the chain is a definition we never loaded
         # (file not found or failed to parse).
-        definition_result = self._definition_results.get(last_element)
-        if definition_result is None:
+        definition = self._definitions.get(last_element.full_typed_name)
+        if definition is None:
             return (None, None)
-        position_def = typing.cast(
-            "ast.PositionDefinition", definition_result.definition
-        )
+        position_def = typing.cast("ast.PositionDefinition", definition)
         return (
             position_def.assigned_qualities,
             chained_name.position((last_element.full_typed_name,)),
@@ -164,10 +156,10 @@ class PositionQualityResolver:
         # Only action definitions contain Quality Implication Statements.
         if quality.name_type != name_types.NameType.ACTION:
             return ()
-        definition_result = self._definition_results.get(quality)
-        if definition_result is None:
+        quality_definition = self._definitions.get(quality.full_typed_name)
+        if quality_definition is None:
             return ()
-        definition = typing.cast("ast.ActionDefinition", definition_result.definition)
+        definition = typing.cast("ast.ActionDefinition", quality_definition)
         return tuple(
             implication.typed_global_name
             for implication in definition.quality_implications

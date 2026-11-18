@@ -100,7 +100,7 @@ def _association_resolver(
     program: program_validator.StructurallyValidatedProgram,
 ) -> association_resolver.AssociationResolver:
     return association_resolver.AssociationResolver(
-        program.result.definition_results,
+        program.result.definitions,
         association_tables.AssociationTables(
             program.project_roots(), program.result.source_map
         ),
@@ -113,7 +113,8 @@ def _reference_graph_validator(
     structural_result = program.result
     return reference_graph_validator.ReferenceGraphValidator(
         structural_result.definition_order,
-        structural_result.definition_results,
+        structural_result.definitions,
+        structural_result.structural_results,
         _association_resolver(program),
         entry_action=structural_result.entry_action,
     )
@@ -141,7 +142,8 @@ def test_independent_actions_validate_in_parallel():
         resolver = _association_resolver(program)
         validated_diagnostics = reference_graph_validator.ReferenceGraphValidator(
             program.result.definition_order,
-            program.result.definition_results,
+            program.result.definitions,
+            program.result.structural_results,
             resolver,
             entry_action=program.result.entry_action,
         ).validate(max_workers=2)

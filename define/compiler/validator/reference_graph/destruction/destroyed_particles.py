@@ -10,11 +10,9 @@ from define.compiler.validator.reference_graph.destruction import destruction_co
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
     from define.compiler import ast, chained_name
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import validation_result
     from define.compiler.validator.reference_graph.particles import (
         particle_tracker,
     )
@@ -39,14 +37,11 @@ class DestroyedParticles:
     def __init__(
         self,
         tracker: particle_tracker.ParticleTracker,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
     ):
         """Read the particle state ``tracker`` holds."""
         self._tracker = tracker
-        self._definition_results = definition_results
+        self._definitions = definitions
 
     def particle_or_unexpanded_destruction_at(
         self,
@@ -74,14 +69,12 @@ class DestroyedParticles:
             if quality.name_type == name_types.NameType.POSITION:
                 child_names.append((quality,))
             elif quality.name_type == name_types.NameType.ACTION:
-                definition_result = self._definition_results.get(quality)
+                quality_definition = self._definitions.get(quality.full_typed_name)
                 # Reference validation has already reported unresolved
                 # qualities.
-                if definition_result is None:
+                if quality_definition is None:
                     continue
-                definition = typing.cast(
-                    "ast.ActionDefinition", definition_result.definition
-                )
+                definition = typing.cast("ast.ActionDefinition", quality_definition)
                 if definition.is_destructor:
                     destructors.append(quality)
                 for interface_position in definition.interface_positions:

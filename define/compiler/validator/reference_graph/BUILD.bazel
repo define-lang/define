@@ -53,7 +53,6 @@ py_library(
         "//define/compiler:chained_name",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:interned_set",
-        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator:validation_result",
@@ -81,10 +80,8 @@ py_library(
         ":particle_operation_validator",
         ":position_occupancy",
         "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:scope_tracker",
-        "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph/dead_code:dead_quality_assignment_validator",
         "//define/compiler/validator/reference_graph/dead_code:dead_value_write_validator",
         "//define/compiler/validator/reference_graph/particles:particle_info",
@@ -121,10 +118,8 @@ py_library(
     deps = [
         "//define/compiler:ast",
         "//define/compiler:chained_name",
-        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:scope_tracker",
-        "//define/compiler/validator:validation_result",
         "//define/compiler/validator/reference_graph/particles:particle_tracker",
     ],
 )
@@ -135,9 +130,7 @@ py_library(
     deps = [
         ":abstract_program",
         "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
-        "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:name_validators",
     ],
 )
@@ -151,7 +144,6 @@ py_library(
         ":operation_arguments_validator",
         ":view_use_tracker",
         "//define/compiler:ast",
-        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:scope_tracker",
         "//define/compiler/validator:validation_result",
@@ -190,9 +182,7 @@ py_library(
         "//define/compiler:chained_name",
         "//define/compiler:name_types",
         "//define/compiler/data_structures:interned_set",
-        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/validator:scope_tracker",
-        "//define/compiler/validator:validation_result",
     ],
 )
 
@@ -280,7 +270,6 @@ py_library(
         ":reference_graph_validation_state",
         "//define/compiler:ast",
         "//define/compiler/association_resolution:association_resolver",
-        "//define/compiler/data_structures:typed_name_dict",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/graphs:reference_graph_executor",
         "//define/compiler/graphs:reference_graph_order",

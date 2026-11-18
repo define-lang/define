@@ -19,9 +19,9 @@ from define.compiler.validator.reference_graph.destruction import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from define.compiler import ast
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import validation_result
     from define.compiler.validator.reference_graph import (
         reference_graph_validation_state,
     )
@@ -152,15 +152,12 @@ class DestructionWalker:
     def __init__(
         self,
         tracker: particle_tracker.ParticleTracker,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
         validation_state: reference_graph_validation_state.ReferenceGraphValidationState,
     ):
         """Walk destructions in the particle state ``tracker`` holds."""
         self._destroyed_particles = destroyed_particles.DestroyedParticles(
-            tracker, definition_results
+            tracker, definitions
         )
         self._validation_state = validation_state
 

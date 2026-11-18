@@ -8,21 +8,17 @@ from define.compiler import ast
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     from define.compiler import chained_name
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import scope_tracker, validation_result
+    from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph.particles import particle_tracker
 
 
 class ChainedNameValidator:
     """Check chained names against the definitions of their parent names."""
 
-    _definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ]
+    _definitions: Mapping[str, ast.GlobalDefinition]
     _tracker: particle_tracker.ParticleTracker
     # Each valid canonical chain, with the definition its first name had in
     # scope when it was valid.
@@ -32,14 +28,11 @@ class ChainedNameValidator:
 
     def __init__(
         self,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
         tracker: particle_tracker.ParticleTracker,
     ):
         """Initialize with known definitions and the action's particle state."""
-        self._definition_results = definition_results
+        self._definitions = definitions
         self._tracker = tracker
         self._valid_chains = {}
 
@@ -142,12 +135,11 @@ class ChainedNameValidator:
         chain: ast.PositionReference,
     ) -> ast.GlobalDefinition | None:
         """Get the GlobalDefinition for a chain element, or None on failure (and mark chain error)."""
-        parent_result = self._definition_results.get(parent)
+        parent_definition = self._definitions.get(parent.full_typed_name)
         # This means the definition's file did not load or did not parse.
-        if parent_result is None:
+        if parent_definition is None:
             self._tracker.mark_error(chain)
-            return None
-        return parent_result.definition
+        return parent_definition
 
     def _validate_action_chain_step(
         self,

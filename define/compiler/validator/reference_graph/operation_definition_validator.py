@@ -16,9 +16,7 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Collection, Iterator, Sequence
-
-    from define.compiler.data_structures import typed_name_dict
+    from collections.abc import Collection, Iterator, Mapping, Sequence
 
 
 class _ViewArgument(typing.NamedTuple):
@@ -38,10 +36,7 @@ class OperationDefinitionValidator[
     """Validates the execution statements of an operation definition against the operations and logical operations they execute."""
 
     _definition: DefinitionT
-    _definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ]
+    _definitions: Mapping[str, ast.GlobalDefinition]
     _diagnostics: list[diagnostics.Diagnostic]
     _arguments_validator: operation_arguments_validator.OperationArgumentsValidator
     _views: scope_tracker.ScopeTracker[
@@ -52,14 +47,11 @@ class OperationDefinitionValidator[
     def __init__(
         self,
         definition: DefinitionT,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
     ):
         """Initialize with the Operation Definition and known definitions."""
         self._definition = definition
-        self._definition_results = definition_results
+        self._definitions = definitions
         self._diagnostics = []
         self._views = scope_tracker.ScopeTracker()
         self._view_uses = view_use_tracker.ViewUseTracker()
@@ -68,7 +60,7 @@ class OperationDefinitionValidator[
         self._views.enter_child_scope()
         self._arguments_validator = (
             operation_arguments_validator.OperationArgumentsValidator(
-                definition_results, definition.typed_name.name_content.fqun
+                definitions, definition.typed_name.name_content.fqun
             )
         )
 
@@ -257,12 +249,12 @@ class OperationDefinitionValidator[
         # Structural validation reports views without a value quality.
         if value_quality is None:
             return []
-        value_result = self._definition_results.get(value_quality)
+        value_quality_definition = self._definitions.get(value_quality.full_typed_name)
         # A missing value, or a definition of another type, was already
         # reported when its reference was resolved.
-        if value_result is None:
+        if value_quality_definition is None:
             return []
-        value_definition = typing.cast("ast.ValueDefinition", value_result.definition)
+        value_definition = typing.cast("ast.ValueDefinition", value_quality_definition)
         may_be_read = False
         may_be_written = False
         for support in value_definition.logical_operation_support_statements:
@@ -317,18 +309,19 @@ class ValueOperationDefinitionValidator(
     """Validates a Value Operation definition and collects its steps, which are independent of the encodings of what an execution of it looks at."""
 
     _steps: list[abstract_program.ValueOperationStep]
+    _structurally_valid: bool
 
     def __init__(
         self,
         definition: ast.ValueOperationDefinition,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
+        *,
+        structurally_valid: bool,
     ):
-        """Initialize with the Value Operation Definition and known definitions."""
-        super().__init__(definition, definition_results)
+        """Initialize with the Value Operation Definition, known definitions, and whether structural validation reported nothing about it."""
+        super().__init__(definition, definitions)
         self._steps = []
+        self._structurally_valid = structurally_valid
 
     @override
     def _analyze_logical_operation_execution(
@@ -373,10 +366,7 @@ class ValueOperationDefinitionValidator(
         """Whether either validation phase reported anything about the Value Operation."""
         # Structural validation also reports problems that leave the steps
         # unusable, such as an execution that looks at an undefined view.
-        return bool(
-            self._diagnostics
-            or self._definition_results[self._definition.typed_name].diagnostics
-        )
+        return bool(self._diagnostics) or not self._structurally_valid
 
     @override
     def _build_result(

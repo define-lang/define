@@ -18,8 +18,9 @@ from define.compiler.validator.reference_graph import (
 )
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from define.compiler.association_resolution import association_resolver
-    from define.compiler.data_structures import typed_name_dict
     from define.compiler.graphs import (
         reference_graph_order,
     )
@@ -56,10 +57,8 @@ class ReferenceGraphValidator:
     """
 
     _definition_order: reference_graph_order.ReferenceGraphOrder
-    _definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ]
+    _definitions: Mapping[str, ast.GlobalDefinition]
+    _structural_results: Mapping[str, validation_result.DefinitionValidationResult]
     _entry_action: ast.ActionDefinition | None
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
     _association_resolver: association_resolver.AssociationResolver
@@ -68,22 +67,21 @@ class ReferenceGraphValidator:
     def __init__(
         self,
         definition_order: reference_graph_order.ReferenceGraphOrder,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
+        structural_results: Mapping[str, validation_result.DefinitionValidationResult],
         resolver: association_resolver.AssociationResolver,
         *,
         entry_action: ast.ActionDefinition | None,
         allow_entry_action_occupied_implied_position_requirements: bool = False,
     ):
-        """Initialize with the definition order, the definition results, and the association resolver that resolves each definition once it is validated.
+        """Initialize with the definition order, the program's definitions by full typed name, the structural result of each definition by full typed name, and the association resolver that resolves each definition once it is validated.
 
         allow_entry_action_occupied_implied_position_requirements exists only
         for validation tests of behavior that requires such a program.
         """
         self._definition_order = definition_order
-        self._definition_results = definition_results
+        self._definitions = definitions
+        self._structural_results = structural_results
         self._entry_action = entry_action
         self._validation_state = (
             reference_graph_validation_state.ReferenceGraphValidationState()
@@ -142,7 +140,11 @@ class ReferenceGraphValidator:
             case ast.ValueOperationDefinition():
                 value_operation_result = (
                     operation_definition_validator.ValueOperationDefinitionValidator(
-                        definition, self._definition_results
+                        definition,
+                        self._definitions,
+                        structurally_valid=not self._structural_results[
+                            definition.typed_name.full_typed_name
+                        ].diagnostics,
                     ).analyze()
                 )
                 definition_diagnostics.extend(value_operation_result.diagnostics)
@@ -165,12 +167,14 @@ class ReferenceGraphValidator:
     def _validate_action(
         self, definition: ast.ActionDefinition
     ) -> validation_result.ActionPostorderValidationResult:
-        definition_result = self._definition_results[definition.typed_name]
+        definition_result = self._structural_results[
+            definition.typed_name.full_typed_name
+        ]
         result = action_definition_validator.ActionDefinitionValidator(
             definition=definition,
             particle_statement_validity=definition_result.particle_statement_validity,
             looked_at_position_validity=definition_result.looked_at_position_validity,
-            definition_results=self._definition_results,
+            definitions=self._definitions,
             validation_state=self._validation_state,
         ).analyze()
         self._validation_state.publish_contract(definition.typed_name, result.contract)

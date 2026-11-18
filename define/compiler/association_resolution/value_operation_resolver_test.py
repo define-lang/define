@@ -19,14 +19,12 @@ from define.compiler.association_resolution import (
     literal_encoder,
     value_operation_resolver,
 )
-from define.compiler.data_structures import typed_name_dict
 from define.compiler.parsing import test_helpers
 
 if typing.TYPE_CHECKING:
     import pytest
 
     from define.compiler import ast
-    from define.compiler.validator import validation_result
 
 
 _SOURCE = (
@@ -54,15 +52,11 @@ def test_concurrent_resolutions_work_out_each_key_once(
     value_quality = view.quality_assignment_block.value_quality
     assert value_quality is not None
     view_encodings = {view.typed_name.source_typed_name: value_quality}
-    definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ] = typed_name_dict.TypedNameDict()
     resolver = value_operation_resolver.ValueOperationResolver(
         associations.Associations(
             association_tables.AssociationTables({}, rendering.SourceMap())
         ),
-        literal_encoder.LiteralEncoder(definition_results),
+        literal_encoder.LiteralEncoder({}),
     )
     first_is_resolving = threading.Event()
     finish_first = threading.Event()

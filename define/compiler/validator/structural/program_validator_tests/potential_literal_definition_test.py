@@ -30,7 +30,7 @@ def test_valid_literal(
     result = full_result.program_validation
     assert_no_errors(result)
     assert len(result.file_results) == 2
-    assert len(result.definition_results) == 2
+    assert len(result.definitions) == 2
     assert result.entry_action is None
     definition_result = result.file_results[0].definition_results[0]
     definition = definition_result.definition
@@ -49,7 +49,7 @@ def test_same_name_different_types(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert_no_errors(result)
-    assert len(result.definition_results) == 4
+    assert len(result.definitions) == 4
 
 
 def test_cross_universe_encoding(
@@ -57,7 +57,7 @@ def test_cross_universe_encoding(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert_no_errors(result)
-    assert len(result.definition_results) == 2
+    assert len(result.definitions) == 2
 
 
 def test_duplicate_literal(
@@ -173,7 +173,7 @@ def test_same_file_encoding(validate_testdata_structural: ValidateTestdataStruct
     result = validate_testdata_structural()
     assert_no_errors(result)
     assert len(result.file_results) == 1
-    assert len(result.definition_results) == 2
+    assert len(result.definitions) == 2
 
 
 def test_same_file_encoding_must_precede_reference(
@@ -196,7 +196,7 @@ def test_configured_external_encoding(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert_no_errors(result)
     assert len(result.file_results) == 2
-    assert len(result.definition_results) == 2
+    assert len(result.definitions) == 2
 
 
 def test_unconfigured_external_encoding(

@@ -20,7 +20,7 @@ def test_same_file_literal(validate_testdata_structural: ValidateTestdataStructu
     result = validate_testdata_structural()
     assert_no_errors(result)
     assert len(result.file_results) == 1
-    assert len(result.definition_results) == 3
+    assert len(result.definitions) == 3
 
 
 def test_invalid_literal_name(
@@ -125,7 +125,7 @@ def test_external_literal(validate_testdata_structural: ValidateTestdataStructur
     result = validate_testdata_structural()
     assert_no_errors(result)
     assert len(result.file_results) == 2
-    assert len(result.definition_results) == 3
+    assert len(result.definitions) == 3
 
 
 def test_unconfigured_external_literal(

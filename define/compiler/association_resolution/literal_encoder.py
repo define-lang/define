@@ -9,30 +9,22 @@ from define.compiler.association_resolution import concrete_program
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
     from define.compiler import ast
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import validation_result
 
 
 class LiteralEncoder:
     """Translates literals into the encodings their uses require."""
 
-    _definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ]
+    _definitions: Mapping[str, ast.GlobalDefinition]
 
     def __init__(
         self,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
     ):
         """Initialize with the known definitions."""
-        self._definition_results = definition_results
+        self._definitions = definitions
 
     def encode(
         self,
@@ -112,11 +104,13 @@ class LiteralEncoder:
         self, potential_literal: ast.GlobalTypedNameReference
     ) -> ast.GlobalTypedNameReference | None:
         """Return the Potential Literal's encoding, if the Potential Literal is defined."""
-        definition_result = self._definition_results.get(potential_literal)
-        if definition_result is None:
+        potential_literal_definition = self._definitions.get(
+            potential_literal.full_typed_name
+        )
+        if potential_literal_definition is None:
             return None
         definition = typing.cast(
-            "ast.PotentialLiteralDefinition", definition_result.definition
+            "ast.PotentialLiteralDefinition", potential_literal_definition
         )
         return definition.encoding
 

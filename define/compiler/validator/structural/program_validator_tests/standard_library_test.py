@@ -35,7 +35,7 @@ def test_referenced_definition_loads_only_its_file(
         standard_library_file("number/multiply.dfn"),
         standard_library_file("number/negate.dfn"),
     ]
-    assert sorted(name.full_typed_name for name in result.definition_results) == [
+    assert sorted(result.definitions) == [
         "logical_operation<standard:/number/absolute_value>",
         "logical_operation<standard:/number/add>",
         "logical_operation<standard:/number/less_than>",
@@ -68,7 +68,7 @@ def test_standard_references_load_their_files(
             standard_library_file("number/negate.dfn"),
         ]
     )
-    assert sorted(name.full_typed_name for name in result.definition_results) == [
+    assert sorted(result.definitions) == [
         "action<my.domain.com:my_lib:/test>",
         "encoding<standard:/number/decimal/ascii>",
         "literal<standard:/number>",

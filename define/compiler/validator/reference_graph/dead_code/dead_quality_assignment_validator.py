@@ -16,11 +16,10 @@ from define.compiler.validator.reference_graph.dead_code import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
     from define.compiler import chained_name
-    from define.compiler.data_structures import typed_name_dict
-    from define.compiler.validator import scope_tracker, validation_result
+    from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph import position_quality_resolver
     from define.compiler.validator.reference_graph.particles import (
         particle_tracker,
@@ -30,10 +29,7 @@ if typing.TYPE_CHECKING:
 class DeadQualityAssignmentValidator:
     """Track quality assignment use during an Action and diagnose what remains unused."""
 
-    _definition_results: typed_name_dict.TypedNameDict[
-        ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        validation_result.DefinitionValidationResult,
-    ]
+    _definitions: Mapping[str, ast.GlobalDefinition]
     _tracker: particle_tracker.ParticleTracker
     _position_quality_resolver: position_quality_resolver.PositionQualityResolver
     _dead_quality_assignment_tracker: (
@@ -42,15 +38,12 @@ class DeadQualityAssignmentValidator:
 
     def __init__(
         self,
-        definition_results: typed_name_dict.TypedNameDict[
-            ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-            validation_result.DefinitionValidationResult,
-        ],
+        definitions: Mapping[str, ast.GlobalDefinition],
         tracker: particle_tracker.ParticleTracker,
         quality_resolver: position_quality_resolver.PositionQualityResolver,
     ):
         """Initialize with known definitions, particle state, and Quality resolution."""
-        self._definition_results = definition_results
+        self._definitions = definitions
         self._tracker = tracker
         self._position_quality_resolver = quality_resolver
         self._dead_quality_assignment_tracker = (
@@ -74,7 +67,7 @@ class DeadQualityAssignmentValidator:
     ):
         """Register quality assignments when a local or interface Position is declared."""
         self._dead_quality_assignment_tracker.register_position_quality_assignments(
-            position, self._definition_results
+            position, self._definitions
         )
 
     def mark_implied_action_alive(self, action: ast.GlobalTypedNameReference):

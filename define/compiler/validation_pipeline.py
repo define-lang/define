@@ -45,11 +45,12 @@ def validate_and_resolve_program(
         program.project_roots(), program_result.source_map
     )
     resolver = association_resolver.AssociationResolver(
-        program_result.definition_results, tables
+        program_result.definitions, tables
     )
     validated_diagnostics = reference_graph_validator.ReferenceGraphValidator(
         program_result.definition_order,
-        program_result.definition_results,
+        program_result.definitions,
+        program_result.structural_results,
         resolver,
         entry_action=program_result.entry_action,
         allow_entry_action_occupied_implied_position_requirements=(
@@ -62,10 +63,11 @@ def validate_and_resolve_program(
     # the program after this.
     del program
     validation_result.add_definition_diagnostics(
-        program_result.definition_results, validated_diagnostics
-    )
-    validation_result.add_definition_diagnostics(
-        program_result.definition_results, resolver.resolve_encoding_operations()
+        program_result.file_results,
+        [
+            *validated_diagnostics,
+            *resolver.resolve_encoding_operations(program_result.encoding_operations),
+        ],
     )
     program_result.program_diagnostics.extend(tables.config_diagnostics())
     return CompilerValidationResult(
