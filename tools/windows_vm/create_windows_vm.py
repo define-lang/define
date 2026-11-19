@@ -460,6 +460,7 @@ def main(  # noqa: PLR0913, PLR0917 - Click passes the declared command options.
             "administrators_authorized_keys": ssh_public_key,
             "extend_evaluation.ps1": runfiles.resolve_from_env("EXTEND_EVALUATION"),
             "first_logon.ps1": runfiles.resolve_from_env("FIRST_LOGON"),
+            "install_updates.ps1": runfiles.resolve_from_env("INSTALL_UPDATES"),
         },
     )
 

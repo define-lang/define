@@ -116,5 +116,15 @@ $extendEvaluationTriggers = @(
 $system = New-ScheduledTaskPrincipal -UserId SYSTEM -LogonType ServiceAccount -RunLevel Highest
 Register-ScheduledTask -TaskName 'Extend Windows Server evaluation' -Action $extendEvaluation -Trigger $extendEvaluationTriggers -Principal $system | Out-Null
 
+Copy-Item (Join-Path $PSScriptRoot install_updates.ps1) C:\tools\install_updates.ps1
+Set-ItemProperty -Path C:\tools\install_updates.ps1 -Name IsReadOnly -Value $false
+# Installing updates at startup would delay or interrupt the work that the VM
+# was started for, so updates install daily instead, while the VM is running.
+$installUpdates = New-ScheduledTaskAction -Execute powershell.exe -Argument '-NoProfile -ExecutionPolicy Bypass -File C:\tools\install_updates.ps1 -Restart'
+Register-ScheduledTask -TaskName 'Install Windows updates' -Action $installUpdates -Trigger (New-ScheduledTaskTrigger -Daily -At 3am) -Principal $system | Out-Null
+# The final shutdown finishes installing whatever these updates leave for a
+# restart, so a new VM starts up to date.
+& C:\tools\install_updates.ps1
+
 Stop-Transcript
 Stop-Computer -Force

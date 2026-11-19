@@ -130,6 +130,18 @@ agent, which works even when Windows' display is off:
 virsh --connect qemu:///session shutdown --mode agent define-windows
 ```
 
+## Windows Updates
+
+Setup installs every pending Windows update before its final shutdown. After
+that, a scheduled task installs pending updates daily at 03:00 UTC, while the VM
+is running, and restarts Windows when an update needs it. That restart stops any
+build running in the VM at the time. Startup never installs updates, so the VM
+is ready soon after it starts.
+
+A VM created before this task existed lacks it. To add it, copy
+`install_updates.ps1` to `C:\tools` in the VM and register the task the way
+`first_logon.ps1` does.
+
 ## The Evaluation Period
 
 The Windows Server evaluation expires 180 days after setup. The VM extends it by

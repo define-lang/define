@@ -25,11 +25,13 @@ py_binary(
         "autounattend.xml",
         "extend_evaluation.ps1",
         "first_logon.ps1",
+        "install_updates.ps1",
     ],
     env = {
         "AUTOUNATTEND": "$(rlocationpath autounattend.xml)",
         "EXTEND_EVALUATION": "$(rlocationpath extend_evaluation.ps1)",
         "FIRST_LOGON": "$(rlocationpath first_logon.ps1)",
+        "INSTALL_UPDATES": "$(rlocationpath install_updates.ps1)",
     },
     deps = [
         ":vm",
