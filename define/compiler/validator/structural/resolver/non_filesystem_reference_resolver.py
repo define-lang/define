@@ -21,7 +21,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
     from define.compiler.validator.structural import (
-        file_validator,
+        file_loader,
     )
 
 
@@ -33,7 +33,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
     file holds.
     """
 
-    _source_file: file_validator.LoadedFile
+    _source_file: file_loader.LoadedFile
     # The universes that the supplied source references but its project config
     # does not configure, each reported once.
     _unknown_universes: set[str]
@@ -42,7 +42,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
 
     def __init__(
         self,
-        source_file: file_validator.LoadedFile,
+        source_file: file_loader.LoadedFile,
         roots: project_roots.ProjectRoots,
     ):
         """Initialize with the supplied source as the program's only loaded file, and the program's project roots."""
@@ -55,14 +55,14 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         }
 
     @typing.override
-    def completed_files(self) -> list[file_validator.LoadedFile]:
+    def completed_files(self) -> list[file_loader.LoadedFile]:
         return [self._source_file, *super().completed_files()]
 
     @typing.override
     def validate_reference(
         self,
         referencing_root: define_path.DefinePath,
-        referencing_file: file_validator.LoadedFile | None,
+        referencing_file: file_loader.LoadedFile | None,
         edge: reference_graph.ReferenceEdge,
         source_definition: validation_result.DefinitionValidationResult,
     ) -> reference_resolver.ReferenceOutcome:

@@ -9,8 +9,8 @@ from define.compiler import constants
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural import (
+    file_loader,
     file_validation_context,
-    file_validator,
 )
 from define.compiler.validator.structural.resolver import reference_resolver
 
@@ -34,9 +34,7 @@ class FilesystemReferenceResolver(reference_resolver.ReferenceResolver):
 
     def load_entry_file(
         self, path: pathlib.PurePath
-    ) -> tuple[
-        file_validator.LoadedFile | None, list[diagnostics.FormattableDiagnostic]
-    ]:
+    ) -> tuple[file_loader.LoadedFile | None, list[diagnostics.FormattableDiagnostic]]:
         """Load the program's entry file, at path relative to the current directory, which is the project root, and return it and its diagnostics.
 
         The file is None if the path is not under the project root or the
@@ -52,7 +50,7 @@ class FilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         root_prefix = constants.PROJECT_ROOT
         file_path = define_path.DefinePathFromPosix(path_in_project)
         full_path = root_prefix / file_path
-        entry_file, file_diagnostics = file_validator.load_file(
+        entry_file, file_diagnostics = file_loader.load_file(
             file_validation_context.FileValidationContext(
                 file_path=file_path,
                 root_prefix=root_prefix,

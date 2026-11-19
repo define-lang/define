@@ -17,8 +17,9 @@ from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.parsing import test_helpers as parsing_test_helpers
 from define.compiler.validator.structural import (
+    definition_validator,
+    file_loader,
     file_validation_context,
-    file_validator,
 )
 
 if TYPE_CHECKING:
@@ -63,14 +64,14 @@ class _ValidatedFile(msgspec.Struct, frozen=True):
 def _load_and_validate_every_definition(
     context: file_validation_context.FileValidationContext,
 ) -> _ValidatedFile:
-    loaded_file, file_diagnostics = file_validator.load_file(
+    loaded_file, file_diagnostics = file_loader.load_file(
         context, rendering.SourceMap()
     )
     found = list(file_diagnostics)
     definition_results: list[validation_result.DefinitionValidationResult] = []
     for definition in loaded_file.definitions.values():
-        definition_result, definition_diagnostics = loaded_file.validate_definition(
-            definition
+        definition_result, definition_diagnostics = (
+            definition_validator.validate_definition(definition, loaded_file.context)
         )
         definition_results.append(definition_result)
         found.extend(definition_diagnostics)
@@ -240,7 +241,7 @@ class TestLoadedFile:
             "define the potential position<my.domain.com:my_lib:/test>.\n"
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
-        loaded_file, _ = file_validator.load_file(
+        loaded_file, _ = file_loader.load_file(
             _make_context(tmp_path), rendering.SourceMap()
         )
 
@@ -257,7 +258,7 @@ class TestLoadedFile:
             "}\n"
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
-        _, file_diagnostics = file_validator.load_file(
+        _, file_diagnostics = file_loader.load_file(
             _make_context(tmp_path), rendering.SourceMap()
         )
 

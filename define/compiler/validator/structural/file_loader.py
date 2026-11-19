@@ -1,8 +1,8 @@
-"""Pure per-file and per-definition validation for the Define language.
+"""Loading of Define source files, which checks the rules that concern a file as a whole.
 
-load_file loads one file at a time, and a LoadedFile validates one of its
-definitions at a time. Neither has access to shared mutable state other than
-the source map that loaded files are registered with.
+load_file and load_source each load one file. Neither has access to shared
+mutable state other than the source map that loaded files are registered
+with.
 """
 
 from __future__ import annotations
@@ -14,10 +14,7 @@ import msgspec
 from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.parsing import parser
 from define.compiler.validator import validation_result
-from define.compiler.validator.structural import (
-    definition_validator,
-    file_validation_context,
-)
+from define.compiler.validator.structural import file_validation_context
 
 if TYPE_CHECKING:
     from crates.source_rendering.python import rendering
@@ -63,17 +60,6 @@ class LoadedFile(msgspec.Struct):
             root_prefix=self.context.root_prefix,
             definition_results=definition_results,
         )
-
-    def validate_definition(
-        self, definition: ast.GlobalDefinition
-    ) -> tuple[
-        validation_result.DefinitionValidationResult, list[diagnostics.Diagnostic]
-    ]:
-        """Validate one of the file's definitions, and return its result and its diagnostics."""
-        return definition_validator.DefinitionStructuralValidator(
-            definition=definition,
-            context=self.context,
-        ).validate_definition()
 
 
 def load_file(

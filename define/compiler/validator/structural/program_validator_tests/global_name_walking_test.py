@@ -13,7 +13,7 @@ from crates.source_rendering.python import rendering
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural import (
-    file_validator,
+    file_loader,
 )
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -134,7 +134,7 @@ def test_same_file_position_must_precede_referencing_action(
 def test_same_target_file_referenced_as_two_types_loads_once(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    original_load_file = file_validator.load_file
+    original_load_file = file_loader.load_file
     loaded_paths: list[str] = []
 
     def recording_load_file(
@@ -145,7 +145,7 @@ def test_same_target_file_referenced_as_two_types_loads_once(
         return original_load_file(context, source_map)
 
     with mock.patch.object(
-        file_validator,
+        file_loader,
         "load_file",
         autospec=True,
         side_effect=recording_load_file,

@@ -24,6 +24,16 @@ if TYPE_CHECKING:
     from define.compiler.validator.structural import file_validation_context
 
 
+def validate_definition(
+    definition: ast.GlobalDefinition,
+    context: file_validation_context.FileValidationContext,
+) -> tuple[validation_result.DefinitionValidationResult, list[diagnostics.Diagnostic]]:
+    """Validate one top-level definition in the file that context describes, and return its validation result and its diagnostics."""
+    return DefinitionStructuralValidator(
+        definition=definition, context=context
+    ).validate_definition()
+
+
 class DefinitionStructuralValidator:
     """Validates one definition within a single file.
 

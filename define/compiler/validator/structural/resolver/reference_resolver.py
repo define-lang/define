@@ -20,14 +20,14 @@ if typing.TYPE_CHECKING:
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
     from define.compiler.validator.structural import (
-        file_validator,
+        file_loader,
     )
 
 
 class ResolvedDefinition(msgspec.Struct, frozen=True):
     """A definition that a reference resolved to, and the file that holds it."""
 
-    loaded_file: file_validator.LoadedFile
+    loaded_file: file_loader.LoadedFile
     definition: ast.GlobalDefinition
 
 
@@ -78,7 +78,7 @@ class ReferenceResolver:
     """
 
     _project_roots: project_roots.ProjectRoots
-    _path_tracker: path_tracker.PathTracker[file_validator.LoadedFile]
+    _path_tracker: path_tracker.PathTracker[file_loader.LoadedFile]
     _deferred_edges: dict[define_path.DefinePath, list[_DeferredReferenceEdge]]
 
     def __init__(self, roots: project_roots.ProjectRoots):
@@ -87,14 +87,14 @@ class ReferenceResolver:
         self._path_tracker = path_tracker.PathTracker()
         self._deferred_edges = {}
 
-    def completed_files(self) -> list[file_validator.LoadedFile]:
+    def completed_files(self) -> list[file_loader.LoadedFile]:
         """Return every file that finished loading."""
         return self._path_tracker.completed_results()
 
     def validate_reference(
         self,
         referencing_root: define_path.DefinePath,
-        referencing_file: file_validator.LoadedFile | None,
+        referencing_file: file_loader.LoadedFile | None,
         edge: reference_graph.ReferenceEdge,
         source_definition: validation_result.DefinitionValidationResult,
     ) -> ReferenceOutcome:
@@ -173,7 +173,7 @@ class ReferenceResolver:
         )
 
     def add_loaded_file(
-        self, loaded_file: file_validator.LoadedFile
+        self, loaded_file: file_loader.LoadedFile
     ) -> list[
         tuple[
             validation_result.DefinitionValidationResult,
@@ -220,7 +220,7 @@ class ReferenceResolver:
     def _validate_reference_against_target(
         self,
         edge: reference_graph.ReferenceEdge,
-        target_loaded_file: file_validator.LoadedFile,
+        target_loaded_file: file_loader.LoadedFile,
         source_definition: ast.GlobalDefinition,
         *,
         in_source_file: bool,

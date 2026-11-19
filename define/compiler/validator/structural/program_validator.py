@@ -29,9 +29,7 @@ from define.compiler.config import project_roots
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import reference_graph, reference_graph_order
 from define.compiler.validator import validation_result
-from define.compiler.validator.structural import (
-    file_validator,
-)
+from define.compiler.validator.structural import definition_validator, file_loader
 from define.compiler.validator.structural.resolver import (
     filesystem_reference_resolver,
     non_filesystem_reference_resolver,
@@ -85,7 +83,7 @@ def validate_program_non_filesystem(
     must remain false when validating a program for code generation.
     """
     source_map = rendering.SourceMap(in_memory_source=source)
-    source_file, source_file_diagnostics = file_validator.load_source(source)
+    source_file, source_file_diagnostics = file_loader.load_source(source)
     roots = project_roots.ProjectRoots(source_map)
     resolver = non_filesystem_reference_resolver.NonFilesystemReferenceResolver(
         source_file, roots
@@ -283,7 +281,7 @@ class _ProgramValidationRun:
         return [*self.project_roots.diagnostics(), *self._diagnostics]
 
     def _validated_definition_results(
-        self, loaded_file: file_validator.LoadedFile
+        self, loaded_file: file_loader.LoadedFile
     ) -> list[validation_result.DefinitionValidationResult]:
         """Return the results of a file's validated definitions, in source order."""
         definition_results: list[validation_result.DefinitionValidationResult] = []
@@ -304,7 +302,7 @@ class _ProgramValidationRun:
 
     def request_definition(
         self,
-        loaded_file: file_validator.LoadedFile,
+        loaded_file: file_loader.LoadedFile,
         definition: ast.GlobalDefinition,
         pool: work_pool.WorkPool,
     ):
@@ -314,14 +312,15 @@ class _ProgramValidationRun:
             return
         self._requested_definition_names.add(definition_name)
         pool.submit(
-            loaded_file.validate_definition,
+            definition_validator.validate_definition,
             definition,
+            loaded_file.context,
             handle_result=functools.partial(self._register_definition, loaded_file),
         )
 
     def _process_loaded_file(
         self,
-        loaded: tuple[file_validator.LoadedFile, list[diagnostics.Diagnostic]],
+        loaded: tuple[file_loader.LoadedFile, list[diagnostics.Diagnostic]],
         pool: work_pool.WorkPool,
     ):
         loaded_file, file_diagnostics = loaded
@@ -334,7 +333,7 @@ class _ProgramValidationRun:
 
     def _register_definition(
         self,
-        loaded_file: file_validator.LoadedFile,
+        loaded_file: file_loader.LoadedFile,
         validated: tuple[
             validation_result.DefinitionValidationResult, list[diagnostics.Diagnostic]
         ],
@@ -356,7 +355,7 @@ class _ProgramValidationRun:
 
     def _follow_edges(
         self,
-        loaded_file: file_validator.LoadedFile,
+        loaded_file: file_loader.LoadedFile,
         definition_result: validation_result.DefinitionValidationResult,
         edges: Iterable[reference_graph.ReferenceEdge],
         pool: work_pool.WorkPool,
@@ -368,7 +367,7 @@ class _ProgramValidationRun:
 
     def _request_reference(
         self,
-        loaded_file: file_validator.LoadedFile,
+        loaded_file: file_loader.LoadedFile,
         definition_result: validation_result.DefinitionValidationResult,
         edge: reference_graph.ReferenceEdge,
         pool: work_pool.WorkPool,
@@ -389,7 +388,7 @@ class _ProgramValidationRun:
     def _follow_reference(
         self,
         referencing_root: define_path.DefinePath,
-        referencing_file: file_validator.LoadedFile | None,
+        referencing_file: file_loader.LoadedFile | None,
         definition_result: validation_result.DefinitionValidationResult,
         edge: reference_graph.ReferenceEdge,
         pool: work_pool.WorkPool,
@@ -410,7 +409,7 @@ class _ProgramValidationRun:
                 )
             case reference_resolver.LoadFile(context=file_to_load):
                 pool.submit(
-                    file_validator.load_file,
+                    file_loader.load_file,
                     file_to_load,
                     self._source_map,
                     handle_result=self._process_loaded_file,
