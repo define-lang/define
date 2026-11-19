@@ -6,7 +6,10 @@ load("//tools/bzl:pyright.bzl", "pyright_test")
 # as a whole, which Bazel provides as a symlink to a directory of real files.
 exports_files(
     ["rules"],
-    visibility = ["//tools/bzl:__pkg__"],
+    visibility = [
+        "//tools/bazel_mutation_testing:__pkg__",
+        "//tools/bzl:__pkg__",
+    ],
 )
 
 py_test(

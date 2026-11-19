@@ -118,4 +118,4 @@ def test_examples_cover_the_turned_off_lints():
         turned_off.update(
             _expected(header[0], _REPOSITORY) - _expected(header[1], _MUTATION_RUN)
         )
-    assert turned_off == _LINT_FLAGS.turned_off
+    assert turned_off == _LINT_FLAGS.turned_off.rust

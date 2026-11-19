@@ -26,9 +26,13 @@ if TYPE_CHECKING:
 
 _WORKSPACE = pathlib.Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
 _WORKTREE = _WORKSPACE / ".mutation_testing/worker-0"
-_FIXTURES = "//tools/bazel_mutation_testing/testdata/rust"
-_AREA = [f"{_FIXTURES}/..."]
-# The timeout mutant waits this long.
+_FIXTURES = "//tools/bazel_mutation_testing/testdata"
+_AREA = [f"{_FIXTURES}/python/...", f"{_FIXTURES}/rust/..."]
+# The area has Rust tests, so its canary is in Rust. This area tests the
+# Python canary.
+_PYTHON_AREA = [f"{_FIXTURES}/python/..."]
+_PYTHON_FIXTURES = "tools/bazel_mutation_testing/testdata/python/"
+# The timeout mutants wait this long.
 _TEST_TIMEOUT = "10"
 _TIMEOUT_FIXTURE = (
     _WORKTREE / "tools/bazel_mutation_testing/testdata/rust/times_out/lib.rs"
@@ -159,6 +163,16 @@ def test_run_interrupted_mid_mutant_resumes_to_the_expected_outcomes(
     completed = _run_tester(store, commit, _AREA)
     assert completed.returncode == 0, completed.stderr
     assert _outcomes(store) == _expected_outcomes()
+
+
+def test_python_area_has_the_expected_outcomes(commit: str, scratch: pathlib.Path):
+    store = scratch / "results.jsonl"
+    completed = _run_tester(store, commit, _PYTHON_AREA)
+    assert completed.returncode == 0, completed.stderr
+    expected = [
+        outcome for outcome in _expected_outcomes() if _PYTHON_FIXTURES in outcome
+    ]
+    assert _outcomes(store) == expected
 
 
 def test_failing_baseline_stops_the_run(commit: str, scratch: pathlib.Path):

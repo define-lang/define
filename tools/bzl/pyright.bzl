@@ -1,5 +1,6 @@
 """Basedpyright type-checking test macro."""
 
+load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@rules_py//py:defs.bzl", "PyInfo", _py_test = "py_test")
 load("@rules_python//python:py_info.bzl", LegacyPyInfo = "PyInfo")
 
@@ -121,6 +122,26 @@ _pyright_deps = rule(
     },
 )
 
+def _pyright_settings_impl(ctx):
+    output = ctx.actions.declare_file(ctx.label.name + ".json")
+    ctx.actions.write(output, json.encode({
+        "json_output": ctx.attr._lint_json[BuildSettingInfo].value,
+        "turned_off_rules": ctx.attr._turned_off_rules[BuildSettingInfo].value,
+    }))
+    return [DefaultInfo(files = depset([output]))]
+
+pyright_settings = rule(
+    implementation = _pyright_settings_impl,
+    doc = "Writes whether pyright_test reports JSON lines, and the rules it " +
+          "turns off, to `<name>.json`.",
+    attrs = {
+        "_lint_json": attr.label(default = Label("//tools/bzl:lint_json")),
+        "_turned_off_rules": attr.label(
+            default = Label("//tools/bzl:turned_off_pyright_rules"),
+        ),
+    },
+)
+
 def pyright_test(name, deps = [], srcs = [], **kwargs):
     """Type-check Python sources in this package with basedpyright.
 
@@ -162,11 +183,13 @@ def pyright_test(name, deps = [], srcs = [], **kwargs):
             "$(rlocationpath //:basedpyright)",
             "$(rlocationpath //:pyproject.toml)",
             "$(rlocationpath :" + name + "_sources)",
+            "$(rlocationpath //tools/bzl:pyright_settings)",
         ],
         data = [
             ":" + name + "_sources",
             "//:basedpyright",
             "//:pyproject.toml",
+            "//tools/bzl:pyright_settings",
             "//typestubs:typestubs",
         ],
         deps = [":" + name + "_deps"] + [

@@ -11,17 +11,17 @@ bzl_library(
     ],
 )
 
-bzl_library(
-    name = "lint_settings",
-    srcs = ["lint_settings.bzl"],
-)
-
 # The repository's Rust lint flags, those of mutation runs, and the lints that
 # mutation runs turn off, which the tester and lint_examples_test read.
 lint_flags(
-    name = "rust_lint_flags",
+    name = "lint_flags_json",
     lint_config = "@crates//:workspace_cargo_lints",
     visibility = ["//tools/bazel_mutation_testing:__pkg__"],
+)
+
+bzl_library(
+    name = "lint_settings",
+    srcs = ["lint_settings.bzl"],
 )
 
 check_build_file()

@@ -26,8 +26,8 @@ class Run(msgspec.Struct, frozen=True):
     area: list[str]
     test_timeout: int
     """The timeout of every test, in seconds."""
-    allowed_lints: list[str]
-    """The lints that the run allows in every Rust target, sorted."""
+    lint_flags: list[str]
+    """The Bazel flags that turn lints and rules off in the run."""
 
 
 class Result(msgspec.Struct, frozen=True):

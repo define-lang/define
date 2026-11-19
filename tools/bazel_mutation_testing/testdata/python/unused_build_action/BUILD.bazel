@@ -1,0 +1,25 @@
+load("@rules_py//py:defs.bzl", "py_binary")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_binary(
+    name = "generate_greeting",
+    srcs = ["generate_greeting.py"],
+)
+
+# No test depends on this.
+genrule(
+    name = "greeting",
+    outs = ["greeting.txt"],
+    cmd = "$(execpath :generate_greeting) && touch $@",
+    tools = [":generate_greeting"],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [":generate_greeting"],
+)
+
+check_build_file()

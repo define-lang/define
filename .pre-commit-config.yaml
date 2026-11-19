@@ -40,6 +40,8 @@ repos:
         entry: uv run ruff check --fix
         language: system
         types: [python]
+        # Each example is a mutant that the lints reject.
+        exclude: ^tools/bazel_mutation_testing/python_lint_examples/
 
       - id: check-all-symlinks
         priority: 50

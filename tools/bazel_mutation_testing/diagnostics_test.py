@@ -43,6 +43,7 @@ def test_ast_grep_rules():
         + '"severity":"error","message":"Do not call `sleep`."}\n'
         + '{"text":"x","file":"lib.py","ruleId":"a-hint","severity":"hint",'
         + '"message":"Consider."}\n'
+        + "error: 1 error found\n"
     )
     assert diagnostics.action_rejections("AstGrep", stderr) == {"ast-grep:no-sleep"}
 
@@ -51,6 +52,7 @@ def test_ruff_rules():
     stderr = (
         '{"code":"F401","message":"`os` imported but unused","filename":"a.py"}\n'
         + '{"code":null,"message":"unexpected EOF while parsing","filename":"a.py"}\n'
+        + "Found 2 errors.\n"
     )
     assert diagnostics.action_rejections("Ruff", stderr) == {
         "ruff:F401",
@@ -68,3 +70,21 @@ def test_rustc_reports_emitted_files_too():
         '{"$message_type":"artifact","artifact":"libexample.rmeta","emit":"metadata"}\n'
     )
     assert diagnostics.rust_rejections(output) == set()
+
+
+def test_pyright_rules():
+    log = (
+        "Executing tests from //define/compiler:pyright_test\n"
+        + '{"pyright": {"file": "a.py", "severity": "error", '
+        + '"message": "x is not accessed", "rule": "reportUnusedVariable"}}\n'
+        + '{"pyright": {"file": "a.py", "severity": "error", '
+        + '"message": "Expected expression"}}\n'
+    )
+    assert diagnostics.test_rejections(log) == {
+        "pyright:reportUnusedVariable",
+        diagnostics.UNIDENTIFIED,
+    }
+
+
+def test_other_test_logs_name_nothing():
+    assert diagnostics.test_rejections("FAILED test_one - assert 1 == 2\n") == set()

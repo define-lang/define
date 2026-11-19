@@ -7,8 +7,11 @@ import shutil
 import subprocess
 from typing import TYPE_CHECKING
 
+import msgspec
+
 if TYPE_CHECKING:
     import pathlib
+    from collections.abc import Iterable
 
 # The tester runs under `bazel run`, which sets these for its own runfiles and
 # workspace. Programs it starts must find their own runfiles, and Bazel runs in
@@ -91,3 +94,63 @@ def run_checked(workspace: pathlib.Path, arguments: list[str]) -> str:
     if completed.returncode != 0:
         raise BazelError(arguments, completed)
     return completed.stdout
+
+
+def query_expression(patterns: Iterable[str]) -> str:
+    """Return the query expression for target patterns.
+
+    As in `bazel test`, a pattern that starts with `-` removes its targets.
+    """
+    expression = ""
+    for pattern in patterns:
+        if pattern.startswith("-"):
+            expression += f" - {pattern.removeprefix('-')}"
+        elif expression:
+            expression += f" + {pattern}"
+        else:
+            expression = pattern
+    return expression
+
+
+class Attribute(msgspec.Struct, frozen=True, rename="camel"):
+    """An attribute of a rule in a query's `streamed_jsonproto` output."""
+
+    name: str
+    string_value: str = ""
+    string_list_value: list[str] = msgspec.field(default_factory=list)
+    boolean_value: bool = False
+
+
+class Rule(msgspec.Struct, frozen=True, rename="camel"):
+    """A rule in a query's `streamed_jsonproto` output."""
+
+    name: str
+    rule_class: str
+    attribute: list[Attribute]
+
+    def value(self, name: str) -> Attribute:
+        """Return the attribute named `name`.
+
+        Raises:
+            KeyError: The rule has no such attribute.
+        """
+        for attribute in self.attribute:
+            if attribute.name == name:
+                return attribute
+        raise KeyError(name)
+
+
+class _Target(msgspec.Struct, frozen=True):
+    rule: Rule
+
+
+def rules(output: str) -> list[Rule]:
+    """Return the rules in a query's `streamed_jsonproto` output."""
+    decoder = msgspec.json.Decoder(_Target)
+    return [decoder.decode(line).rule for line in output.splitlines()]
+
+
+def source_path(label: str) -> str:
+    """Return the workspace-relative path of the source file `label`."""
+    package, name = label.removeprefix("//").split(":", 1)
+    return f"{package}/{name}" if package else name

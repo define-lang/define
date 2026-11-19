@@ -4,15 +4,21 @@ A mutation run turns off the lints that reject a mutant for how the mutation is
 written rather than for the bug it stands for. For example, replacing a
 function's body with a constant leaves its parameters unused, though the bug,
 returning a wrong value, could be written with every parameter used. The worker
-passes TURNED_OFF as //tools/bzl:allowed_rust_lints.
+passes RUST_LINTS as //tools/bzl:allowed_rust_lints, and each other list as
+the tool's //tools/bzl:turned_off_<tool>_rules.
 
 Every lint that has rejected a mutant so far fails that test, so mutation runs
 turn off every reviewed lint. Compile errors and unparseable mutants are still
-kills. Each lint here has an example in //tools/bazel_mutation_testing:lint_examples,
-which lint_examples_test checks.
+kills. So are the pyright rules that report a value of the wrong type, such as
+reportArgumentType: no type-correct code passes the value that the mutant
+passes. Each Rust lint here has an example in
+//tools/bazel_mutation_testing:lint_examples, which lint_examples_test checks.
+Each Ruff, ast-grep and pyright rule has an example in
+//tools/bazel_mutation_testing:python_lint_examples, which
+python_lint_examples_test checks.
 """
 
-TURNED_OFF = [
+RUST_LINTS = [
     "arithmetic_overflow",
     "clippy::absurd_extreme_comparisons",
     "clippy::bad_bit_mask",
@@ -41,4 +47,43 @@ TURNED_OFF = [
     "unused_imports",
     "unused_mut",
     "unused_variables",
+]
+
+RUFF_RULES = [
+    "ARG001",
+    "ARG002",
+    "ARG005",
+    "B007",
+    "B905",
+    "F401",
+    "F841",
+    "PERF102",
+    "PIE808",
+    "PLR6301",
+    "PLW0120",
+    "RET502",
+    "RUF021",
+    "RUF059",
+    "SIM108",
+    "SIM222",
+    "SIM223",
+    "TC001",
+    "TC003",
+    "TC006",
+]
+
+AST_GREP_RULES = [
+    "concrete-sequence-parameter-only-read",
+]
+
+PYRIGHT_RULES = [
+    "reportMatchNotExhaustive",
+    "reportUnnecessaryComparison",
+    "reportUnnecessaryContains",
+    "reportUnnecessaryIsInstance",
+    "reportUnreachable",
+    "reportUnusedFunction",
+    "reportUnusedImport",
+    "reportUnusedParameter",
+    "reportUnusedVariable",
 ]

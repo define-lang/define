@@ -1,0 +1,19 @@
+load("@rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "lib",
+    srcs = ["lib.py"],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":lib",
+    ],
+)
+
+check_build_file()

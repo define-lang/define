@@ -12,6 +12,9 @@ ast_grep = lint_ast_grep_aspect(
     rule_kinds = ["py_library", "py_test"],
 )
 ```
+
+`--//tools/bzl:turned_off_ast_grep_rules=<rule id>,...` turns off each rule it
+names.
 """
 
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
@@ -43,10 +46,12 @@ def _ast_grep_aspect_impl(target, ctx):
         return []
 
     report = "--json=stream" if ctx.attr._lint_json[BuildSettingInfo].value else "--report-style=short"
+    turned_off = ctx.attr._turned_off_rules[BuildSettingInfo].value
     outputs = []
     for index, batch in enumerate(lint_batches(srcs)):
         output = ctx.actions.declare_file("{}.{}.ast_grep".format(target.label.name, index))
         args = ctx.actions.args()
+        args.add_all(turned_off, format_each = "--off=%s")
         args.add_all(batch)
         ctx.actions.run_shell(
             inputs = batch + [ctx.file._config, ctx.file._rules],
@@ -99,6 +104,9 @@ def lint_ast_grep_aspect(binary, config, rules, rule_kinds):
             ),
             "_lint_json": attr.label(
                 default = Label("//tools/bzl:lint_json"),
+            ),
+            "_turned_off_rules": attr.label(
+                default = Label("//tools/bzl:turned_off_ast_grep_rules"),
             ),
         },
     )

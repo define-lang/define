@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pathlib
 import urllib.parse
+import urllib.request
 
 import msgspec
 
@@ -15,8 +16,9 @@ class ActionFailure(msgspec.Struct, frozen=True):
     mnemonic: str
     outputs_missing: bool
     """The action ran, but did not create an output that it declares."""
-    stderr: str
-    """What the action wrote to its standard error."""
+    output: str
+    """What the action wrote to its standard output and then to its standard
+    error."""
 
     def describe(self) -> str:
         """Return the failure as the results store records it."""
@@ -31,6 +33,8 @@ class TestFailure(msgspec.Struct, frozen=True):
 
     label: str
     timed_out: bool
+    log: str
+    """The test's log."""
 
     def describe(self) -> str:
         """Return the failure as the results store records it."""
@@ -64,6 +68,7 @@ class _FailureDetail(msgspec.Struct, frozen=True):
 
 class _File(msgspec.Struct, frozen=True):
     uri: str
+    name: str = ""
 
 
 class _Action(msgspec.Struct, frozen=True, rename="camel"):
@@ -71,6 +76,7 @@ class _Action(msgspec.Struct, frozen=True, rename="camel"):
     type: str = ""
     label: str = ""
     failure_detail: _FailureDetail | None = None
+    stdout: _File | None = None
     stderr: _File | None = None
 
 
@@ -80,13 +86,21 @@ def _read(file: _File | None) -> str:
     # Bazel names a local file only with --experimental_build_event_upload_strategy=local.
     if not file.uri.startswith("file://"):
         raise ValueError(f"Build events name a file that is not local: {file.uri}")
-    return pathlib.Path(
-        urllib.parse.unquote(file.uri.removeprefix("file://"))
-    ).read_text(encoding="utf-8", errors="replace")
+    # On Windows, a file URI's path starts with a slash before the drive, as in
+    # file:///C:/work/test.log.
+    path = urllib.request.url2pathname(urllib.parse.urlparse(file.uri).path)
+    return pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
 
 
-class _TestResult(msgspec.Struct, frozen=True):
+class _TestResult(msgspec.Struct, frozen=True, rename="camel"):
     status: str = ""
+    test_action_output: list[_File] = msgspec.field(default_factory=list)
+
+    def log(self) -> _File | None:
+        for output in self.test_action_output:
+            if output.name == "test.log":
+                return output
+        return None
 
 
 class _Event(msgspec.Struct, frozen=True, rename="camel"):
@@ -116,7 +130,7 @@ def first_failure(
                     mnemonic=event.action.type,
                     outputs_missing=failure_detail is not None
                     and failure_detail.outputs_missing(),
-                    stderr=_read(event.action.stderr),
+                    output=_read(event.action.stdout) + _read(event.action.stderr),
                 )
             if (
                 event.test_result is not None
@@ -127,5 +141,6 @@ def first_failure(
                 return TestFailure(
                     label=label,
                     timed_out=event.test_result.status == "TIMEOUT",
+                    log=_read(event.test_result.log()),
                 )
     return None

@@ -13,7 +13,8 @@ ruff = lint_ruff_aspect(
 ```
 
 Filegroups tagged `lint-with-ruff` are also linted, and targets tagged
-`no-lint` are not.
+`no-lint` are not. `--//tools/bzl:turned_off_ruff_rules=<code>,...` turns off
+each rule it names.
 """
 
 load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
@@ -33,10 +34,13 @@ def _ruff_aspect_impl(target, ctx):
     if not srcs:
         return []
     output_format = "json-lines" if ctx.attr._lint_json[BuildSettingInfo].value else "concise"
+    turned_off = ctx.attr._turned_off_rules[BuildSettingInfo].value
     outputs = []
     for index, batch in enumerate(lint_batches(srcs)):
         output = ctx.actions.declare_file("{}.{}.ruff".format(target.label.name, index))
         args = ctx.actions.args()
+        if turned_off:
+            args.add("--ignore=" + ",".join(turned_off))
         args.add_all(batch)
         ctx.actions.run_shell(
             inputs = batch + [ctx.file._config],
@@ -82,6 +86,9 @@ def lint_ruff_aspect(binary, config, rule_kinds):
             ),
             "_lint_json": attr.label(
                 default = Label("//tools/bzl:lint_json"),
+            ),
+            "_turned_off_rules": attr.label(
+                default = Label("//tools/bzl:turned_off_ruff_rules"),
             ),
         },
     )

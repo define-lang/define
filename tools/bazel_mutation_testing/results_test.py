@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     import pathlib
 
 _RUN = results.Run(
-    commit="0123abcd", area=["//crates/..."], test_timeout=60, allowed_lints=[]
+    commit="0123abcd", area=["//crates/..."], test_timeout=60, lint_flags=[]
 )
 _KILLED = results.Result(
     name="crates/example/lib.rs:5:10: replace > with == in is_larger",
@@ -52,7 +52,7 @@ def test_store_of_another_run_is_refused(tmp_path: pathlib.Path):
                 commit="0123abcd",
                 area=["//crates/..."],
                 test_timeout=10,
-                allowed_lints=[],
+                lint_flags=[],
             ),
         )
 

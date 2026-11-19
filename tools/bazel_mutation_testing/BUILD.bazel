@@ -7,6 +7,14 @@ py_library(
     name = "bazel",
     srcs = ["bazel.py"],
     visibility = ["//tools/bazel_mutation_testing:__subpackages__"],
+    deps = ["@pypi//msgspec"],
+)
+
+py_test(
+    name = "bazel_test",
+    size = "small",
+    srcs = ["bazel_test.py"],
+    deps = [":bazel"],
 )
 
 py_library(
@@ -21,6 +29,29 @@ py_test(
     srcs = ["build_events_test.py"],
     deps = [
         ":build_events",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
+    name = "canary",
+    srcs = ["canary.py"],
+    deps = [
+        ":mutant",
+        "//tools/bazel_mutation_testing/python:sources",
+        "//tools/bazel_mutation_testing/rust:crates",
+        "@pypi//msgspec",
+    ],
+)
+
+py_test(
+    name = "canary_test",
+    size = "small",
+    srcs = ["canary_test.py"],
+    deps = [
+        ":canary",
+        "//tools/bazel_mutation_testing/python:sources",
+        "//tools/bazel_mutation_testing/rust:crates",
         "@pypi//pytest",
     ],
 )
@@ -44,7 +75,7 @@ py_test(
     data = [
         "testdata/expected_outcomes.txt",
         ":tester",
-        "//tools/bazel_mutation_testing/bzl:rust_lint_flags",
+        "//tools/bazel_mutation_testing/bzl:lint_flags_json",
         "//tools/bazel_mutation_testing/rust:runtime_cargo",
         "@multitool//tools/cargo-mutants",
     ],
@@ -54,7 +85,7 @@ py_test(
         "CARGO": "$(rlocationpath //tools/bazel_mutation_testing/rust:runtime_cargo)",
         "CARGO_MUTANTS": "$(rlocationpath @multitool//tools/cargo-mutants)",
         "EXPECTED_OUTCOMES": "$(rlocationpath testdata/expected_outcomes.txt)",
-        "LINT_FLAGS": "$(rlocationpath //tools/bazel_mutation_testing/bzl:rust_lint_flags)",
+        "LINT_FLAGS": "$(rlocationpath //tools/bazel_mutation_testing/bzl:lint_flags_json)",
         "TESTER": "$(rlocationpath :tester)",
     },
     # The tester runs bazelisk and Git from PATH, and bazelisk keeps its
@@ -86,7 +117,7 @@ py_test(
     data = [
         ":lint_examples",
         "//:clippy.toml",
-        "//tools/bazel_mutation_testing/bzl:rust_lint_flags",
+        "//tools/bazel_mutation_testing/bzl:lint_flags_json",
         "@rules_rust//rust/toolchain:current_clippy_files",
         "@rules_rust//rust/toolchain:current_rust_stdlib_files",
         "@rules_rust//rust/toolchain:current_rustc_files",
@@ -97,7 +128,7 @@ py_test(
         "CLIPPY_DRIVER": "$(rlocationpath @rules_rust//rust/toolchain:current_clippy_files)",
         "LINT_EXAMPLES": "$(rlocationpaths :lint_examples)",
         "RUSTC": "$(rlocationpath @rules_rust//rust/toolchain:current_rustc_files)",
-        "LINT_FLAGS": "$(rlocationpath //tools/bazel_mutation_testing/bzl:rust_lint_flags)",
+        "LINT_FLAGS": "$(rlocationpath //tools/bazel_mutation_testing/bzl:lint_flags_json)",
     },
     # The Windows VM gets the Linux rustc from the cross build. The lints are
     # the same on every platform, so Linux checks them.
@@ -119,6 +150,13 @@ py_library(
     ],
 )
 
+py_test(
+    name = "lint_flags_test",
+    size = "small",
+    srcs = ["lint_flags_test.py"],
+    deps = [":lint_flags"],
+)
+
 py_library(
     name = "mutant",
     srcs = ["mutant.py"],
@@ -126,6 +164,41 @@ py_library(
     deps = [
         ":bazel",
         "@pypi//msgspec",
+    ],
+)
+
+filegroup(
+    name = "python_lint_examples",
+    srcs = glob(["python_lint_examples/*.py"]),
+)
+
+py_test(
+    name = "python_lint_examples_test",
+    size = "small",
+    srcs = ["python_lint_examples_test.py"],
+    data = [
+        ":python_lint_examples",
+        "//:basedpyright",
+        "//:sgconfig.yml",
+        "//checks:rules",
+        "//tools/bazel_mutation_testing/bzl:lint_flags_json",
+        "@multitool//tools/ast-grep",
+        "@multitool//tools/ruff",
+    ],
+    env = {
+        "AST_GREP": "$(rlocationpath @multitool//tools/ast-grep)",
+        "BASEDPYRIGHT": "$(rlocationpath //:basedpyright)",
+        "LINT_FLAGS": "$(rlocationpath //tools/bazel_mutation_testing/bzl:lint_flags_json)",
+        "PYPROJECT": "$(rlocationpath //:pyproject.toml)",
+        "PYTHON_LINT_EXAMPLES": "$(rlocationpaths :python_lint_examples)",
+        "RUFF": "$(rlocationpath @multitool//tools/ruff)",
+        "SGCONFIG": "$(rlocationpath //:sgconfig.yml)",
+    },
+    deps = [
+        ":diagnostics",
+        ":lint_flags",
+        "//tools:runfiles",
+        "@pypi//pytest",
     ],
 )
 
@@ -149,22 +222,24 @@ py_binary(
     name = "tester",
     srcs = ["tester.py"],
     data = [
-        "//tools/bazel_mutation_testing/bzl:rust_lint_flags",
+        "//tools/bazel_mutation_testing/bzl:lint_flags_json",
         "//tools/bazel_mutation_testing/rust:runtime_cargo",
         "@multitool//tools/cargo-mutants",
     ],
     env = {
         "CARGO": "$(rlocationpath //tools/bazel_mutation_testing/rust:runtime_cargo)",
         "CARGO_MUTANTS": "$(rlocationpath @multitool//tools/cargo-mutants)",
-        "LINT_FLAGS": "$(rlocationpath //tools/bazel_mutation_testing/bzl:rust_lint_flags)",
+        "LINT_FLAGS": "$(rlocationpath //tools/bazel_mutation_testing/bzl:lint_flags_json)",
     },
     deps = [
+        ":canary",
         ":lint_flags",
         ":mutant",
         ":results",
         ":worker",
         "//tools:runfiles",
-        "//tools/bazel_mutation_testing/rust:canary",
+        "//tools/bazel_mutation_testing/python:generator",
+        "//tools/bazel_mutation_testing/python:sources",
         "//tools/bazel_mutation_testing/rust:crates",
         "//tools/bazel_mutation_testing/rust:generator",
         "@pypi//click",
@@ -189,7 +264,6 @@ py_test(
     srcs = ["worker_test.py"],
     deps = [
         ":bazel",
-        ":build_events",
         ":results",
         ":worker",
         "@pypi//pytest",
@@ -202,14 +276,19 @@ pyright_test(
     name = "pyright_test",
     deps = [
         ":bazel",
+        ":bazel_test",
         ":build_events",
         ":build_events_test",
+        ":canary",
+        ":canary_test",
         ":diagnostics",
         ":diagnostics_test",
         ":fixtures_test",
         ":lint_examples_test",
         ":lint_flags",
+        ":lint_flags_test",
         ":mutant",
+        ":python_lint_examples_test",
         ":results",
         ":results_test",
         ":tester",

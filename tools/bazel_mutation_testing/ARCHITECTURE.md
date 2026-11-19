@@ -166,3 +166,48 @@ section. Started 2026-11-16.
 - **Allow one run at a time per repository.** Runs share the workers' worktrees,
   so a second run would revert the first run's mutants mid-test. Each run holds
   a lock in `.mutation_testing` until it ends.
+- **Generate Python mutants with mutmut's mutation visitor**, through its
+  internal API, rather than `mutmut run`. The visitor gives each mutation as a
+  replaced syntax node. The tester renders the mutated function, or for a
+  method, a copy of its class that holds only that method, and turns the changed
+  lines into a patch. Rendering a whole class for each of its methods' mutants
+  took four times as long as listing the mutants. The tester mutates what mutmut
+  mutates: the functions and methods at the top of a module, minus the lines
+  that a `# pragma: no mutate` comment excludes. The repository has no mutmut
+  configuration, so the tester reads only the pragmas.
+- **Name each Python mutant with mutmut's own name for it**, such as
+  `define.compiler.ast.xǁNodeǁname__mutmut_3`, after its location and change. A
+  result can then be compared with mutmut's result for the same mutant.
+- **Mutate the Python sources of the area's `py_library` and `py_binary` targets
+  that are not `testonly`.** Test helpers are `testonly`, and mutating them
+  would not test the code they help test.
+- **Put the canary in Python when no crate in the area has tests:** a failing
+  test appended to the first source of the area's first pytest test.
+- **Read a failed test's log for the rules that pyright names.** With
+  `//tools/bzl:lint_json`, `pyright_test` prints each error and warning as a
+  JSON line, and the culprit names it as `pyright:<rule>`. The build event of a
+  failed test names its log as a local file.
+- **Read a failed action's standard output as well as its standard error.** Ruff
+  and ast-grep report on standard output.
+- **Turn Ruff, ast-grep and pyright rules off through generic flags**, as Rust
+  lints are: `--//tools/bzl:turned_off_ruff_rules`,
+  `--//tools/bzl:turned_off_ast_grep_rules` and
+  `--//tools/bzl:turned_off_pyright_rules`. Without them, every lint command and
+  pyright config is unchanged. The results store records the run's lint flags as
+  it passes them.
+- **Review Ruff, ast-grep and pyright rules for mutmut's mutants as Rust lints
+  are reviewed,** with the same test. A partial tally of 1,144 Python mutants,
+  with every lint on, chose most of the settings. A run over 3,367 mutants with
+  those rules off then found the rest, which the first failure had hidden. Every
+  Ruff rule that fired passes the test except `F821` and `F722`, as do pyright's
+  rules about unused, unnecessary and unreachable code and one ast-grep rule
+  about annotations, so mutation runs turn them off. Most come from replacing a
+  value with None, which leaves the code that computed the value unused. `F821`
+  and `F722` stay on, as rustc's undefined names and syntax errors do: they fire
+  when mutmut changes the quoted type in a `cast`, which pyright then also
+  rejects, with an error that names no rule.
+- **Pyright's type errors are valid kills, as compile errors are.** Rules such
+  as `reportArgumentType` and `reportCallIssue` report a value or a call that
+  the code's types forbid, and no type-correct code has that value or call
+  there. The `reportUnknown...Type` rules fired only together with such an
+  error, for the values that the error leaves untyped.

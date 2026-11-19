@@ -73,15 +73,6 @@ def _is_failed_build(
     )
 
 
-def outcome(
-    failure: build_events.ActionFailure | build_events.TestFailure,
-) -> results.Outcome:
-    """Return the outcome of a mutant whose first failure is `failure`."""
-    if isinstance(failure, build_events.TestFailure) and failure.timed_out:
-        return results.Outcome.TIMED_OUT
-    return results.Outcome.KILLED
-
-
 @final
 class Worker:
     """Tests mutants one at a time in its own worktree."""
@@ -178,12 +169,20 @@ class Worker:
             raise bazel.BazelError(["test", *self._run.area], completed)
         culprit = failure.describe()
         if isinstance(failure, build_events.ActionFailure):
-            found = diagnostics.action_rejections(failure.mnemonic, failure.stderr)
-            if found:
-                culprit += f" ({', '.join(sorted(found))})"
+            found = diagnostics.action_rejections(failure.mnemonic, failure.output)
+            outcome = results.Outcome.KILLED
+        else:
+            found = diagnostics.test_rejections(failure.log)
+            outcome = (
+                results.Outcome.TIMED_OUT
+                if failure.timed_out
+                else results.Outcome.KILLED
+            )
+        if found:
+            culprit += f" ({', '.join(sorted(found))})"
         return results.Result(
             name=mutated.name,
-            outcome=outcome(failure),
+            outcome=outcome,
             culprit=culprit,
             seconds=seconds,
         )
@@ -245,8 +244,9 @@ class Worker:
                 "--notest_keep_going",
                 f"--test_timeout={self._run.test_timeout}",
                 f"--build_event_json_file={self._build_event_file}",
-                "--//tools/bzl:allowed_rust_lints=" + ",".join(self._run.allowed_lints),
-                # So that a failed action names what rejected the mutant.
+                *self._run.lint_flags,
+                # So that a failed action or pyright_test names what rejected
+                # the mutant.
                 "--@rules_rust//rust/settings:error_format=json",
                 "--@rules_rust//rust/settings:clippy_error_format=json",
                 "--//tools/bzl:lint_json",

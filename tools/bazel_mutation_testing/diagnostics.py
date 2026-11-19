@@ -33,6 +33,15 @@ class _RuffViolation(msgspec.Struct, frozen=True):
     code: str | None
 
 
+class _PyrightDiagnostic(msgspec.Struct, frozen=True):
+    # basedpyright gives some errors, such as syntax errors, no rule.
+    rule: str | None = None
+
+
+class _PyrightLine(msgspec.Struct, frozen=True):
+    pyright: _PyrightDiagnostic
+
+
 def _ast_grep_rejections(output: str) -> frozenset[str]:
     decoder = msgspec.json.Decoder(_AstGrepMatch)
     found: set[str] = set()
@@ -84,8 +93,8 @@ _READERS = {
 }
 
 
-def action_rejections(mnemonic: str, stderr: str) -> frozenset[str]:
-    """Return what rejected a failed action `mnemonic`, from its `stderr`.
+def action_rejections(mnemonic: str, output: str) -> frozenset[str]:
+    """Return what rejected a failed action `mnemonic`, from its `output`.
 
     Rust lints and errors are named as `rust_rejections` names them, an
     ast-grep rule as `ast-grep:<rule id>`, and a Ruff rule as `ruff:<code>`.
@@ -95,4 +104,19 @@ def action_rejections(mnemonic: str, stderr: str) -> frozenset[str]:
     reader = _READERS.get(mnemonic)
     if reader is None:
         return frozenset()
-    return reader(stderr) or frozenset({UNIDENTIFIED})
+    return reader(output) or frozenset({UNIDENTIFIED})
+
+
+def test_rejections(log: str) -> frozenset[str]:
+    """Return the rules that a failed test's `log` names.
+
+    Only pyright_test names rules, as `pyright:<rule>`, and only when it reports
+    JSON lines. A diagnostic that names no rule is `UNIDENTIFIED`.
+    """
+    decoder = msgspec.json.Decoder(_PyrightLine)
+    found: set[str] = set()
+    for line in log.splitlines():
+        if line.startswith('{"pyright":'):
+            rule = decoder.decode(line).pyright.rule
+            found.add(f"pyright:{rule}" if rule else UNIDENTIFIED)
+    return frozenset(found)

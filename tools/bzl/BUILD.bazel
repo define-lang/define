@@ -6,6 +6,7 @@ load("@rules_rust//rust:defs.bzl", "rust_library_group")
 load("@rules_rust_pyo3//:defs.bzl", "rust_pyo3_toolchain")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load(":build_file_checks_test.bzl", "build_file_checks_test_suite")
+load(":pyright.bzl", "pyright_settings")
 load(":rust_lints.bzl", "rust_lint_config")
 
 # Lints to allow in every Rust target, after Cargo.toml's lints. Mutation runs
@@ -50,8 +51,8 @@ bzl_library(
     srcs = ["lint_batches.bzl"],
 )
 
-# Makes the ast-grep and Ruff aspects report their findings as JSON lines, for
-# tools that read them, such as the mutation tester.
+# Makes the ast-grep and Ruff aspects and pyright_test report their findings as
+# JSON lines, for tools that read them, such as the mutation tester.
 bool_flag(
     name = "lint_json",
     build_setting_default = False,
@@ -120,6 +121,12 @@ bzl_library(
 bzl_library(
     name = "pyright",
     srcs = ["pyright.bzl"],
+    visibility = ["//visibility:public"],
+)
+
+# What every pyright_test reads from :lint_json and :turned_off_pyright_rules.
+pyright_settings(
+    name = "pyright_settings",
     visibility = ["//visibility:public"],
 )
 
@@ -198,6 +205,24 @@ toolchain(
     name = "rust_pyo3_toolchain",
     toolchain = ":rust_pyo3",
     toolchain_type = "@rules_rust_pyo3//:rust_toolchain_type",
+)
+
+# ast-grep rules to turn off in every target's lint. Mutation runs set it.
+string_list_flag(
+    name = "turned_off_ast_grep_rules",
+    build_setting_default = [],
+)
+
+# basedpyright rules to turn off in every pyright_test. Mutation runs set it.
+string_list_flag(
+    name = "turned_off_pyright_rules",
+    build_setting_default = [],
+)
+
+# Ruff rules to turn off in every target's lint. Mutation runs set it.
+string_list_flag(
+    name = "turned_off_ruff_rules",
+    build_setting_default = [],
 )
 
 bzl_library(

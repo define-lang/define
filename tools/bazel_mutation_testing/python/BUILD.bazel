@@ -1,0 +1,57 @@
+load("@rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "generator",
+    srcs = ["generator.py"],
+    visibility = ["//tools/bazel_mutation_testing:__pkg__"],
+    deps = [
+        "//tools/bazel_mutation_testing:mutant",
+        "@pypi//libcst",
+        "@pypi//mutmut",
+    ],
+)
+
+py_test(
+    name = "generator_test",
+    size = "small",
+    srcs = ["generator_test.py"],
+    deps = [
+        ":generator",
+    ],
+)
+
+py_library(
+    name = "sources",
+    srcs = ["sources.py"],
+    visibility = ["//tools/bazel_mutation_testing:__pkg__"],
+    deps = [
+        "//tools/bazel_mutation_testing:bazel",
+        "@pypi//msgspec",
+    ],
+)
+
+py_test(
+    name = "sources_test",
+    size = "small",
+    srcs = ["sources_test.py"],
+    deps = [
+        ":sources",
+    ],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":generator",
+        ":generator_test",
+        ":sources",
+        ":sources_test",
+    ],
+)
+
+check_build_file()

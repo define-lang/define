@@ -199,6 +199,7 @@ py_test(
 
 py_library(
     name = "test_helpers",
+    testonly = True,
     srcs = ["test_helpers.py"],
     deps = [
         "//define/compiler/errors:diagnostics",

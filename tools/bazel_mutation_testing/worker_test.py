@@ -5,32 +5,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tools.bazel_mutation_testing import bazel, build_events, results, worker
+from tools.bazel_mutation_testing import bazel, results, worker
 
 if TYPE_CHECKING:
     import pathlib
-
-_TEST = "//crates/example:example_test"
-
-
-def test_failed_action_kills():
-    failure = build_events.ActionFailure(
-        label="//crates/example:example",
-        mnemonic="Clippy",
-        outputs_missing=False,
-        stderr="",
-    )
-    assert worker.outcome(failure) == results.Outcome.KILLED
-
-
-def test_failed_test_kills():
-    failure = build_events.TestFailure(label=_TEST, timed_out=False)
-    assert worker.outcome(failure) == results.Outcome.KILLED
-
-
-def test_timed_out_test():
-    failure = build_events.TestFailure(label=_TEST, timed_out=True)
-    assert worker.outcome(failure) == results.Outcome.TIMED_OUT
 
 
 def _git(directory: pathlib.Path, *arguments: str):
@@ -64,9 +42,7 @@ def _repository(directory: pathlib.Path) -> pathlib.Path:
 def _prepare(repository: pathlib.Path):
     worker.Worker(
         repository=repository,
-        run=results.Run(
-            commit="HEAD", area=["//..."], test_timeout=60, allowed_lints=[]
-        ),
+        run=results.Run(commit="HEAD", area=["//..."], test_timeout=60, lint_flags=[]),
     ).prepare()
 
 

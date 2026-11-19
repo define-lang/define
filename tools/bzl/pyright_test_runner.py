@@ -15,13 +15,24 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterable
 
 
+class _Settings(typing.TypedDict):
+    """What //tools/bzl:pyright_settings writes."""
+
+    json_output: bool
+    turned_off_rules: list[str]
+
+
 def _write_config(
     pyproject: Path,
     import_paths: Iterable[str],
     sources: Iterable[str],
+    turned_off_rules: Iterable[str],
     directory: Path,
 ) -> Path:
-    """Write a config that checks sources, extends pyproject and imports from import_paths."""
+    """Write a config that checks sources, extends pyproject and imports from import_paths.
+
+    The config also turns off each rule in turned_off_rules.
+    """
     # Only a venv's .pth files can add import paths to every execution
     # environment in pyproject at once, so import_paths go in a stand-in venv.
     site_packages = directory / "venv" / "lib" / "site-packages"
@@ -47,6 +58,7 @@ def _write_config(
                 "extraPaths": [str(pyproject.parent)],
                 "venvPath": str(directory),
                 "venv": "venv",
+                **dict.fromkeys(turned_off_rules, "none"),
             }
         ),
         encoding="utf-8",
@@ -68,27 +80,49 @@ def main():
     # sys.path[0] is this script's directory, which the interpreter wouldn't
     # report to basedpyright.
     sources = runfiles.resolve(sys.argv[3]).read_text(encoding="utf-8").splitlines()
+    settings = typing.cast(
+        "_Settings",
+        json.loads(runfiles.resolve(sys.argv[4]).read_text(encoding="utf-8")),
+    )
     config = _write_config(
         runfiles.resolve(sys.argv[2]),
         sys.path[1:],
         sources,
+        settings["turned_off_rules"],
         Path(os.environ["TEST_TMPDIR"]),
     )
     # basedpyright would also start the interpreter to find the Python version,
     # which fails the same way on Windows.
     version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    command = [
+        runfiles.resolve(sys.argv[1]),
+        "--project",
+        config,
+        "--pythonversion",
+        version,
+        *sys.argv[5:],
+    ]
+    if not settings["json_output"]:
+        sys.exit(subprocess.run(command, check=False).returncode)
     result = subprocess.run(
-        [
-            runfiles.resolve(sys.argv[1]),
-            "--project",
-            config,
-            "--pythonversion",
-            version,
-            *sys.argv[4:],
-        ],
-        check=False,
+        [*command, "--outputjson"], stdout=subprocess.PIPE, text=True, check=False
     )
+    _print_json_lines(result.stdout)
     sys.exit(result.returncode)
+
+
+def _print_json_lines(output: str):
+    """Print each error and warning in basedpyright's JSON output on its own line.
+
+    Each line is `{"pyright": <diagnostic>}`, so that a tool that reads the
+    test's log can tell the diagnostics from other output.
+    """
+    found = typing.cast(
+        "list[dict[str, object]]", json.loads(output)["generalDiagnostics"]
+    )
+    for diagnostic in found:
+        if diagnostic["severity"] in {"error", "warning"}:
+            print(json.dumps({"pyright": diagnostic}))
 
 
 if __name__ == "__main__":

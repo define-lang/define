@@ -1,0 +1,31 @@
+load("@rules_py//py:defs.bzl", "py_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
+load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "lib",
+    srcs = ["lib.py"],
+)
+
+py_test(
+    name = "lib_test",
+    size = "small",
+    srcs = ["lib_test.py"],
+    tags = [
+        "no-coverage",
+    ],
+    deps = [":lib"],
+)
+
+# --- Type-checking ---
+
+pyright_test(
+    name = "pyright_test",
+    deps = [
+        ":lib",
+        ":lib_test",
+    ],
+)
+
+check_build_file()

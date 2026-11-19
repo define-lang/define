@@ -5,28 +5,6 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
-    name = "canary",
-    srcs = ["canary.py"],
-    visibility = ["//tools/bazel_mutation_testing:__pkg__"],
-    deps = [
-        ":crates",
-        "//tools/bazel_mutation_testing:mutant",
-        "@pypi//msgspec",
-    ],
-)
-
-py_test(
-    name = "canary_test",
-    size = "small",
-    srcs = ["canary_test.py"],
-    deps = [
-        ":canary",
-        ":crates",
-        "@pypi//pytest",
-    ],
-)
-
-py_library(
     name = "crates",
     srcs = ["crates.py"],
     visibility = ["//tools/bazel_mutation_testing:__pkg__"],
@@ -99,8 +77,6 @@ cargo_toolchain_alias(
 pyright_test(
     name = "pyright_test",
     deps = [
-        ":canary",
-        ":canary_test",
         ":crates",
         ":crates_test",
         ":generator",

@@ -16,8 +16,11 @@ from typing import TYPE_CHECKING
 import click
 
 from tools import runfiles
-from tools.bazel_mutation_testing import lint_flags, results, worker
-from tools.bazel_mutation_testing.rust import canary, crates, generator
+from tools.bazel_mutation_testing import canary, lint_flags, results, worker
+from tools.bazel_mutation_testing.python import generator as python_generator
+from tools.bazel_mutation_testing.python import sources
+from tools.bazel_mutation_testing.rust import crates
+from tools.bazel_mutation_testing.rust import generator as rust_generator
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
@@ -42,7 +45,9 @@ class UnlistedResultError(Exception):
 
 
 def _list_mutants(
-    work: worker.Worker, area_crates: Iterable[crates.Crate]
+    work: worker.Worker,
+    area_crates: Iterable[crates.Crate],
+    python_sources: sources.Sources,
 ) -> list[mutant.Mutant]:
     tracked_paths = work.tracked_paths()
     cargo_mutants = runfiles.resolve_from_env("CARGO_MUTANTS")
@@ -50,7 +55,7 @@ def _list_mutants(
     mutants: list[mutant.Mutant] = []
     for crate in area_crates:
         mutants.extend(
-            generator.list_mutants(
+            rust_generator.list_mutants(
                 crate,
                 workspace=work.worktree,
                 tracked_paths=tracked_paths,
@@ -58,6 +63,13 @@ def _list_mutants(
                 cargo=cargo,
             )
         )
+    mutants.extend(
+        python_generator.list_mutants(
+            python_sources.paths,
+            workspace=work.worktree,
+            tracked_paths=tracked_paths,
+        )
+    )
     names = collections.Counter(listed.name for listed in mutants)
     duplicates = [name for name, count in names.items() if count > 1]
     if duplicates:
@@ -108,15 +120,15 @@ def _exclusive(repository: pathlib.Path) -> Generator[None]:
 def main(area: tuple[str, ...], store: pathlib.Path, commit: str, test_timeout: int):
     """Mutation-test the area that the target patterns AREA name.
 
-    Mutates the Rust sources of the targets that AREA matches, and runs AREA's
-    tests on each mutant.
+    Mutates the Rust and Python sources of the targets that AREA matches, and
+    runs AREA's tests on each mutant.
     """
     repository = pathlib.Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
     run = results.Run(
         commit=worker.commit_id(repository, commit),
         area=list(area),
         test_timeout=test_timeout,
-        allowed_lints=sorted(lint_flags.load().turned_off),
+        lint_flags=lint_flags.load().bazel_flags(),
     )
     with (
         _exclusive(repository),
@@ -133,12 +145,13 @@ def _test_area(
     work.prepare()
     work.test_baseline()
     area_crates = crates.find(work.worktree, run.area)
-    mutants = _list_mutants(work, area_crates)
+    python_sources = sources.find(work.worktree, run.area)
+    mutants = _list_mutants(work, area_crates, python_sources)
     unlisted = set(results_store.results) - {listed.name for listed in mutants}
     if unlisted:
         raise UnlistedResultError(sorted(unlisted))
 
-    run_canary = canary.make(area_crates, work.worktree)
+    run_canary = canary.make(area_crates, python_sources.tests, work.worktree)
     canary_result = work.test(run_canary.mutant)
     # Any failure kills a mutant, but only a failed test shows that the run's
     # tests detect a change. A timeout would not show it either.

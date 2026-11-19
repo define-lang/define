@@ -127,12 +127,3 @@ def test_crate_without_root():
                 srcs=["//crates/example:first.rs", "//crates/example:second.rs"],
             )
         )
-
-
-def test_query_expression_of_patterns():
-    assert (
-        crates.query_expression(
-            ["//define/...", "-//define/examples/...", "//crates/..."]
-        )
-        == "//define/... - //define/examples/... + //crates/..."
-    )
