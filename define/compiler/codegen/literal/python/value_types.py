@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Final, cast
 
-from define.compiler import constants
+from define.compiler import standard_encodings
 from define.compiler.association_resolution import concrete_program
 
 if TYPE_CHECKING:
@@ -19,12 +19,12 @@ NO_VALUE: Final = "Never"
 # instead of Python floats, which cannot represent most decimals and so can
 # also make decimal comparisons give the wrong answer.
 _ENCODING_PYTHON_TYPES: Final = {
-    constants.BINARY_ASCII_ENCODING: "int",
-    constants.BOOLEAN_ASCII_ENCODING: "bool",
-    constants.DECIMAL_ASCII_ENCODING: "float",
-    constants.INTEGER_ASCII_ENCODING: "int",
-    constants.NATURAL_ASCII_ENCODING: "int",
-    constants.SCALAR_UTF8_ENCODING: "str",
+    standard_encodings.BINARY_ASCII_ENCODING: "int",
+    standard_encodings.BOOLEAN_ASCII_ENCODING: "bool",
+    standard_encodings.DECIMAL_ASCII_ENCODING: "float",
+    standard_encodings.INTEGER_ASCII_ENCODING: "int",
+    standard_encodings.NATURAL_ASCII_ENCODING: "int",
+    standard_encodings.SCALAR_UTF8_ENCODING: "str",
 }
 
 _PYTHON_BOOLEANS: Final = {"true": "True", "false": "False"}
@@ -65,12 +65,12 @@ def _python_scalar(content: str) -> str:
 
 
 _ENCODING_PYTHON_LITERALS: Final[dict[str, Callable[[str], str]]] = {
-    constants.BINARY_ASCII_ENCODING: _python_binary,
-    constants.BOOLEAN_ASCII_ENCODING: _python_boolean,
-    constants.DECIMAL_ASCII_ENCODING: _python_decimal,
-    constants.INTEGER_ASCII_ENCODING: _python_decimal,
-    constants.NATURAL_ASCII_ENCODING: _python_decimal,
-    constants.SCALAR_UTF8_ENCODING: _python_scalar,
+    standard_encodings.BINARY_ASCII_ENCODING: _python_binary,
+    standard_encodings.BOOLEAN_ASCII_ENCODING: _python_boolean,
+    standard_encodings.DECIMAL_ASCII_ENCODING: _python_decimal,
+    standard_encodings.INTEGER_ASCII_ENCODING: _python_decimal,
+    standard_encodings.NATURAL_ASCII_ENCODING: _python_decimal,
+    standard_encodings.SCALAR_UTF8_ENCODING: _python_scalar,
 }
 
 

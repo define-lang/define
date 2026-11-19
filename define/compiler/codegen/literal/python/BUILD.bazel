@@ -224,7 +224,7 @@ py_library(
     srcs = ["value_types.py"],
     deps = [
         "//define/compiler:ast",
-        "//define/compiler:constants",
+        "//define/compiler:standard_encodings",
         "//define/compiler/association_resolution:concrete_program",
     ],
 )

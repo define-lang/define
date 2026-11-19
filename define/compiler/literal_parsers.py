@@ -6,7 +6,7 @@ import re
 import string
 from typing import TYPE_CHECKING, Final
 
-from define.compiler import constants
+from define.compiler import standard_encodings
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -280,59 +280,59 @@ def _parse_hex_ascii_as_natural_ascii(content: str) -> str:
 # Keyed by the Potential Literal's encoding and then the value's encoding.
 LITERAL_PARSERS: Final[dict[tuple[str, str], Callable[[str], str]]] = {
     (
-        constants.BINARY_ASCII_ENCODING,
-        constants.BINARY_ASCII_ENCODING,
+        standard_encodings.BINARY_ASCII_ENCODING,
+        standard_encodings.BINARY_ASCII_ENCODING,
     ): _parse_binary_ascii,
     (
-        constants.BINARY_ASCII_ENCODING,
-        constants.DECIMAL_ASCII_ENCODING,
+        standard_encodings.BINARY_ASCII_ENCODING,
+        standard_encodings.DECIMAL_ASCII_ENCODING,
     ): _parse_binary_ascii_as_integer_ascii,
     (
-        constants.BINARY_ASCII_ENCODING,
-        constants.INTEGER_ASCII_ENCODING,
+        standard_encodings.BINARY_ASCII_ENCODING,
+        standard_encodings.INTEGER_ASCII_ENCODING,
     ): _parse_binary_ascii_as_integer_ascii,
     (
-        constants.BINARY_ASCII_ENCODING,
-        constants.NATURAL_ASCII_ENCODING,
+        standard_encodings.BINARY_ASCII_ENCODING,
+        standard_encodings.NATURAL_ASCII_ENCODING,
     ): _parse_binary_ascii_as_natural_ascii,
     (
-        constants.BOOLEAN_ASCII_ENCODING,
-        constants.BOOLEAN_ASCII_ENCODING,
+        standard_encodings.BOOLEAN_ASCII_ENCODING,
+        standard_encodings.BOOLEAN_ASCII_ENCODING,
     ): _parse_boolean_ascii,
     (
-        constants.CODE_POINT_ASCII_ENCODING,
-        constants.SCALAR_UTF8_ENCODING,
+        standard_encodings.CODE_POINT_ASCII_ENCODING,
+        standard_encodings.SCALAR_UTF8_ENCODING,
     ): _parse_code_point_ascii_as_scalar_utf8,
     (
-        constants.DECIMAL_ASCII_ENCODING,
-        constants.BINARY_ASCII_ENCODING,
+        standard_encodings.DECIMAL_ASCII_ENCODING,
+        standard_encodings.BINARY_ASCII_ENCODING,
     ): _parse_decimal_ascii_as_binary_ascii,
     (
-        constants.DECIMAL_ASCII_ENCODING,
-        constants.DECIMAL_ASCII_ENCODING,
+        standard_encodings.DECIMAL_ASCII_ENCODING,
+        standard_encodings.DECIMAL_ASCII_ENCODING,
     ): _parse_decimal_ascii,
     (
-        constants.DECIMAL_ASCII_ENCODING,
-        constants.INTEGER_ASCII_ENCODING,
+        standard_encodings.DECIMAL_ASCII_ENCODING,
+        standard_encodings.INTEGER_ASCII_ENCODING,
     ): _parse_decimal_ascii_as_integer_ascii,
     (
-        constants.DECIMAL_ASCII_ENCODING,
-        constants.NATURAL_ASCII_ENCODING,
+        standard_encodings.DECIMAL_ASCII_ENCODING,
+        standard_encodings.NATURAL_ASCII_ENCODING,
     ): _parse_decimal_ascii_as_natural_ascii,
     (
-        constants.HEX_ASCII_ENCODING,
-        constants.BINARY_ASCII_ENCODING,
+        standard_encodings.HEX_ASCII_ENCODING,
+        standard_encodings.BINARY_ASCII_ENCODING,
     ): _parse_hex_ascii_as_binary_ascii,
     (
-        constants.HEX_ASCII_ENCODING,
-        constants.INTEGER_ASCII_ENCODING,
+        standard_encodings.HEX_ASCII_ENCODING,
+        standard_encodings.INTEGER_ASCII_ENCODING,
     ): _parse_hex_ascii_as_integer_ascii,
     (
-        constants.HEX_ASCII_ENCODING,
-        constants.NATURAL_ASCII_ENCODING,
+        standard_encodings.HEX_ASCII_ENCODING,
+        standard_encodings.NATURAL_ASCII_ENCODING,
     ): _parse_hex_ascii_as_natural_ascii,
     (
-        constants.UTF8_ENCODING,
-        constants.SCALAR_UTF8_ENCODING,
+        standard_encodings.UTF8_ENCODING,
+        standard_encodings.SCALAR_UTF8_ENCODING,
     ): _parse_utf8_as_scalar_utf8,
 }

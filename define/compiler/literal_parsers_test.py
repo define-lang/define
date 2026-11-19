@@ -2,49 +2,76 @@ from __future__ import annotations
 
 import pytest
 
-from define.compiler import constants, literal_parsers
+from define.compiler import literal_parsers, standard_encodings
 
 _PARSE_BINARY_ASCII = literal_parsers.LITERAL_PARSERS[
-    (constants.BINARY_ASCII_ENCODING, constants.BINARY_ASCII_ENCODING)
+    (standard_encodings.BINARY_ASCII_ENCODING, standard_encodings.BINARY_ASCII_ENCODING)
 ]
 _PARSE_BINARY_ASCII_AS_DECIMAL_ASCII = literal_parsers.LITERAL_PARSERS[
-    (constants.BINARY_ASCII_ENCODING, constants.DECIMAL_ASCII_ENCODING)
+    (
+        standard_encodings.BINARY_ASCII_ENCODING,
+        standard_encodings.DECIMAL_ASCII_ENCODING,
+    )
 ]
 _PARSE_BINARY_ASCII_AS_INTEGER_ASCII = literal_parsers.LITERAL_PARSERS[
-    (constants.BINARY_ASCII_ENCODING, constants.INTEGER_ASCII_ENCODING)
+    (
+        standard_encodings.BINARY_ASCII_ENCODING,
+        standard_encodings.INTEGER_ASCII_ENCODING,
+    )
 ]
 _PARSE_BINARY_ASCII_AS_NATURAL_ASCII = literal_parsers.LITERAL_PARSERS[
-    (constants.BINARY_ASCII_ENCODING, constants.NATURAL_ASCII_ENCODING)
+    (
+        standard_encodings.BINARY_ASCII_ENCODING,
+        standard_encodings.NATURAL_ASCII_ENCODING,
+    )
 ]
 _PARSE_BOOLEAN_ASCII = literal_parsers.LITERAL_PARSERS[
-    (constants.BOOLEAN_ASCII_ENCODING, constants.BOOLEAN_ASCII_ENCODING)
+    (
+        standard_encodings.BOOLEAN_ASCII_ENCODING,
+        standard_encodings.BOOLEAN_ASCII_ENCODING,
+    )
 ]
 _PARSE_CODE_POINT_ASCII_AS_SCALAR_UTF8 = literal_parsers.LITERAL_PARSERS[
-    (constants.CODE_POINT_ASCII_ENCODING, constants.SCALAR_UTF8_ENCODING)
+    (
+        standard_encodings.CODE_POINT_ASCII_ENCODING,
+        standard_encodings.SCALAR_UTF8_ENCODING,
+    )
 ]
 _PARSE_DECIMAL_ASCII_AS_BINARY_ASCII = literal_parsers.LITERAL_PARSERS[
-    (constants.DECIMAL_ASCII_ENCODING, constants.BINARY_ASCII_ENCODING)
+    (
+        standard_encodings.DECIMAL_ASCII_ENCODING,
+        standard_encodings.BINARY_ASCII_ENCODING,
+    )
 ]
 _PARSE_DECIMAL_ASCII = literal_parsers.LITERAL_PARSERS[
-    (constants.DECIMAL_ASCII_ENCODING, constants.DECIMAL_ASCII_ENCODING)
+    (
+        standard_encodings.DECIMAL_ASCII_ENCODING,
+        standard_encodings.DECIMAL_ASCII_ENCODING,
+    )
 ]
 _PARSE_DECIMAL_ASCII_AS_INTEGER_ASCII = literal_parsers.LITERAL_PARSERS[
-    (constants.DECIMAL_ASCII_ENCODING, constants.INTEGER_ASCII_ENCODING)
+    (
+        standard_encodings.DECIMAL_ASCII_ENCODING,
+        standard_encodings.INTEGER_ASCII_ENCODING,
+    )
 ]
 _PARSE_DECIMAL_ASCII_AS_NATURAL_ASCII = literal_parsers.LITERAL_PARSERS[
-    (constants.DECIMAL_ASCII_ENCODING, constants.NATURAL_ASCII_ENCODING)
+    (
+        standard_encodings.DECIMAL_ASCII_ENCODING,
+        standard_encodings.NATURAL_ASCII_ENCODING,
+    )
 ]
 _PARSE_HEX_ASCII_AS_BINARY_ASCII = literal_parsers.LITERAL_PARSERS[
-    (constants.HEX_ASCII_ENCODING, constants.BINARY_ASCII_ENCODING)
+    (standard_encodings.HEX_ASCII_ENCODING, standard_encodings.BINARY_ASCII_ENCODING)
 ]
 _PARSE_HEX_ASCII_AS_INTEGER_ASCII = literal_parsers.LITERAL_PARSERS[
-    (constants.HEX_ASCII_ENCODING, constants.INTEGER_ASCII_ENCODING)
+    (standard_encodings.HEX_ASCII_ENCODING, standard_encodings.INTEGER_ASCII_ENCODING)
 ]
 _PARSE_HEX_ASCII_AS_NATURAL_ASCII = literal_parsers.LITERAL_PARSERS[
-    (constants.HEX_ASCII_ENCODING, constants.NATURAL_ASCII_ENCODING)
+    (standard_encodings.HEX_ASCII_ENCODING, standard_encodings.NATURAL_ASCII_ENCODING)
 ]
 _PARSE_UTF8_AS_SCALAR_UTF8 = literal_parsers.LITERAL_PARSERS[
-    (constants.UTF8_ENCODING, constants.SCALAR_UTF8_ENCODING)
+    (standard_encodings.UTF8_ENCODING, standard_encodings.SCALAR_UTF8_ENCODING)
 ]
 
 

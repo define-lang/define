@@ -170,7 +170,7 @@ py_library(
     name = "literal_parsers",
     srcs = ["literal_parsers.py"],
     visibility = [":__subpackages__"],
-    deps = [":constants"],
+    deps = [":standard_encodings"],
 )
 
 py_test(
@@ -178,8 +178,8 @@ py_test(
     size = "small",
     srcs = ["literal_parsers_test.py"],
     deps = [
-        ":constants",
         ":literal_parsers",
+        ":standard_encodings",
         "@pypi//pytest",
     ],
 )
@@ -223,6 +223,13 @@ py_library(
     name = "name_types",
     srcs = ["name_types.py"],
     visibility = [":__subpackages__"],
+)
+
+py_library(
+    name = "standard_encodings",
+    srcs = ["standard_encodings.py"],
+    visibility = [":__subpackages__"],
+    deps = [":constants"],
 )
 
 py_library(
@@ -280,6 +287,7 @@ pyright_test(
         ":main_integration_test",
         ":main_test",
         ":name_types",
+        ":standard_encodings",
         ":validation_pipeline",
         ":work_pool",
         ":work_pool_test",
