@@ -8,12 +8,12 @@ if it has one, then the rest of its fields.
 
 from __future__ import annotations
 
-import pathlib
 import sys
 
 from define.compiler.errors import syntax_errors
 from define.compiler.parsing.rust_generators import (
     diagnostic_description,
+    rust_output,
     rust_renderer,
 )
 
@@ -33,8 +33,11 @@ def _load_failure_classes() -> list[type[syntax_errors.FileLoadFailureDiagnostic
 
 
 def main():
-    """Write the Rust load failures to the path given as the only argument."""
-    (output_path,) = sys.argv[1:]
+    """Write the Rust load failures to the path given as the first argument.
+
+    The rustfmt program given as the second argument formats them.
+    """
+    output_path, rustfmt = sys.argv[1:]
     description = rust_renderer.LoadFailuresDescription(
         module_name=syntax_errors.__name__,
         load_failures=[
@@ -42,8 +45,8 @@ def main():
             for cls in _load_failure_classes()
         ],
     )
-    _ = pathlib.Path(output_path).write_text(
-        rust_renderer.render_load_failures(description), encoding="utf-8", newline="\n"
+    rust_output.write(
+        output_path, rust_renderer.render_load_failures(description), rustfmt
     )
 
 

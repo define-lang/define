@@ -208,6 +208,15 @@ def _binary_rustc_flags_violations(rules):
         if rule["kind"] == "rust_binary" and list(rule.get("rustc_flags", [])) != binary_rustc_flags()
     ]
 
+def _genrule_violations(rules):
+    # A macro that the repository does not own, such as build_test, may declare
+    # a genrule, which runs only a fixed command.
+    return [
+        'genrule "%s" must be run_generator from //tools/bzl:run_generator.bzl' % rule_name
+        for rule_name, rule in rules
+        if rule["kind"] == "genrule" and not rule.get("generator_function")
+    ]
+
 def _codegen_testdata_violations(calls):
     if [call for call in calls if call.function == "pyright_test"]:
         return []
@@ -236,7 +245,8 @@ def build_file_violations(package_name, rules):
         _clippy_tag_violations(calls) +
         _clippy_coverage_violations(calls, rules) +
         _lint_config_violations(rules) +
-        _binary_rustc_flags_violations(rules)
+        _binary_rustc_flags_violations(rules) +
+        _genrule_violations(rules)
     )
 
 def _check_build_file_impl(name, visibility):  # buildifier: disable=unused-variable

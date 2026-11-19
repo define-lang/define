@@ -5,6 +5,7 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyo3.bzl", "pyo3_extension")
 load("//tools/bzl:pyright.bzl", "pyright_test")
+load("//tools/bzl:run_generator.bzl", "run_generator")
 load("//tools/bzl:rust.bzl", "binary_rustc_flags", "lint_config")
 
 py_library(
@@ -18,11 +19,10 @@ py_library(
 )
 
 # The generated enums, which tools:setup_local_dev copies into the source tree.
-genrule(
+run_generator(
     name = "error_types_gen",
-    outs = ["error_types.py"],
-    cmd = "$(execpath :generate_error_types) $@",
-    tools = [":generate_error_types"],
+    out = "error_types.py",
+    generator = ":generate_error_types",
     visibility = ["//tools:__pkg__"],
 )
 

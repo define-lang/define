@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+go_binary(
+    name = "run_with_timeout",
+    embed = [":run_with_timeout_lib"],
+    visibility = ["//:__subpackages__"],
+)
+
+go_library(
+    name = "run_with_timeout_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/define-lang/define/tools/run_with_timeout",
+    deps = ["//tools/processtree"],
+)
+
+go_test(
+    name = "run_with_timeout_test",
+    size = "small",
+    srcs = ["main_test.go"],
+    embed = [":run_with_timeout_lib"],
+)
+
+check_build_file()

@@ -2,6 +2,7 @@ load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@rules_rs//rs:rust_binary.bzl", "rust_binary")
 load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:run_generator.bzl", "run_generator")
 load("//tools/bzl:rust.bzl", "binary_rustc_flags", "lint_config")
 
 rust_binary(
@@ -11,11 +12,10 @@ rust_binary(
     rustc_flags = binary_rustc_flags(),
 )
 
-genrule(
+run_generator(
     name = "greeting",
-    outs = ["greeting.txt"],
-    cmd = "$(execpath :generate_greeting) $@",
-    tools = [":generate_greeting"],
+    out = "greeting.txt",
+    generator = ":generate_greeting",
 )
 
 build_test(

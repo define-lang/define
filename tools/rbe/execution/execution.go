@@ -17,6 +17,7 @@ import (
 	repb "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/define-lang/define/tools/processtree"
 	"github.com/define-lang/define/tools/rbe/cas"
 )
 
@@ -308,11 +309,11 @@ func run(ctx context.Context, command *repb.Command, workingDirectory string, ac
 		Stdout: stdout,
 		Stderr: stderr,
 	}
-	tree, err := startTree(process)
+	tree, err := processtree.Start(process)
 	if err != nil {
 		return 0, fmt.Errorf("starting %s: %w", command.Arguments[0], err)
 	}
-	defer tree.end()
+	defer tree.End()
 	waited := make(chan error, 1)
 	go func() { waited <- process.Wait() }()
 	timer := time.NewTimer(timeout)
@@ -322,11 +323,11 @@ func run(ctx context.Context, command *repb.Command, workingDirectory string, ac
 	select {
 	case waitErr = <-waited:
 	case <-timer.C:
-		tree.kill()
+		tree.Kill()
 		waitErr = <-waited
 		runErr = &TimeoutError{Timeout: timeout}
 	case <-ctx.Done():
-		tree.kill()
+		tree.Kill()
 		<-waited
 		return 0, ctx.Err()
 	}

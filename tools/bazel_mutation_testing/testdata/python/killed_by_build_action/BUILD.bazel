@@ -2,17 +2,17 @@ load("@bazel_skylib//rules:build_test.bzl", "build_test")
 load("@rules_py//py:defs.bzl", "py_binary")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:pyright.bzl", "pyright_test")
+load("//tools/bzl:run_generator.bzl", "run_generator")
 
 py_binary(
     name = "generate_greeting",
     srcs = ["generate_greeting.py"],
 )
 
-genrule(
+run_generator(
     name = "greeting",
-    outs = ["greeting.txt"],
-    cmd = "$(execpath :generate_greeting) && touch $@",
-    tools = [":generate_greeting"],
+    out = "greeting.txt",
+    generator = ":generate_greeting",
 )
 
 build_test(

@@ -2,20 +2,26 @@
 
 from __future__ import annotations
 
-import pathlib
 import sys
 
 from define.compiler import ast
-from define.compiler.parsing.rust_generators import ast_description, rust_renderer
+from define.compiler.parsing.rust_generators import (
+    ast_description,
+    rust_output,
+    rust_renderer,
+)
 
 
 def main():
-    """Write the Rust code to the path given as the only argument."""
-    (output_path,) = sys.argv[1:]
-    _ = pathlib.Path(output_path).write_text(
+    """Write the Rust code to the path given as the first argument.
+
+    The rustfmt program given as the second argument formats it.
+    """
+    output_path, rustfmt = sys.argv[1:]
+    rust_output.write(
+        output_path,
         rust_renderer.render_ast_nodes(ast_description.describe(ast)),
-        encoding="utf-8",
-        newline="\n",
+        rustfmt,
     )
 
 

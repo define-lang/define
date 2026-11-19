@@ -1,0 +1,19 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+go_library(
+    name = "processtree",
+    srcs = [
+        "processtree.go",
+        "processtree_unix.go",
+        "processtree_windows.go",
+    ],
+    importpath = "github.com/define-lang/define/tools/processtree",
+    visibility = ["//tools:__subpackages__"],
+    deps = select({
+        "@rules_go//go/platform:windows": ["@org_golang_x_sys//windows"],
+        "//conditions:default": [],
+    }),
+)
+
+check_build_file()

@@ -7,12 +7,12 @@ which are integers or text.
 
 from __future__ import annotations
 
-import pathlib
 import sys
 
 from define.compiler.errors import diagnostics
 from define.compiler.parsing.rust_generators import (
     diagnostic_description,
+    rust_output,
     rust_renderer,
 )
 
@@ -40,16 +40,17 @@ def _describe_parser_diagnostic(
 
 
 def main():
-    """Write the Rust parser diagnostics to the path given as the only argument."""
-    (output_path,) = sys.argv[1:]
+    """Write the Rust parser diagnostics to the path given as the first argument.
+
+    The rustfmt program given as the second argument formats them.
+    """
+    output_path, rustfmt = sys.argv[1:]
     description = rust_renderer.ParserDiagnosticsDescription(
         module_name=diagnostics.__name__,
         diagnostics=[_describe_parser_diagnostic(cls) for cls in _PARSER_DIAGNOSTICS],
     )
-    _ = pathlib.Path(output_path).write_text(
-        rust_renderer.render_parser_diagnostics(description),
-        encoding="utf-8",
-        newline="\n",
+    rust_output.write(
+        output_path, rust_renderer.render_parser_diagnostics(description), rustfmt
     )
 
 

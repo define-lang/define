@@ -5,38 +5,33 @@ load("@rules_rust//rust:defs.bzl", "rust_clippy_test")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:pyo3.bzl", "pyo3_extension")
 load("//tools/bzl:pyright.bzl", "pyright_test")
+load("//tools/bzl:run_generator.bzl", "run_generator")
 load("//tools/bzl:rust.bzl", "lint_config")
 
-genrule(
+run_generator(
     name = "ast",
-    outs = ["ast.rs"],
-    cmd = "$(execpath //define/compiler/parsing/rust_generators:generate_ast_nodes) $@ && $(execpath @rules_rust//tools/upstream_wrapper:rustfmt) --edition 2024 $@",
-    tools = [
-        "//define/compiler/parsing/rust_generators:generate_ast_nodes",
-        "@rules_rust//tools/upstream_wrapper:rustfmt",
-    ],
+    out = "ast.rs",
+    arguments = ["$(execpath @rules_rust//tools/upstream_wrapper:rustfmt)"],
+    generator = "//define/compiler/parsing/rust_generators:generate_ast_nodes",
+    tools = ["@rules_rust//tools/upstream_wrapper:rustfmt"],
     visibility = ["//tools:__pkg__"],
 )
 
-genrule(
+run_generator(
     name = "ast_constructors",
-    outs = ["ast_constructors.rs"],
-    cmd = "$(execpath //define/compiler/parsing/rust_generators:generate_ast_constructors) $@ && $(execpath @rules_rust//tools/upstream_wrapper:rustfmt) --edition 2024 $@",
-    tools = [
-        "//define/compiler/parsing/rust_generators:generate_ast_constructors",
-        "@rules_rust//tools/upstream_wrapper:rustfmt",
-    ],
+    out = "ast_constructors.rs",
+    arguments = ["$(execpath @rules_rust//tools/upstream_wrapper:rustfmt)"],
+    generator = "//define/compiler/parsing/rust_generators:generate_ast_constructors",
+    tools = ["@rules_rust//tools/upstream_wrapper:rustfmt"],
     visibility = ["//tools:__pkg__"],
 )
 
-genrule(
+run_generator(
     name = "load_failures",
-    outs = ["load_failures.rs"],
-    cmd = "$(execpath //define/compiler/parsing/rust_generators:generate_load_failures) $@ && $(execpath @rules_rust//tools/upstream_wrapper:rustfmt) --edition 2024 $@",
-    tools = [
-        "//define/compiler/parsing/rust_generators:generate_load_failures",
-        "@rules_rust//tools/upstream_wrapper:rustfmt",
-    ],
+    out = "load_failures.rs",
+    arguments = ["$(execpath @rules_rust//tools/upstream_wrapper:rustfmt)"],
+    generator = "//define/compiler/parsing/rust_generators:generate_load_failures",
+    tools = ["@rules_rust//tools/upstream_wrapper:rustfmt"],
     visibility = ["//tools:__pkg__"],
 )
 
@@ -58,14 +53,12 @@ py_library(
     ],
 )
 
-genrule(
+run_generator(
     name = "parser_diagnostics",
-    outs = ["parser_diagnostics.rs"],
-    cmd = "$(execpath //define/compiler/parsing/rust_generators:generate_parser_diagnostics) $@ && $(execpath @rules_rust//tools/upstream_wrapper:rustfmt) --edition 2024 $@",
-    tools = [
-        "//define/compiler/parsing/rust_generators:generate_parser_diagnostics",
-        "@rules_rust//tools/upstream_wrapper:rustfmt",
-    ],
+    out = "parser_diagnostics.rs",
+    arguments = ["$(execpath @rules_rust//tools/upstream_wrapper:rustfmt)"],
+    generator = "//define/compiler/parsing/rust_generators:generate_parser_diagnostics",
+    tools = ["@rules_rust//tools/upstream_wrapper:rustfmt"],
     visibility = ["//tools:__pkg__"],
 )
 

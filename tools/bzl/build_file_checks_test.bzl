@@ -375,6 +375,29 @@ _rust_binaries_must_use_the_binary_rustc_flags_test = unittest.make(
     _rust_binaries_must_use_the_binary_rustc_flags_impl,
 )
 
+def _genrules_are_refused_impl(ctx):
+    env = unittest.begin(ctx)
+    rules = [
+        ("greeting_test_0__deps", {
+            "generator_function": "build_test",
+            "generator_name": "greeting_test",
+            "kind": "genrule",
+        }),
+        ("greeting_test", {
+            "generator_function": "build_test",
+            "generator_name": "greeting_test",
+            "kind": "_empty_test",
+            "size": "small",
+        }),
+        ("plain", {"kind": "genrule"}),
+    ]
+    asserts.equals(env, [
+        'genrule "plain" must be run_generator from //tools/bzl:run_generator.bzl',
+    ], build_file_violations("tools", rules))
+    return unittest.end(env)
+
+_genrules_are_refused_test = unittest.make(_genrules_are_refused_impl)
+
 def build_file_checks_test_suite(name):
     """Creates the unit tests for build_file_checks.bzl.
 
@@ -404,6 +427,7 @@ def build_file_checks_test_suite(name):
                 _rust_targets_must_use_the_lint_config_test,
                 _lint_config_in_another_package_is_refused_test,
                 _rust_binaries_must_use_the_binary_rustc_flags_test,
+                _genrules_are_refused_test,
             ]
         ]
     )

@@ -13,27 +13,6 @@ const pathSeparators = "/"
 
 var tempVariables = []string{"TMPDIR"}
 
-// processTree is a command's process group.
-type processTree struct {
-	group int
-}
-
-func startTree(process *exec.Cmd) (*processTree, error) {
-	process.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	if err := process.Start(); err != nil {
-		return nil, err
-	}
-	return &processTree{group: process.Process.Pid}, nil
-}
-
-func (tree *processTree) kill() {
-	_ = syscall.Kill(-tree.group, syscall.SIGKILL)
-}
-
-func (tree *processTree) end() {
-	tree.kill()
-}
-
 func exitCode(exitErr *exec.ExitError) int32 {
 	if status, ok := exitErr.Sys().(syscall.WaitStatus); ok && status.Signaled() {
 		return 128 + int32(status.Signal())

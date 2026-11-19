@@ -149,6 +149,12 @@ bzl_library(
 )
 
 bzl_library(
+    name = "run_generator",
+    srcs = ["run_generator.bzl"],
+    visibility = ["//visibility:public"],
+)
+
+bzl_library(
     name = "rust",
     srcs = ["rust.bzl"],
     visibility = ["//visibility:public"],

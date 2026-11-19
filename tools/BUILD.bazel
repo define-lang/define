@@ -3,6 +3,7 @@ load("@rules_py//py:defs.bzl", "py_binary", "py_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
+load("//tools/bzl:run_generator.bzl", "run_generator")
 
 py_binary(
     name = "analyze_coverage",
@@ -231,14 +232,14 @@ py_binary(
     main = "pyo3_config.py",
 )
 
-genrule(
+run_generator(
     name = "pyo3_config_file",
-    outs = ["pyo3-build-config.txt"],
-    cmd = "$(execpath :pyo3_config) $@" + select({
-        "@platforms//os:windows": " --windows-target",
-        "//conditions:default": "",
+    out = "pyo3-build-config.txt",
+    arguments = select({
+        "@platforms//os:windows": ["--windows-target"],
+        "//conditions:default": [],
     }),
-    tools = [":pyo3_config"],
+    generator = ":pyo3_config",
     visibility = ["//visibility:public"],
 )
 
