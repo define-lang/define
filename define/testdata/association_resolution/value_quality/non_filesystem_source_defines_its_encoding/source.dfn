@@ -1,0 +1,7 @@
+# Source compiled in a non-filesystem context defines the encoding that the project associates with its value quality. The association resolves to the source's encoding, and no file is loaded.
+define the encoding<my.domain.com:my_lib:/test/digits>.
+define the potential value<my.domain.com:my_lib:/test> {
+    it supports the logical_operation<standard:/text/less_than> {
+        it may be read.
+    }
+}

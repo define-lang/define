@@ -1,0 +1,6 @@
+# Source compiled in a non-filesystem context without a project root references a definition that it does not define. The missing project root is reported at that reference, so nothing more is reported about the value quality.
+define the potential value<my.domain.com:my_lib:/test> {
+    it supports the logical_operation</missing> {
+        it may be read.
+    }
+}

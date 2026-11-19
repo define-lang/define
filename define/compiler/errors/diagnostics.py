@@ -1318,6 +1318,18 @@ def _project_root_help(config_path: str) -> str:
     )
 
 
+class NoProjectRootForAssociationsDiagnostic(Diagnostic):
+    """Diagnostic for a value quality whose encoding must come from the project's associations, when the program is compiled in a non-filesystem context that has no project config."""
+
+    value_quality: str
+    config_path: str
+    message_format: ClassVar[str] = (
+        "'{self.value_quality}' gets its encoding from the project's "
+        + "associations, so the compiler tried to load them from the project. "
+        + "However, {self.config_path} was not found."
+    )
+
+
 class NotRunFromProjectRootDiagnostic(ConfigDiagnostic):
     """Diagnostic for a compiler run from a directory that is not a project root, so has no project config at config_path."""
 

@@ -32,6 +32,7 @@ py_test(
         "//crates/source_rendering/python:rendering",
         "//define/compiler:literal_parsers",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:syntax_errors",
         "//define/compiler/test_fixtures:validation_pipeline",
         "//define/compiler/validator:test_helpers",
         "@pypi//pytest",

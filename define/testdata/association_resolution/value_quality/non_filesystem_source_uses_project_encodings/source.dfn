@@ -1,0 +1,6 @@
+# A value quality in source compiled in a non-filesystem context uses the encoding that the project associates with it, even though nothing else in the source refers to the project.
+define the potential value<my.domain.com:my_lib:/test> {
+    it supports the logical_operation<standard:/text/less_than> {
+        it may be read.
+    }
+}

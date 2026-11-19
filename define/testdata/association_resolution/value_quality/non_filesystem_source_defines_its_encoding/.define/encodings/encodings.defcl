@@ -1,0 +1,8 @@
+encodings: {
+  value_encodings: [
+    {
+      value: "/test"
+      encoding: "/test/digits"
+    }
+  ]
+}

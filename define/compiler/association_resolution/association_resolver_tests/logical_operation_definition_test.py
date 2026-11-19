@@ -6,10 +6,14 @@ from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from define.compiler.errors import diagnostics
-from define.compiler.validator.test_helpers import standard_library_file
+from define.compiler.validator.test_helpers import (
+    assert_no_errors,
+    standard_library_file,
+)
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.validation_pipeline import (
+        ValidateTestdataNonFilesystemWithReferenceGraph,
         ValidateTestdataProjectWithReferenceGraph,
     )
 
@@ -410,5 +414,27 @@ def test_unusable_encoding_operations_config(
                 file_path=".define/project/config.defcl",
             ),
             encoding_operations_config_path=".define/encodings/encoding_operations.defcl",
+        )
+    ]
+
+
+def test_non_filesystem_source_defines_encoding_operation(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_non_filesystem_source_logical_operation_without_project_root(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.sorted_diagnostics() == [
+        diagnostics.NoProjectRootForAssociationsDiagnostic(
+            location=rendering.SourceLocation(
+                line=10, column=22, end_line=10, end_column=56
+            ),
+            value_quality="value<my.domain.com:my_lib:/number>",
+            config_path=".define/project/config.defcl",
         )
     ]

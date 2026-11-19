@@ -1,0 +1,6 @@
+# Source compiled in a non-filesystem context defines a value quality, whose associations are in the project config. Resolution loads the config, so the config's error is reported, and nothing more is reported about the value quality.
+define the potential value<my.domain.com:my_lib:/test> {
+    it supports the logical_operation<standard:/text/less_than> {
+        it may be read.
+    }
+}

@@ -21,6 +21,11 @@ _NO_ASSOCIATIONS = association_config.AssociationTable(
     value_encodings=types.MappingProxyType({}),
     encoding_operations=types.MappingProxyType({}),
 )
+# The associations of a universe whose project config failed to load, which
+# is already reported.
+_UNUSABLE_ASSOCIATIONS = association_config.AssociationTable(
+    value_encodings=None, encoding_operations=None
+)
 
 
 @typing.final
@@ -69,9 +74,11 @@ class ProjectRoots:
         self._by_universe: dict[
             str, tuple[define_path.DefinePath, config_loader.Config]
         ] = {}
-        # The associations of each universe that has a loaded project root and
-        # whose associations were read.
-        self._association_tables: dict[str, association_config.AssociationTable] = {}
+        # The associations of each universe whose associations were read, or
+        # that the working directory has no project config to have them.
+        self._association_tables: dict[
+            str, association_config.AssociationTable | NoProjectConfig
+        ] = {}
         # The project roots whose config cannot be used.
         self._failed: set[define_path.DefinePath] = set()
         # A tree of directories, because a reference has to find whether any
@@ -145,25 +152,45 @@ class ProjectRoots:
 
     def get_association_table(
         self, universe: str
-    ) -> association_config.AssociationTable:
-        """Return the associations of the project whose universe is universe, loading them if this is the first read."""
+    ) -> association_config.AssociationTable | NoProjectConfig:
+        """Return the associations of the project whose universe is universe, loading them if this is the first read.
+
+        A universe without a loaded project root is in source compiled in a
+        non-filesystem context, so its associations come from the project
+        root, which is loaded if it has not been. Returns NoProjectConfig for
+        every read of a universe if the first read found that the working
+        directory has no project config, so that each value quality in the
+        universe reports it.
+        """
         table = self._association_tables.get(universe)
-        if table is not None:
-            return table
+        if table is None:
+            table = self._read_association_table(universe)
+            self._association_tables[universe] = table
+        return table
+
+    def _read_association_table(
+        self, universe: str
+    ) -> association_config.AssociationTable | NoProjectConfig:
+        """Load the associations of the project whose universe is universe, loading the project root's config first if no loaded root has the universe."""
         loaded_root = self._by_universe.get(universe)
-        # Source compiled without a project root has no associations.
-        # TODO: Decide whether source compiled in a non-filesystem context,
-        # such as a REPL, uses the associations of the project root it is
-        # compiled in. Today it does only when one of its references
-        # happened to load the project config.
         if loaded_root is None:
-            return _NO_ASSOCIATIONS
+            root_config = self.load_project_root_config()
+            if isinstance(root_config, NoProjectConfig):
+                return root_config
+            # Why the project root's config cannot be used is already
+            # reported.
+            if root_config is None:
+                return _UNUSABLE_ASSOCIATIONS
+            loaded_root = self._by_universe.get(universe)
+            # The project root's universe is not this universe, so no project
+            # configures its associations.
+            if loaded_root is None:
+                return _NO_ASSOCIATIONS
         root, root_config = loaded_root
         table, table_diagnostics = association_config.load_association_table(
             root, self._source_map, root_config
         )
         self.diagnostics.extend(table_diagnostics)
-        self._association_tables[universe] = table
         return table
 
     def find_sub_root_between(

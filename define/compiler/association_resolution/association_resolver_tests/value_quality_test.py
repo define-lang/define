@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -95,7 +95,7 @@ def test_value_quality_without_project_root(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.sorted_diagnostics() == [
-        diagnostics.ValueHasNoEncodingDiagnostic(
+        diagnostics.NoProjectRootForAssociationsDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=22,
@@ -104,5 +104,92 @@ def test_value_quality_without_project_root(
                 file_path=None,
             ),
             value_quality="value<my.domain.com:my_lib:/test>",
+            config_path=".define/project/config.defcl",
+        ),
+        diagnostics.NoProjectRootForAssociationsDiagnostic(
+            location=rendering.SourceLocation(
+                line=7,
+                column=22,
+                end_line=7,
+                end_column=55,
+                file_path=None,
+            ),
+            value_quality="value<my.domain.com:my_lib:/other>",
+            config_path=".define/project/config.defcl",
+        ),
+    ]
+
+
+def test_non_filesystem_source_uses_project_encodings(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_non_filesystem_source_defines_its_encoding(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_non_filesystem_source_uses_only_standard(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert_no_errors(result)
+
+
+def test_non_filesystem_source_broken_project_config(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.sorted_diagnostics() == [
+        syntax_errors.FqunContainsSpace(
+            location=rendering.SourceLocation(
+                line=2,
+                column=22,
+                end_line=2,
+                end_column=22,
+                file_path=".define/project/config.defcl",
+            )
+        )
+    ]
+
+
+def test_value_quality_after_reference_without_project_root(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.sorted_diagnostics() == [
+        diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
+            location=rendering.SourceLocation(
+                line=3,
+                column=21,
+                end_line=3,
+                end_column=47,
+                file_path=None,
+            ),
+            definition_name="logical_operation</missing>",
+            config_path=".define/project/config.defcl",
+        )
+    ]
+
+
+def test_non_filesystem_source_universe_not_in_project(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.sorted_diagnostics() == [
+        diagnostics.ValueHasNoEncodingDiagnostic(
+            location=rendering.SourceLocation(
+                line=2,
+                column=22,
+                end_line=2,
+                end_column=55,
+                file_path=None,
+            ),
+            value_quality="value<other.example.com:lib:/test>",
         )
     ]

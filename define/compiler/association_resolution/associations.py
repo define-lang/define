@@ -6,6 +6,7 @@ import typing
 
 import msgspec
 
+from define.compiler.config import project_config, project_roots
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import reference_graph
 
@@ -13,7 +14,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
     from define.compiler import ast
-    from define.compiler.config import encoding_operations_config, project_roots
+    from define.compiler.config import encoding_operations_config
 
 
 class ChosenEncodingOperation(msgspec.Struct, frozen=True):
@@ -70,9 +71,16 @@ class Associations:
     ) -> list[diagnostics.Diagnostic]:
         """Find the one encoding associated with a value quality, and return a diagnostic if it has none."""
         name_content = definition.typed_name.name_content
-        value_encodings = self._project_roots.get_association_table(
-            name_content.fqun.canonical
-        ).value_encodings
+        table = self._project_roots.get_association_table(name_content.fqun.canonical)
+        if isinstance(table, project_roots.NoProjectConfig):
+            return [
+                diagnostics.NoProjectRootForAssociationsDiagnostic(
+                    location=definition.typed_name.location,
+                    value_quality=definition.typed_name.source_typed_name,
+                    config_path=str(project_config.CONFIG_FILE.path),
+                )
+            ]
+        value_encodings = table.value_encodings
         # The diagnostic that keeps the project's Value Encoding Associations
         # from being used is already reported.
         if value_encodings is None:
@@ -111,9 +119,17 @@ class Associations:
     ) -> list[diagnostics.Diagnostic]:
         """Add a logical operation's associations with Encoding Operations, and return a diagnostic for each association that cannot be used."""
         name_content = definition.typed_name.name_content
-        associated_encoding_operations = self._project_roots.get_association_table(
-            name_content.fqun.canonical
-        ).encoding_operations
+        table = self._project_roots.get_association_table(name_content.fqun.canonical)
+        # A logical operation in a universe without a project config has no
+        # associations. The value qualities of that universe report the
+        # missing config.
+        if isinstance(table, project_roots.NoProjectConfig):
+            self._encoding_operations[definition.typed_name.full_typed_name] = (
+                definition,
+                {},
+            )
+            return []
+        associated_encoding_operations = table.encoding_operations
         # The diagnostic that keeps the project's Encoding Operation
         # associations from being used is already reported.
         if associated_encoding_operations is None:

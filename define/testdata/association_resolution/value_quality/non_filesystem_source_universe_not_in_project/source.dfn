@@ -1,0 +1,6 @@
+# Source compiled in a non-filesystem context defines a value quality in a universe that is not the project's, so no project has its associations.
+define the potential value<other.example.com:lib:/test> {
+    it supports the logical_operation<standard:/text/less_than> {
+        it may be read.
+    }
+}

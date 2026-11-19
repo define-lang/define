@@ -1,0 +1,23 @@
+# Source compiled in a non-filesystem context uses only the standard universe's value qualities and operations, whose associations come from the standard library. The project config is never loaded, so its error is not reported.
+define the operation<my.domain.com:my_lib:/increment> {
+    define the view<source> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<target> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the operation<standard:/number/natural/add> {
+            with view<a> looking at view<source>.
+            with view<b> looking at literal<standard:/number>"1".
+            with view<result> looking at view<target>.
+        }
+    }
+}

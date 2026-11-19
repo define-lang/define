@@ -1,0 +1,60 @@
+# Source compiled in a non-filesystem context, with no project config, defines a logical operation that an action executes. The logical operation has no associations, and only its value quality reports the missing project config.
+define the logical_operation<my.domain.com:my_lib:/negate> {
+    define the view<a> {
+        it is read.
+    }
+    define the view<result> {
+        it is written.
+    }
+}
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation</negate> {
+        it may be read.
+        it may be written.
+    }
+}
+define the operation<my.domain.com:my_lib:/negated> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        execute the logical_operation</negate> {
+            with view<a> looking at view<a>.
+            with view<result> looking at view<result>.
+        }
+    }
+}
+define the potential position<my.domain.com:my_lib:/result> {
+    it may only contain particles where {
+        it has the value</number>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<start> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<start>.
+        set the value of position<start> from literal<standard:/number>"1".
+        create a particle in position</result>.
+        execute the operation</negated> {
+            with view<a> looking at position<start>.
+            with view<result> looking at position</result>.
+        }
+    }
+}
