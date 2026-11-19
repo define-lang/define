@@ -54,6 +54,11 @@ def validate_and_resolve_program(
         found_diagnostics = definition_pipeline.DefinitionPipeline(
             program_result.definition_order, validator, resolver, pool
         ).run()
+    # TODO: This is probably an unnecessary break in association resolution.
+    # Each chosen encoding and Encoding Operation could be loaded as soon as
+    # resolution chooses it, and each Encoding Operation could be resolved once
+    # what it references is loaded, instead of waiting for every definition to
+    # be resolved first.
     program.load_associated(resolver.chosen_edges(), max_workers=max_workers)
     # The structural run's state, such as its resolver and loaded paths, would
     # otherwise be retained until code generation, but nothing loads more of
