@@ -217,13 +217,11 @@ impl<'source> Scanner<'source> {
         &mut self,
     ) -> (SourceText<'source>, vector_scan::GlobalNameContent) {
         let scanned = vector_scan::global_name_content(self.rest);
-        let (bytes, rest) = self.rest.split_at(scanned.length);
-        let text = SourceText {
-            bytes,
-            is_known_ascii: scanned.is_printable_ascii,
-        };
-        self.rest = rest;
-        self.position = self.position.columns_later(scanned.character_count);
+        let text = self.consume_scanned(
+            scanned.length,
+            scanned.character_count,
+            scanned.is_printable_ascii,
+        );
         (text, scanned)
     }
 
@@ -233,13 +231,11 @@ impl<'source> Scanner<'source> {
         &mut self,
     ) -> (SourceText<'source>, vector_scan::FqunNameContent) {
         let scanned = vector_scan::fqun_name_content(self.rest);
-        let (bytes, rest) = self.rest.split_at(scanned.length);
-        let text = SourceText {
-            bytes,
-            is_known_ascii: scanned.is_printable_ascii,
-        };
-        self.rest = rest;
-        self.position = self.position.columns_later(scanned.character_count);
+        let text = self.consume_scanned(
+            scanned.length,
+            scanned.character_count,
+            scanned.is_printable_ascii,
+        );
         (text, scanned)
     }
 
@@ -296,14 +292,29 @@ impl<'source> Scanner<'source> {
         &mut self,
     ) -> (SourceText<'source>, vector_scan::NameContent) {
         let scanned = vector_scan::name_content(self.rest);
-        let (bytes, rest) = self.rest.split_at(scanned.length);
-        let text = SourceText {
-            bytes,
-            is_known_ascii: scanned.is_printable_ascii,
-        };
-        self.rest = rest;
-        self.position = self.position.columns_later(scanned.character_count);
+        let text = self.consume_scanned(
+            scanned.length,
+            scanned.character_count,
+            scanned.is_printable_ascii,
+        );
         (text, scanned)
+    }
+
+    /// Consumes the `length` bytes of name content that a scan found, which
+    /// hold `character_count` characters, and returns them.
+    const fn consume_scanned(
+        &mut self,
+        length: usize,
+        character_count: usize,
+        is_printable_ascii: bool,
+    ) -> SourceText<'source> {
+        let (bytes, rest) = self.rest.split_at(length);
+        self.rest = rest;
+        self.position = self.position.columns_later(character_count);
+        SourceText {
+            bytes,
+            is_known_ascii: is_printable_ascii,
+        }
     }
 }
 
