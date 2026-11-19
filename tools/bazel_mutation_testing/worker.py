@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import pathlib
 import signal
 import subprocess
 import threading
@@ -12,7 +13,6 @@ from typing import TYPE_CHECKING, final
 from tools.bazel_mutation_testing import bazel, build_events, diagnostics, results
 
 if TYPE_CHECKING:
-    import pathlib
     from collections.abc import Callable, Generator
 
     from tools.bazel_mutation_testing import mutant
@@ -107,9 +107,10 @@ class Worker:
         self._lock = threading.Lock()
         self._interrupted = False
         self._tests: subprocess.Popen[str] | None = None
+        self._test_patterns: list[str] = []
 
     def prepare(self):
-        """Create or reset the worktree, and build the formatter.
+        """Create or reset the worktree, build the formatter, and choose the targets to test.
 
         Raises:
             NotAWorktreeError: The worktree's directory exists, but is not a
@@ -133,6 +134,22 @@ class Worker:
         _ = bazel.run_checked(
             self.worktree, ["build", "--build_runfile_links", "//tools/format"]
         )
+        # A define_binary compiles a Define program that no test runs. A build
+        # action has no timeout, so a mutant that makes the compiler loop
+        # forever would stop its worker.
+        programs = bazel.run_checked(
+            self.worktree,
+            [
+                "query",
+                "--",
+                'kind("^define_binary rule$", '
+                + f"{bazel.query_expression(self._run.area)})",
+            ],
+        ).split()
+        self._test_patterns = [
+            *self._run.area,
+            *(f"-{program}" for program in programs),
+        ]
 
     def remove(self):
         """Delete the worktree and its Bazel output base, and stop its Bazel server.
@@ -307,7 +324,7 @@ class Worker:
             # holds its standard error.
             "--experimental_build_event_upload_strategy=local",
             "--",
-            *self._run.area,
+            *self._test_patterns,
         ]
         with self._lock:
             if self._interrupted:
@@ -358,10 +375,12 @@ class Worker:
             self._repository, "rev-parse", "--path-format=absolute", "--git-common-dir"
         ).strip()
         # A linked worktree has its own Git directory; the main checkout's is
-        # the common one.
-        if (top, common) != (str(location), repository_common) or (
-            git_directory == common
-        ):
+        # the common one. Git writes Windows paths with forward slashes, which
+        # pathlib compares equal to backslashes.
+        if (pathlib.Path(top), pathlib.Path(common)) != (
+            location,
+            pathlib.Path(repository_common),
+        ) or pathlib.Path(git_directory) == pathlib.Path(common):
             raise NotAWorktreeError(
                 f"{self.worktree} is not a linked worktree of {self._repository}"
             )

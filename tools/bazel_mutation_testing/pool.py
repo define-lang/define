@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import contextlib
 import queue
 from typing import TYPE_CHECKING, Protocol
 
@@ -58,4 +59,15 @@ def test_all(
                 _ = future.cancel()
             for tester in testers:
                 tester.interrupt()
+            _wait_for_testers(futures)
             raise
+
+
+def _wait_for_testers(futures: Sequence[concurrent.futures.Future[results.Result]]):
+    """Wait until every tester has stopped and reverted its mutant."""
+    # The run removes each worktree next. A second interrupt must not end the
+    # wait, since a worktree whose tester is still reverting has changes.
+    while True:
+        with contextlib.suppress(KeyboardInterrupt):
+            _ = concurrent.futures.wait(futures)
+            return

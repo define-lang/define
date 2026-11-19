@@ -64,15 +64,19 @@ def from_query(output: str) -> Sources:
     """Return the sources and tests in a query's `streamed_jsonproto` output.
 
     The query names Python libraries, binaries and tests. The sources are the
-    `.py` sources of the libraries and binaries that are not `testonly`, since
-    test helpers are not what the tests check.
+    `.py` sources of the libraries and binaries that are not `testonly` and not
+    tagged `no-mutation`. Test helpers are not what the tests check, and a
+    generator's mutants only change code that the tests check through the
+    generated code.
     """
     paths: set[str] = set()
     tests: list[PytestTest] = []
     for rule in bazel.rules(output):
         sources = rule.value("srcs").string_list_value
         if rule.rule_class in _LIBRARY_RULES:
-            if rule.value("testonly").boolean_value:
+            if rule.value("testonly").boolean_value or (
+                bazel.NO_MUTATION_TAG in rule.value("tags").string_list_value
+            ):
                 continue
             for source in sources:
                 if source.startswith("//") and source.endswith(".py"):

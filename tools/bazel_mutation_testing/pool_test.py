@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import concurrent.futures
 import threading
 from typing import final
 
@@ -73,6 +74,25 @@ class _FailingTester:
         pass
 
 
+@final
+class _RevertingTester:
+    """Tests one mutant until it is interrupted, then reverts it."""
+
+    def __init__(self, testing: threading.Event):
+        self.reverted = threading.Event()
+        self._interrupted = threading.Event()
+        self._testing = testing
+
+    def test(self, mutated: mutant.Mutant) -> results.Result:
+        self._testing.set()
+        _ = self._interrupted.wait(timeout=10)
+        self.reverted.set()
+        raise _TesterFailedError(mutated.name)
+
+    def interrupt(self):
+        self._interrupted.set()
+
+
 def test_testers_test_every_mutant_once_at_the_same_time():
     all_testing = threading.Barrier(2)
     testers = [_Tester(all_testing), _Tester(all_testing)]
@@ -102,3 +122,33 @@ def test_failed_tester_interrupts_the_others_and_records_nothing():
 
     assert blocked.interrupted.is_set()
     assert recorded == []
+
+
+def test_second_interrupt_waits_for_testers_to_revert(monkeypatch: pytest.MonkeyPatch):
+    testing = threading.Event()
+    reverting = _RevertingTester(testing)
+    waits: list[int] = []
+    wait = concurrent.futures.wait
+
+    def interrupted_once(
+        futures: list[concurrent.futures.Future[results.Result]],
+    ) -> object:
+        waits.append(len(futures))
+        if len(waits) == 1:
+            raise KeyboardInterrupt
+        return wait(futures)
+
+    def interrupt_after_testing(result: results.Result):
+        _ = testing.wait(timeout=10)
+        raise KeyboardInterrupt(result.name)
+
+    monkeypatch.setattr(concurrent.futures, "wait", interrupted_once)
+    with pytest.raises(KeyboardInterrupt):
+        pool.test_all(
+            [reverting, _Tester(threading.Barrier(1))],
+            [_mutant("reverting"), _mutant("killed")],
+            interrupt_after_testing,
+        )
+
+    assert reverting.reverted.is_set()
+    assert waits == [2, 2]

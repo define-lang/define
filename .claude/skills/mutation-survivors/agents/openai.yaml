@@ -1,0 +1,9 @@
+interface:
+  display_name: "Mutation Survivors"
+  short_description: "Mutation-test an area and kill surviving mutants"
+  default_prompt:
+    "Use $mutation-survivors to mutation-test an area of this repo, triage the
+    survivors, add tests that kill them, and verify the result."
+
+policy:
+  allow_implicit_invocation: true

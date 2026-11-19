@@ -18,7 +18,14 @@ from typing import TYPE_CHECKING
 import click
 
 from tools import runfiles
-from tools.bazel_mutation_testing import canary, lint_flags, pool, results, worker
+from tools.bazel_mutation_testing import (
+    canary,
+    lint_flags,
+    pool,
+    results,
+    survivors,
+    worker,
+)
 from tools.bazel_mutation_testing.python import generator as python_generator
 from tools.bazel_mutation_testing.python import sources
 from tools.bazel_mutation_testing.rust import crates
@@ -106,7 +113,8 @@ def _exclusive(repository: pathlib.Path) -> Generator[None]:
     "--store",
     type=click.Path(path_type=pathlib.Path),
     default=".mutation_testing/results.jsonl",
-    help="The results store, relative to the workspace. A run resumes from it.",
+    help="The results store, relative to the workspace. A run resumes from it, "
+    + "and writes its survivors report next to it, as <store>.survivors.md.",
 )
 @click.option(
     "--commit",
@@ -119,12 +127,13 @@ def _exclusive(repository: pathlib.Path) -> Generator[None]:
     default=60,
     help="The timeout of every test, in seconds.",
 )
-# Six workers with capped Bazel servers peaked at 17 GB of memory. More workers
-# would mostly wait on each other for the RBE service.
+# Six workers' Bazel servers held 17 GB of memory, which ran the machine out of
+# memory alongside its other programs. More workers would mostly wait on each
+# other for the RBE service.
 @click.option(
     "--workers",
     type=click.IntRange(min=1),
-    default=6,
+    default=4,
     help="The number of worktrees that test mutants at once, each with its own Bazel server.",
 )
 def main(
@@ -150,8 +159,11 @@ def main(
         _exclusive(repository),
         results.Store(repository / store, run) as results_store,
     ):
-        _test_area(repository, run, results_store, workers)
+        mutants = _test_area(repository, run, results_store, workers)
         _report(results_store)
+        report = (repository / store).with_suffix(".survivors.md")
+        survivors.write(report, run, mutants, results_store.results)
+        click.echo(f"Survivors report: {report}")
 
 
 def _testing(index: int, mutated: mutant.Mutant):
@@ -170,7 +182,7 @@ def _test_area(
     run: results.Run,
     results_store: results.Store,
     worker_count: int,
-):
+) -> list[mutant.Mutant]:
     # A fresh worktree's first build takes seconds from the cache, while a kept
     # worktree and its Bazel output base take a gigabyte of disk.
     with contextlib.ExitStack() as removals:
@@ -184,12 +196,12 @@ def _test_area(
             )
             workers.append(work)
             _ = removals.callback(work.remove)
-        _test_on_workers(workers, run, results_store)
+        return _test_on_workers(workers, run, results_store)
 
 
 def _test_on_workers(
     workers: list[worker.Worker], run: results.Run, results_store: results.Store
-):
+) -> list[mutant.Mutant]:
     first = workers[0]
     # The other workers wait for the first worker's baseline, so that they
     # find its results in the cache rather than run the same tests at once.
@@ -211,6 +223,7 @@ def _test_on_workers(
         )
 
     pool.test_all(workers, pending, record)
+    return mutants
 
 
 def _list_and_check(

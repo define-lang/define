@@ -4,9 +4,13 @@ load("//tools/bzl:build_file_checks.bzl", "check_build_file")
 load("//tools/bzl:pyo3.bzl", "pyo3_extension")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
+# Mutation runs do not mutate the generators, since a generator's mutants only
+# change code that the tests check through the generated code.
+
 py_library(
     name = "ast_description",
     srcs = ["ast_description.py"],
+    tags = ["no-mutation"],
     deps = [
         ":renderer_extension",
         ":rust_names",
@@ -19,6 +23,7 @@ py_library(
 py_library(
     name = "diagnostic_description",
     srcs = ["diagnostic_description.py"],
+    tags = ["no-mutation"],
     deps = [
         ":renderer_extension",
         ":rust_names",
@@ -29,6 +34,7 @@ py_library(
 py_binary(
     name = "generate_ast_constructors",
     srcs = ["generate_ast_constructors.py"],
+    tags = ["no-mutation"],
     visibility = ["//define/compiler/parsing:__pkg__"],
     deps = [
         ":ast_description",
@@ -41,6 +47,7 @@ py_binary(
 py_binary(
     name = "generate_ast_nodes",
     srcs = ["generate_ast_nodes.py"],
+    tags = ["no-mutation"],
     visibility = ["//define/compiler/parsing:__pkg__"],
     deps = [
         ":ast_description",
@@ -53,6 +60,7 @@ py_binary(
 py_binary(
     name = "generate_load_failures",
     srcs = ["generate_load_failures.py"],
+    tags = ["no-mutation"],
     visibility = ["//define/compiler/parsing:__pkg__"],
     deps = [
         ":diagnostic_description",
@@ -65,6 +73,7 @@ py_binary(
 py_binary(
     name = "generate_parser_diagnostics",
     srcs = ["generate_parser_diagnostics.py"],
+    tags = ["no-mutation"],
     visibility = ["//define/compiler/parsing:__pkg__"],
     deps = [
         ":diagnostic_description",
@@ -88,22 +97,26 @@ pyo3_extension(
     crate_root = "rust_renderer.rs",
     module_name = "rust_renderer",
     stubs = True,
+    tags = ["no-mutation"],
     deps = ["@crates//:askama"],
 )
 
 py_library(
     name = "rust_generators",
     srcs = ["__init__.py"],
+    tags = ["no-mutation"],
 )
 
 py_library(
     name = "rust_names",
     srcs = ["rust_names.py"],
+    tags = ["no-mutation"],
 )
 
 py_library(
     name = "rust_output",
     srcs = ["rust_output.py"],
+    tags = ["no-mutation"],
 )
 
 # --- Linting ---

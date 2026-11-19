@@ -156,7 +156,7 @@ section. Started 2026-11-16.
   export.
 - **Mutate only files Git tracks.** Builds write some generated Rust files, such
   as the parser's `ast.rs`, into the source tree, where a crate's module tree
-  reaches them. Their generators are mutated instead.
+  reaches them.
 - **Test a commit, by default `HEAD`**, checked out in each worker's worktree,
   rather than the working tree. The results store records the commit, the area
   and the test timeout, and a run resumes only from a store with the same ones.
@@ -216,12 +216,14 @@ section. Started 2026-11-16.
   the code's types forbid, and no type-correct code has that value or call
   there. The `reportUnknown...Type` rules fired only together with such an
   error, for the values that the error leaves untyped.
-- **Run six workers by default.** With each Bazel server's heap capped, six
-  workers and their tests peaked at 17 GB of memory. On a fresh area of 772
-  Python mutants, two workers took 533 seconds, four took 429, and six took 363,
-  with the test cache favoring the later runs. Each added worker gains less,
-  because the workers wait on each other for the RBE service: the median killed
-  mutant took 1.3, 1.8 and 2.4 seconds. `--workers` chooses another number.
+- **Run four workers by default.** On a fresh area of 772 Python mutants, two
+  workers took 533 seconds, four took 429, and six took 363, with the test cache
+  favoring the later runs. Each added worker gains less, because the workers
+  wait on each other for the RBE service: the median killed mutant took 1.3, 1.8
+  and 2.4 seconds. On `//define/... //crates/...`, six workers' Bazel servers
+  held 17 GB, between 1.9 and 4.1 GB each despite their capped heaps, and the
+  machine ran out of memory alongside its other programs. `--workers` chooses
+  another number.
 - **Limit each worker's Bazel server to a 3 GB heap and 300 idle seconds.**
   Without a limit, the JVM lets a server's heap grow to a quarter of the
   machine's memory before collecting it: three uncapped servers reached 20 GB,
@@ -231,9 +233,36 @@ section. Started 2026-11-16.
   interrupts its mutant's tests and reverts the mutant, and no stopped mutant
   gets a result, so a resumed run tests each one again. Retrying a mutant on
   another worker would hide a broken worker.
-- **Keep 2048 idle action directories in the RBE service.** Six workers each
-  rerun up to a few hundred commands for one mutant, and each worker running the
-  same command at once needs its own directory. A directory's input files are
-  hardlinks to the store's files, so one idle directory adds only about 450
-  inodes and 0.4 MB. 2048 idle directories add about a million inodes, of the
-  store's 150 million, and under 1 GB.
+- **Keep 2048 idle action directories in the RBE service.** Up to six workers
+  each rerun up to a few hundred commands for one mutant, and each worker
+  running the same command at once needs its own directory. A directory's input
+  files are hardlinks to the store's files, so one idle directory adds only
+  about 450 inodes and 0.4 MB. 2048 idle directories add about a million inodes,
+  of the store's 150 million, and under 1 GB.
+- **Do not mutate code generators.** A generator's mutant changes only the code
+  it generates, so a surviving generator mutant does not show which test is
+  missing. The tester skips the sources of targets tagged `no-mutation`, which
+  the generators are. Mutating the generated code instead would need its own way
+  to patch a generator's output.
+- **Do not build `define_binary` targets.** They compile Define programs that no
+  test runs. Bazel gives a build action no timeout, unlike a test, so a mutant
+  that makes the compiler loop forever stopped its worker while it compiled an
+  example program. The RBE service would kill the action only after its default
+  timeout of 15 minutes.
+- **Run every generator with a time limit, in every build.** A generator imports
+  compiler modules that the tester mutates, so a mutant could make it loop
+  forever. Bazel drops a `timeout` execution requirement from a rule's actions
+  and from tags, so `run_generator` runs each generator, with no shell, through
+  `//tools/run_with_timeout`, which kills the generator and every process it
+  started. `check_build_file()` rejects a genrule. A PyO3 extension's stub
+  generation still has no limit, but it only runs the extension's setup code.
+- **Write a survivors report when a run ends,** next to the results store as
+  `<store>.survivors.md`. It lists each mutant that survived or timed out,
+  grouped by file, with its patch, which the results store does not hold. A
+  resumed run lists the mutants again, so the report is complete whenever a run
+  finishes.
+- **Turn off Ruff's `RUF100`, unused `noqa` comments,** as Rust's
+  `unfulfilled_lint_expectations` is turned off. Turning a rule off leaves each
+  `noqa` comment for that rule unused, which failed the baseline of
+  `//define/...`, and a mutant that removes a rule's violation leaves its `noqa`
+  comment unused.

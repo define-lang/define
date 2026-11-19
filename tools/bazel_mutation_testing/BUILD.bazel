@@ -239,6 +239,26 @@ py_test(
     ],
 )
 
+py_library(
+    name = "survivors",
+    srcs = ["survivors.py"],
+    deps = [
+        ":mutant",
+        ":results",
+    ],
+)
+
+py_test(
+    name = "survivors_test",
+    size = "small",
+    srcs = ["survivors_test.py"],
+    deps = [
+        ":mutant",
+        ":results",
+        ":survivors",
+    ],
+)
+
 py_binary(
     name = "tester",
     srcs = ["tester.py"],
@@ -258,6 +278,7 @@ py_binary(
         ":mutant",
         ":pool",
         ":results",
+        ":survivors",
         ":worker",
         "//tools:runfiles",
         "//tools/bazel_mutation_testing/python:generator",
@@ -315,6 +336,8 @@ pyright_test(
         ":python_lint_examples_test",
         ":results",
         ":results_test",
+        ":survivors",
+        ":survivors_test",
         ":tester",
         ":worker",
         ":worker_test",

@@ -72,13 +72,15 @@ def find(workspace: pathlib.Path, patterns: list[str]) -> list[Crate]:
 def from_query(output: str) -> list[Crate]:
     """Return the crates in a query's `streamed_jsonproto` output.
 
-    The query names crates and the rust_test targets that compile them.
+    The query names crates and the rust_test targets that compile them. The
+    crates leave out those tagged `no-mutation`.
     """
     crate_rules: list[bazel.Rule] = []
     test_labels: dict[str, list[str]] = {}
     for rule in bazel.rules(output):
         if rule.rule_class in _CRATE_RULES:
-            crate_rules.append(rule)
+            if bazel.NO_MUTATION_TAG not in rule.value("tags").string_list_value:
+                crate_rules.append(rule)
             continue
         crate_label = rule.value("crate").string_value
         if crate_label and _SKIPPED_TEST_TAGS.isdisjoint(

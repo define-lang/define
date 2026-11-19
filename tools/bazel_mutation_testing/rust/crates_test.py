@@ -110,6 +110,12 @@ def test_default_crate_names_and_roots():
             srcs=["//crates/extension:lib.rs", "//crates/extension:module.rs"],
         ),
         _rule("//:root_crate", "rust_library", srcs=["//:root.rs"]),
+        _rule(
+            "//crates/generator:generator",
+            "rust_library",
+            srcs=["//crates/generator:lib.rs"],
+            tags=["no-mutation"],
+        ),
     )
     assert [(crate.name, crate.root) for crate in found] == [
         ("generate_errors", "tools/generate/main.rs"),

@@ -55,6 +55,12 @@ def test_sources_of_libraries_and_binaries():
             testonly=True,
         ),
         _rule("//:generated", "py_library", srcs=["@pypi//external:module.py"]),
+        _rule(
+            "//define/generators:generate",
+            "py_venv_exec",
+            srcs=["//define/generators:generate.py"],
+            tags=["no-mutation"],
+        ),
     )
     assert found == sources.Sources(
         paths=["define/compiler/ast.py", "tools/tool.py"], tests=[]

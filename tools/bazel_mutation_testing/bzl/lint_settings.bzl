@@ -64,6 +64,7 @@ RUFF_RULES = [
     "RET502",
     "RUF021",
     "RUF059",
+    "RUF100",
     "SIM108",
     "SIM222",
     "SIM223",

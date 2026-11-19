@@ -28,6 +28,11 @@ _BAZEL_RUN_VARIABLES = frozenset(
 )
 
 
+# The tester does not mutate the sources of targets with this tag, such as code
+# generators.
+NO_MUTATION_TAG = "no-mutation"
+
+
 def executable(name: str) -> str:
     """Return the path of the program `name` on `PATH`.
 
