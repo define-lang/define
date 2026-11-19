@@ -31,8 +31,8 @@ py_library(
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/graphs:reference_graph",
-        "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:file_loader",
+        "//define/compiler/validator/structural:structural_result",
     ],
 )
 
@@ -55,9 +55,9 @@ py_library(
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:syntax_errors",
         "//define/compiler/graphs:reference_graph",
-        "//define/compiler/validator:validation_result",
         "//define/compiler/validator/structural:file_loader",
         "//define/compiler/validator/structural:file_validation_context",
+        "//define/compiler/validator/structural:structural_result",
         "@pypi//msgspec",
     ],
 )

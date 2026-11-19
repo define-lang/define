@@ -19,9 +19,9 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast
     from define.compiler.data_structures import define_path
     from define.compiler.graphs import reference_graph
-    from define.compiler.validator import validation_result
     from define.compiler.validator.structural import (
         file_loader,
+        structural_result,
     )
 
 
@@ -64,7 +64,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         referencing_root: define_path.DefinePath,
         referencing_file: file_loader.LoadedFile | None,
         edge: reference_graph.ReferenceEdge,
-        source_definition: validation_result.DefinitionValidationResult,
+        source_definition: structural_result.StructuralDefinitionResult,
     ) -> reference_resolver.ReferenceOutcome:
         if referencing_file is self._source_file:
             unresolved = self._check_source_reference(edge)

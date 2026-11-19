@@ -5,22 +5,32 @@ from __future__ import annotations
 import typing
 from typing import override
 
+import msgspec
+
 from define.compiler import ast, name_types
 from define.compiler.association_resolution import (
     concrete_program,
     literal_encoder,
 )
-from define.compiler.validator import validation_result
 from define.compiler.validator.reference_graph import operation_definition_validator
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from define.compiler.errors import diagnostics
+
+
+class EncodingOperationValidatorResult(msgspec.Struct):
+    """Result of validating a single Encoding Operation definition."""
+
+    diagnostics: list[diagnostics.Diagnostic]
+    encoding_operation: concrete_program.ConcreteEncodingOperation
+
 
 class EncodingOperationDefinitionValidator(
     operation_definition_validator.OperationDefinitionValidator[
         ast.EncodingOperationDefinition,
-        validation_result.EncodingOperationValidatorResult,
+        EncodingOperationValidatorResult,
     ]
 ):
     """Validates an Encoding Operation definition and collects its steps for code generation."""
@@ -41,7 +51,7 @@ class EncodingOperationDefinitionValidator(
         self._computer_operation = None
 
     @override
-    def analyze(self) -> validation_result.EncodingOperationValidatorResult:
+    def analyze(self) -> EncodingOperationValidatorResult:
         # The parser allows `execute the computer operation.` only as the one
         # statement of an Encoding Operation. It reads and writes every
         # interface view, so there are no view uses to check.
@@ -131,8 +141,8 @@ class EncodingOperationDefinitionValidator(
     @override
     def _build_result(
         self,
-    ) -> validation_result.EncodingOperationValidatorResult:
-        return validation_result.EncodingOperationValidatorResult(
+    ) -> EncodingOperationValidatorResult:
+        return EncodingOperationValidatorResult(
             diagnostics=self._diagnostics,
             encoding_operation=concrete_program.ConcreteEncodingOperation(
                 definition=self._definition,

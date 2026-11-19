@@ -15,6 +15,20 @@ import functools
 import typing
 
 from crates.source_rendering.python import rendering
+from define.compiler import ast, work_pool
+from define.compiler.config import project_roots
+from define.compiler.errors import diagnostics
+from define.compiler.graphs import reference_graph, reference_graph_order
+from define.compiler.validator import validation_result
+from define.compiler.validator.structural import (
+    definition_validator,
+    file_loader,
+)
+from define.compiler.validator.structural.resolver import (
+    filesystem_reference_resolver,
+    non_filesystem_reference_resolver,
+    reference_resolver,
+)
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -22,19 +36,7 @@ if typing.TYPE_CHECKING:
 
     from define.compiler.config import config_loader
     from define.compiler.data_structures import define_path
-
-
-from define.compiler import ast, work_pool
-from define.compiler.config import project_roots
-from define.compiler.errors import diagnostics
-from define.compiler.graphs import reference_graph, reference_graph_order
-from define.compiler.validator import validation_result
-from define.compiler.validator.structural import definition_validator, file_loader
-from define.compiler.validator.structural.resolver import (
-    filesystem_reference_resolver,
-    non_filesystem_reference_resolver,
-    reference_resolver,
-)
+    from define.compiler.validator.structural import structural_result
 
 
 def validate_program(
@@ -151,7 +153,7 @@ class _ProgramValidationRun:
     # exists only during a run.
     _reference_graph: reference_graph.ReferenceGraph
     # The result of each validated definition, by its full typed name.
-    _definition_results: dict[str, validation_result.DefinitionValidationResult]
+    _definition_results: dict[str, structural_result.StructuralDefinitionResult]
     # Each validated definition, by its full typed name.
     _definitions: dict[str, ast.GlobalDefinition]
     _encoding_operations: list[ast.EncodingOperationDefinition]
@@ -261,9 +263,9 @@ class _ProgramValidationRun:
             pool.run_until_idle()
         del self._reference_graph
 
-    def file_results(self) -> list[validation_result.FileValidationResult]:
+    def file_results(self) -> list[structural_result.FileValidationResult]:
         """Return the result of each loaded file, without the reference edges that structural validation follows."""
-        file_results: list[validation_result.FileValidationResult] = []
+        file_results: list[structural_result.FileValidationResult] = []
         for loaded_file in self._resolver.completed_files():
             file_result = loaded_file.build_file_validation_result(
                 self._validated_definition_results(loaded_file)
@@ -282,9 +284,9 @@ class _ProgramValidationRun:
 
     def _validated_definition_results(
         self, loaded_file: file_loader.LoadedFile
-    ) -> list[validation_result.DefinitionValidationResult]:
+    ) -> list[structural_result.StructuralDefinitionResult]:
         """Return the results of a file's validated definitions, in source order."""
-        definition_results: list[validation_result.DefinitionValidationResult] = []
+        definition_results: list[structural_result.StructuralDefinitionResult] = []
         for definition in loaded_file.definitions.values():
             definition_result = self._definition_results.get(
                 definition.typed_name.full_typed_name
@@ -335,7 +337,7 @@ class _ProgramValidationRun:
         self,
         loaded_file: file_loader.LoadedFile,
         validated: tuple[
-            validation_result.DefinitionValidationResult, list[diagnostics.Diagnostic]
+            structural_result.StructuralDefinitionResult, list[diagnostics.Diagnostic]
         ],
         pool: work_pool.WorkPool,
     ):
@@ -356,7 +358,7 @@ class _ProgramValidationRun:
     def _follow_edges(
         self,
         loaded_file: file_loader.LoadedFile,
-        definition_result: validation_result.DefinitionValidationResult,
+        definition_result: structural_result.StructuralDefinitionResult,
         edges: Iterable[reference_graph.ReferenceEdge],
         pool: work_pool.WorkPool,
     ):
@@ -368,7 +370,7 @@ class _ProgramValidationRun:
     def _request_reference(
         self,
         loaded_file: file_loader.LoadedFile,
-        definition_result: validation_result.DefinitionValidationResult,
+        definition_result: structural_result.StructuralDefinitionResult,
         edge: reference_graph.ReferenceEdge,
         pool: work_pool.WorkPool,
     ):
@@ -389,7 +391,7 @@ class _ProgramValidationRun:
         self,
         referencing_root: define_path.DefinePath,
         referencing_file: file_loader.LoadedFile | None,
-        definition_result: validation_result.DefinitionValidationResult,
+        definition_result: structural_result.StructuralDefinitionResult,
         edge: reference_graph.ReferenceEdge,
         pool: work_pool.WorkPool,
     ):
@@ -424,7 +426,7 @@ class _ProgramValidationRun:
     def _add_reference_edge(
         self,
         edge: reference_graph.ReferenceEdge,
-        source_definition: validation_result.DefinitionValidationResult,
+        source_definition: structural_result.StructuralDefinitionResult,
     ) -> bool:
         detected_cycle = self._reference_graph.try_add_edge(edge)
         if detected_cycle is None:
@@ -440,7 +442,7 @@ class _ProgramValidationRun:
 
     def _report(
         self,
-        definition_result: validation_result.DefinitionValidationResult,
+        definition_result: structural_result.StructuralDefinitionResult,
         diagnostic: diagnostics.Diagnostic,
     ):
         """Record a diagnostic about a definition, which makes the definition structurally invalid."""
@@ -448,7 +450,7 @@ class _ProgramValidationRun:
         definition_result.structurally_valid = False
 
     def _validate_entry_action_interface_positions(
-        self, entry_action_result: validation_result.DefinitionValidationResult
+        self, entry_action_result: structural_result.StructuralDefinitionResult
     ):
         definition = typing.cast("ast.ActionDefinition", entry_action_result.definition)
         for position in definition.interface_positions:
@@ -462,10 +464,10 @@ class _ProgramValidationRun:
 
 
 def _select_entry_action(
-    entry_file_result: validation_result.FileValidationResult,
+    entry_file_result: structural_result.FileValidationResult,
     *,
     select_last_constructor: bool = False,
-) -> validation_result.DefinitionValidationResult | None:
+) -> structural_result.StructuralDefinitionResult | None:
     definitions = entry_file_result.definition_results
     candidates = reversed(definitions) if select_last_constructor else definitions
     for definition_result in candidates:

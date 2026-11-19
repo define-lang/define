@@ -301,3 +301,43 @@ class TestDfsPostorder:
         assert result[-1] is a
         assert result.index(d) < result.index(b)
         assert result.index(d) < result.index(c)
+
+
+def _first_position(source: str) -> ast.PositionDefinition:
+    definition = test_helpers.parse(source).definitions[0]
+    assert isinstance(definition, ast.PositionDefinition)
+    return definition
+
+
+def test_reference_edge_same_universe():
+    position = _first_position(
+        "define the potential position<my.domain.com:my_lib:/x> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position</a>.\n"
+        "    }\n"
+        "}\n"
+    )
+    assert position.quality_assignment_block is not None
+    quality_ref = position.quality_assignment_block.statements[0].typed_global_name
+    edge = reference_graph.ReferenceEdge(
+        enclosing_definition=position,
+        global_name_reference=quality_ref,
+    )
+    assert edge.target_full_typed_name == "position<my.domain.com:my_lib:/a>"
+
+
+def test_reference_edge_explicit_fqun():
+    position = _first_position(
+        "define the potential position<my.domain.com:my_lib:/x> {\n"
+        "    it may only contain particles where {\n"
+        "        it has the position<other.com:other_lib:/b>.\n"
+        "    }\n"
+        "}\n"
+    )
+    assert position.quality_assignment_block is not None
+    quality_ref = position.quality_assignment_block.statements[0].typed_global_name
+    edge = reference_graph.ReferenceEdge(
+        enclosing_definition=position,
+        global_name_reference=quality_ref,
+    )
+    assert edge.target_full_typed_name == "position<other.com:other_lib:/b>"

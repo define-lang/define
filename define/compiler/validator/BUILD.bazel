@@ -45,27 +45,10 @@ py_library(
     deps = [
         "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
-        "//define/compiler/association_resolution:concrete_program",
-        "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
-        "//define/compiler/graphs:reference_graph",
         "//define/compiler/graphs:reference_graph_order",
-        "//define/compiler/validator/reference_graph:abstract_program",
-        "//define/compiler/validator/reference_graph:action_contract",
+        "//define/compiler/validator/structural:structural_result",
         "@pypi//msgspec",
-    ],
-)
-
-py_test(
-    name = "validation_result_test",
-    size = "small",
-    srcs = ["validation_result_test.py"],
-    deps = [
-        ":validation_result",
-        "//define/compiler:ast",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/graphs:reference_graph",
-        "//define/compiler/parsing:test_helpers",
     ],
 )
 
@@ -83,7 +66,6 @@ pyright_test(
         ":scope_tracker_test",
         ":test_helpers",
         ":validation_result",
-        ":validation_result_test",
         ":validator",
     ],
 )

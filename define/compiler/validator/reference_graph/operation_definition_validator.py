@@ -6,9 +6,11 @@ import abc
 import typing
 from typing import override
 
+import msgspec
+
 from define.compiler import ast
 from define.compiler.errors import diagnostics
-from define.compiler.validator import scope_tracker, validation_result
+from define.compiler.validator import scope_tracker
 from define.compiler.validator.reference_graph import (
     abstract_program,
     operation_arguments_validator,
@@ -17,6 +19,17 @@ from define.compiler.validator.reference_graph import (
 
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
+
+
+class ValueOperationValidatorResult(msgspec.Struct):
+    """Result of validating a Value Operation definition."""
+
+    diagnostics: list[diagnostics.Diagnostic]
+    # None when either validation phase reported anything about the Value
+    # Operation, because its steps may then be incomplete or refer to views
+    # that do not exist, and nothing executing it can choose Encoding
+    # Operations from them.
+    steps: list[abstract_program.ValueOperationStep] | None
 
 
 class _ViewArgument(typing.NamedTuple):
@@ -31,7 +44,7 @@ class _ViewArgument(typing.NamedTuple):
 
 class OperationDefinitionValidator[
     DefinitionT: ast.OperationDefinition,
-    ResultT: validation_result.DefinitionValidatorResult,
+    ResultT,
 ](abc.ABC):
     """Validates the execution statements of an operation definition against the operations and logical operations they execute."""
 
@@ -303,7 +316,7 @@ class OperationDefinitionValidator[
 class ValueOperationDefinitionValidator(
     OperationDefinitionValidator[
         ast.ValueOperationDefinition,
-        validation_result.ValueOperationValidatorResult,
+        ValueOperationValidatorResult,
     ]
 ):
     """Validates a Value Operation definition and collects its steps, which are independent of the encodings of what an execution of it looks at."""
@@ -371,8 +384,8 @@ class ValueOperationDefinitionValidator(
     @override
     def _build_result(
         self,
-    ) -> validation_result.ValueOperationValidatorResult:
-        return validation_result.ValueOperationValidatorResult(
+    ) -> ValueOperationValidatorResult:
+        return ValueOperationValidatorResult(
             diagnostics=self._diagnostics,
             steps=None if self._has_diagnostics() else self._steps,
         )

@@ -85,8 +85,9 @@ py_library(
         ":literal_encoder",
         "//define/compiler:ast",
         "//define/compiler:name_types",
-        "//define/compiler/validator:validation_result",
+        "//define/compiler/errors:diagnostics",
         "//define/compiler/validator/reference_graph:operation_definition_validator",
+        "@pypi//msgspec",
     ],
 )
 

@@ -19,10 +19,10 @@ from define.compiler.validator.reference_graph import (
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from define.compiler.validator import validation_result
     from define.compiler.validator.reference_graph import (
         action_contract,
     )
+    from define.compiler.validator.structural import structural_result
 
 
 class DefinitionValidation(msgspec.Struct, frozen=True):
@@ -68,7 +68,7 @@ class ReferenceGraphValidator:
     """
 
     _definitions: Mapping[str, ast.GlobalDefinition]
-    _structural_results: Mapping[str, validation_result.DefinitionValidationResult]
+    _structural_results: Mapping[str, structural_result.StructuralDefinitionResult]
     _entry_action: ast.ActionDefinition | None
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
     _allow_entry_action_occupied_implied_position_requirements: bool
@@ -76,7 +76,7 @@ class ReferenceGraphValidator:
     def __init__(
         self,
         definitions: Mapping[str, ast.GlobalDefinition],
-        structural_results: Mapping[str, validation_result.DefinitionValidationResult],
+        structural_results: Mapping[str, structural_result.StructuralDefinitionResult],
         *,
         entry_action: ast.ActionDefinition | None,
         allow_entry_action_occupied_implied_position_requirements: bool = False,
@@ -145,7 +145,7 @@ class ReferenceGraphValidator:
 
     def _validate_action(
         self, definition: ast.ActionDefinition
-    ) -> validation_result.ActionValidatorResult:
+    ) -> action_definition_validator.ActionValidatorResult:
         definition_result = self._structural_results[
             definition.typed_name.full_typed_name
         ]

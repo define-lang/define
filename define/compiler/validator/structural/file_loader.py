@@ -13,8 +13,10 @@ import msgspec
 
 from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.parsing import parser
-from define.compiler.validator import validation_result
-from define.compiler.validator.structural import file_validation_context
+from define.compiler.validator.structural import (
+    file_validation_context,
+    structural_result,
+)
 
 if TYPE_CHECKING:
     from crates.source_rendering.python import rendering
@@ -52,10 +54,10 @@ class LoadedFile(msgspec.Struct):
         return None
 
     def build_file_validation_result(
-        self, definition_results: list[validation_result.DefinitionValidationResult]
-    ) -> validation_result.FileValidationResult:
+        self, definition_results: list[structural_result.StructuralDefinitionResult]
+    ) -> structural_result.FileValidationResult:
         """Return the file's result, given the results of its validated definitions in source order."""
-        return validation_result.FileValidationResult(
+        return structural_result.FileValidationResult(
             file_path=self.context.full_path,
             root_prefix=self.context.root_prefix,
             definition_results=definition_results,

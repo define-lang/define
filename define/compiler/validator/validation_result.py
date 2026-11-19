@@ -1,4 +1,4 @@
-"""Shared data types for Define language validation."""
+"""The result of validating a whole Define program, which every validation stage adds its diagnostics to."""
 
 from __future__ import annotations
 
@@ -11,84 +11,14 @@ from define.compiler.errors import diagnostics
 if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from define.compiler import ast
-    from define.compiler.association_resolution import concrete_program
-    from define.compiler.data_structures import define_path
-    from define.compiler.graphs import reference_graph, reference_graph_order
-    from define.compiler.validator.reference_graph import (
-        abstract_program,
-        action_contract,
-    )
-
-
-class ParticleStatementValidity(msgspec.Struct, frozen=True):
-    """Name validation results for a Particle Statement."""
-
-    target_ok: bool
-    source_ok: bool = True
-    from_is_prefix_of_to: bool = False
-
-
-class DefinitionValidatorResult(msgspec.Struct):
-    """Result of validating a single definition after everything it directly references is validated."""
-
-    diagnostics: list[diagnostics.Diagnostic]
-
-
-class ActionValidatorResult(DefinitionValidatorResult):
-    """Result of validating a single action definition after everything it directly references is validated."""
-
-    contract: action_contract.ActionContract
-    action: abstract_program.AbstractAction
-
-
-class ValueOperationValidatorResult(DefinitionValidatorResult):
-    """Result of validating a Value Operation definition."""
-
-    # None when either validation phase reported anything about the Value
-    # Operation, because its steps may then be incomplete or refer to views
-    # that do not exist, and nothing executing it can choose Encoding
-    # Operations from them.
-    steps: list[abstract_program.ValueOperationStep] | None
-
-
-class EncodingOperationValidatorResult(DefinitionValidatorResult):
-    """Result of validating a single Encoding Operation definition."""
-
-    encoding_operation: concrete_program.ConcreteEncodingOperation
-
-
-class DefinitionValidationResult(msgspec.Struct):
-    """Validation output for one definition within a file."""
-
-    definition: ast.GlobalDefinition
-    # Whether structural validation found no problem with the definition.
-    # Reference graph validation reads it for each Value Operation.
-    structurally_valid: bool
-
-    reference_edges: list[reference_graph.ReferenceEdge] = msgspec.field(
-        default_factory=list
-    )
-    particle_statement_validity: list[ParticleStatementValidity] = msgspec.field(
-        default_factory=list
-    )
-    # Whether each position looked at by an Operation Argument Statement in an
-    # action is valid, in source order.
-    looked_at_position_validity: list[bool] = msgspec.field(default_factory=list)
-
-
-class FileValidationResult(msgspec.Struct):
-    """Validation output for one source file."""
-
-    file_path: define_path.DefinePath  # Full path: root_prefix / relative file path.
-    root_prefix: define_path.DefinePath
-    # The file's validated definitions, in source order.
-    definition_results: list[DefinitionValidationResult]
+    from define.compiler.graphs import reference_graph_order
+    from define.compiler.validator.structural import structural_result
 
 
 class ProgramValidationResult(msgspec.Struct):
     """Full result of validating a Define program."""
 
-    file_results: list[FileValidationResult]
+    file_results: list[structural_result.FileValidationResult]
     entry_action: ast.ActionDefinition | None
     definition_order: reference_graph_order.ReferenceGraphOrder
     # Each validated definition, by its full typed name.
@@ -96,7 +26,7 @@ class ProgramValidationResult(msgspec.Struct):
     # The result of each validated definition, by its full typed name, which
     # reference graph validation reads for each action and Value Operation
     # that it validates.
-    structural_results: dict[str, DefinitionValidationResult]
+    structural_results: dict[str, structural_result.StructuralDefinitionResult]
     # Each validated Encoding Operation, which association resolution
     # validates once the ones it chooses are loaded.
     encoding_operations: list[ast.EncodingOperationDefinition]

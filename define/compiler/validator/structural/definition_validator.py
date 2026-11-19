@@ -12,9 +12,10 @@ from define.compiler import (
 from define.compiler.config import global_names
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import reference_graph
-from define.compiler.validator import scope_tracker, validation_result
+from define.compiler.validator import scope_tracker
 from define.compiler.validator.structural import (
     name_validators,
+    structural_result,
     view_setting_order_tracker,
 )
 
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
 def validate_definition(
     definition: ast.GlobalDefinition,
     context: file_validation_context.FileValidationContext,
-) -> tuple[validation_result.DefinitionValidationResult, list[diagnostics.Diagnostic]]:
+) -> tuple[structural_result.StructuralDefinitionResult, list[diagnostics.Diagnostic]]:
     """Validate one top-level definition in the file that context describes, and return its validation result and its diagnostics."""
     return DefinitionStructuralValidator(
         definition=definition, context=context
@@ -48,7 +49,7 @@ class DefinitionStructuralValidator:
     # The source typed names that already validated without diagnostics in
     # this definition.
     _valid_typed_names: set[str]
-    _particle_statement_validity: list[validation_result.ParticleStatementValidity]
+    _particle_statement_validity: list[structural_result.ParticleStatementValidity]
     _looked_at_position_validity: list[bool]
     _unknown_fquns: set[str]
     _implied_qualities: dict[str, ast.QualityImplicationStatement]
@@ -81,7 +82,7 @@ class DefinitionStructuralValidator:
     def validate_definition(
         self,
     ) -> tuple[
-        validation_result.DefinitionValidationResult, list[diagnostics.Diagnostic]
+        structural_result.StructuralDefinitionResult, list[diagnostics.Diagnostic]
     ]:
         """Validate one top-level definition, and return its validation result and its diagnostics."""
         self._diagnostics.extend(
@@ -118,7 +119,7 @@ class DefinitionStructuralValidator:
                 )
             case _:
                 pass
-        result = validation_result.DefinitionValidationResult(
+        result = structural_result.StructuralDefinitionResult(
             definition=self._definition,
             structurally_valid=not self._diagnostics,
             reference_edges=self._reference_edges,
@@ -715,7 +716,7 @@ class DefinitionStructuralValidator:
                         )
                     )
         self._particle_statement_validity.append(
-            validation_result.ParticleStatementValidity(
+            structural_result.ParticleStatementValidity(
                 target_ok=target_ok, source_ok=source_ok
             )
         )
@@ -780,7 +781,7 @@ class DefinitionStructuralValidator:
             scope,
         )
         self._particle_statement_validity.append(
-            validation_result.ParticleStatementValidity(
+            structural_result.ParticleStatementValidity(
                 target_ok=target_ok,
             )
         )
@@ -800,7 +801,7 @@ class DefinitionStructuralValidator:
         )
         from_is_prefix_of_to = self._check_if_from_is_a_prefix_of_to(stmt)
         self._particle_statement_validity.append(
-            validation_result.ParticleStatementValidity(
+            structural_result.ParticleStatementValidity(
                 source_ok=source_ok,
                 target_ok=target_ok,
                 from_is_prefix_of_to=from_is_prefix_of_to,
@@ -858,7 +859,7 @@ class DefinitionStructuralValidator:
             scope,
         )
         self._particle_statement_validity.append(
-            validation_result.ParticleStatementValidity(
+            structural_result.ParticleStatementValidity(
                 target_ok=target_ok,
             )
         )

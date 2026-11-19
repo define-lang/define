@@ -18,9 +18,9 @@ if typing.TYPE_CHECKING:
     from define.compiler.config import project_roots
     from define.compiler.data_structures import define_path
     from define.compiler.graphs import reference_graph
-    from define.compiler.validator import validation_result
     from define.compiler.validator.structural import (
         file_loader,
+        structural_result,
     )
 
 
@@ -66,7 +66,7 @@ class _DeferredReferenceEdge(msgspec.Struct):
     """An edge waiting for its target file to finish loading."""
 
     edge: reference_graph.ReferenceEdge
-    source_definition: validation_result.DefinitionValidationResult
+    source_definition: structural_result.StructuralDefinitionResult
 
 
 class ReferenceResolver:
@@ -96,7 +96,7 @@ class ReferenceResolver:
         referencing_root: define_path.DefinePath,
         referencing_file: file_loader.LoadedFile | None,
         edge: reference_graph.ReferenceEdge,
-        source_definition: validation_result.DefinitionValidationResult,
+        source_definition: structural_result.StructuralDefinitionResult,
     ) -> ReferenceOutcome:
         """Validate an edge from the project root referencing_root, and return what it found.
 
@@ -176,7 +176,7 @@ class ReferenceResolver:
         self, loaded_file: file_loader.LoadedFile
     ) -> list[
         tuple[
-            validation_result.DefinitionValidationResult,
+            structural_result.StructuralDefinitionResult,
             ResolvedDefinition | diagnostics.Diagnostic,
         ]
     ]:
@@ -201,7 +201,7 @@ class ReferenceResolver:
         # satisfy or fail the deferred edge.
         outcomes: list[
             tuple[
-                validation_result.DefinitionValidationResult,
+                structural_result.StructuralDefinitionResult,
                 ResolvedDefinition | diagnostics.Diagnostic,
             ]
         ] = []

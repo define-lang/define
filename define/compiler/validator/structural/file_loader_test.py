@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from define.compiler.graphs import reference_graph
-    from define.compiler.validator import validation_result
+    from define.compiler.validator.structural import structural_result
 
 
 # Where the locations come from does not matter to these tests.
@@ -58,7 +58,7 @@ class _ValidatedFile(msgspec.Struct, frozen=True):
     # The file's diagnostics, then each definition's, in the order they were
     # found.
     diagnostics: list[diagnostics.Diagnostic]
-    definition_results: list[validation_result.DefinitionValidationResult]
+    definition_results: list[structural_result.StructuralDefinitionResult]
 
 
 def _load_and_validate_every_definition(
@@ -68,7 +68,7 @@ def _load_and_validate_every_definition(
         context, rendering.SourceMap()
     )
     found = list(file_diagnostics)
-    definition_results: list[validation_result.DefinitionValidationResult] = []
+    definition_results: list[structural_result.StructuralDefinitionResult] = []
     for definition in loaded_file.definitions.values():
         definition_result, definition_diagnostics = (
             definition_validator.validate_definition(definition, loaded_file.context)

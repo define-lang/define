@@ -5,10 +5,10 @@ import types
 from define.compiler.config import config_loader
 from define.compiler.data_structures import define_path
 from define.compiler.parsing import test_helpers
-from define.compiler.validator import validation_result
 from define.compiler.validator.structural import (
     definition_validator,
     file_validation_context,
+    structural_result,
 )
 
 # Where the locations come from does not matter to these tests.
@@ -34,7 +34,7 @@ class TestDefinitionStructuralValidator:
 
         result, found = validator.validate_definition()
 
-        assert isinstance(result, validation_result.DefinitionValidationResult)
+        assert isinstance(result, structural_result.StructuralDefinitionResult)
         assert result.definition == program.definitions[0]
         assert result.structurally_valid
         assert found == []

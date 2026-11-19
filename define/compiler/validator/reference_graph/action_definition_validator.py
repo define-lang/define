@@ -5,16 +5,15 @@ from __future__ import annotations
 import typing
 from functools import cached_property
 
+import msgspec
+
 from define.compiler import (
     ast,
     chained_name,
     name_types,
 )
 from define.compiler.errors import diagnostics
-from define.compiler.validator import (
-    scope_tracker,
-    validation_result,
-)
+from define.compiler.validator import scope_tracker
 from define.compiler.validator.reference_graph import (
     abstract_program,
     action_contract,
@@ -54,13 +53,22 @@ if typing.TYPE_CHECKING:
     from define.compiler.validator.reference_graph.destruction import (
         destruction_contract,
     )
+    from define.compiler.validator.structural import structural_result
+
+
+class ActionValidatorResult(msgspec.Struct):
+    """Result of validating a single action definition after everything it directly references is validated."""
+
+    diagnostics: list[diagnostics.Diagnostic]
+    contract: action_contract.ActionContract
+    action: abstract_program.AbstractAction
 
 
 class ActionDefinitionValidator:
     """Validates an action definition once everything it directly references is validated."""
 
     _definition: ast.ActionDefinition
-    _particle_statement_validity: Sequence[validation_result.ParticleStatementValidity]
+    _particle_statement_validity: Sequence[structural_result.ParticleStatementValidity]
     _looked_at_position_validity: Sequence[bool]
     _definitions: Mapping[str, ast.GlobalDefinition]
     _validation_state: reference_graph_validation_state.ReferenceGraphValidationState
@@ -71,7 +79,7 @@ class ActionDefinitionValidator:
         self,
         definition: ast.ActionDefinition,
         particle_statement_validity: Sequence[
-            validation_result.ParticleStatementValidity
+            structural_result.ParticleStatementValidity
         ],
         looked_at_position_validity: Sequence[bool],
         definitions: Mapping[str, ast.GlobalDefinition],
@@ -371,7 +379,7 @@ class ActionDefinitionValidator:
     def _analyze_value_setting(
         self,
         stmt: ast.ValueSettingStatement,
-        validity: validation_result.ParticleStatementValidity,
+        validity: structural_result.ParticleStatementValidity,
         scope: scope_tracker.PositionScopeTracker,
     ):
         if not (validity.target_ok and validity.source_ok):
@@ -452,7 +460,7 @@ class ActionDefinitionValidator:
     def _analyze_create(
         self,
         stmt: ast.CreateParticleStatement,
-        validity: validation_result.ParticleStatementValidity,
+        validity: structural_result.ParticleStatementValidity,
         scope: scope_tracker.PositionScopeTracker,
     ):
         if not validity.target_ok:
@@ -484,7 +492,7 @@ class ActionDefinitionValidator:
     def _analyze_destroy(
         self,
         stmt: ast.DestroyParticleStatement,
-        validity: validation_result.ParticleStatementValidity,
+        validity: structural_result.ParticleStatementValidity,
         scope: scope_tracker.PositionScopeTracker,
     ):
         if not validity.target_ok:
@@ -512,7 +520,7 @@ class ActionDefinitionValidator:
     def _analyze_move(
         self,
         stmt: ast.MoveParticleStatement,
-        validity: validation_result.ParticleStatementValidity,
+        validity: structural_result.ParticleStatementValidity,
         scope: scope_tracker.PositionScopeTracker,
     ):
         if not (validity.source_ok and validity.target_ok):
@@ -586,13 +594,13 @@ class ActionDefinitionValidator:
 
     def analyze(
         self,
-    ) -> validation_result.ActionValidatorResult:
+    ) -> ActionValidatorResult:
         """Validate the action, and return its diagnostics, its contract, and its abstract steps."""
         contract, guaranteed_particle_destructors = self._analyze_action_definition()
         destruction_contracts: list[destruction_contract.DestructionContract] = []
         for contracts in contract.destruction_contracts:
             destruction_contracts.extend(contracts.particles)
-        return validation_result.ActionValidatorResult(
+        return ActionValidatorResult(
             diagnostics=self._diagnostics,
             contract=contract,
             action=abstract_program.AbstractAction(
