@@ -146,10 +146,12 @@ class Driver:
         first_file = program_validation.file_results[0]
         entry_action = program_validation.entry_action
         if entry_action is None:
-            program_validation.diagnostics.append(
-                diagnostics.EntryPointNotConstructorDiagnostic(
-                    location=first_file.definition_results[0].definition.location
-                )
+            program_validation.diagnostic_lists.append(
+                [
+                    diagnostics.EntryPointNotConstructorDiagnostic(
+                        location=first_file.definition_results[0].definition.location
+                    )
+                ]
             )
             return CompilationResult.from_validation_result(compiler_validation)
         codegen_input = compiler_validation.concrete_program

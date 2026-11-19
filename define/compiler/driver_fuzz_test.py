@@ -1819,7 +1819,7 @@ def _materialize_project_case(tmp_path: Path, project_case: ProjectCase):
 def _assert_results_are_clean(
     result: validation_result.ProgramValidationResult, source_hint: str
 ):
-    if result.diagnostics:
+    if result.has_errors():
         pytest.fail(
             f"Expected clean validation results, got:\n{result.sorted_diagnostics()!r}\n\nProject:\n{source_hint}",
             pytrace=False,

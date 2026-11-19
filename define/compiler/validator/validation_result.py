@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import typing
 
 import msgspec
@@ -9,6 +10,8 @@ import msgspec
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.graphs import reference_graph_order
@@ -30,14 +33,18 @@ class ProgramValidationResult(msgspec.Struct):
     # Each validated Encoding Operation, which association resolution
     # validates once the ones it chooses are loaded.
     encoding_operations: list[ast.EncodingOperationDefinition]
-    # Every diagnostic about the program, from every stage, in the order each
-    # stage found them.
-    diagnostics: list[diagnostics.FormattableDiagnostic]
+    # The lists that the stages add their diagnostics to, held by reference,
+    # so that the result includes diagnostics that a stage finds after the
+    # result is built. Each stage only ever adds to its list. Read them only
+    # once every stage is done.
+    diagnostic_lists: list[Sequence[diagnostics.FormattableDiagnostic]]
     source_map: rendering.SourceMap
 
     def sorted_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
         """Every diagnostic, sorted by file and location, after those that have no location in the order they were found."""
-        return sorted(self.diagnostics, key=_diagnostic_order)
+        return sorted(
+            itertools.chain.from_iterable(self.diagnostic_lists), key=_diagnostic_order
+        )
 
     def error_strings(self) -> list[str]:
         """Format every diagnostic for the command-line caller."""
@@ -51,7 +58,7 @@ class ProgramValidationResult(msgspec.Struct):
         # Every diagnostic is an error, which keeps code generation from ever
         # running on a file whose comments have characters the spec does not
         # allow, such as the bidi controls of a Trojan Source attack.
-        return bool(self.diagnostics)
+        return any(self.diagnostic_lists)
 
 
 def _diagnostic_order(

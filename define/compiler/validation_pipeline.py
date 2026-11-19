@@ -65,11 +65,12 @@ def validate_and_resolve_program(
     # otherwise be retained until code generation, but nothing loads more of
     # the program after this.
     del program
-    program_result.diagnostics.extend(found_diagnostics)
-    program_result.diagnostics.extend(
-        resolver.resolve_encoding_operations(program_result.encoding_operations)
+    encoding_operation_diagnostics = resolver.resolve_encoding_operations(
+        program_result.encoding_operations
     )
-    program_result.diagnostics.extend(tables.config_diagnostics())
+    program_result.diagnostic_lists.extend(
+        [found_diagnostics, encoding_operation_diagnostics, tables.config_diagnostics()]
+    )
     return CompilerValidationResult(
         program_validation=program_result,
         concrete_program=resolver.concrete_program(program_result.definition_order),

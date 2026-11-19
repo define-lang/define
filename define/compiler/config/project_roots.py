@@ -70,11 +70,9 @@ class ProjectRoots:
         # sub-root path that another local dependency already listed, so the
         # project cannot use that universe.
         self._disabled_universes: set[tuple[define_path.DefinePath, str]] = set()
-        self._diagnostics: list[diagnostics.FormattableDiagnostic] = []
-
-    def diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
-        """Return the diagnostics that loading the project configs found."""
-        return self._diagnostics
+        # The diagnostics that loading project configs found. Loading only
+        # adds to this list.
+        self.diagnostics: list[diagnostics.FormattableDiagnostic] = []
 
     def load_entry_file_project_config(self) -> config_loader.Config | None:
         """Load the config of the project that holds the program's entry file, which is the project at the working directory.
@@ -185,7 +183,7 @@ class ProjectRoots:
         result = config_loader.ConfigLoader(
             root, self._source_map
         ).load_project_root_config(declaring_entry)
-        self._diagnostics.extend(result.diagnostics)
+        self.diagnostics.extend(result.diagnostics)
         if result.config is None:
             self._failed.add(root)
             return None
@@ -194,7 +192,7 @@ class ProjectRoots:
         if existing is not None:
             _, existing_config = existing
             self._failed.add(root)
-            self._diagnostics.append(
+            self.diagnostics.append(
                 diagnostics.DuplicateFqunDiagnostic(
                     location=root_config.fqun.location,
                     fqun=root_config.fqun.canonical,
@@ -222,7 +220,7 @@ class ProjectRoots:
         """
         if entry.universe == root_config.fqun.canonical:
             self._disabled_universes.add((root, entry.universe))
-            self._diagnostics.append(
+            self.diagnostics.append(
                 diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
                     location=entry.universe_location,
                     universe=entry.universe,
@@ -237,7 +235,7 @@ class ProjectRoots:
             node.dependency_entry = entry
             return
         self._disabled_universes.add((root, entry.universe))
-        self._diagnostics.append(
+        self.diagnostics.append(
             diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
                 location=entry.path_location,
                 sub_root_path=str(sub_root_path),
