@@ -1,0 +1,104 @@
+from __future__ import annotations
+
+import threading
+from typing import final
+
+import pytest
+
+from tools.bazel_mutation_testing import mutant, pool, results
+
+
+class _TesterFailedError(Exception):
+    pass
+
+
+def _mutant(name: str) -> mutant.Mutant:
+    return mutant.Mutant(name=name, path="lib.rs", patch="")
+
+
+def _killed(mutated: mutant.Mutant) -> results.Result:
+    return results.Result(
+        name=mutated.name,
+        outcome=results.Outcome.KILLED,
+        culprit="//:test",
+        seconds=0.0,
+    )
+
+
+@final
+class _Tester:
+    """Kills each mutant once every tester is testing one."""
+
+    def __init__(self, all_testing: threading.Barrier):
+        self.tested: list[str] = []
+        self.interrupted = False
+        self._all_testing = all_testing
+
+    def test(self, mutated: mutant.Mutant) -> results.Result:
+        _ = self._all_testing.wait(timeout=10)
+        self.tested.append(mutated.name)
+        return _killed(mutated)
+
+    def interrupt(self):
+        self.interrupted = True
+
+
+@final
+class _BlockedTester:
+    """Tests one mutant until it is interrupted."""
+
+    def __init__(self, testing: threading.Event):
+        self.interrupted = threading.Event()
+        self._testing = testing
+
+    def test(self, mutated: mutant.Mutant) -> results.Result:
+        self._testing.set()
+        _ = self.interrupted.wait(timeout=10)
+        raise _TesterFailedError(mutated.name)
+
+    def interrupt(self):
+        self.interrupted.set()
+
+
+@final
+class _FailingTester:
+    def __init__(self, testing: threading.Event):
+        self._testing = testing
+
+    def test(self, mutated: mutant.Mutant) -> results.Result:
+        _ = self._testing.wait(timeout=10)
+        raise _TesterFailedError(mutated.name)
+
+    def interrupt(self):
+        pass
+
+
+def test_testers_test_every_mutant_once_at_the_same_time():
+    all_testing = threading.Barrier(2)
+    testers = [_Tester(all_testing), _Tester(all_testing)]
+    mutants = [_mutant(f"mutant {index}") for index in range(6)]
+    recorded: list[results.Result] = []
+
+    pool.test_all(testers, mutants, recorded.append)
+
+    assert sorted(recorded, key=lambda result: result.name) == [
+        _killed(mutated) for mutated in mutants
+    ]
+    assert [len(tester.tested) for tester in testers] == [3, 3]
+    assert not any(tester.interrupted for tester in testers)
+
+
+def test_failed_tester_interrupts_the_others_and_records_nothing():
+    testing = threading.Event()
+    blocked = _BlockedTester(testing)
+    recorded: list[results.Result] = []
+
+    with pytest.raises(_TesterFailedError):
+        pool.test_all(
+            [blocked, _FailingTester(testing)],
+            [_mutant("blocked"), _mutant("failing"), _mutant("third")],
+            recorded.append,
+        )
+
+    assert blocked.interrupted.is_set()
+    assert recorded == []

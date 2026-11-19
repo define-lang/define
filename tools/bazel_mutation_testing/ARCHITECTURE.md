@@ -127,6 +127,11 @@ section. Started 2026-11-16.
 - **Run mutants in parallel with a fixed pool of worktrees, one Bazel server
   each,** created once per run and reused across mutants. All workers execute on
   the local RBE service, which also shares cached results between them.
+- **Remove each worktree and its Bazel output base when a run ends,** whether
+  the run finished, failed or was interrupted. A fresh worktree's first build
+  takes about 12 seconds, all from the cache, while a kept worktree and its
+  output base take up to 1.4 GB of disk. A worktree with changes is kept, to
+  show what went wrong.
 - **Rely on the RBE service to reuse action directories between mutants.**
   Staging each test's inputs from scratch, and deleting them afterwards, was a
   quarter of a test run's time. The service reuses the directory of an earlier
@@ -211,3 +216,24 @@ section. Started 2026-11-16.
   the code's types forbid, and no type-correct code has that value or call
   there. The `reportUnknown...Type` rules fired only together with such an
   error, for the values that the error leaves untyped.
+- **Run six workers by default.** With each Bazel server's heap capped, six
+  workers and their tests peaked at 17 GB of memory. On a fresh area of 772
+  Python mutants, two workers took 533 seconds, four took 429, and six took 363,
+  with the test cache favoring the later runs. Each added worker gains less,
+  because the workers wait on each other for the RBE service: the median killed
+  mutant took 1.3, 1.8 and 2.4 seconds. `--workers` chooses another number.
+- **Limit each worker's Bazel server to a 3 GB heap and 300 idle seconds.**
+  Without a limit, the JVM lets a server's heap grow to a quarter of the
+  machine's memory before collecting it: three uncapped servers reached 20 GB,
+  though none kept more than 600 MB live. A server also stays running for three
+  hours after a run unless it exits when idle.
+- **A failed or interrupted worker stops the run.** Every other worker
+  interrupts its mutant's tests and reverts the mutant, and no stopped mutant
+  gets a result, so a resumed run tests each one again. Retrying a mutant on
+  another worker would hide a broken worker.
+- **Keep 2048 idle action directories in the RBE service.** Six workers each
+  rerun up to a few hundred commands for one mutant, and each worker running the
+  same command at once needs its own directory. A directory's input files are
+  hardlinks to the store's files, so one idle directory adds only about 450
+  inodes and 0.4 MB. 2048 idle directories add about a million inodes, of the
+  store's 150 million, and under 1 GB.

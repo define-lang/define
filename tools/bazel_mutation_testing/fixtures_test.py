@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import contextlib
 import fcntl
+import getpass
+import hashlib
 import os
 import pathlib
 import signal
@@ -25,7 +27,20 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
 _WORKSPACE = pathlib.Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
-_WORKTREE = _WORKSPACE / ".mutation_testing/worker-0"
+# Runs with more workers than this would use more memory than they show.
+_WORKERS = 3
+_WORKTREES = [
+    _WORKSPACE / f".mutation_testing/worker-{index}" for index in range(_WORKERS)
+]
+
+
+def _output_base(worktree: pathlib.Path) -> pathlib.Path:
+    # Bazel names a workspace's output base after the MD5 hash of the
+    # workspace's path.
+    name = hashlib.md5(str(worktree).encode(), usedforsecurity=False).hexdigest()
+    return pathlib.Path.home() / f".cache/bazel/_bazel_{getpass.getuser()}/{name}"
+
+
 _FIXTURES = "//tools/bazel_mutation_testing/testdata"
 _AREA = [f"{_FIXTURES}/python/...", f"{_FIXTURES}/rust/..."]
 # The area has Rust tests, so its canary is in Rust. This area tests the
@@ -34,9 +49,7 @@ _PYTHON_AREA = [f"{_FIXTURES}/python/..."]
 _PYTHON_FIXTURES = "tools/bazel_mutation_testing/testdata/python/"
 # The timeout mutants wait this long.
 _TEST_TIMEOUT = "10"
-_TIMEOUT_FIXTURE = (
-    _WORKTREE / "tools/bazel_mutation_testing/testdata/rust/times_out/lib.rs"
-)
+_TIMEOUT_FIXTURE = "tools/bazel_mutation_testing/testdata/rust/times_out/lib.rs"
 
 
 def _git(*arguments: str, environment: dict[str, str] | None = None) -> str:
@@ -77,12 +90,15 @@ def commit() -> str:
     return _git("commit-tree", "-p", "HEAD", "-m", "Mutation testing fixtures", tree)
 
 
-def _tester_command(store: pathlib.Path, commit: str, area: list[str]) -> list[str]:
+def _tester_command(
+    store: pathlib.Path, commit: str, area: list[str], workers: int
+) -> list[str]:
     return [
         str(runfiles.resolve_from_env("TESTER")),
         f"--store={store}",
         f"--commit={commit}",
         f"--test_timeout={_TEST_TIMEOUT}",
+        f"--workers={workers}",
         *area,
     ]
 
@@ -94,10 +110,10 @@ def _tester_environment() -> dict[str, str]:
 
 
 def _run_tester(
-    store: pathlib.Path, commit: str, area: list[str]
+    store: pathlib.Path, commit: str, area: list[str], workers: int = _WORKERS
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        _tester_command(store, commit, area),
+        _tester_command(store, commit, area, workers),
         env=_tester_environment(),
         capture_output=True,
         text=True,
@@ -132,42 +148,94 @@ def _expected_outcomes() -> list[str]:
     return sorted(expected.read_text(encoding="utf-8").splitlines())
 
 
-def test_run_interrupted_mid_mutant_resumes_to_the_expected_outcomes(
-    commit: str, scratch: pathlib.Path
-):
-    store = scratch / "results.jsonl"
-    with subprocess.Popen(
-        _tester_command(store, commit, _AREA),
+def _worktree_testing_timeout_mutant(tester: subprocess.Popen[str]) -> pathlib.Path:
+    """Wait until a worker is testing the mutant that times out, and return its worktree."""
+    # typeshed types Popen's output streams as IO[Any].
+    output = cast("IO[str]", tester.stdout)
+    for line in output:
+        worker_name, _, testing = line.partition(": testing ")
+        if "replace += with *=" in testing:
+            worktree = _WORKSPACE / ".mutation_testing" / worker_name
+            # The timeout mutant stays applied for the whole test timeout.
+            assert "*=" in (worktree / _TIMEOUT_FIXTURE).read_text(encoding="utf-8")
+            assert _output_base(worktree).is_dir()
+            return worktree
+    raise AssertionError("No worker tested the timeout mutant")
+
+
+def _assert_workers_removed():
+    # A worker removes only a worktree without changes, so a removed worktree
+    # had its mutant reverted.
+    for worktree in _WORKTREES:
+        assert not worktree.exists()
+        assert not _output_base(worktree).exists()
+
+
+def _assert_stopped_cleanly(tester: subprocess.Popen[str], store: pathlib.Path):
+    _ = tester.communicate()
+    assert tester.returncode != 0
+    _assert_workers_removed()
+    stopped = _outcomes(store)
+    assert not any("*=" in outcome for outcome in stopped)
+
+
+def _start_tester(store: pathlib.Path, commit: str) -> subprocess.Popen[str]:
+    return subprocess.Popen(
+        _tester_command(store, commit, _AREA, _WORKERS),
         env=_tester_environment(),
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         encoding="utf-8",
-    ) as tester:
-        # typeshed types Popen's output streams as IO[Any].
-        output = cast("IO[str]", tester.stdout)
-        # The timeout mutant stays applied for the whole test timeout.
-        line = ""
-        for line in output:
-            if "replace += with *=" in line:
-                break
-        assert "replace += with *=" in line
-        with pytest.raises(subprocess.TimeoutExpired):
-            _ = tester.wait(timeout=2)
-        assert "*=" in _TIMEOUT_FIXTURE.read_text(encoding="utf-8")
-        tester.send_signal(signal.SIGINT)
-    assert tester.returncode != 0
-    assert _git("-C", str(_WORKTREE), "status", "--porcelain") == ""
-    interrupted = _outcomes(store)
-    assert not any("*=" in outcome for outcome in interrupted)
+    )
 
+
+def _resume_to_the_expected_outcomes(store: pathlib.Path, commit: str):
     completed = _run_tester(store, commit, _AREA)
     assert completed.returncode == 0, completed.stderr
     assert _outcomes(store) == _expected_outcomes()
+    _assert_workers_removed()
+
+
+def test_run_interrupted_mid_mutant_resumes_to_the_expected_outcomes(
+    commit: str, scratch: pathlib.Path
+):
+    store = scratch / "results.jsonl"
+    with _start_tester(store, commit) as tester:
+        _ = _worktree_testing_timeout_mutant(tester)
+        tester.send_signal(signal.SIGINT)
+        _assert_stopped_cleanly(tester, store)
+    _resume_to_the_expected_outcomes(store, commit)
+
+
+def _bazel_client_pid(tester: subprocess.Popen[str], worktree: pathlib.Path) -> int:
+    """Return the process ID of the Bazel command that runs in `worktree`."""
+    children: list[int] = []
+    for task in pathlib.Path(f"/proc/{tester.pid}/task").iterdir():
+        children.extend(
+            int(pid) for pid in (task / "children").read_text(encoding="utf-8").split()
+        )
+    for pid in children:
+        if pathlib.Path(f"/proc/{pid}/cwd").resolve() == worktree.resolve():
+            return pid
+    raise AssertionError(f"No Bazel command runs in {worktree}")
+
+
+def test_run_whose_worker_dies_resumes_to_the_expected_outcomes(
+    commit: str, scratch: pathlib.Path
+):
+    store = scratch / "results.jsonl"
+    with _start_tester(store, commit) as tester:
+        worktree = _worktree_testing_timeout_mutant(tester)
+        os.kill(_bazel_client_pid(tester, worktree), signal.SIGKILL)
+        _assert_stopped_cleanly(tester, store)
+    _resume_to_the_expected_outcomes(store, commit)
 
 
 def test_python_area_has_the_expected_outcomes(commit: str, scratch: pathlib.Path):
     store = scratch / "results.jsonl"
-    completed = _run_tester(store, commit, _PYTHON_AREA)
+    # Every other test runs several workers, so this one checks that one
+    # worker gets the same outcomes.
+    completed = _run_tester(store, commit, _PYTHON_AREA, workers=1)
     assert completed.returncode == 0, completed.stderr
     expected = [
         outcome for outcome in _expected_outcomes() if _PYTHON_FIXTURES in outcome

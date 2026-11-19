@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import contextlib
+import signal
 import subprocess
+import threading
 import time
 from typing import TYPE_CHECKING, final
 
@@ -11,7 +13,7 @@ from tools.bazel_mutation_testing import bazel, build_events, diagnostics, resul
 
 if TYPE_CHECKING:
     import pathlib
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
 
     from tools.bazel_mutation_testing import mutant
 
@@ -42,6 +44,10 @@ class NotAWorktreeError(Exception):
 
 class DirtyWorktreeError(Exception):
     """A worktree has changes after a mutant was reverted."""
+
+
+class WorkerInterruptedError(Exception):
+    """The run stopped the worker's mutant before its tests finished."""
 
 
 def _git(directory: pathlib.Path, *arguments: str) -> str:
@@ -82,14 +88,25 @@ class Worker:
         *,
         repository: pathlib.Path,
         run: results.Run,
+        index: int,
+        testing: Callable[[mutant.Mutant], None],
     ):
-        """Test `run`'s mutants in a worktree of `repository`."""
-        worktree = repository / ".mutation_testing/worker-0"
+        """Test `run`'s mutants in the worktree of `repository` numbered `index`.
+
+        The worker calls `testing` with each mutant once the mutant's tests
+        have started.
+        """
+        worktree = repository / f".mutation_testing/worker-{index}"
         self.worktree = worktree
+        self._testing = testing
         self._repository = repository
         self._run = run
         self._build_event_file = worktree.parent / f"{worktree.name}.build_events.json"
         self._formatter = worktree / "bazel-bin/tools/format/format_/format"
+        # The run interrupts a worker from another thread.
+        self._lock = threading.Lock()
+        self._interrupted = False
+        self._tests: subprocess.Popen[str] | None = None
 
     def prepare(self):
         """Create or reset the worktree, and build the formatter.
@@ -117,6 +134,23 @@ class Worker:
             self.worktree, ["build", "--build_runfile_links", "//tools/format"]
         )
 
+    def remove(self):
+        """Delete the worktree and its Bazel output base, and stop its Bazel server.
+
+        Raises:
+            NotAWorktreeError: The worktree's directory exists, but is not a
+                worktree of the repository.
+            DirtyWorktreeError: The worktree has changes.
+        """
+        self._build_event_file.unlink(missing_ok=True)
+        if not self.worktree.exists():
+            return
+        self._require_worktree()
+        # A worktree with changes shows what went wrong, so it is kept.
+        self._require_clean()
+        _ = bazel.run_checked(self.worktree, ["clean", "--expunge"])
+        _ = _git(self._repository, "worktree", "remove", str(self.worktree))
+
     def tracked_paths(self) -> frozenset[str]:
         """Return the workspace-relative paths of the files Git tracks."""
         return frozenset(_git(self.worktree, "ls-files", "-z").split("\0")[:-1])
@@ -127,7 +161,7 @@ class Worker:
         Raises:
             BaselineFailedError: A test or an action failed.
         """
-        completed, failure = self._run_tests()
+        completed, failure = self._finish_tests(self._start_tests())
         if completed.returncode == 0:
             return
         if failure is None:
@@ -136,10 +170,20 @@ class Worker:
             f"The area's tests fail without any mutant: {failure.describe()}"
         )
 
+    def interrupt(self):
+        """Stop the tests of the current mutant, and refuse to test any more."""
+        with self._lock:
+            self._interrupted = True
+            if self._tests is not None:
+                # On SIGINT, Bazel cancels the build rather than leaving its
+                # server to finish it.
+                self._tests.send_signal(signal.SIGINT)
+
     def test(self, mutated: mutant.Mutant) -> results.Result:
         """Test `mutated`, and revert it.
 
         Raises:
+            WorkerInterruptedError: The run interrupted the worker.
             FormatterError: The formatter failed for another reason than the
                 mutated file.
             UnchangedMutantError: Formatting the mutated file undid the mutant.
@@ -147,9 +191,7 @@ class Worker:
         """
         try:
             with self._applied(mutated):
-                start = time.monotonic()
-                completed, failure = self._run_tests()
-                seconds = time.monotonic() - start
+                completed, failure, seconds = self._test_applied(mutated)
         except UnformattableMutantError:
             # Such a mutant could never be committed, as any failure shows.
             return results.Result(
@@ -186,6 +228,19 @@ class Worker:
             culprit=culprit,
             seconds=seconds,
         )
+
+    def _test_applied(
+        self, mutated: mutant.Mutant
+    ) -> tuple[
+        subprocess.CompletedProcess[str],
+        build_events.ActionFailure | build_events.TestFailure | None,
+        float,
+    ]:
+        start = time.monotonic()
+        tests = self._start_tests()
+        self._testing(mutated)
+        completed, failure = self._finish_tests(tests)
+        return completed, failure, time.monotonic() - start
 
     @contextlib.contextmanager
     def _applied(self, mutated: mutant.Mutant) -> Generator[None]:
@@ -226,37 +281,61 @@ class Worker:
             check=False,
         )
 
-    def _run_tests(
-        self,
+    def _start_tests(self) -> subprocess.Popen[str]:
+        """Start the area's tests.
+
+        Raises:
+            WorkerInterruptedError: The run interrupted the worker.
+        """
+        arguments = [
+            "test",
+            # These tests find the cases other tests must cover, or measure
+            # what compiling costs rather than what it does.
+            "--test_tag_filters=-no-coverage",
+            # Most mutants are killed, so stopping at the first failure
+            # ends most runs early.
+            "--notest_keep_going",
+            f"--test_timeout={self._run.test_timeout}",
+            f"--build_event_json_file={self._build_event_file}",
+            *self._run.lint_flags,
+            # So that a failed action or pyright_test names what rejected
+            # the mutant.
+            "--@rules_rust//rust/settings:error_format=json",
+            "--@rules_rust//rust/settings:clippy_error_format=json",
+            "--//tools/bzl:lint_json",
+            # So that each failed action's build event names a file that
+            # holds its standard error.
+            "--experimental_build_event_upload_strategy=local",
+            "--",
+            *self._run.area,
+        ]
+        with self._lock:
+            if self._interrupted:
+                raise WorkerInterruptedError(self.worktree)
+            tests = bazel.start(self.worktree, arguments)
+            self._tests = tests
+        return tests
+
+    def _finish_tests(
+        self, tests: subprocess.Popen[str]
     ) -> tuple[
         subprocess.CompletedProcess[str],
         build_events.ActionFailure | build_events.TestFailure | None,
     ]:
-        completed = bazel.run(
-            self.worktree,
-            [
-                "test",
-                # These tests find the cases other tests must cover, or measure
-                # what compiling costs rather than what it does.
-                "--test_tag_filters=-no-coverage",
-                # Most mutants are killed, so stopping at the first failure
-                # ends most runs early.
-                "--notest_keep_going",
-                f"--test_timeout={self._run.test_timeout}",
-                f"--build_event_json_file={self._build_event_file}",
-                *self._run.lint_flags,
-                # So that a failed action or pyright_test names what rejected
-                # the mutant.
-                "--@rules_rust//rust/settings:error_format=json",
-                "--@rules_rust//rust/settings:clippy_error_format=json",
-                "--//tools/bzl:lint_json",
-                # So that each failed action's build event names a file that
-                # holds its standard error.
-                "--experimental_build_event_upload_strategy=local",
-                "--",
-                *self._run.area,
-            ],
+        """Wait for `tests`, and return Bazel's output and the first failure.
+
+        Raises:
+            WorkerInterruptedError: The run interrupted the worker.
+        """
+        with tests:
+            stdout, stderr = tests.communicate()
+        completed = subprocess.CompletedProcess(
+            tests.args, tests.returncode, stdout, stderr
         )
+        with self._lock:
+            self._tests = None
+            if self._interrupted:
+                raise WorkerInterruptedError(self.worktree)
         return completed, build_events.first_failure(self._build_event_file)
 
     def _require_worktree(self):

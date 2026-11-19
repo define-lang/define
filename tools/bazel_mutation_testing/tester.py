@@ -7,8 +7,10 @@ Run it with:
 from __future__ import annotations
 
 import collections
+import concurrent.futures
 import contextlib
 import fcntl
+import functools
 import os
 import pathlib
 from typing import TYPE_CHECKING
@@ -16,7 +18,7 @@ from typing import TYPE_CHECKING
 import click
 
 from tools import runfiles
-from tools.bazel_mutation_testing import canary, lint_flags, results, worker
+from tools.bazel_mutation_testing import canary, lint_flags, pool, results, worker
 from tools.bazel_mutation_testing.python import generator as python_generator
 from tools.bazel_mutation_testing.python import sources
 from tools.bazel_mutation_testing.rust import crates
@@ -117,7 +119,21 @@ def _exclusive(repository: pathlib.Path) -> Generator[None]:
     default=60,
     help="The timeout of every test, in seconds.",
 )
-def main(area: tuple[str, ...], store: pathlib.Path, commit: str, test_timeout: int):
+# Six workers with capped Bazel servers peaked at 17 GB of memory. More workers
+# would mostly wait on each other for the RBE service.
+@click.option(
+    "--workers",
+    type=click.IntRange(min=1),
+    default=6,
+    help="The number of worktrees that test mutants at once, each with its own Bazel server.",
+)
+def main(
+    area: tuple[str, ...],
+    store: pathlib.Path,
+    commit: str,
+    test_timeout: int,
+    workers: int,
+):
     """Mutation-test the area that the target patterns AREA name.
 
     Mutates the Rust and Python sources of the targets that AREA matches, and
@@ -134,16 +150,73 @@ def main(area: tuple[str, ...], store: pathlib.Path, commit: str, test_timeout: 
         _exclusive(repository),
         results.Store(repository / store, run) as results_store,
     ):
-        _test_area(repository, run, results_store)
+        _test_area(repository, run, results_store, workers)
         _report(results_store)
 
 
-def _test_area(
-    repository: pathlib.Path, run: results.Run, results_store: results.Store
-):
-    work = worker.Worker(repository=repository, run=run)
+def _testing(index: int, mutated: mutant.Mutant):
+    click.echo(f"worker-{index}: testing {mutated.name}")
+
+
+def _prepare(work: worker.Worker):
     work.prepare()
+    # A worker's baseline reuses the first worker's cached results. It loads
+    # the worker's Bazel server, so that the worker's first mutant is not slow.
     work.test_baseline()
+
+
+def _test_area(
+    repository: pathlib.Path,
+    run: results.Run,
+    results_store: results.Store,
+    worker_count: int,
+):
+    # A fresh worktree's first build takes seconds from the cache, while a kept
+    # worktree and its Bazel output base take a gigabyte of disk.
+    with contextlib.ExitStack() as removals:
+        workers: list[worker.Worker] = []
+        for index in range(worker_count):
+            work = worker.Worker(
+                repository=repository,
+                run=run,
+                index=index,
+                testing=functools.partial(_testing, index),
+            )
+            workers.append(work)
+            _ = removals.callback(work.remove)
+        _test_on_workers(workers, run, results_store)
+
+
+def _test_on_workers(
+    workers: list[worker.Worker], run: results.Run, results_store: results.Store
+):
+    first = workers[0]
+    # The other workers wait for the first worker's baseline, so that they
+    # find its results in the cache rather than run the same tests at once.
+    _prepare(first)
+    with concurrent.futures.ThreadPoolExecutor(len(workers)) as executor:
+        preparing = [executor.submit(_prepare, work) for work in workers[1:]]
+        mutants = _list_and_check(first, run, results_store)
+        for prepared in preparing:
+            prepared.result()
+
+    pending = [listed for listed in mutants if listed.name not in results_store.results]
+
+    def record(result: results.Result):
+        results_store.add(result)
+        culprit = f" by {result.culprit}" if result.culprit else ""
+        click.echo(
+            f"[{len(results_store.results)}/{len(mutants)}] {result.name}: "
+            + f"{result.outcome}{culprit} in {result.seconds:.1f} s"
+        )
+
+    pool.test_all(workers, pending, record)
+
+
+def _list_and_check(
+    work: worker.Worker, run: results.Run, results_store: results.Store
+) -> list[mutant.Mutant]:
+    """List the area's mutants, and check that the run's tests kill a canary."""
     area_crates = crates.find(work.worktree, run.area)
     python_sources = sources.find(work.worktree, run.area)
     mutants = _list_mutants(work, area_crates, python_sources)
@@ -162,15 +235,7 @@ def _test_area(
         raise CanaryNotKilledError(
             f"{canary_result.name}: {canary_result.outcome} {canary_result.culprit}"
         )
-
-    for index, listed in enumerate(mutants, 1):
-        if listed.name in results_store.results:
-            continue
-        click.echo(f"[{index}/{len(mutants)}] {listed.name}")
-        result = work.test(listed)
-        results_store.add(result)
-        culprit = f" by {result.culprit}" if result.culprit else ""
-        click.echo(f"    {result.outcome}{culprit} in {result.seconds:.1f} s")
+    return mutants
 
 
 def _report(results_store: results.Store):

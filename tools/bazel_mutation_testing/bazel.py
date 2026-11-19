@@ -51,18 +51,42 @@ def child_environment(**variables: str) -> dict[str, str]:
     return environment
 
 
+# Each worker has its own Bazel server, so several servers run at once. Without
+# a limit, each server's heap grows to a quarter of the machine's memory before
+# the JVM collects it. A server stays running for hours after a run unless it
+# exits when idle. A worker is never idle for long during a run.
+_STARTUP_OPTIONS = ("--host_jvm_args=-Xmx3g", "--max_idle_secs=300")
+
+
+def _command(arguments: list[str]) -> list[str]:
+    return [
+        executable("bazelisk"),
+        *_STARTUP_OPTIONS,
+        arguments[0],
+        "--noshow_progress",
+        "--ui_event_filters=-info",
+        *arguments[1:],
+    ]
+
+
+def start(workspace: pathlib.Path, arguments: list[str]) -> subprocess.Popen[str]:
+    """Start `bazelisk` in `workspace`, with pipes for its output."""
+    return subprocess.Popen(
+        _command(arguments),
+        cwd=workspace,
+        env=child_environment(),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+
 def run(
     workspace: pathlib.Path, arguments: list[str]
 ) -> subprocess.CompletedProcess[str]:
     """Run `bazelisk` in `workspace`, capturing its output."""
     return subprocess.run(
-        [
-            executable("bazelisk"),
-            arguments[0],
-            "--noshow_progress",
-            "--ui_event_filters=-info",
-            *arguments[1:],
-        ],
+        _command(arguments),
         cwd=workspace,
         env=child_environment(),
         capture_output=True,

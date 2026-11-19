@@ -167,6 +167,27 @@ py_library(
     ],
 )
 
+py_library(
+    name = "pool",
+    srcs = ["pool.py"],
+    deps = [
+        ":mutant",
+        ":results",
+    ],
+)
+
+py_test(
+    name = "pool_test",
+    size = "small",
+    srcs = ["pool_test.py"],
+    deps = [
+        ":mutant",
+        ":pool",
+        ":results",
+        "@pypi//pytest",
+    ],
+)
+
 filegroup(
     name = "python_lint_examples",
     srcs = glob(["python_lint_examples/*.py"]),
@@ -235,6 +256,7 @@ py_binary(
         ":canary",
         ":lint_flags",
         ":mutant",
+        ":pool",
         ":results",
         ":worker",
         "//tools:runfiles",
@@ -288,6 +310,8 @@ pyright_test(
         ":lint_flags",
         ":lint_flags_test",
         ":mutant",
+        ":pool",
+        ":pool_test",
         ":python_lint_examples_test",
         ":results",
         ":results_test",
