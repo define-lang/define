@@ -1,17 +1,17 @@
 """Pure per-file and per-definition validation for the Define language.
 
-FileStructuralValidator loads one file at a time, and a LoadedFile validates
-one of its definitions at a time. Neither has access to shared mutable state
-other than the source map that loaded files are registered with.
+load_file loads one file at a time, and a LoadedFile validates one of its
+definitions at a time. Neither has access to shared mutable state other than
+the source map that loaded files are registered with.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import msgspec
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.parsing import parser
 from define.compiler.validator import validation_result
 from define.compiler.validator.structural import (
@@ -22,16 +22,15 @@ from define.compiler.validator.structural import (
 if TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from define.compiler import ast
-    from define.compiler.errors import syntax_errors
 
 
 class LoadedFile(msgspec.Struct):
     """A parsed file, whose definitions are validated only when requested."""
 
     context: file_validation_context.FileValidationContext
-    # The diagnostic that kept the file from loading or parsing, if any.
-    load_failure: syntax_errors.FileLoadFailureDiagnostic | None
-    file_diagnostics: list[diagnostics.Diagnostic]
+    # Why the file could not be read, if it could not. A reference into the
+    # file reports it.
+    read_failure: syntax_errors.SourceFileReadFailure | None
     # The first definition of each typed name in the file, by its full typed
     # name. It does not change after loading, so definitions can be validated
     # concurrently.
@@ -67,95 +66,90 @@ class LoadedFile(msgspec.Struct):
 
     def validate_definition(
         self, definition: ast.GlobalDefinition
-    ) -> validation_result.DefinitionValidationResult:
-        """Validate one of the file's definitions."""
+    ) -> tuple[
+        validation_result.DefinitionValidationResult, list[diagnostics.Diagnostic]
+    ]:
+        """Validate one of the file's definitions, and return its result and its diagnostics."""
         return definition_validator.DefinitionStructuralValidator(
             definition=definition,
             context=self.context,
         ).validate_definition()
 
 
-class FileStructuralValidator:
-    """Per-file loader.
+def load_file(
+    context: file_validation_context.FileValidationContext,
+    source_map: rendering.SourceMap,
+) -> tuple[LoadedFile, list[diagnostics.Diagnostic]]:
+    """Read and parse one file, register it with source_map, and check the rules that concern the file as a whole, and return it and its diagnostics.
 
-    Processes one file: reads from disk, registers it with a source map, parses
-    it, and checks the rules that concern the file as a whole. Its definitions
-    are validated separately, only when something requests them.
+    The file's definitions are validated separately, only when something
+    requests them. Why the file could not be read is not a diagnostic. The
+    loaded file records it.
     """
+    parse_result = parser.parse_file(str(context.full_path), source_map)
+    return _check_file(context, parse_result)
 
-    _source_map: rendering.SourceMap
 
-    def __init__(self, source_map: rendering.SourceMap):
-        """Initialize with the source map to register loaded files with."""
-        self._source_map = source_map
+def load_source(source: str) -> tuple[LoadedFile, list[diagnostics.Diagnostic]]:
+    """Parse source text without loading from the filesystem, and return it and the diagnostics about it as a whole."""
+    parse_result = parser.parse(
+        # A lone surrogate becomes invalid UTF-8, as it would be in a file,
+        # instead of failing to encode.
+        source.encode(errors="surrogatepass"),
+        None,
+        # Source that is not from the filesystem need not follow the indentation
+        # rules.
+        check_indentation=False,
+    )
+    return _check_file(
+        file_validation_context.EmptyFileValidationContext(), parse_result
+    )
 
-    def load_file(
-        self, context: file_validation_context.FileValidationContext
-    ) -> LoadedFile:
-        """Load and parse a single file."""
-        parse_result = parser.parse_file(str(context.full_path), self._source_map)
-        return self._check_file(context, parse_result)
 
-    def load_source(self, source: str) -> LoadedFile:
-        """Parse source text without loading from the filesystem."""
-        parse_result = parser.parse(
-            # A lone surrogate becomes invalid UTF-8, as it would be in a file,
-            # instead of failing to encode.
-            source.encode(errors="surrogatepass"),
-            None,
-            # Source that is not from the filesystem need not follow the indentation
-            # rules.
-            check_indentation=False,
-        )
-        return self._check_file(
-            file_validation_context.EmptyFileValidationContext(), parse_result
-        )
-
-    @staticmethod
-    def _check_file(
-        context: file_validation_context.FileValidationContext,
-        parse_result: parser.ParseResult,
-    ) -> LoadedFile:
-        """Check the rules that concern a parsed file as a whole."""
-        if parse_result.load_failure is not None:
-            return LoadedFile(
-                context=context,
-                load_failure=parse_result.load_failure,
-                file_diagnostics=parse_result.diagnostics,
-                definitions={},
-            )
-
-        if parse_result.program is None:
-            raise ValueError(
-                "parse produced no program despite reporting no syntax error"
-            )
-        program = parse_result.program
-
-        file_diagnostics = parse_result.diagnostics
-        definitions: dict[str, ast.GlobalDefinition] = {}
-        for definition in program.definitions:
-            file_diagnostics.extend(_path_mismatch_diagnostics(definition, context))
-            file_diagnostics.extend(_fqun_mismatch_diagnostics(definition, context))
-            definition_name = definition.typed_name.full_typed_name
-            first_definition = definitions.get(definition_name)
-            if first_definition is None:
-                definitions[definition_name] = definition
-                continue
-            file_diagnostics.append(
-                diagnostics.DuplicateDefinitionDiagnostic(
-                    location=definition.location,
-                    definition_type=definition.typed_name.name_type.value,
-                    path=definition.typed_name.name_content.path.name,
-                    first_definition_line=first_definition.location.line,
-                )
-            )
-
+def _check_file(
+    context: file_validation_context.FileValidationContext,
+    parse_result: parser.ParseResult,
+) -> tuple[LoadedFile, list[diagnostics.Diagnostic]]:
+    """Check the rules that concern a parsed file as a whole."""
+    load_failure = parse_result.load_failure
+    if isinstance(
+        load_failure,
+        syntax_errors.SourceFileReadFailure,
+    ):
         return LoadedFile(
-            context=context,
-            load_failure=None,
-            file_diagnostics=file_diagnostics,
-            definitions=definitions,
+            context=context, read_failure=load_failure, definitions={}
+        ), parse_result.diagnostics
+    if isinstance(load_failure, syntax_errors.DefineSyntaxError):
+        return LoadedFile(context=context, read_failure=None, definitions={}), [
+            load_failure,
+            *parse_result.diagnostics,
+        ]
+
+    # The parse produces a program whenever it reports no load failure.
+    program = cast("ast.Program", parse_result.program)
+
+    file_diagnostics = parse_result.diagnostics
+    definitions: dict[str, ast.GlobalDefinition] = {}
+    for definition in program.definitions:
+        file_diagnostics.extend(_path_mismatch_diagnostics(definition, context))
+        file_diagnostics.extend(_fqun_mismatch_diagnostics(definition, context))
+        definition_name = definition.typed_name.full_typed_name
+        first_definition = definitions.get(definition_name)
+        if first_definition is None:
+            definitions[definition_name] = definition
+            continue
+        file_diagnostics.append(
+            diagnostics.DuplicateDefinitionDiagnostic(
+                location=definition.location,
+                definition_type=definition.typed_name.name_type.value,
+                path=definition.typed_name.name_content.path.name,
+                first_definition_line=first_definition.location.line,
+            )
         )
+
+    return LoadedFile(
+        context=context, read_failure=None, definitions=definitions
+    ), file_diagnostics
 
 
 def _path_mismatch_diagnostics(

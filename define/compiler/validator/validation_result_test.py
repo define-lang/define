@@ -18,7 +18,9 @@ def _parse(source: str) -> validation_result.FileValidationResult:
         file_path=define_path.DefinePath("test.dfn"),
         root_prefix=define_path.EMPTY,
         definition_results=[
-            validation_result.DefinitionValidationResult(definition=definition)
+            validation_result.DefinitionValidationResult(
+                definition=definition, structurally_valid=True
+            )
             for definition in program.definitions
         ],
     )

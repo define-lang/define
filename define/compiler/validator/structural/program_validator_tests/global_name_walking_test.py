@@ -134,18 +134,18 @@ def test_same_file_position_must_precede_referencing_action(
 def test_same_target_file_referenced_as_two_types_loads_once(
     validate_testdata_structural: ValidateTestdataStructural,
 ):
-    original_load_file = file_validator.FileStructuralValidator.load_file
+    original_load_file = file_validator.load_file
     loaded_paths: list[str] = []
 
     def recording_load_file(
-        self: file_validator.FileStructuralValidator,
         context: file_validation_context.FileValidationContext,
+        source_map: rendering.SourceMap,
     ):
         loaded_paths.append(str(context.full_path))
-        return original_load_file(self, context)
+        return original_load_file(context, source_map)
 
     with mock.patch.object(
-        file_validator.FileStructuralValidator,
+        file_validator,
         "load_file",
         autospec=True,
         side_effect=recording_load_file,

@@ -25,7 +25,6 @@ py_library(
     deps = [
         ":reference_resolver",
         "//define/compiler:ast",
-        "//define/compiler/config:config_loader",
         "//define/compiler/config:global_names",
         "//define/compiler/config:project_config",
         "//define/compiler/config:project_roots",

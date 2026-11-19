@@ -136,3 +136,43 @@ def test_executed_value_operation_with_diagnostics(
             value_name="value<standard:/boolean>",
         )
     ]
+
+
+def test_executed_value_operation_with_unresolved_execution(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        diagnostics.ReferencedFileNotFoundDiagnostic(
+            location=rendering.SourceLocation(
+                line=22,
+                column=31,
+                end_line=22,
+                end_column=38,
+                file_path="mixed_sum.dfn",
+            ),
+            file_path="missing.dfn",
+        )
+    ]
+
+
+def test_value_operations_that_execute_each_other(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        diagnostics.CircularGlobalReferenceDiagnostic(
+            location=rendering.SourceLocation(
+                line=10,
+                column=21,
+                end_line=10,
+                end_column=37,
+                file_path="second.dfn",
+            ),
+            cycle=[
+                "operation<my.domain.com:my_lib:/first>",
+                "operation<my.domain.com:my_lib:/second>",
+                "operation<my.domain.com:my_lib:/first>",
+            ],
+        )
+    ]

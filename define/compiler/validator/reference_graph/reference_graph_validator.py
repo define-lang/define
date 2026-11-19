@@ -126,9 +126,9 @@ class ReferenceGraphValidator:
                     operation_definition_validator.ValueOperationDefinitionValidator(
                         definition,
                         self._definitions,
-                        structurally_valid=not self._structural_results[
+                        structurally_valid=self._structural_results[
                             definition.typed_name.full_typed_name
-                        ].diagnostics,
+                        ].structurally_valid,
                     ).analyze()
                 )
                 steps = value_operation_result.steps

@@ -15,17 +15,21 @@ class FileLoadFailureDiagnostic(diagnostics.BaseDiagnostic):
     """Base class for diagnostics that keep a Define file from loading or parsing."""
 
 
-class SourceFileNotFound(FileLoadFailureDiagnostic):
-    """Diagnostic for a Define source file that is not on disk at file_path."""
+class SourceFileReadFailure(FileLoadFailureDiagnostic):
+    """Base class for diagnostics for a Define source file at file_path that cannot be read."""
 
     file_path: str
+
+
+class SourceFileNotFound(SourceFileReadFailure):
+    """Diagnostic for a Define source file that is not on disk at file_path."""
+
     message_format: ClassVar[str] = "Source file not found: {self.file_path}"
 
 
-class SourceFileUnreadable(FileLoadFailureDiagnostic):
+class SourceFileUnreadable(SourceFileReadFailure):
     """Diagnostic for a Define source file at file_path that cannot be read, for the reason that the operating system gives."""
 
-    file_path: str
     reason: str
     message_format: ClassVar[str] = (
         "Cannot read source file {self.file_path}: {self.reason}"

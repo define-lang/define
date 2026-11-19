@@ -68,8 +68,12 @@ class DefinitionStructuralValidator:
         self._unreferenced_positions = {}
         self._unreferenced_views = {}
 
-    def validate_definition(self) -> validation_result.DefinitionValidationResult:
-        """Validate one top-level definition and return its validation result."""
+    def validate_definition(
+        self,
+    ) -> tuple[
+        validation_result.DefinitionValidationResult, list[diagnostics.Diagnostic]
+    ]:
+        """Validate one top-level definition, and return its validation result and its diagnostics."""
         self._diagnostics.extend(
             name_validators.validate_global_name(
                 self._definition.typed_name.name_content,
@@ -104,17 +108,14 @@ class DefinitionStructuralValidator:
                 )
             case _:
                 pass
-        return self.build_result()
-
-    def build_result(self) -> validation_result.DefinitionValidationResult:
-        """Build a result object from the validator's private state."""
-        return validation_result.DefinitionValidationResult(
+        result = validation_result.DefinitionValidationResult(
             definition=self._definition,
-            diagnostics=self._diagnostics,
+            structurally_valid=not self._diagnostics,
             reference_edges=self._reference_edges,
             particle_statement_validity=self._particle_statement_validity,
             looked_at_position_validity=self._looked_at_position_validity,
         )
+        return result, self._diagnostics
 
     def _validate_action_definition(
         self,

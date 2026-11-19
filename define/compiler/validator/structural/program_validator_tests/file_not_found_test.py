@@ -6,12 +6,18 @@ Follow program validator test authoring rules in program_validator_tests/AGENTS.
 
 from __future__ import annotations
 
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
+from define.compiler import constants
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.test_fixtures import testdata
 
 if TYPE_CHECKING:
+    import pytest
+
     from define.compiler.test_fixtures.structural_validation import (
         ValidateTestdataStructural,
     )
@@ -56,6 +62,33 @@ def test_referenced_file_unreadable(
     assert diagnostic.location.column == 29
     assert diagnostic.file_path == "target.dfn"
     assert len(result.file_results) == 1
+
+
+def test_referenced_standard_file_unreadable(
+    validate_testdata_structural: ValidateTestdataStructural,
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # The standard library's own files can all be read, so the test supplies
+    # a standard library whose file is a directory.
+    standard_root = (testdata.testdata_directory(request) / "standard").resolve()
+    monkeypatch.setattr(
+        constants,
+        "STANDARD_LIBRARY_ROOT",
+        define_path.DefinePathFromPosix(PurePosixPath(standard_root.as_posix())),
+    )
+    result = validate_testdata_structural()
+    (diagnostic,) = result.sorted_diagnostics()
+    assert isinstance(diagnostic, diagnostics.ReferencedFileUnreadableDiagnostic)
+    # The reason is the operating system's, whose words differ by platform.
+    assert diagnostic.reason
+    assert diagnostic == diagnostics.ReferencedFileUnreadableDiagnostic(
+        location=rendering.SourceLocation(
+            line=5, column=38, end_line=5, end_column=44, file_path="test.dfn"
+        ),
+        file_path=f"{standard_root.as_posix()}/target.dfn",
+        reason=diagnostic.reason,
+    )
 
 
 def test_referenced_file_not_found_via_already_completed_target(

@@ -61,7 +61,9 @@ class DefinitionValidationResult(msgspec.Struct):
     """Validation output for one definition within a file."""
 
     definition: ast.GlobalDefinition
-    diagnostics: list[diagnostics.Diagnostic] = msgspec.field(default_factory=list)
+    # Whether structural validation found no problem with the definition.
+    # Reference graph validation reads it for each Value Operation.
+    structurally_valid: bool
 
     reference_edges: list[reference_graph.ReferenceEdge] = msgspec.field(
         default_factory=list

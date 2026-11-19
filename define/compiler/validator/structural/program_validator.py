@@ -2,7 +2,7 @@
 
 validate_program and validate_program_non_filesystem validate one program each,
 using a thread pool. They manage all shared state on the main thread and
-delegate pure per-file validation to FileStructuralValidator workers. They
+delegate pure per-file validation to workers. They
 validate only the entry file's definitions and the definitions they reference,
 directly or indirectly. A ReferenceResolver decides which files references lead
 to and which definitions they resolve to, and the validation loads those files and
@@ -56,13 +56,14 @@ def validate_program(
     resolver = filesystem_reference_resolver.FilesystemReferenceResolver(
         source_map, roots
     )
+    entry_file, entry_file_diagnostics = resolver.load_entry_file(path)
     run = _ProgramValidationRun(
         resolver,
         roots,
         source_map,
+        entry_file_diagnostics,
         allow_entry_action_interface_positions=allow_entry_action_interface_positions,
     )
-    entry_file = resolver.load_entry_file(path)
     if entry_file is not None:
         with work_pool.WorkPool(max_workers=max_workers) as pool:
             for definition in entry_file.definitions.values():
@@ -84,7 +85,7 @@ def validate_program_non_filesystem(
     must remain false when validating a program for code generation.
     """
     source_map = rendering.SourceMap(in_memory_source=source)
-    source_file = file_validator.FileStructuralValidator(source_map).load_source(source)
+    source_file, source_file_diagnostics = file_validator.load_source(source)
     roots = project_roots.ProjectRoots(source_map)
     resolver = non_filesystem_reference_resolver.NonFilesystemReferenceResolver(
         source_file, roots
@@ -93,11 +94,9 @@ def validate_program_non_filesystem(
         resolver,
         roots,
         source_map,
+        source_file_diagnostics,
         allow_entry_action_interface_positions=allow_entry_action_interface_positions,
     )
-    if source_file.load_failure is not None:
-        return StructurallyValidatedProgram(run, run.build_program_result())
-
     with work_pool.WorkPool(max_workers=max_workers) as pool:
         for definition in source_file.definitions.values():
             run.request_definition(source_file, definition, pool)
@@ -150,7 +149,6 @@ class _ProgramValidationRun:
     _resolver: reference_resolver.ReferenceResolver
     project_roots: project_roots.ProjectRoots
     _source_map: rendering.SourceMap
-    _file_validator: file_validator.FileStructuralValidator
     # The graph of the definitions that the current run validates, which
     # exists only during a run.
     _reference_graph: reference_graph.ReferenceGraph
@@ -159,6 +157,9 @@ class _ProgramValidationRun:
     # Each validated definition, by its full typed name.
     _definitions: dict[str, ast.GlobalDefinition]
     _encoding_operations: list[ast.EncodingOperationDefinition]
+    # The diagnostics that loading files, validating definitions, and
+    # resolving references found.
+    _diagnostics: list[diagnostics.FormattableDiagnostic]
     # The full typed names of definitions submitted for validation.
     _requested_definition_names: set[str]
     _allow_entry_action_interface_positions: bool
@@ -168,18 +169,19 @@ class _ProgramValidationRun:
         resolver: reference_resolver.ReferenceResolver,
         roots: project_roots.ProjectRoots,
         source_map: rendering.SourceMap,
+        entry_file_diagnostics: Iterable[diagnostics.FormattableDiagnostic],
         *,
         allow_entry_action_interface_positions: bool,
     ):
-        """Initialize with the resolver for the program's references, the program's project roots, the source map that its files are registered with, and nothing validated."""
+        """Initialize with the resolver for the program's references, the program's project roots, the source map that its files are registered with, the diagnostics that loading the entry file found, and nothing validated."""
         self._resolver = resolver
         self.project_roots = roots
         self._source_map = source_map
-        self._file_validator = file_validator.FileStructuralValidator(source_map)
         self._reference_graph = reference_graph.ReferenceGraph()
         self._definition_results = {}
         self._definitions = {}
         self._encoding_operations = []
+        self._diagnostics = list(entry_file_diagnostics)
         self._requested_definition_names = set()
         self._allow_entry_action_interface_positions = (
             allow_entry_action_interface_positions
@@ -203,7 +205,7 @@ class _ProgramValidationRun:
             )
             if entry_action_result is not None:
                 if not self._allow_entry_action_interface_positions:
-                    _validate_entry_action_interface_positions(entry_action_result)
+                    self._validate_entry_action_interface_positions(entry_action_result)
                 candidate = typing.cast(
                     "ast.ActionDefinition", entry_action_result.definition
                 )
@@ -278,14 +280,7 @@ class _ProgramValidationRun:
 
     def diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
         """Return every diagnostic that structural validation found, about the program, each loaded file, and each validated definition."""
-        found = list(self._resolver.program_diagnostics())
-        for loaded_file in self._resolver.completed_files():
-            if loaded_file.load_failure is not None:
-                found.append(loaded_file.load_failure)
-            found.extend(loaded_file.file_diagnostics)
-            for definition_result in self._validated_definition_results(loaded_file):
-                found.extend(definition_result.diagnostics)
-        return found
+        return [*self.project_roots.diagnostics(), *self._diagnostics]
 
     def _validated_definition_results(
         self, loaded_file: file_validator.LoadedFile
@@ -325,20 +320,29 @@ class _ProgramValidationRun:
         )
 
     def _process_loaded_file(
-        self, loaded_file: file_validator.LoadedFile, pool: work_pool.WorkPool
+        self,
+        loaded: tuple[file_validator.LoadedFile, list[diagnostics.Diagnostic]],
+        pool: work_pool.WorkPool,
     ):
-        for resolved_definition in self._resolver.add_loaded_file(loaded_file):
-            self.request_definition(
-                resolved_definition.loaded_file, resolved_definition.definition, pool
-            )
+        loaded_file, file_diagnostics = loaded
+        self._diagnostics.extend(file_diagnostics)
+        for definition_result, outcome in self._resolver.add_loaded_file(loaded_file):
+            if isinstance(outcome, reference_resolver.ResolvedDefinition):
+                self.request_definition(outcome.loaded_file, outcome.definition, pool)
+            else:
+                self._report(definition_result, outcome)
 
     def _register_definition(
         self,
         loaded_file: file_validator.LoadedFile,
-        definition_result: validation_result.DefinitionValidationResult,
+        validated: tuple[
+            validation_result.DefinitionValidationResult, list[diagnostics.Diagnostic]
+        ],
         pool: work_pool.WorkPool,
     ):
         """Register a validated definition and follow its references."""
+        definition_result, definition_diagnostics = validated
+        self._diagnostics.extend(definition_diagnostics)
         definition = definition_result.definition
         definition_name = definition.typed_name.full_typed_name
         self._definition_results[definition_name] = definition_result
@@ -406,12 +410,17 @@ class _ProgramValidationRun:
                 )
             case reference_resolver.LoadFile(context=file_to_load):
                 pool.submit(
-                    self._file_validator.load_file,
+                    file_validator.load_file,
                     file_to_load,
+                    self._source_map,
                     handle_result=self._process_loaded_file,
                 )
-            case reference_resolver.AwaitingFile() | reference_resolver.Unresolved():
+            case (
+                reference_resolver.AwaitingFile() | reference_resolver.AlreadyReported()
+            ):
                 pass
+            case reference_resolver.Unresolved(diagnostic=diagnostic):
+                self._report(definition_result, diagnostic)
 
     def _add_reference_edge(
         self,
@@ -421,13 +430,36 @@ class _ProgramValidationRun:
         detected_cycle = self._reference_graph.try_add_edge(edge)
         if detected_cycle is None:
             return True
-        source_definition.diagnostics.append(
+        self._report(
+            source_definition,
             diagnostics.CircularGlobalReferenceDiagnostic(
                 location=edge.global_name_reference.location,
                 cycle=detected_cycle,
-            )
+            ),
         )
         return False
+
+    def _report(
+        self,
+        definition_result: validation_result.DefinitionValidationResult,
+        diagnostic: diagnostics.Diagnostic,
+    ):
+        """Record a diagnostic about a definition, which makes the definition structurally invalid."""
+        self._diagnostics.append(diagnostic)
+        definition_result.structurally_valid = False
+
+    def _validate_entry_action_interface_positions(
+        self, entry_action_result: validation_result.DefinitionValidationResult
+    ):
+        definition = typing.cast("ast.ActionDefinition", entry_action_result.definition)
+        for position in definition.interface_positions:
+            self._report(
+                entry_action_result,
+                diagnostics.EntryPointInterfacePositionDiagnostic(
+                    location=position.typed_name.location,
+                    position_name=position.typed_name.source_typed_name,
+                ),
+            )
 
 
 def _select_entry_action(
@@ -445,16 +477,3 @@ def _select_entry_action(
             continue
         return definition_result
     return None
-
-
-def _validate_entry_action_interface_positions(
-    entry_action_result: validation_result.DefinitionValidationResult,
-):
-    definition = typing.cast("ast.ActionDefinition", entry_action_result.definition)
-    for position in definition.interface_positions:
-        entry_action_result.diagnostics.append(
-            diagnostics.EntryPointInterfacePositionDiagnostic(
-                location=position.typed_name.location,
-                position_name=position.typed_name.source_typed_name,
-            )
-        )

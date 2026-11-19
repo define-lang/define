@@ -23,43 +23,48 @@ if typing.TYPE_CHECKING:
 class FilesystemReferenceResolver(reference_resolver.ReferenceResolver):
     """Finds the files and definitions that the references of a program on the filesystem lead to."""
 
-    _file_validator: file_validator.FileStructuralValidator
+    _source_map: rendering.SourceMap
 
     def __init__(
         self, source_map: rendering.SourceMap, roots: project_roots.ProjectRoots
     ):
         """Initialize with the source map to register the program's files with, the program's project roots, and no files loaded."""
         super().__init__(roots)
-        self._file_validator = file_validator.FileStructuralValidator(source_map)
+        self._source_map = source_map
 
     def load_entry_file(
         self, path: pathlib.PurePath
-    ) -> file_validator.LoadedFile | None:
-        """Load the program's entry file, at path relative to the current directory, which is the project root.
+    ) -> tuple[
+        file_validator.LoadedFile | None, list[diagnostics.FormattableDiagnostic]
+    ]:
+        """Load the program's entry file, at path relative to the current directory, which is the project root, and return it and its diagnostics.
 
-        Returns None, after recording the diagnostics for why, if the path is
-        not under the project root or the project config fails to load.
+        The file is None if the path is not under the project root or the
+        project config fails to load. The diagnostics include why the entry
+        file could not be read, since no reference leads into it.
         """
         path_in_project = _path_in_project(pathlib.Path(path))
         if isinstance(path_in_project, diagnostics.PathOutsideProjectRootDiagnostic):
-            self._program_diagnostics.append(path_in_project)
-            return None
+            return None, [path_in_project]
         root_config = self._project_roots.load_entry_file_project_config()
         if root_config is None:
-            return None
+            return None, []
         root_prefix = constants.PROJECT_ROOT
         file_path = define_path.DefinePathFromPosix(path_in_project)
         full_path = root_prefix / file_path
-        entry_file = self._file_validator.load_file(
+        entry_file, file_diagnostics = file_validator.load_file(
             file_validation_context.FileValidationContext(
                 file_path=file_path,
                 root_prefix=root_prefix,
                 root_config=root_config,
-            )
+            ),
+            self._source_map,
         )
         self._path_tracker.mark_in_progress(full_path)
         self._path_tracker.set_result(full_path, entry_file)
-        return entry_file
+        if entry_file.read_failure is None:
+            return entry_file, list(file_diagnostics)
+        return entry_file, [entry_file.read_failure, *file_diagnostics]
 
 
 def _path_in_project(

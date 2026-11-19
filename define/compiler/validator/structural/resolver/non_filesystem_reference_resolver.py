@@ -17,7 +17,6 @@ from define.compiler.validator.structural.resolver import reference_resolver
 
 if typing.TYPE_CHECKING:
     from define.compiler import ast
-    from define.compiler.config import config_loader
     from define.compiler.data_structures import define_path
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
@@ -42,7 +41,9 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
     _source_universes: set[str]
 
     def __init__(
-        self, source_file: file_validator.LoadedFile, roots: project_roots.ProjectRoots
+        self,
+        source_file: file_validator.LoadedFile,
+        roots: project_roots.ProjectRoots,
     ):
         """Initialize with the supplied source as the program's only loaded file, and the program's project roots."""
         super().__init__(roots)
@@ -66,8 +67,9 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         source_definition: validation_result.DefinitionValidationResult,
     ) -> reference_resolver.ReferenceOutcome:
         if referencing_file is self._source_file:
-            if not self._source_reference_resolvable(edge):
-                return reference_resolver.UNRESOLVED
+            unresolved = self._check_source_reference(edge)
+            if unresolved is not None:
+                return unresolved
         else:
             # A definition from the supplied source has no file path to
             # resolve.
@@ -82,73 +84,57 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
             referencing_root, referencing_file, edge, source_definition
         )
 
-    def _source_reference_resolvable(self, edge: reference_graph.ReferenceEdge) -> bool:
-        """Whether a reference from the supplied source can resolve, loading the project config the first time one needs it.
+    def _check_source_reference(
+        self, edge: reference_graph.ReferenceEdge
+    ) -> reference_resolver.Unresolved | reference_resolver.AlreadyReported | None:
+        """Return why a reference from the supplied source cannot resolve, or None if it can, loading the project config the first time a reference needs it.
 
-        Reports why a reference cannot resolve the first time that happens.
+        Returns a diagnostic for why the first time that happens.
         """
         if not global_names.universe_needs_configuration(
             edge.global_name_reference.effective_fqun.canonical
         ):
-            return True
-        root_config = self._project_root_config(edge)
+            return None
+        root_config = self._project_roots.load_project_root_config()
+        if isinstance(root_config, project_roots.NoProjectConfig):
+            return reference_resolver.Unresolved(self._no_project_root_diagnostic(edge))
+        # The config's diagnostics are already recorded.
         if root_config is None:
-            return False
+            return reference_resolver.ALREADY_REPORTED
         fqun = edge.global_name_reference.name_content.fqun
         if fqun is None or fqun.canonical in root_config.sub_roots:
-            return True
+            return None
         # In a filesystem context, file validation reports an unknown universe
         # once per file and records no edge for it. The supplied source is one
         # file, so report each unknown universe once here.
-        if fqun.canonical not in self._unknown_universes:
-            self._unknown_universes.add(fqun.canonical)
-            self._source_file.file_diagnostics.append(
-                diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-                    location=fqun.location,
-                    universe=fqun.canonical,
-                    current_universe_name=root_config.fqun.canonical,
-                )
+        if fqun.canonical in self._unknown_universes:
+            return reference_resolver.ALREADY_REPORTED
+        self._unknown_universes.add(fqun.canonical)
+        return reference_resolver.Unresolved(
+            diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+                location=fqun.location,
+                universe=fqun.canonical,
+                current_universe_name=root_config.fqun.canonical,
             )
-        return False
-
-    def _project_root_config(
-        self, edge: reference_graph.ReferenceEdge
-    ) -> config_loader.Config | None:
-        """Return the project config, loading it for the first reference that needs it.
-
-        If there is no project config, reports that at that reference. If it
-        fails to load, records the config's diagnostics. Either way, returns
-        None then and for every later reference.
-        """
-        root_config = self._project_roots.load_project_root_config()
-        if not isinstance(root_config, project_roots.NoProjectConfig):
-            return root_config
-        reference = edge.global_name_reference
-        names_source_universe = (
-            reference.effective_fqun.canonical in self._source_universes
         )
-        if names_source_universe:
-            location = reference.location
-        else:
-            # A short-form reference names the universe of the definition it
-            # is in, which the supplied source defines, so a reference to any
-            # other universe writes its FQUN.
-            location = typing.cast("ast.Fqun", reference.name_content.fqun).location
+
+    def _no_project_root_diagnostic(
+        self, edge: reference_graph.ReferenceEdge
+    ) -> diagnostics.Diagnostic:
+        """Return the diagnostic that the working directory has no project config, at the first reference from the supplied source that needs it."""
+        reference = edge.global_name_reference
         config_path = str(project_config.CONFIG_FILE.path)
-        if names_source_universe:
-            self._source_file.file_diagnostics.append(
-                diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
-                    location=location,
-                    definition_name=reference.source_typed_name,
-                    config_path=config_path,
-                )
+        if reference.effective_fqun.canonical in self._source_universes:
+            return diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
+                location=reference.location,
+                definition_name=reference.source_typed_name,
+                config_path=config_path,
             )
-        else:
-            self._source_file.file_diagnostics.append(
-                diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
-                    location=location,
-                    universe=reference.effective_fqun.canonical,
-                    config_path=config_path,
-                )
-            )
-        return None
+        # A short-form reference names the universe of the definition it is
+        # in, which the supplied source defines, so a reference to any other
+        # universe writes its FQUN.
+        return diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
+            location=typing.cast("ast.Fqun", reference.name_content.fqun).location,
+            universe=reference.effective_fqun.canonical,
+            config_path=config_path,
+        )

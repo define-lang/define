@@ -40,17 +40,17 @@ def test_non_self_ref_global_in_action_body(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(
-        diags[0], diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic
-    )
+    assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
     assert diags[0].location.file_path is None
-    assert diags[0].definition_name == "action</other>"
-    assert diags[0].config_path == ".define/project/config.defcl"
+    assert diags[0].source_global_name == "action</other>"
+    assert diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert diags[0].location.line == 5
     assert diags[0].location.column == 33
-    assert isinstance(diags[1], diagnostics.UnknownGlobalNameDiagnostic)
+    assert isinstance(
+        diags[1], diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic
+    )
     assert diags[1].location.file_path is None
-    assert diags[1].source_global_name == "action</other>"
-    assert diags[1].full_global_name == "action<my.domain.com:my_lib:/other>"
+    assert diags[1].definition_name == "action</other>"
+    assert diags[1].config_path == ".define/project/config.defcl"
     assert diags[1].location.line == 5
     assert diags[1].location.column == 33

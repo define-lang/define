@@ -32,8 +32,9 @@ class TestDefinitionStructuralValidator:
             ),
         )
 
-        result = validator.validate_definition()
+        result, found = validator.validate_definition()
 
         assert isinstance(result, validation_result.DefinitionValidationResult)
         assert result.definition == program.definitions[0]
-        assert result.diagnostics == []
+        assert result.structurally_valid
+        assert found == []

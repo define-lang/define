@@ -1,7 +1,7 @@
 # pyright: reportUnusedCallResult=false
 # NOTE: Tests for new syntax or diagnostics belong in program_validator_tests/,
-# not here. This file tests FileStructuralValidator internals only (edges,
-# error handling).
+# not here. This file tests file loading internals only (edges, error
+# handling).
 
 from __future__ import annotations
 
@@ -53,30 +53,29 @@ def _make_context(
 
 
 class _ValidatedFile(msgspec.Struct, frozen=True):
-    load_failure: syntax_errors.FileLoadFailureDiagnostic | None
-    # The load failure, if any, then the file's diagnostics, then each
-    # definition's, in the order they were found.
-    diagnostics: list[diagnostics.BaseDiagnostic]
+    read_failure: syntax_errors.SourceFileReadFailure | None
+    # The file's diagnostics, then each definition's, in the order they were
+    # found.
+    diagnostics: list[diagnostics.Diagnostic]
     definition_results: list[validation_result.DefinitionValidationResult]
 
 
 def _load_and_validate_every_definition(
     context: file_validation_context.FileValidationContext,
 ) -> _ValidatedFile:
-    loaded_file = file_validator.FileStructuralValidator(
-        rendering.SourceMap()
-    ).load_file(context)
-    found: list[diagnostics.BaseDiagnostic] = []
-    if loaded_file.load_failure is not None:
-        found.append(loaded_file.load_failure)
-    found.extend(loaded_file.file_diagnostics)
+    loaded_file, file_diagnostics = file_validator.load_file(
+        context, rendering.SourceMap()
+    )
+    found = list(file_diagnostics)
     definition_results: list[validation_result.DefinitionValidationResult] = []
     for definition in loaded_file.definitions.values():
-        definition_result = loaded_file.validate_definition(definition)
+        definition_result, definition_diagnostics = loaded_file.validate_definition(
+            definition
+        )
         definition_results.append(definition_result)
-        found.extend(definition_result.diagnostics)
+        found.extend(definition_diagnostics)
     return _ValidatedFile(
-        load_failure=loaded_file.load_failure,
+        read_failure=loaded_file.read_failure,
         diagnostics=found,
         definition_results=definition_results,
     )
@@ -92,14 +91,14 @@ def _reference_edges(
     ]
 
 
-class TestFileStructuralValidatorSuccess:
+class TestLoadFileSuccess:
     def test_valid_position(self, tmp_path: Path):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
         ctx = _make_context(tmp_path)
         result = _load_and_validate_every_definition(ctx)
 
-        assert result.load_failure is None
+        assert result.read_failure is None
         assert result.diagnostics == []
         assert len(result.definition_results) == 1
         assert (
@@ -122,20 +121,21 @@ class TestFileStructuralValidatorSuccess:
         ctx = _make_context(tmp_path)
         result = _load_and_validate_every_definition(ctx)
 
-        assert result.load_failure is None
+        assert result.read_failure is None
         assert result.diagnostics == []
         assert len(result.definition_results) == 1
         assert result.definition_results[0].definition.typed_name.name_type == "action"
 
 
-class TestFileStructuralValidatorErrors:
+class TestLoadFileErrors:
     def test_file_not_found(self, tmp_path: Path):
         ctx = _make_context(tmp_path, file_name="nonexistent.dfn")
         result = _load_and_validate_every_definition(ctx)
 
-        assert result.load_failure == syntax_errors.SourceFileNotFound(
+        assert result.read_failure == syntax_errors.SourceFileNotFound(
             file_path=(tmp_path / "nonexistent.dfn").as_posix()
         )
+        assert result.diagnostics == []
         assert result.definition_results == []
         assert _reference_edges(result) == []
 
@@ -145,12 +145,13 @@ class TestFileStructuralValidatorErrors:
         result = _load_and_validate_every_definition(ctx)
 
         # The reason is the operating system's, whose words differ by platform.
-        assert isinstance(result.load_failure, syntax_errors.SourceFileUnreadable)
-        assert result.load_failure.reason
-        assert result.load_failure == syntax_errors.SourceFileUnreadable(
+        assert isinstance(result.read_failure, syntax_errors.SourceFileUnreadable)
+        assert result.read_failure.reason
+        assert result.read_failure == syntax_errors.SourceFileUnreadable(
             file_path=(tmp_path / "directory.dfn").as_posix(),
-            reason=result.load_failure.reason,
+            reason=result.read_failure.reason,
         )
+        assert result.diagnostics == []
         assert result.definition_results == []
         assert _reference_edges(result) == []
 
@@ -161,7 +162,9 @@ class TestFileStructuralValidatorErrors:
         ctx = _make_context(tmp_path)
         result = _load_and_validate_every_definition(ctx)
 
-        assert result.load_failure is not None
+        assert result.read_failure is None
+        (syntax_error,) = result.diagnostics
+        assert isinstance(syntax_error, syntax_errors.DefineSyntaxError)
         assert result.definition_results == []
 
     def test_encoding_error(self, tmp_path: Path):
@@ -169,10 +172,11 @@ class TestFileStructuralValidatorErrors:
         ctx = _make_context(tmp_path)
         result = _load_and_validate_every_definition(ctx)
 
-        assert isinstance(result.load_failure, syntax_errors.InvalidEncodingError)
-        assert result.load_failure.location.line == 1
-        assert result.load_failure.location.column == 1
-        assert result.load_failure.escaped_char == "\\x80"
+        (invalid_encoding,) = result.diagnostics
+        assert isinstance(invalid_encoding, syntax_errors.InvalidEncodingError)
+        assert invalid_encoding.location.line == 1
+        assert invalid_encoding.location.column == 1
+        assert invalid_encoding.escaped_char == "\\x80"
 
     def test_encoding_error_multiline(self, tmp_path: Path):
         (tmp_path / "test.dfn").write_bytes(
@@ -181,15 +185,16 @@ class TestFileStructuralValidatorErrors:
         ctx = _make_context(tmp_path)
         result = _load_and_validate_every_definition(ctx)
 
-        assert isinstance(result.load_failure, syntax_errors.InvalidEncodingError)
-        assert result.load_failure.location.line == 3
-        assert result.load_failure.location.column == 8
-        assert result.load_failure.location.end_line == 3
-        assert result.load_failure.location.end_column == 8
-        assert result.load_failure.escaped_char == "\\x80"
+        (invalid_encoding,) = result.diagnostics
+        assert isinstance(invalid_encoding, syntax_errors.InvalidEncodingError)
+        assert invalid_encoding.location.line == 3
+        assert invalid_encoding.location.column == 8
+        assert invalid_encoding.location.end_line == 3
+        assert invalid_encoding.location.end_column == 8
+        assert invalid_encoding.escaped_char == "\\x80"
 
 
-class TestFileStructuralValidatorDiagnostics:
+class TestLoadFileDiagnostics:
     def test_path_mismatch(self, tmp_path: Path):
         source = "define the potential position<my.domain.com:my_lib:/wrong_path>.\n"
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
@@ -235,9 +240,9 @@ class TestLoadedFile:
             "define the potential position<my.domain.com:my_lib:/test>.\n"
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
-        loaded_file = file_validator.FileStructuralValidator(
-            rendering.SourceMap()
-        ).load_file(_make_context(tmp_path))
+        loaded_file, _ = file_validator.load_file(
+            _make_context(tmp_path), rendering.SourceMap()
+        )
 
         assert [
             definition.location.line for definition in loaded_file.definitions.values()
@@ -252,14 +257,14 @@ class TestLoadedFile:
             "}\n"
         )
         (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
-        loaded_file = file_validator.FileStructuralValidator(
-            rendering.SourceMap()
-        ).load_file(_make_context(tmp_path))
+        _, file_diagnostics = file_validator.load_file(
+            _make_context(tmp_path), rendering.SourceMap()
+        )
 
-        assert loaded_file.file_diagnostics == []
+        assert file_diagnostics == []
 
 
-class TestFileStructuralValidatorReferenceDiscovery:
+class TestLoadFileReferenceDiscovery:
     def test_short_form_reference(self, tmp_path: Path):
         source = (
             "define the potential position<my.domain.com:my_lib:/test> {\n"

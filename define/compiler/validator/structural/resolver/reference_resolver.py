@@ -42,16 +42,24 @@ class AwaitingFile(msgspec.Struct, frozen=True):
 
 
 class Unresolved(msgspec.Struct, frozen=True):
-    """A reference that cannot resolve, whose diagnostic, if any, is already recorded."""
+    """A reference that cannot resolve, with the diagnostic for why."""
+
+    diagnostic: diagnostics.Diagnostic
 
 
-# Neither outcome has data, so every reference shares one of each.
-AWAITING_FILE = AwaitingFile()
-UNRESOLVED = Unresolved()
+class AlreadyReported(msgspec.Struct, frozen=True):
+    """A reference that cannot resolve because of a problem that is already reported, such as a universe that the project cannot use."""
+
+
+# These outcomes have no data, so every reference shares one of each.
+_AWAITING_FILE = AwaitingFile()
+ALREADY_REPORTED = AlreadyReported()
 
 # What validating a reference found: the definition it names, a file to load
 # first, or why there is neither.
-type ReferenceOutcome = ResolvedDefinition | LoadFile | AwaitingFile | Unresolved
+type ReferenceOutcome = (
+    ResolvedDefinition | LoadFile | AwaitingFile | Unresolved | AlreadyReported
+)
 
 
 class _DeferredReferenceEdge(msgspec.Struct):
@@ -65,30 +73,23 @@ class ReferenceResolver:
     """Finds the files and definitions that references lead to.
 
     Decides which files to load, so that no file loads twice, and loads the
-    project roots that references lead into. Reports the diagnostics for
-    references that cannot resolve to a definition. Only the coordinator thread
-    may use it.
+    project roots that references lead into. Returns why each reference cannot
+    resolve to a definition. Only the coordinator thread may use it.
     """
 
     _project_roots: project_roots.ProjectRoots
     _path_tracker: path_tracker.PathTracker[file_validator.LoadedFile]
     _deferred_edges: dict[define_path.DefinePath, list[_DeferredReferenceEdge]]
-    _program_diagnostics: list[diagnostics.FormattableDiagnostic]
 
     def __init__(self, roots: project_roots.ProjectRoots):
         """Initialize with the program's project roots, and no files loaded."""
         self._project_roots = roots
         self._path_tracker = path_tracker.PathTracker()
         self._deferred_edges = {}
-        self._program_diagnostics = []
 
     def completed_files(self) -> list[file_validator.LoadedFile]:
         """Return every file that finished loading."""
         return self._path_tracker.completed_results()
-
-    def program_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
-        """Return the diagnostics about the program rather than one of its files, including the ones that loading its project configs found."""
-        return [*self._project_roots.diagnostics(), *self._program_diagnostics]
 
     def validate_reference(
         self,
@@ -101,16 +102,16 @@ class ReferenceResolver:
 
         referencing_file is the file that holds the edge, which must not name
         an earlier definition in it, or None for an edge from an association,
-        which the project's config holds. Diagnostics about the edge are added
-        to source_definition.
+        which the project's config holds. source_definition is the result of
+        the definition that holds the edge.
 
         If the target file is not loaded yet, the rest of the validation
-        happens when it loads, and add_loaded_file returns the definition
+        happens when it loads, and add_loaded_file returns the outcome
         instead.
         """
-        target = self._validate_target_file(referencing_root, edge, source_definition)
-        if target is None:
-            return UNRESOLVED
+        target = self._validate_target_file(referencing_root, edge)
+        if isinstance(target, Unresolved | AlreadyReported):
+            return target
         target_file = target.full_path
 
         # With the thread pool, work completes in arbitrary order. If files
@@ -119,17 +120,20 @@ class ReferenceResolver:
         # available when processing A's edges.
         target_loaded_file = self._path_tracker.try_get_result(target_file)
         if target_loaded_file is not None:
-            return self._validate_reference_against_target(
+            outcome = self._validate_reference_against_target(
                 edge,
                 target_loaded_file,
-                source_definition,
+                source_definition.definition,
                 in_source_file=target_loaded_file is referencing_file,
             )
+            if isinstance(outcome, ResolvedDefinition):
+                return outcome
+            return Unresolved(outcome)
         self._deferred_edges.setdefault(target_file, []).append(
             _DeferredReferenceEdge(edge, source_definition)
         )
         if self._path_tracker.is_tracked(target_file):
-            return AWAITING_FILE
+            return _AWAITING_FILE
         self._path_tracker.mark_in_progress(target_file)
         return LoadFile(target)
 
@@ -137,13 +141,8 @@ class ReferenceResolver:
         self,
         referencing_root: define_path.DefinePath,
         edge: reference_graph.ReferenceEdge,
-        source_definition: validation_result.DefinitionValidationResult,
-    ) -> file_validation_context.FileValidationContext | None:
-        """Validate the file an edge names, and return it, or None if the edge cannot resolve in it.
-
-        Reports why the edge cannot resolve in the file, unless that was
-        already reported elsewhere.
-        """
+    ) -> file_validation_context.FileValidationContext | Unresolved | AlreadyReported:
+        """Validate the file an edge names, and return it, or why the edge cannot resolve in it."""
         # Edges with an explicit FQUN only exist when file validation found the
         # FQUN in the enclosing root's local deps, or when the universe needs
         # no configuration.
@@ -152,14 +151,21 @@ class ReferenceResolver:
         )
         # Why the universe cannot be used was already reported.
         if target is None:
-            return None
+            return ALREADY_REPORTED
         target_root, target_root_config = target
         target_file_path = edge.global_name_reference.name_content.path.file_path()
         target_file = target_root / target_file_path
-        if self._check_target_in_sub_root(
-            edge, target_root, target_file, source_definition
-        ):
-            return None
+        sub_root = self._project_roots.find_sub_root_between(target_root, target_file)
+        if sub_root is not None:
+            sub_root_path, entry = sub_root
+            return Unresolved(
+                diagnostics.PathInsideOtherUniverseDiagnostic(
+                    location=edge.global_name_reference.name_content.path.location,
+                    path=str(target_file),
+                    other_universe=entry.universe,
+                    sub_root_path=str(sub_root_path),
+                )
+            )
         return file_validation_context.FileValidationContext(
             file_path=target_file_path,
             root_prefix=target_root,
@@ -168,8 +174,13 @@ class ReferenceResolver:
 
     def add_loaded_file(
         self, loaded_file: file_validator.LoadedFile
-    ) -> list[ResolvedDefinition]:
-        """Record a file that finished loading, and return the definitions that the edges waiting on it resolve to."""
+    ) -> list[
+        tuple[
+            validation_result.DefinitionValidationResult,
+            ResolvedDefinition | diagnostics.Diagnostic,
+        ]
+    ]:
+        """Record a file that finished loading, and return, for each edge waiting on it, the result of the definition that holds the edge, and the definition that the edge resolves to or the diagnostic for why it cannot."""
         completed_file = loaded_file.context.full_path
         self._path_tracker.set_result(completed_file, loaded_file)
         # Reference edges have to wake up by file, not by definition name.
@@ -188,59 +199,39 @@ class ReferenceResolver:
         # completed_file preserves the real dependency: an edge is blocked on
         # one exact file finishing loading, and only that file gets to
         # satisfy or fail the deferred edge.
-        resolved_definitions: list[ResolvedDefinition] = []
+        outcomes: list[
+            tuple[
+                validation_result.DefinitionValidationResult,
+                ResolvedDefinition | diagnostics.Diagnostic,
+            ]
+        ] = []
         for deferred_edge in self._deferred_edges.pop(completed_file, []):
             outcome = self._validate_reference_against_target(
                 deferred_edge.edge,
                 loaded_file,
-                deferred_edge.source_definition,
+                deferred_edge.source_definition.definition,
                 # A file is recorded as loaded before any of its definitions
                 # are validated, so no edge ever waits for its own file.
                 in_source_file=False,
             )
-            if isinstance(outcome, ResolvedDefinition):
-                resolved_definitions.append(outcome)
-        return resolved_definitions
-
-    def _check_target_in_sub_root(
-        self,
-        edge: reference_graph.ReferenceEdge,
-        target_root: define_path.DefinePath,
-        target_file: define_path.DefinePath,
-        source_definition: validation_result.DefinitionValidationResult,
-    ) -> bool:
-        """Check if a reference leads into a sub-root that the target universe's project lists.
-
-        Returns True (and appends a diagnostic) when the edge should be skipped.
-        """
-        sub_root = self._project_roots.find_sub_root_between(target_root, target_file)
-        if sub_root is None:
-            return False
-        sub_root_path, entry = sub_root
-        source_definition.diagnostics.append(
-            diagnostics.PathInsideOtherUniverseDiagnostic(
-                location=edge.global_name_reference.name_content.path.location,
-                path=str(target_file),
-                other_universe=entry.universe,
-                sub_root_path=str(sub_root_path),
-            )
-        )
-        return True
+            outcomes.append((deferred_edge.source_definition, outcome))
+        return outcomes
 
     def _validate_reference_against_target(
         self,
         edge: reference_graph.ReferenceEdge,
         target_loaded_file: file_validator.LoadedFile,
-        source_definition: validation_result.DefinitionValidationResult,
+        source_definition: ast.GlobalDefinition,
         *,
         in_source_file: bool,
-    ) -> ResolvedDefinition | Unresolved:
-        """Validate a reference edge against a loaded target file, and return the definition it names, if it can resolve.
+    ) -> ResolvedDefinition | diagnostics.Diagnostic:
+        """Validate a reference edge against a loaded target file, and return the definition it names, or the diagnostic for why it cannot resolve.
 
-        in_source_file is whether the target file holds the edge.
+        source_definition is the definition that holds the edge, and
+        in_source_file is whether the target file holds it.
         """
         target_file = target_loaded_file.context.full_path
-        target_load_failure = target_loaded_file.load_failure
+        target_read_failure = target_loaded_file.read_failure
         target_definition = target_loaded_file.definitions.get(
             edge.global_name_reference.full_typed_name
         )
@@ -248,7 +239,16 @@ class ReferenceResolver:
         # its own file.
         if target_definition is not None and in_source_file:
             target_definition = target_loaded_file.earlier_definition(
-                edge.global_name_reference, source_definition.definition
+                edge.global_name_reference, source_definition
+            )
+
+        # Reported at the reference, like a missing file.
+        if isinstance(target_read_failure, syntax_errors.SourceFileUnreadable):
+            self._path_tracker.mark_not_found(target_file)
+            return diagnostics.ReferencedFileUnreadableDiagnostic(
+                location=edge.global_name_reference.name_content.path.location,
+                file_path=str(target_file),
+                reason=target_read_failure.reason,
             )
 
         # A standard universe file is not in the project, so naming it would
@@ -256,48 +256,26 @@ class ReferenceResolver:
         # TODO: Remove this special case once the Define Standard Library
         # exists.
         if target_loaded_file.context.root_prefix == constants.STANDARD_LIBRARY_ROOT:
-            if isinstance(target_load_failure, syntax_errors.SourceFileNotFound):
+            if isinstance(target_read_failure, syntax_errors.SourceFileNotFound):
                 self._path_tracker.mark_not_found(target_file)
             elif target_definition is not None:
                 return ResolvedDefinition(target_loaded_file, target_definition)
-            source_definition.diagnostics.append(
-                diagnostics.StandardDefinitionNotFoundDiagnostic(
-                    location=edge.global_name_reference.location,
-                    definition_name=edge.global_name_reference.full_typed_name,
-                )
+            return diagnostics.StandardDefinitionNotFoundDiagnostic(
+                location=edge.global_name_reference.location,
+                definition_name=edge.global_name_reference.full_typed_name,
             )
-            return UNRESOLVED
 
-        if isinstance(target_load_failure, syntax_errors.SourceFileNotFound):
-            source_definition.diagnostics.append(
-                diagnostics.ReferencedFileNotFoundDiagnostic(
-                    location=edge.global_name_reference.name_content.path.location,
-                    file_path=str(target_file),
-                )
-            )
+        if isinstance(target_read_failure, syntax_errors.SourceFileNotFound):
             self._path_tracker.mark_not_found(target_file)
-            return UNRESOLVED
-
-        # Reported at the reference, like a missing file, rather than as the
-        # file's own load failure, which has no location.
-        if isinstance(target_load_failure, syntax_errors.SourceFileUnreadable):
-            source_definition.diagnostics.append(
-                diagnostics.ReferencedFileUnreadableDiagnostic(
-                    location=edge.global_name_reference.name_content.path.location,
-                    file_path=str(target_file),
-                    reason=target_load_failure.reason,
-                )
+            return diagnostics.ReferencedFileNotFoundDiagnostic(
+                location=edge.global_name_reference.name_content.path.location,
+                file_path=str(target_file),
             )
-            self._path_tracker.mark_not_found(target_file)
-            return UNRESOLVED
 
         if target_definition is None:
-            source_definition.diagnostics.append(
-                diagnostics.ReferencedDefinitionNotFoundDiagnostic(
-                    location=edge.global_name_reference.location,
-                    file_path=str(target_file),
-                    definition_name=edge.global_name_reference.full_typed_name,
-                )
+            return diagnostics.ReferencedDefinitionNotFoundDiagnostic(
+                location=edge.global_name_reference.location,
+                file_path=str(target_file),
+                definition_name=edge.global_name_reference.full_typed_name,
             )
-            return UNRESOLVED
         return ResolvedDefinition(target_loaded_file, target_definition)
