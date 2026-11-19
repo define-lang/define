@@ -28,9 +28,11 @@ func main() {
 	slots := flag.Int("slots", runtime.NumCPU(), "actions to stage or run at once")
 	deleters := flag.Int("deleters", 8, "finished action directories to delete at once")
 	// Every command that reruns between two builds, once for each build running
-	// it at the same time, needs an idle directory to reuse. One costs mostly
-	// inodes: a few thousand on average, of the store's hundreds of millions.
-	idleDirectories := flag.Int("idle_action_directories", 1024, "finished action directories to keep for reuse by actions that run the same command")
+	// it at the same time, needs an idle directory to reuse. Six mutation
+	// testing workers each rerun up to a few hundred commands for one mutant.
+	// A directory's input files are hardlinks to the store's files, so one idle
+	// directory adds only about 450 inodes and 0.4 MB.
+	idleDirectories := flag.Int("idle_action_directories", 2048, "finished action directories to keep for reuse by actions that run the same command")
 	flag.Parse()
 	if err := setUpLogging(); err != nil {
 		log.Fatalf("setting up logging: %v", err)
