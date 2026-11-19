@@ -192,7 +192,7 @@ def test_missing_encoding_operation_format(
         File "test.dfn", line 21, column 21
             execute the operation</outer_sum> {
                         ^^^^^^^^^^^^^^^^^^^^^
-        no Encoding Operation performs 'logical_operation<standard:/number/add>' for these encodings:
+        no Encoding Operation is associated with 'logical_operation<standard:/number/add>' for these encodings:
           view<a>: encoding<standard:/number/integer/ascii>
           view<b>: encoding<standard:/number/natural/ascii>
           view<result>: encoding<standard:/number/integer/ascii>

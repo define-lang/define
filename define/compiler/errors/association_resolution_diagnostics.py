@@ -237,7 +237,7 @@ class LiteralCannotSetValueDiagnostic(diagnostics.Diagnostic):
 
 
 class MissingEncodingOperationDiagnostic(diagnostics.Diagnostic):
-    """Diagnostic for executing a Value Operation that, for the encodings of what the execution looks at, executes a logical operation that no Encoding Operation performs for the encodings of the views it looks at."""
+    """Diagnostic for executing a Value Operation that, for the encodings of what the execution looks at, executes a logical operation that no Encoding Operation is associated with for the encodings of the views it looks at."""
 
     logical_operation_name: str
     # The encoding of each of the logical operation's views, keyed by the
@@ -256,7 +256,7 @@ class MissingEncodingOperationDiagnostic(diagnostics.Diagnostic):
         return "\n  ".join(lines)
 
     message_format: ClassVar[str] = (
-        "no Encoding Operation performs '{self.logical_operation_name}'"
+        "no Encoding Operation is associated with '{self.logical_operation_name}'"
         " for these encodings:\n"
         "  {self.view_encoding_list}\n"
         "so this execution cannot run.\n\n"

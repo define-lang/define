@@ -35,9 +35,9 @@ class LiteralValueSetting(abstract_program.ValueSetting):
 class OperationArgument[LookedAtT](msgspec.Struct):
     """What one interface view of an executed operation looks at."""
 
-    # The view of the executed operation, or, for an Encoding Operation that
-    # performs a logical operation, the logical operation's view, which has the
-    # same name and direction.
+    # The view of the executed operation, or, for an Encoding Operation chosen
+    # for a Logical Operation Execution, the logical operation's view, which
+    # has the same name and direction.
     interface_view: ast.ViewDefinition
     looking_at: LookedAtT | EncodedLiteral
 

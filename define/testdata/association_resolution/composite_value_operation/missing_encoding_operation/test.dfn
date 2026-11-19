@@ -1,4 +1,4 @@
-# No Encoding Operation performs /number/add for an integer and a natural, so executing a Value Operation that adds them is an error at the execution.
+# No Encoding Operation is associated with /number/add for an integer and a natural, so executing a Value Operation that adds them is an error at the execution.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</final_result>.
     it happens when {

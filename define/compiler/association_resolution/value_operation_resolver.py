@@ -55,7 +55,7 @@ class MissingEncodingOperation(msgspec.Struct, frozen=True):
 
     @property
     def logical_operation(self) -> ast.GlobalTypedNameReference:
-        """The logical operation that no Encoding Operation performs."""
+        """The logical operation that no Encoding Operation is associated with for the encodings of the views it looks at."""
         return self.execution_stack[-1]
 
 
@@ -336,7 +336,7 @@ class ValueOperationResolver:
         execution: abstract_program.LogicalOperationExecution,
         view_encodings: dict[str, ast.GlobalTypedNameReference],
     ) -> concrete_program.OperationExecution | MissingEncodingOperation | None:
-        """Return the execution of the Encoding Operation that performs a logical operation for the encodings of the views it looks at."""
+        """Return the execution of the Encoding Operation that is associated with a logical operation for the encodings of the views it looks at."""
         # Executing it cannot be resolved for a reason that is already reported.
         if not self._associations.has_usable_associations(execution.logical_operation):
             return None
