@@ -19,31 +19,6 @@ py_library(
 )
 
 py_library(
-    name = "reference_graph_executor",
-    srcs = ["reference_graph_executor.py"],
-    visibility = ["//define/compiler:__subpackages__"],
-    deps = [
-        ":reference_graph_order",
-        "//define/compiler:ast",
-        "//define/compiler:work_pool",
-    ],
-)
-
-py_test(
-    name = "reference_graph_executor_test",
-    size = "small",
-    srcs = ["reference_graph_executor_test.py"],
-    deps = [
-        ":reference_graph_executor",
-        ":reference_graph_order",
-        "//define/compiler:ast",
-        "//define/compiler/validator:test_helpers",
-        "//define/compiler/validator/structural:program_validator",
-        "@pypi//pytest",
-    ],
-)
-
-py_library(
     name = "reference_graph_order",
     srcs = ["reference_graph_order.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -73,8 +48,6 @@ pyright_test(
     deps = [
         ":graphs",
         ":reference_graph",
-        ":reference_graph_executor",
-        ":reference_graph_executor_test",
         ":reference_graph_order",
         ":reference_graph_test",
     ],

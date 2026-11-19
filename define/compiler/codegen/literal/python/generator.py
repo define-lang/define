@@ -18,7 +18,6 @@ from define.compiler.codegen.literal.python import (
     renderer,
     value_types,
 )
-from define.compiler.graphs import reference_graph_executor
 
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Mapping, Sequence
@@ -190,7 +189,7 @@ class _ModulePlan(msgspec.Struct, frozen=True):
 
 @typing.final
 class _DefinitionGenerator:
-    """Generate definitions after their referenced definitions complete."""
+    """Generate every definition and Encoding Operation of a program, in any order."""
 
     def __init__(
         self,
@@ -213,50 +212,50 @@ class _DefinitionGenerator:
             codegen_input.value_encodings, codegen_input.encoding_operations
         )
         self._entry_definition: renderer.ActionDefinition
+        # Dotted names rather than paths: each module adds one on the
+        # coordinator thread, so all of its cost adds to the compile's wall
+        # time. Each result would be a new Path, and hashing a new Path first
+        # assembles its string from its parts in Python code, while a string
+        # hashes in C.
+        self._packages: set[str] = set()
 
     def generate(
         self,
         *,
         max_workers: int | None,
     ) -> tuple[renderer.ActionDefinition, set[str]]:
-        """Generate every definition with bounded worker concurrency.
+        """Generate every definition and Encoding Operation with bounded worker concurrency.
 
         Also returns the dotted name of each package that holds a generated
         module's package.
         """
-        # Dotted names rather than paths: this loop runs on the main thread
-        # alone, after the workers finish, once per definition, so all of its
-        # cost adds to the compile's wall time. Each result would be a new
-        # Path, and hashing a new Path first assembles its string from its
-        # parts in Python code, while a string hashes in C.
-        packages: set[str] = set()
+        # A definition's generated code refers to other definitions only by
+        # name, which needs nothing generated first, so everything is
+        # generated in any order.
         # TODO: Generate only the definitions that the entry point reaches.
         # The order holds every validated definition, which includes entry
         # file definitions that the entry point never references.
-        for package in reference_graph_executor.process_definitions(
-            self._codegen_input.definition_order,
-            _generates_module_part,
-            self._generate_definition,
-            max_workers=max_workers,
-        ):
-            if package is not None:
-                packages.add(package)
-
-        def add_package(package: str | None, _pool: work_pool.WorkPool):
-            if package is not None:
-                packages.add(package)
-
-        # An Encoding Operation's callers name its function from its typed
-        # name alone, so Encoding Operations are generated in any order.
         with work_pool.WorkPool(max_workers) as pool:
+            for definition in self._codegen_input.definition_order.definitions:
+                if _generates_module_part(definition):
+                    pool.submit(
+                        self._generate_definition,
+                        definition,
+                        handle_result=self._add_package,
+                    )
             for encoding_operation in self._codegen_input.encoding_operations.values():
                 pool.submit(
                     self._generate_encoding_operation,
                     encoding_operation,
-                    handle_result=add_package,
+                    handle_result=self._add_package,
                 )
             pool.run_until_idle()
-        return self._entry_definition, packages
+        return self._entry_definition, self._packages
+
+    def _add_package(self, package: str | None, _pool: work_pool.WorkPool):
+        """Record the package of a written module, if a module was written."""
+        if package is not None:
+            self._packages.add(package)
 
     def _generate_definition(
         self,
