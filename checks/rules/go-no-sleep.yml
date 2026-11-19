@@ -1,0 +1,13 @@
+id: go-no-sleep
+language: go
+severity: error
+message:
+  Do not call `time.Sleep`. Wait on an explicit signal, such as a channel, a
+  file descriptor, or a process exit.
+files:
+  - "**/*.go"
+rule:
+  # A bare call does not parse as Go outside a function.
+  pattern:
+    context: func f() { time.Sleep($$$) }
+    selector: call_expression

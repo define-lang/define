@@ -1,0 +1,14 @@
+id: go-no-sleep
+snapshots:
+  "func poll() {\n\tfor {\n\t\ttime.Sleep(10 * time.Millisecond)\n\t}\n}\n":
+    labels:
+    - source: time.Sleep(10 * time.Millisecond)
+      style: primary
+      start: 23
+      end: 56
+  "func wait() {\n\ttime.Sleep(time.Second)\n}\n":
+    labels:
+    - source: time.Sleep(time.Second)
+      style: primary
+      start: 15
+      end: 38

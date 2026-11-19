@@ -56,8 +56,20 @@ func (pool *directoryPool) take(workRoot string, command string) (string, bool) 
 			return path, true
 		}
 	}
+	return pool.newPath(workRoot), false
+}
+
+// fresh returns the path of a new directory.
+func (pool *directoryPool) fresh(workRoot string) string {
+	pool.mutex.Lock()
+	defer pool.mutex.Unlock()
+	return pool.newPath(workRoot)
+}
+
+// newPath returns the path of a new directory. The caller holds pool.mutex.
+func (pool *directoryPool) newPath(workRoot string) string {
 	pool.created++
-	return filepath.Join(workRoot, strconv.FormatUint(pool.created, 10)), false
+	return filepath.Join(workRoot, strconv.FormatUint(pool.created, 10))
 }
 
 // put makes a finished action's directory idle, and returns the directories

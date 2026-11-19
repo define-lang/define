@@ -4,9 +4,9 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 	"testing"
-	"time"
 )
 
 // helperVariable makes this test binary act as the command that the tests
@@ -25,10 +25,10 @@ func TestMain(m *testing.M) {
 		if err := grandchild.Start(); err != nil {
 			panic(err)
 		}
-		select {}
+		waitForever()
 	case "wait":
 		os.Stdout.WriteString("started\n")
-		select {}
+		waitForever()
 	}
 	os.Exit(m.Run())
 }
@@ -57,18 +57,22 @@ func TestKillsACommandThatRunsTooLongWithItsChildren(t *testing.T) {
 		t.Errorf("standard error is %q", stderr.String())
 	}
 	// The output ends only once no process holds it, so a surviving
-	// grandchild keeps it open.
-	output := make(chan string, 1)
-	go func() {
-		read, _ := io.ReadAll(reader)
-		output <- string(read)
-	}()
-	select {
-	case read := <-output:
-		if read != "started\n" {
-			t.Errorf("output is %q, want %q", read, "started\n")
-		}
-	case <-time.After(30 * time.Second):
-		t.Fatal("a process that the command started is still running")
+	// grandchild makes the test time out here.
+	read, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(read) != "started\n" {
+		t.Errorf("output is %q, want %q", read, "started\n")
+	}
+}
+
+// waitForever waits until the process is killed. A program whose goroutines
+// all wait on channels, as in a bare select {}, ends with a deadlock error, so
+// it waits for a signal that never comes instead.
+func waitForever() {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt)
+	for range signals {
 	}
 }

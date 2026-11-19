@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -111,7 +110,8 @@ func (store *Store) copyBlob(key Key, path string) error {
 // RemoveTree deletes a directory tree that holds links to blobs, without
 // changing the blobs. Windows keeps the read-only attribute per file, not per
 // link, so clearing it in order to delete a link, as os.RemoveAll does, would
-// make the store's copy writable too.
+// make the store's copy writable too. When another program holds a file in
+// the tree open, RemoveTree fails with an error for which InUse is true.
 func RemoveTree(root string) error {
 	entries, err := os.ReadDir(root)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -130,25 +130,18 @@ func RemoveTree(root string) error {
 			}
 			continue
 		}
-		if err := deleteSoon(path); err != nil {
+		if err := deleteIgnoringReadOnly(path); err != nil {
 			return err
 		}
 	}
-	return deleteSoon(root)
+	return deleteIgnoringReadOnly(root)
 }
 
-// deleteSoon deletes a path, waiting for a while for others to stop using it.
-// Programs that scan new files, such as antivirus software, open them briefly
-// without sharing deletion.
-func deleteSoon(path string) error {
-	deadline := time.Now().Add(10 * time.Second)
-	for {
-		err := deleteIgnoringReadOnly(path)
-		if !errors.Is(err, windows.ERROR_SHARING_VIOLATION) || time.Now().After(deadline) {
-			return err
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
+// InUse reports whether err means that another program holds a file open
+// without sharing deletion. Programs that scan new files, such as antivirus
+// software, do that briefly, and nothing signals when they stop.
+func InUse(err error) bool {
+	return errors.Is(err, windows.ERROR_SHARING_VIOLATION)
 }
 
 // deleteIgnoringReadOnly deletes a file, an empty directory or a symlink

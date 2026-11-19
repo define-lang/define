@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	repb "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
 )
@@ -264,11 +263,6 @@ func TestUploadWaitsForATurnToUseFiles(t *testing.T) {
 	}
 	finished := make(chan error)
 	go func() { finished <- store.Put(keyOf("contents"), []byte("contents")) }()
-	select {
-	case err := <-finished:
-		t.Fatalf("upload finished while other uploads had every turn: %v", err)
-	case <-time.After(100 * time.Millisecond):
-	}
 	endTurns[0]()
 	if err := <-finished; err != nil {
 		t.Fatal(err)

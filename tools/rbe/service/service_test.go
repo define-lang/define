@@ -29,6 +29,7 @@ func TestMain(m *testing.M) {
 }
 
 type client struct {
+	server     *Server
 	connection *grpc.ClientConn
 	cas        repb.ContentAddressableStorageClient
 	cache      repb.ActionCacheClient
@@ -49,7 +50,8 @@ func startServer(t *testing.T) *client {
 	}
 	listener := bufconn.Listen(1 << 20)
 	server := grpc.NewServer()
-	New(store, executor).Register(server)
+	service := New(store, executor)
+	service.Register(server)
 	go func() { _ = server.Serve(listener) }()
 	t.Cleanup(server.Stop)
 	connection, err := grpc.NewClient("passthrough:///bufnet",
@@ -61,6 +63,7 @@ func startServer(t *testing.T) *client {
 	}
 	t.Cleanup(func() { _ = connection.Close() })
 	return &client{
+		server:     service,
 		connection: connection,
 		cas:        repb.NewContentAddressableStorageClient(connection),
 		cache:      repb.NewActionCacheClient(connection),
@@ -269,6 +272,71 @@ func TestFailedActionIsNotCached(t *testing.T) {
 	_, err := client.cache.GetActionResult(context.Background(), &repb.GetActionResultRequest{ActionDigest: actionDigest})
 	if status.Code(err) != codes.NotFound {
 		t.Fatalf("action cache returned %v", err)
+	}
+}
+
+// startAndLeave starts executing an action and stops waiting for it once the
+// server reports that it is executing. It returns the operation's name.
+func (client *client) startAndLeave(t *testing.T, actionDigest *repb.Digest) string {
+	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	stream, err := client.execution.Execute(ctx, &repb.ExecuteRequest{ActionDigest: actionDigest})
+	if err != nil {
+		t.Fatal(err)
+	}
+	executing, err := stream.Recv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return executing.Name
+}
+
+func TestActionThatNoClientWaitsForIsCancelled(t *testing.T) {
+	client := startServer(t)
+	actionDigest := client.action(t, testprogram.Command(t, "block"))
+
+	name := client.startAndLeave(t, actionDigest)
+
+	client.server.mu.Lock()
+	current := client.server.operations[name]
+	client.server.mu.Unlock()
+	<-current.done
+	if code := codes.Code(current.response.Status.GetCode()); code != codes.Canceled {
+		t.Fatalf("status %v", code)
+	}
+	_, err := client.cache.GetActionResult(context.Background(), &repb.GetActionResultRequest{ActionDigest: actionDigest})
+	if status.Code(err) != codes.NotFound {
+		t.Fatalf("action cache returned %v", err)
+	}
+}
+
+func TestJoinedActionRunsUntilNoClientWaits(t *testing.T) {
+	client := startServer(t)
+	actionDigest := client.action(t, testprogram.Command(t, "block"))
+	actionKey, err := cas.KeyFromDigest(actionDigest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := &repb.ExecuteRequest{ActionDigest: actionDigest}
+
+	first := client.server.start(actionKey, request)
+	second := client.server.start(actionKey, request)
+	if first != second {
+		t.Fatal("the second request did not join the running action")
+	}
+	client.server.release(first)
+	client.server.mu.Lock()
+	running := client.server.running[actionKey]
+	client.server.mu.Unlock()
+	if running != first {
+		t.Fatal("the action stopped while a client waited for it")
+	}
+
+	client.server.release(second)
+	<-first.done
+	if code := codes.Code(first.response.Status.GetCode()); code != codes.Canceled {
+		t.Fatalf("status %v", code)
 	}
 }
 

@@ -46,11 +46,12 @@ type Executor struct {
 }
 
 // New creates an executor that builds action directories under workRoot,
-// which must be on the same filesystem as the store, and deletes any left
-// there. It keeps up to idleDirectories finished action directories for later
-// actions to reuse.
+// which must be on the same filesystem as the store. The deleters delete what
+// an earlier run left there. It keeps up to idleDirectories finished action
+// directories for later actions to reuse.
 func New(store *cas.Store, workRoot string, slots int, deleters int, idleDirectories int) (*Executor, error) {
-	if err := os.RemoveAll(workRoot); err != nil {
+	leftovers, err := setAsideLeftovers(workRoot)
+	if err != nil {
 		return nil, err
 	}
 	if err := os.MkdirAll(workRoot, 0o755); err != nil {
@@ -71,17 +72,79 @@ func New(store *cas.Store, workRoot string, slots int, deleters int, idleDirecto
 	for range deleters {
 		go executor.delete()
 	}
+	for _, leftover := range leftovers {
+		executor.deletions <- leftover
+	}
 	return executor, nil
+}
+
+// leftoverSuffix starts the names of the directories that hold what earlier
+// runs left in a work root.
+const leftoverSuffix = ".leftover-"
+
+// setAsideLeftovers moves what an earlier run left at workRoot to a new
+// directory next to it. It returns that directory and every other one that
+// earlier runs set aside and did not finish deleting. After a crash, a work
+// root can hold millions of files, and deleting them takes longer than Windows
+// waits for a service to start, while renaming the work root is quick.
+func setAsideLeftovers(workRoot string) ([]string, error) {
+	parent := filepath.Dir(workRoot)
+	prefix := filepath.Base(workRoot) + leftoverSuffix
+	_, err := os.Lstat(workRoot)
+	if err == nil {
+		aside, err := os.MkdirTemp(parent, prefix)
+		if err != nil {
+			return nil, err
+		}
+		if err := os.Rename(workRoot, filepath.Join(aside, "work")); err != nil {
+			return nil, err
+		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return nil, err
+	}
+	entries, err := os.ReadDir(parent)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var leftovers []string
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.Name(), prefix) {
+			leftovers = append(leftovers, filepath.Join(parent, entry.Name()))
+		}
+	}
+	return leftovers, nil
 }
 
 // delete removes finished action directories. Deleting them after the result
 // is sent keeps it off every action's critical path.
 func (executor *Executor) delete() {
+	// Another program, such as antivirus software, can hold a file open for a
+	// moment in a way that keeps it from being deleted. Nothing signals when
+	// it stops, so each later deletion tries those directories again.
+	var inUse []string
 	for directory := range executor.deletions {
-		if err := cas.RemoveTree(directory); err != nil {
+		inUse = removeDirectories(append(inUse, directory))
+	}
+}
+
+// removeDirectories deletes action directories, and returns those that
+// another program still holds a file in.
+func removeDirectories(directories []string) []string {
+	var inUse []string
+	for _, directory := range directories {
+		err := cas.RemoveTree(directory)
+		if cas.InUse(err) {
+			inUse = append(inUse, directory)
+			continue
+		}
+		if err != nil {
 			panic(fmt.Sprintf("deleting action directory %s: %v", directory, err))
 		}
 	}
+	return inUse
 }
 
 // Execute runs an action and returns its result. A *cas.MissingBlobsError
@@ -113,13 +176,23 @@ func (executor *Executor) Execute(ctx context.Context, action *repb.Action, comm
 		return nil, err
 	}
 	if reused {
-		if err := prepareReused(actionDirectory, tempDirectory); err != nil {
+		err := prepareReused(actionDirectory, tempDirectory)
+		if err == nil {
+			err = executor.restage(inputRootKey, inputRoot)
+		}
+		if cas.InUse(err) {
+			// Another program still holds a file that the earlier action
+			// left, so this action stages a new directory instead.
+			executor.deletions <- actionDirectory
+			actionDirectory = executor.directories.fresh(executor.workRoot)
+			inputRoot = filepath.Join(actionDirectory, "root")
+			tempDirectory = filepath.Join(actionDirectory, "tmp")
+			reused = false
+		} else if err != nil {
 			return nil, err
 		}
-		if err := executor.restage(inputRootKey, inputRoot); err != nil {
-			return nil, err
-		}
-	} else {
+	}
+	if !reused {
 		for _, directory := range []string{inputRoot, tempDirectory} {
 			if err := os.MkdirAll(directory, 0o755); err != nil {
 				return nil, err

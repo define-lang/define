@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"errors"
+	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -158,7 +160,7 @@ func TestTimeoutKillsTheActionAndKeepsItsOutput(t *testing.T) {
 	root := putDirectory(t, store, &repb.Directory{})
 	action := &repb.Action{InputRootDigest: root, Timeout: durationpb.New(200 * time.Millisecond)}
 
-	result, err := executor.Execute(context.Background(), action, testprogram.Command(t, "stdout", "started\n", "sleep", "60"))
+	result, err := executor.Execute(context.Background(), action, testprogram.Command(t, "stdout", "started\n", "block"))
 	var timeoutErr *TimeoutError
 	if !errors.As(err, &timeoutErr) {
 		t.Fatalf("returned %v", err)
@@ -171,17 +173,49 @@ func TestTimeoutKillsTheActionAndKeepsItsOutput(t *testing.T) {
 func TestNoProcessOutlivesItsAction(t *testing.T) {
 	executor, store := newExecutor(t)
 	root := putDirectory(t, store, &repb.Directory{})
-	marker := filepath.Join(t.TempDir(), "survived")
+	listener := listen(t)
+	// The spawned process waits for the test to accept its connection, so the
+	// action cannot finish before the test holds the connection.
+	accepted := make(chan net.Conn, 1)
+	go func() { accepted <- acceptAndRelease(t, listener) }()
 
 	result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root},
-		testprogram.Command(t, "spawn", marker))
+		testprogram.Command(t, "spawn", listener.Addr().String()))
 	if err != nil || result.ExitCode != 0 {
 		t.Fatalf("result %v, %v", result, err)
 	}
-	time.Sleep(1500 * time.Millisecond)
-	if _, err := os.Stat(marker); !errors.Is(err, os.ErrNotExist) {
-		t.Fatal("a background process kept running after its action finished")
+	connection := <-accepted
+	defer connection.Close()
+	// The connection ends only when the spawned process exits, so a process
+	// that outlives its action makes the test time out here.
+	_, _ = io.Copy(io.Discard, connection)
+}
+
+// acceptAndRelease accepts a connection from the test program's connect step,
+// and sends the byte that it waits for.
+func acceptAndRelease(t *testing.T, listener net.Listener) net.Conn {
+	t.Helper()
+	connection, err := listener.Accept()
+	if err != nil {
+		t.Error(err)
+		return nil
 	}
+	if _, err := connection.Write([]byte{0}); err != nil {
+		t.Error(err)
+	}
+	return connection
+}
+
+// listen starts a TCP listener on the loopback interface for the test
+// program's connect and spawn steps.
+func listen(t *testing.T) net.Listener {
+	t.Helper()
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+	return listener
 }
 
 func TestReportsExitCode(t *testing.T) {
@@ -353,16 +387,27 @@ func TestReusedDirectoryHoldsExactlyTheNewInputs(t *testing.T) {
 }
 
 func TestDeletesTheOldestIdleDirectoryBeyondTheLimit(t *testing.T) {
-	executor, store := newReusingExecutor(t, 1)
-	root := putDirectory(t, store, &repb.Directory{})
+	root := t.TempDir()
+	store, err := cas.Open(filepath.Join(root, "cas"), 1<<30, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// With no deleters, the test receives each deletion itself.
+	executor, err := New(store, filepath.Join(root, "work"), 4, 0, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputRoot := putDirectory(t, store, &repb.Directory{})
 	for _, steps := range [][]string{{"stdout", "first"}, {"stdout", "second"}} {
-		if _, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, testprogram.Command(t, steps...)); err != nil {
+		if _, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: inputRoot}, testprogram.Command(t, steps...)); err != nil {
 			t.Fatal(err)
 		}
 	}
-	waitUntil(t, func() bool { return workDirectoryEntries(t, executor) == 1 })
-	if _, err := os.Stat(filepath.Join(executor.workRoot, "2")); err != nil {
-		t.Fatalf("the newest idle directory is gone: %v", err)
+	if deleted := <-executor.deletions; deleted != filepath.Join(executor.workRoot, "1") {
+		t.Fatalf("deleted %s", deleted)
+	}
+	if pending := len(executor.deletions); pending != 0 {
+		t.Fatalf("%d more deletions", pending)
 	}
 }
 
@@ -373,17 +418,6 @@ func workDirectoryEntries(t *testing.T, executor *Executor) int {
 		t.Fatal(err)
 	}
 	return len(entries)
-}
-
-func waitUntil(t *testing.T, condition func() bool) {
-	t.Helper()
-	deadline := time.Now().Add(10 * time.Second)
-	for !condition() {
-		if time.Now().After(deadline) {
-			t.Fatal("timed out")
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
 }
 
 // scriptCommand runs the steps in the input file "script", so that actions
@@ -511,7 +545,7 @@ func TestReuseDeletesSymlinksOutOfTheTreeWithoutFollowingThem(t *testing.T) {
 func TestReusesTheDirectoryOfAnActionThatTimedOut(t *testing.T) {
 	executor, store := newReusingExecutor(t, 4)
 	inputs := &repb.Directory{Files: []*repb.FileNode{{Name: "input.txt", Digest: put(t, store, "input")}}}
-	root := withScript(t, store, inputs, "remove input.txt write junk.txt junk sleep 60")
+	root := withScript(t, store, inputs, "remove input.txt write junk.txt junk block")
 	action := &repb.Action{InputRootDigest: root, Timeout: durationpb.New(500 * time.Millisecond)}
 	var timeoutErr *TimeoutError
 	if _, err := executor.Execute(context.Background(), action, scriptCommand(t)); !errors.As(err, &timeoutErr) {
@@ -554,13 +588,15 @@ func TestConcurrentActionsWithTheSameCommandGetTheirOwnDirectories(t *testing.T)
 		t.Fatal(err)
 	}
 
-	slow := withScript(t, store, &repb.Directory{}, "sleep 1 tree . out/tree.txt")
+	listener := listen(t)
+	script := "connect " + listener.Addr().String() + " tree . out/tree.txt"
+	waiting := withScript(t, store, &repb.Directory{}, script)
 	command := scriptCommand(t)
 	trees := make(chan string, 2)
 	errs := make(chan error, 2)
 	for range 2 {
 		go func() {
-			result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: slow}, command)
+			result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: waiting}, command)
 			if err != nil {
 				errs <- err
 				return
@@ -575,13 +611,29 @@ func TestConcurrentActionsWithTheSameCommandGetTheirOwnDirectories(t *testing.T)
 			trees <- string(contents)
 		}()
 	}
+	// Each action waits until the test closes its connection, so accepting
+	// both connections shows that both actions run at once.
+	var connections []net.Conn
+	for range 2 {
+		connection, err := listener.Accept()
+		if err != nil {
+			t.Fatal(err)
+		}
+		connections = append(connections, connection)
+	}
+	for _, connection := range connections {
+		if _, err := connection.Write([]byte{0}); err != nil {
+			t.Fatal(err)
+		}
+		_ = connection.Close()
+	}
 	for range 2 {
 		if err := <-errs; err != nil {
 			t.Fatal(err)
 		}
 	}
 	for range 2 {
-		if tree := <-trees; tree != "out/\nscript = sleep 1 tree . out/tree.txt" {
+		if tree := <-trees; tree != "out/\nscript = "+script {
 			t.Fatalf("an action saw:\n%s", tree)
 		}
 	}
@@ -615,5 +667,53 @@ func TestReportsMissingInputsOfAReusedDirectory(t *testing.T) {
 	}
 	if entries := workDirectoryEntries(t, executor); entries != 1 {
 		t.Fatalf("%d action directories, so the action did not reuse the earlier one's", entries)
+	}
+}
+
+func TestSetsAsideWhatEarlierRunsLeft(t *testing.T) {
+	root := t.TempDir()
+	store, err := cas.Open(filepath.Join(root, "cas"), 1<<30, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	workRoot := filepath.Join(root, "work")
+	unfinished := filepath.Join(root, "work"+leftoverSuffix+"unfinished")
+	for _, directory := range []string{filepath.Join(workRoot, "1"), filepath.Join(unfinished, "work", "2")} {
+		if err := os.MkdirAll(directory, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(directory, "file"), []byte("left"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// With no deleters, the test receives each deletion itself.
+	executor, err := New(store, workRoot, 4, 0, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if entries := workDirectoryEntries(t, executor); entries != 0 {
+		t.Fatalf("the work root has %d entries", entries)
+	}
+	leftovers := make([]string, len(executor.deletions))
+	for index := range leftovers {
+		leftovers[index] = <-executor.deletions
+	}
+	if len(leftovers) != 2 || !slices.Contains(leftovers, unfinished) {
+		t.Fatalf("leftovers %v", leftovers)
+	}
+	if inUse := removeDirectories(leftovers); len(inUse) != 0 {
+		t.Fatalf("in use: %v", inUse)
+	}
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, entry := range entries {
+		names = append(names, entry.Name())
+	}
+	if !slices.Equal(names, []string{"cas", "work"}) {
+		t.Fatalf("left %v", names)
 	}
 }

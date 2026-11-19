@@ -20,6 +20,9 @@ ast_grep = lint_ast_grep_aspect(
     config = Label("//:sgconfig.yml"),
     rules = Label("//checks:rules"),
     rule_kinds = [
+        "go_binary",
+        "go_library",
+        "go_test",
         "py_binary",
         "py_library",
         "py_test",

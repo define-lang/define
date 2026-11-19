@@ -44,9 +44,15 @@ const finishedOperationLifetime = time.Minute
 
 type operation struct {
 	name         string
+	actionKey    cas.Key
 	actionDigest *repb.Digest
 	done         chan struct{}
 	response     *repb.ExecuteResponse
+	// cancel stops the action. The server calls it when no client waits for
+	// the action any more.
+	cancel context.CancelFunc
+	// waiters is guarded by Server.mu.
+	waiters int
 }
 
 // Server implements the services that Bazel uses for remote execution.
@@ -322,6 +328,7 @@ func (server *Server) Execute(request *repb.ExecuteRequest, stream grpc.ServerSt
 		}
 	}
 	current := server.start(actionKey, request)
+	defer server.release(current)
 	if err := stream.Send(executingOperation(current)); err != nil {
 		return err
 	}
@@ -332,10 +339,14 @@ func (server *Server) Execute(request *repb.ExecuteRequest, stream grpc.ServerSt
 func (server *Server) WaitExecution(request *repb.WaitExecutionRequest, stream grpc.ServerStreamingServer[longrunningpb.Operation]) error {
 	server.mu.Lock()
 	current, found := server.operations[request.Name]
+	if found {
+		server.hold(current)
+	}
 	server.mu.Unlock()
 	if !found {
 		return status.Errorf(codes.NotFound, "no operation named %q", request.Name)
 	}
+	defer server.release(current)
 	return server.wait(current, stream)
 }
 
@@ -346,31 +357,68 @@ func newOperationName() string {
 }
 
 // start starts running an action, or joins the run of an identical action
-// that is already running unless the request skips the cache.
+// that is already running unless the request skips the cache. The caller
+// waits for the operation until it calls release.
 func (server *Server) start(actionKey cas.Key, request *repb.ExecuteRequest) *operation {
 	server.mu.Lock()
 	defer server.mu.Unlock()
 	if !request.SkipCacheLookup {
 		if current, found := server.running[actionKey]; found {
+			server.hold(current)
 			return current
 		}
 	}
-	current := &operation{name: newOperationName(), actionDigest: request.ActionDigest, done: make(chan struct{})}
+	ctx, cancel := context.WithCancel(context.Background())
+	current := &operation{
+		name:         newOperationName(),
+		actionKey:    actionKey,
+		actionDigest: request.ActionDigest,
+		done:         make(chan struct{}),
+		cancel:       cancel,
+	}
 	server.operations[current.name] = current
 	if !request.SkipCacheLookup {
 		server.running[actionKey] = current
 	}
-	go server.run(actionKey, current)
+	server.hold(current)
+	go server.run(ctx, current)
 	return current
 }
 
-// run runs an operation's action to completion even if its clients go away,
-// so that its result is cached for them when they try again.
-func (server *Server) run(actionKey cas.Key, current *operation) {
-	current.response = server.execute(actionKey)
+// hold records a client that waits for an operation. The caller holds
+// server.mu.
+func (server *Server) hold(current *operation) {
+	current.waiters++
+}
+
+// release records that a client no longer waits for an operation. The server
+// cancels an action that no client waits for, since no client needs its
+// result, such as when a build stops at its first failure. A client goes away
+// only when Bazel cancels the action or exits, since the local socket does not
+// break streams otherwise.
+func (server *Server) release(current *operation) {
 	server.mu.Lock()
-	if server.running[actionKey] == current {
-		delete(server.running, actionKey)
+	defer server.mu.Unlock()
+	current.waiters--
+	if current.waiters > 0 {
+		return
+	}
+	// A new request for the same action starts it again, rather than joining
+	// the cancelled run.
+	if server.running[current.actionKey] == current {
+		delete(server.running, current.actionKey)
+	}
+	current.cancel()
+}
+
+// run runs an operation's action until it finishes or is cancelled. A
+// finished action's result is cached for clients that try again.
+func (server *Server) run(ctx context.Context, current *operation) {
+	defer current.cancel()
+	current.response = server.execute(ctx, current.actionKey)
+	server.mu.Lock()
+	if server.running[current.actionKey] == current {
+		delete(server.running, current.actionKey)
 	}
 	server.mu.Unlock()
 	close(current.done)
@@ -381,7 +429,7 @@ func (server *Server) run(actionKey cas.Key, current *operation) {
 	})
 }
 
-func (server *Server) execute(actionKey cas.Key) *repb.ExecuteResponse {
+func (server *Server) execute(ctx context.Context, actionKey cas.Key) *repb.ExecuteResponse {
 	action := &repb.Action{}
 	if err := server.store.ReadMessage(actionKey, action); err != nil {
 		return &repb.ExecuteResponse{Status: executionStatus(err).Proto()}
@@ -394,7 +442,7 @@ func (server *Server) execute(actionKey cas.Key) *repb.ExecuteResponse {
 	if err := server.store.ReadMessage(commandKey, command); err != nil {
 		return &repb.ExecuteResponse{Status: executionStatus(err).Proto()}
 	}
-	result, err := server.executor.Execute(context.Background(), action, command)
+	result, err := server.executor.Execute(ctx, action, command)
 	if err != nil {
 		return &repb.ExecuteResponse{Result: result, Status: executionStatus(err).Proto()}
 	}
@@ -428,6 +476,8 @@ func executionStatus(err error) *status.Status {
 		return missingStatus
 	case errors.As(err, &timeoutErr):
 		return status.New(codes.DeadlineExceeded, err.Error())
+	case errors.Is(err, context.Canceled):
+		return status.New(codes.Canceled, err.Error())
 	default:
 		return status.New(codes.Internal, err.Error())
 	}

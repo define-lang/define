@@ -1,0 +1,22 @@
+id: go-no-sleep
+valid:
+  - |
+    func wait(done chan struct{}) {
+    	<-done
+    }
+  - |
+    func delay() time.Duration {
+    	sleepDuration := 5 * time.Second
+    	return sleepDuration
+    }
+invalid:
+  - |
+    func wait() {
+    	time.Sleep(time.Second)
+    }
+  - |
+    func poll() {
+    	for {
+    		time.Sleep(10 * time.Millisecond)
+    	}
+    }

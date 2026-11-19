@@ -3,17 +3,20 @@
 package testprogram
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"io/fs"
+	"net"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
 	"testing"
-	"time"
 
 	repb "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
 )
@@ -43,8 +46,13 @@ func Main(m *testing.M) {
 //	where PATH         writes the working directory's name to PATH
 //	checktemp OUTSIDE  fails unless each temporary directory variable names a
 //	                   directory other than OUTSIDE
-//	sleep SECONDS      sleeps
-//	spawn PATH         starts a process that writes PATH a second later
+//	block              waits until it is killed
+//	connect ADDRESS    connects to the TCP listener at ADDRESS, waits for
+//	                   the listener to send a byte, writes "connected" to
+//	                   standard output, and waits until the listener closes
+//	                   the connection
+//	spawn ADDRESS      starts a process that connects to ADDRESS, and waits
+//	                   until that process has connected
 //	exit CODE          exits with CODE
 //	terminate          sends itself SIGTERM
 func Command(t *testing.T, steps ...string) *repb.Command {
@@ -129,14 +137,13 @@ func run(arguments []string) error {
 		case "checktemp":
 			err = checkTemp(arguments[1])
 			arguments = arguments[2:]
-		case "sleep":
-			var seconds float64
-			if seconds, err = strconv.ParseFloat(arguments[1], 64); err == nil {
-				time.Sleep(time.Duration(seconds * float64(time.Second)))
-			}
+		case "block":
+			waitForever()
+		case "connect":
+			err = connect(arguments[1])
 			arguments = arguments[2:]
 		case "spawn":
-			err = exec.Command(os.Args[0], "sleep", "1", "write", arguments[1], "survived").Start()
+			err = spawn(arguments[1])
 			arguments = arguments[2:]
 		case "exit":
 			var code int
@@ -148,7 +155,8 @@ func run(arguments []string) error {
 			var process *os.Process
 			if process, err = os.FindProcess(os.Getpid()); err == nil {
 				err = process.Signal(syscall.SIGTERM)
-				time.Sleep(time.Minute)
+				// The signal ends the process.
+				waitForever()
 			}
 			arguments = arguments[1:]
 		default:
@@ -211,4 +219,56 @@ func checkTemp(outside string) error {
 		}
 	}
 	return nil
+}
+
+// connect connects to the TCP listener at address, and waits until the
+// listener closes the connection. It writes "connected" to standard output
+// once the listener has accepted the connection and sent a byte. Windows drops
+// a connection whose process exits before the listener accepts it, so a
+// listener must accept each connection while its process runs.
+func connect(address string) error {
+	connection, err := net.Dial("tcp", address)
+	if err != nil {
+		return err
+	}
+	defer connection.Close()
+	if _, err := io.ReadFull(connection, make([]byte, 1)); err != nil {
+		return err
+	}
+	if _, err := fmt.Println("connected"); err != nil {
+		return err
+	}
+	_, err = io.Copy(io.Discard, connection)
+	return err
+}
+
+// spawn starts a process that connects to address, and returns once that
+// process has connected. The process keeps running after this one exits.
+func spawn(address string) error {
+	child := exec.Command(os.Args[0], "connect", address)
+	output, err := child.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	if err := child.Start(); err != nil {
+		return err
+	}
+	line, err := bufio.NewReader(output).ReadString('\n')
+	if err != nil {
+		return err
+	}
+	if line != "connected\n" {
+		return fmt.Errorf("the spawned process wrote %q", line)
+	}
+	return nil
+}
+
+// waitForever waits until the process is killed. A program whose goroutines
+// all wait on channels, as in a bare select {}, ends with a deadlock error, so
+// it waits for a signal that never comes instead.
+func waitForever() {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt)
+	for range signals {
+	}
 }

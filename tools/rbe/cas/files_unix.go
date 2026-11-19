@@ -28,6 +28,12 @@ func renameBlob(tempPath string, blobPath string, _ Key) error {
 	return os.Rename(tempPath, blobPath)
 }
 
+// InUse reports whether err means that another program holds a file open in a
+// way that keeps it from being deleted, which Unix never does.
+func InUse(error) bool {
+	return false
+}
+
 // RemoveTree deletes a directory tree that holds links to blobs, without
 // changing the blobs.
 func RemoveTree(root string) error {
