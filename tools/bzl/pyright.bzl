@@ -4,8 +4,11 @@ load("@bazel_skylib//rules:common_settings.bzl", "BuildSettingInfo")
 load("@rules_py//py:defs.bzl", "PyInfo", _py_test = "py_test")
 load("@rules_python//python:py_info.bzl", LegacyPyInfo = "PyInfo")
 
-# Native extensions must be present so stub imports can resolve to their
-# implementation. They are not included in PyInfo's transitive sources or stubs.
+# Basedpyright resolves an import to a native extension's stub only when the
+# extension's file exists beside the stub. Basedpyright never reads that file,
+# so an empty placeholder takes the extension's place. A change to the extension's code
+# then reruns a pyright_test only when the change also changes a stub.
+# Extensions are not included in PyInfo's transitive sources or stubs.
 
 _NativeExtensionsInfo = provider(
     "Collects native extensions from dependencies.",
@@ -97,11 +100,24 @@ def _pyright_deps_impl(ctx):
             for dep in ctx.attr.deps
         ],
     )
-    source_and_stub_files = depset(transitive = [transitive_sources, transitive_pyi_files, transitive_native_extensions])
+    source_and_stub_files = depset(transitive = [transitive_sources, transitive_pyi_files])
+    placeholder = ctx.actions.declare_file(ctx.label.name + "_native_extension_placeholder")
+    ctx.actions.write(placeholder, "")
+    placeholders = {}
+    for extension in transitive_native_extensions.to_list():
+        # A short path starts with "../" for a file in another repository, and
+        # a runfiles path starts with that repository's name.
+        if extension.short_path.startswith("../"):
+            placeholders[extension.short_path.removeprefix("../")] = placeholder
+        else:
+            placeholders[ctx.workspace_name + "/" + extension.short_path] = placeholder
     return [
         DefaultInfo(
             files = source_and_stub_files,
-            runfiles = ctx.runfiles(transitive_files = source_and_stub_files),
+            runfiles = ctx.runfiles(
+                transitive_files = source_and_stub_files,
+                root_symlinks = placeholders,
+            ),
         ),
         PyInfo(
             transitive_sources = transitive_sources,
