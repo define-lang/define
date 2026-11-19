@@ -43,7 +43,7 @@ def validate_and_resolve_program(
     """
     program_result = program.result
     tables = association_tables.AssociationTables(
-        program.project_roots(), program_result.source_map
+        program.project_roots, program_result.source_map
     )
     resolver = association_resolver.AssociationResolver(
         program_result.definitions, tables

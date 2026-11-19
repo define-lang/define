@@ -7,7 +7,6 @@ import typing
 import msgspec
 
 from define.compiler import constants
-from define.compiler.config import config_loader
 from define.compiler.errors import diagnostics, syntax_errors
 from define.compiler.validator.structural import (
     file_validation_context,
@@ -15,11 +14,8 @@ from define.compiler.validator.structural import (
 from define.compiler.validator.structural.resolver import path_tracker
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Mapping
-
-    from crates.source_rendering.python import rendering
     from define.compiler import ast
-    from define.compiler.config import local_deps_config
+    from define.compiler.config import project_roots
     from define.compiler.data_structures import define_path
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
@@ -68,41 +64,31 @@ class _DeferredReferenceEdge(msgspec.Struct):
 class ReferenceResolver:
     """Finds the files and definitions that references lead to.
 
-    Decides which files to load, so that no file loads twice, and owns the
-    project roots and their configs. Reports the diagnostics for references
-    that cannot resolve to a definition. Only the coordinator thread may use it.
+    Decides which files to load, so that no file loads twice, and loads the
+    project roots that references lead into. Reports the diagnostics for
+    references that cannot resolve to a definition. Only the coordinator thread
+    may use it.
     """
 
+    _project_roots: project_roots.ProjectRoots
     _path_tracker: path_tracker.PathTracker[file_validator.LoadedFile]
     _deferred_edges: dict[define_path.DefinePath, list[_DeferredReferenceEdge]]
-    # The project roots and universes whose local dependency declares a
-    # sub-root path that another one already declared, so the project cannot
-    # use that universe.
-    _disabled_universes: set[tuple[define_path.DefinePath, str]]
     _program_diagnostics: list[diagnostics.FormattableDiagnostic]
-    _source_map: rendering.SourceMap
 
-    def __init__(self, source_map: rendering.SourceMap):
-        """Initialize with the source map to register the program's files with, and no files loaded."""
-        self._source_map = source_map
+    def __init__(self, roots: project_roots.ProjectRoots):
+        """Initialize with the program's project roots, and no files loaded."""
+        self._project_roots = roots
         self._path_tracker = path_tracker.PathTracker()
         self._deferred_edges = {}
-        self._disabled_universes = set()
         self._program_diagnostics = []
-
-    def project_roots(
-        self,
-    ) -> Mapping[str, tuple[define_path.DefinePath, config_loader.Config]]:
-        """Return the path and config of each project root whose config loaded, by its universe."""
-        return self._path_tracker.project_roots()
 
     def completed_files(self) -> list[file_validator.LoadedFile]:
         """Return every file that finished loading."""
         return self._path_tracker.completed_results()
 
     def program_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:
-        """Return the diagnostics about the program rather than one of its files."""
-        return self._program_diagnostics
+        """Return the diagnostics about the program rather than one of its files, including the ones that loading its project configs found."""
+        return [*self._project_roots.diagnostics(), *self._program_diagnostics]
 
     def validate_reference(
         self,
@@ -158,20 +144,19 @@ class ReferenceResolver:
         Reports why the edge cannot resolve in the file, unless that was
         already reported elsewhere.
         """
-        target_root = self._universe_root(edge, referencing_root)
-        # The config error for a disabled universe was already reported.
-        if target_root is None:
+        # Edges with an explicit FQUN only exist when file validation found the
+        # FQUN in the enclosing root's local deps, or when the universe needs
+        # no configuration.
+        target = self._project_roots.load_sub_root_config(
+            edge.global_name_reference.name_content.source_fqun, referencing_root
+        )
+        # Why the universe cannot be used was already reported.
+        if target is None:
             return None
+        target_root, target_root_config = target
         target_file_path = edge.global_name_reference.name_content.path.file_path()
         target_file = target_root / target_file_path
-        if self._path_tracker.is_under_failed_root(target_file):
-            return None
-        target_root_config = self._target_root_config(
-            edge, target_root, referencing_root
-        )
-        if target_root_config is None:
-            return None
-        if self._check_target_in_declared_sub_root(
+        if self._check_target_in_sub_root(
             edge, target_root, target_file, source_definition
         ):
             return None
@@ -217,66 +202,21 @@ class ReferenceResolver:
                 resolved_definitions.append(outcome)
         return resolved_definitions
 
-    def _target_root_config(
-        self,
-        edge: reference_graph.ReferenceEdge,
-        target_root: define_path.DefinePath,
-        referencing_root: define_path.DefinePath,
-    ) -> config_loader.Config | None:
-        """Return the config of the project root that an edge from referencing_root leads into, loading it if needed.
-
-        Returns None, after recording the config's diagnostics, if the config
-        cannot load.
-        """
-        existing = self._path_tracker.config_for_root(target_root)
-        if existing is not None:
-            return existing
-        # A short-form reference stays in the referencing root, whose config is
-        # loaded, so the reference names its universe.
-        fqun = typing.cast("str", edge.global_name_reference.name_content.source_fqun)
-        # The standard universe needs no local dependency entry.
-        # TODO: Remove this special case once the Define Standard Library
-        # exists.
-        if fqun == constants.STANDARD_UNIVERSE:
-            return self._load_root_config(target_root)
-        return self._load_root_config(
-            target_root, self._path_tracker.sub_root_entry(fqun, referencing_root)
-        )
-
-    def _universe_root(
-        self,
-        edge: reference_graph.ReferenceEdge,
-        referencing_root: define_path.DefinePath,
-    ) -> define_path.DefinePath | None:
-        """Return the root of the universe an edge names, or None if the referencing project cannot use it."""
-        fqun = edge.global_name_reference.name_content.source_fqun
-        if fqun is not None and (referencing_root, fqun) in self._disabled_universes:
-            return None
-        # Edges with an explicit FQUN only exist when file validation found the
-        # FQUN in the enclosing root's local deps, or when the universe needs
-        # no configuration, so the universe always has a root.
-        return typing.cast(
-            "define_path.DefinePath",
-            self._path_tracker.universe_root(fqun, referencing_root),
-        )
-
-    def _check_target_in_declared_sub_root(
+    def _check_target_in_sub_root(
         self,
         edge: reference_graph.ReferenceEdge,
         target_root: define_path.DefinePath,
         target_file: define_path.DefinePath,
         source_definition: validation_result.DefinitionValidationResult,
     ) -> bool:
-        """Check if a reference leads into a sub-root that the target universe's project declares.
+        """Check if a reference leads into a sub-root that the target universe's project lists.
 
         Returns True (and appends a diagnostic) when the edge should be skipped.
         """
-        declared_sub_root = self._path_tracker.declared_sub_root_containing(
-            target_root, target_file
-        )
-        if declared_sub_root is None:
+        sub_root = self._project_roots.find_sub_root_between(target_root, target_file)
+        if sub_root is None:
             return False
-        sub_root_path, entry = declared_sub_root
+        sub_root_path, entry = sub_root
         source_definition.diagnostics.append(
             diagnostics.PathInsideOtherUniverseDiagnostic(
                 location=edge.global_name_reference.name_content.path.location,
@@ -315,10 +255,7 @@ class ReferenceResolver:
         # not help.
         # TODO: Remove this special case once the Define Standard Library
         # exists.
-        if (
-            self._path_tracker.find_enclosing_root(target_file)
-            == constants.STANDARD_LIBRARY_ROOT
-        ):
+        if target_loaded_file.context.root_prefix == constants.STANDARD_LIBRARY_ROOT:
             if isinstance(target_load_failure, syntax_errors.SourceFileNotFound):
                 self._path_tracker.mark_not_found(target_file)
             elif target_definition is not None:
@@ -364,68 +301,3 @@ class ReferenceResolver:
             )
             return UNRESOLVED
         return ResolvedDefinition(target_loaded_file, target_definition)
-
-    def _load_root_config(
-        self,
-        root_prefix: define_path.DefinePath,
-        declaring_entry: local_deps_config.LocalDependencyEntry | None = None,
-    ) -> config_loader.Config | None:
-        """Load project config for a root and register it.
-
-        Records the config's diagnostics. They are in the config, not at a
-        reference, so they are recorded once, however many references lead
-        into the root. If the config cannot be used, marks the root failed and
-        returns None.
-        """
-        result = config_loader.ConfigLoader(
-            root_prefix, self._source_map
-        ).load_project_root_config(declaring_entry)
-        self._program_diagnostics.extend(result.diagnostics)
-        if result.config is None:
-            self._path_tracker.mark_root_failed(root_prefix)
-            return None
-        root_config = result.config
-        existing = self._path_tracker.project_root_for_fqun(root_config.fqun.canonical)
-        if existing is not None and existing[0] != root_prefix:
-            _, existing_config = existing
-            self._path_tracker.mark_root_failed(root_prefix)
-            self._program_diagnostics.append(
-                diagnostics.DuplicateFqunDiagnostic(
-                    location=root_config.fqun.location,
-                    fqun=root_config.fqun.canonical,
-                    existing_location=existing_config.fqun.location,
-                )
-            )
-            return None
-        self._path_tracker.register_project_root(root_prefix, root_config)
-        self._declare_sub_roots(root_prefix, root_config)
-        return root_config
-
-    def _declare_sub_roots(
-        self,
-        root_prefix: define_path.DefinePath,
-        root_config: config_loader.Config,
-    ):
-        """Record the sub-roots that a loaded project's local dependencies declare."""
-        for entry in root_config.sub_roots.values():
-            sub_root_path = root_prefix / entry.path
-            if entry.universe == root_config.fqun.canonical:
-                self._disabled_universes.add((root_prefix, entry.universe))
-                self._program_diagnostics.append(
-                    diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
-                        location=entry.universe_location,
-                        universe=entry.universe,
-                    )
-                )
-                continue
-            existing_entry = self._path_tracker.declare_sub_root(sub_root_path, entry)
-            if existing_entry is None:
-                continue
-            self._disabled_universes.add((root_prefix, entry.universe))
-            self._program_diagnostics.append(
-                diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
-                    location=entry.path_location,
-                    sub_root_path=str(sub_root_path),
-                    first_location=existing_entry.path_location,
-                )
-            )

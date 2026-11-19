@@ -124,6 +124,7 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler:work_pool",
         "//define/compiler/config:config_loader",
+        "//define/compiler/config:project_roots",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/graphs:reference_graph",

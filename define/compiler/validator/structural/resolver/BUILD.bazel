@@ -1,6 +1,5 @@
 load("@rules_py//py:defs.bzl", "py_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
-load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
@@ -11,6 +10,7 @@ py_library(
         ":reference_resolver",
         "//crates/source_rendering/python:rendering",
         "//define/compiler:constants",
+        "//define/compiler/config:project_roots",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator/structural:file_validation_context",
@@ -24,11 +24,11 @@ py_library(
     visibility = ["//define/compiler/validator/structural:__pkg__"],
     deps = [
         ":reference_resolver",
-        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
-        "//define/compiler:constants",
         "//define/compiler/config:config_loader",
         "//define/compiler/config:global_names",
+        "//define/compiler/config:project_config",
+        "//define/compiler/config:project_roots",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/graphs:reference_graph",
@@ -40,29 +40,7 @@ py_library(
 py_library(
     name = "path_tracker",
     srcs = ["path_tracker.py"],
-    deps = [
-        "//define/compiler:constants",
-        "//define/compiler/config:config_loader",
-        "//define/compiler/config:local_deps_config",
-        "//define/compiler/data_structures:define_path",
-        "@pypi//msgspec",
-    ],
-)
-
-py_test(
-    name = "path_tracker_test",
-    size = "small",
-    srcs = ["path_tracker_test.py"],
-    deps = [
-        ":path_tracker",
-        "//crates/source_rendering/python:rendering",
-        "//define/compiler:constants",
-        "//define/compiler/config:config_loader",
-        "//define/compiler/config:local_deps_config",
-        "//define/compiler/data_structures:define_path",
-        "//define/compiler/parsing:test_helpers",
-        "@pypi//pytest",
-    ],
+    deps = ["//define/compiler/data_structures:define_path"],
 )
 
 py_library(
@@ -71,11 +49,9 @@ py_library(
     visibility = ["//define/compiler/validator/structural:__pkg__"],
     deps = [
         ":path_tracker",
-        "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler:constants",
-        "//define/compiler/config:config_loader",
-        "//define/compiler/config:local_deps_config",
+        "//define/compiler/config:project_roots",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:syntax_errors",
@@ -95,7 +71,6 @@ pyright_test(
         ":filesystem_reference_resolver",
         ":non_filesystem_reference_resolver",
         ":path_tracker",
-        ":path_tracker_test",
         ":reference_resolver",
     ],
 )

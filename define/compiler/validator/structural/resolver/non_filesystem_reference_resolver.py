@@ -11,14 +11,13 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler import constants
-from define.compiler.config import config_loader, global_names
+from define.compiler.config import global_names, project_config, project_roots
 from define.compiler.errors import diagnostics
 from define.compiler.validator.structural.resolver import reference_resolver
 
 if typing.TYPE_CHECKING:
-    from crates.source_rendering.python import rendering
     from define.compiler import ast
+    from define.compiler.config import config_loader
     from define.compiler.data_structures import define_path
     from define.compiler.graphs import reference_graph
     from define.compiler.validator import validation_result
@@ -43,10 +42,10 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
     _source_universes: set[str]
 
     def __init__(
-        self, source_file: file_validator.LoadedFile, source_map: rendering.SourceMap
+        self, source_file: file_validator.LoadedFile, roots: project_roots.ProjectRoots
     ):
-        """Initialize with the supplied source as the program's only loaded file, and the source map to register config files with."""
-        super().__init__(source_map)
+        """Initialize with the supplied source as the program's only loaded file, and the program's project roots."""
+        super().__init__(roots)
         self._source_file = source_file
         self._unknown_universes = set()
         self._source_universes = {
@@ -121,11 +120,9 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         fails to load, records the config's diagnostics. Either way, returns
         None then and for every later reference.
         """
-        existing = self._path_tracker.config_for_root(constants.PROJECT_ROOT)
-        if existing is not None:
-            return existing
-        if self._path_tracker.is_failed_root(constants.PROJECT_ROOT):
-            return None
+        root_config = self._project_roots.load_project_root_config()
+        if not isinstance(root_config, project_roots.NoProjectConfig):
+            return root_config
         reference = edge.global_name_reference
         names_source_universe = (
             reference.effective_fqun.canonical in self._source_universes
@@ -137,11 +134,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
             # is in, which the supplied source defines, so a reference to any
             # other universe writes its FQUN.
             location = typing.cast("ast.Fqun", reference.name_content.fqun).location
-        loader = config_loader.ConfigLoader(constants.PROJECT_ROOT, self._source_map)
-        if loader.is_project_root():
-            return self._load_root_config(constants.PROJECT_ROOT)
-        self._path_tracker.mark_root_failed(constants.PROJECT_ROOT)
-        config_path = str(loader.config_path())
+        config_path = str(project_config.CONFIG_FILE.path)
         if names_source_universe:
             self._source_file.file_diagnostics.append(
                 diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(

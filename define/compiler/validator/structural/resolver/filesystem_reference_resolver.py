@@ -16,6 +16,7 @@ from define.compiler.validator.structural.resolver import reference_resolver
 
 if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
+    from define.compiler.config import project_roots
 
 
 @typing.final
@@ -24,9 +25,11 @@ class FilesystemReferenceResolver(reference_resolver.ReferenceResolver):
 
     _file_validator: file_validator.FileStructuralValidator
 
-    def __init__(self, source_map: rendering.SourceMap):
-        """Initialize with the source map to register the program's files with, and no files loaded."""
-        super().__init__(source_map)
+    def __init__(
+        self, source_map: rendering.SourceMap, roots: project_roots.ProjectRoots
+    ):
+        """Initialize with the source map to register the program's files with, the program's project roots, and no files loaded."""
+        super().__init__(roots)
         self._file_validator = file_validator.FileStructuralValidator(source_map)
 
     def load_entry_file(
@@ -41,10 +44,10 @@ class FilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         if isinstance(path_in_project, diagnostics.PathOutsideProjectRootDiagnostic):
             self._program_diagnostics.append(path_in_project)
             return None
-        root_prefix = constants.PROJECT_ROOT
-        root_config = self._load_root_config(root_prefix)
+        root_config = self._project_roots.load_entry_file_project_config()
         if root_config is None:
             return None
+        root_prefix = constants.PROJECT_ROOT
         file_path = define_path.DefinePathFromPosix(path_in_project)
         full_path = root_prefix / file_path
         entry_file = self._file_validator.load_file(

@@ -18,13 +18,14 @@ from crates.source_rendering.python import rendering
 
 if typing.TYPE_CHECKING:
     import pathlib
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable
 
     from define.compiler.config import config_loader
     from define.compiler.data_structures import define_path
 
 
 from define.compiler import ast, work_pool
+from define.compiler.config import project_roots
 from define.compiler.errors import diagnostics
 from define.compiler.graphs import reference_graph, reference_graph_order
 from define.compiler.validator import validation_result
@@ -51,9 +52,13 @@ def validate_program(
     must remain false when validating a program for code generation.
     """
     source_map = rendering.SourceMap()
-    resolver = filesystem_reference_resolver.FilesystemReferenceResolver(source_map)
+    roots = project_roots.ProjectRoots(source_map)
+    resolver = filesystem_reference_resolver.FilesystemReferenceResolver(
+        source_map, roots
+    )
     run = _ProgramValidationRun(
         resolver,
+        roots,
         source_map,
         allow_entry_action_interface_positions=allow_entry_action_interface_positions,
     )
@@ -80,11 +85,13 @@ def validate_program_non_filesystem(
     """
     source_map = rendering.SourceMap(in_memory_source=source)
     source_file = file_validator.FileStructuralValidator(source_map).load_source(source)
+    roots = project_roots.ProjectRoots(source_map)
     resolver = non_filesystem_reference_resolver.NonFilesystemReferenceResolver(
-        source_file, source_map
+        source_file, roots
     )
     run = _ProgramValidationRun(
         resolver,
+        roots,
         source_map,
         allow_entry_action_interface_positions=allow_entry_action_interface_positions,
     )
@@ -112,6 +119,7 @@ class StructurallyValidatedProgram:
         """Initialize with the run that validated the program that the entry file references, directly or indirectly, and its result."""
         self._run = run
         self.result = result
+        self.project_roots = run.project_roots
 
     def load_associated(
         self,
@@ -129,12 +137,6 @@ class StructurallyValidatedProgram:
         self.result.file_results = self._run.file_results()
         self.result.diagnostics = self._run.diagnostics()
 
-    def project_roots(
-        self,
-    ) -> Mapping[str, tuple[define_path.DefinePath, config_loader.Config]]:
-        """Return the path and config of each project root whose config loaded, by its universe."""
-        return self._run.project_roots()
-
 
 class _ProgramValidationRun:
     """The state of structurally validating one program.
@@ -146,6 +148,7 @@ class _ProgramValidationRun:
     """
 
     _resolver: reference_resolver.ReferenceResolver
+    project_roots: project_roots.ProjectRoots
     _source_map: rendering.SourceMap
     _file_validator: file_validator.FileStructuralValidator
     # The graph of the definitions that the current run validates, which
@@ -163,12 +166,14 @@ class _ProgramValidationRun:
     def __init__(
         self,
         resolver: reference_resolver.ReferenceResolver,
+        roots: project_roots.ProjectRoots,
         source_map: rendering.SourceMap,
         *,
         allow_entry_action_interface_positions: bool,
     ):
-        """Initialize with the resolver for the program's references, the source map that its files are registered with, and nothing validated."""
+        """Initialize with the resolver for the program's references, the program's project roots, the source map that its files are registered with, and nothing validated."""
         self._resolver = resolver
+        self.project_roots = roots
         self._source_map = source_map
         self._file_validator = file_validator.FileStructuralValidator(source_map)
         self._reference_graph = reference_graph.ReferenceGraph()
@@ -234,14 +239,16 @@ class _ProgramValidationRun:
         # that are not, and cannot be part of a cycle, since no encoding or
         # Encoding Operation references a logical operation or value quality.
         self._reference_graph = reference_graph.ReferenceGraph()
-        project_roots = self.project_roots()
         with work_pool.WorkPool(max_workers=max_workers) as pool:
             for edge in edges:
                 # An association is in the config of the project whose
-                # universe its references are written in.
-                referencing_root, _ = project_roots[
-                    edge.global_name_reference.enclosing_fqun.canonical
-                ]
+                # universe its references are written in, which is loaded.
+                referencing_root, _ = typing.cast(
+                    "tuple[define_path.DefinePath, config_loader.Config]",
+                    self.project_roots.get_loaded_root_config(
+                        edge.global_name_reference.enclosing_fqun.canonical
+                    ),
+                )
                 self._follow_reference(
                     referencing_root,
                     None,
@@ -253,12 +260,6 @@ class _ProgramValidationRun:
                 )
             pool.run_until_idle()
         del self._reference_graph
-
-    def project_roots(
-        self,
-    ) -> Mapping[str, tuple[define_path.DefinePath, config_loader.Config]]:
-        """Return the path and config of each project root whose config loaded, by its universe."""
-        return self._resolver.project_roots()
 
     def file_results(self) -> list[validation_result.FileValidationResult]:
         """Return the result of each loaded file, without the reference edges that structural validation follows."""

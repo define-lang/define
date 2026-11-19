@@ -110,7 +110,7 @@ def _run_pipeline(
     resolver = association_resolver.AssociationResolver(
         structural_result.definitions,
         association_tables.AssociationTables(
-            program.project_roots(), structural_result.source_map
+            program.project_roots, structural_result.source_map
         ),
     )
     validator = reference_graph_validator.ReferenceGraphValidator(

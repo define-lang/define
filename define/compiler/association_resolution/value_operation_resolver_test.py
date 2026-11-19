@@ -19,6 +19,7 @@ from define.compiler.association_resolution import (
     literal_encoder,
     value_operation_resolver,
 )
+from define.compiler.config import project_roots
 from define.compiler.parsing import test_helpers
 
 if typing.TYPE_CHECKING:
@@ -52,9 +53,12 @@ def test_concurrent_resolutions_work_out_each_key_once(
     value_quality = view.quality_assignment_block.value_quality
     assert value_quality is not None
     view_encodings = {view.typed_name.source_typed_name: value_quality}
+    source_map = rendering.SourceMap()
     resolver = value_operation_resolver.ValueOperationResolver(
         associations.Associations(
-            association_tables.AssociationTables({}, rendering.SourceMap())
+            association_tables.AssociationTables(
+                project_roots.ProjectRoots(source_map), source_map
+            )
         ),
         literal_encoder.LiteralEncoder({}),
     )
