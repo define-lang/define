@@ -51,6 +51,24 @@ def test_one_component():
     assert fqun.universe.name == "standard"
 
 
+def test_empty_multiverse_is_located_at_its_separator():
+    fqun = parser.parse_fqun(b":define-lang.org:parser", "c.defcl", 3, 7)
+    assert isinstance(fqun, ast.Fqun)
+    assert fqun.multiverse is not None
+    assert fqun.multiverse.name == ""
+    assert fqun.multiverse.location == _location(7, 7)
+    assert fqun.authority is not None
+    assert fqun.authority.location == _location(8, 22)
+    assert fqun.universe.location == _location(24, 29)
+
+
+def test_empty_universe_at_the_end_is_located_at_its_separator():
+    fqun = parser.parse_fqun(b"define-lang.org:", "c.defcl", 3, 7)
+    assert isinstance(fqun, ast.Fqun)
+    assert fqun.universe.name == ""
+    assert fqun.universe.location == _location(22, 22)
+
+
 def test_too_many_components():
     assert parser.parse_fqun(
         b"a:b:c:d", "c.defcl", 3, 7

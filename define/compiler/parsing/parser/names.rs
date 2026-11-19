@@ -550,7 +550,7 @@ impl<'py, 'source> Parser<'py, 'source> {
         let mut component_start = start;
         let multiverse = match multiverse {
             Some(name) => {
-                let (location, name, end) = self.fqun_component(name, component_start)?;
+                let (location, name, end) = self.fqun_component(name, component_start, true)?;
                 component_start = end.next_column();
                 Some(self.ast.multiverse(location, name)?)
             }
@@ -558,14 +558,15 @@ impl<'py, 'source> Parser<'py, 'source> {
         };
         let authority = match authority {
             Some(name) => {
-                let (location, name, end) = self.fqun_component(name, component_start)?;
+                let (location, name, end) = self.fqun_component(name, component_start, true)?;
                 component_start = end.next_column();
                 Some(self.ast.authority(location, name)?)
             }
             None => None,
         };
+        // A whole FQUN, with no path, ends where its universe does.
         let (universe_location, universe_name, end) =
-            self.fqun_component(universe, component_start)?;
+            self.fqun_component(universe, component_start, last < content.bytes.len())?;
         let universe_node = self.ast.universe(universe_location, universe_name)?;
         let location = self.ast.location(start, end)?;
         // The FQUN's canonical form is its components joined by `:`, as they
@@ -583,14 +584,23 @@ impl<'py, 'source> Parser<'py, 'source> {
     }
 
     /// Returns the location and name of the FQUN component `name` that begins
-    /// at `start`, and the position after it.
+    /// at `start`, and the position after it. `followed_by_separator` is
+    /// whether a `:` follows the component.
     fn fqun_component(
         &mut self,
         name: SourceText<'source>,
         start: Position,
+        followed_by_separator: bool,
     ) -> PyResult<(SourceLocation<'py>, Bound<'py, PyString>, Position)> {
         let end = start.columns_later(name.character_count());
-        let location = self.ast.location(start, end)?;
+        // An empty component is located at the `:` after it, or at the `:`
+        // before it if the text ends there, so that a diagnostic about it
+        // points at something.
+        let location = match (name.bytes.is_empty(), followed_by_separator) {
+            (false, _) => self.ast.location(start, end)?,
+            (true, true) => self.ast.location(start, end.next_column())?,
+            (true, false) => self.ast.location(start.previous_column(), start)?,
+        };
         Ok((location, self.ast.interned(name)?, end))
     }
 }
