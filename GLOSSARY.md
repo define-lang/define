@@ -11,6 +11,9 @@ Use these exact terms for these Define concepts. "Not:" lists terms to avoid.
 - **Action Requirement**: An occupancy requirement or value requirement the
   compiler infers for a contracted position. Callers must satisfy it before
   triggering the action. Not: constraint.
+- **argument**: What one interface view of an executed operation looks at: a
+  position, a view, or a literal. An Operation Argument Statement gives an
+  argument in source code.
 - **composite value operation**: A value operation that has more than one step.
   Each local view it defines, View Setting Statement it has, and logical
   operation or value operation it executes is one step. Not: compiled value
