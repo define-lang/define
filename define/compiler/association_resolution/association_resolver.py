@@ -19,9 +19,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
     from define.compiler import ast
-    from define.compiler.association_resolution import (
-        association_tables,
-    )
+    from define.compiler.config import project_roots
     from define.compiler.graphs import reference_graph, reference_graph_order
 
 
@@ -36,11 +34,11 @@ class AssociationResolver:
     def __init__(
         self,
         definitions: Mapping[str, ast.GlobalDefinition],
-        tables: association_tables.AssociationTables,
+        roots: project_roots.ProjectRoots,
     ):
-        """Initialize with the program's definitions by full typed name, and each project's association table."""
+        """Initialize with the program's definitions by full typed name, and the program's project roots, whose configs have the associations."""
         self._definitions = definitions
-        self._associations = associations.Associations(tables)
+        self._associations = associations.Associations(roots)
         self._literal_encoder = literal_encoder.LiteralEncoder(definitions)
         self._value_operations = value_operation_resolver.ValueOperationResolver(
             self._associations, self._literal_encoder

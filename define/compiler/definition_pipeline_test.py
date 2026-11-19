@@ -12,10 +12,7 @@ from unittest import mock
 import pytest
 
 from define.compiler import definition_pipeline, work_pool
-from define.compiler.association_resolution import (
-    association_resolver,
-    association_tables,
-)
+from define.compiler.association_resolution import association_resolver
 from define.compiler.validator.reference_graph import (
     action_contract,
     action_definition_validator,
@@ -108,9 +105,7 @@ def _run_pipeline(
     structural_result = program.result
     resolver = association_resolver.AssociationResolver(
         structural_result.definitions,
-        association_tables.AssociationTables(
-            program.project_roots, structural_result.source_map
-        ),
+        program.project_roots,
     )
     validator = reference_graph_validator.ReferenceGraphValidator(
         structural_result.definitions,

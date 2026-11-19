@@ -7,10 +7,7 @@ import typing
 import msgspec
 
 from define.compiler import definition_pipeline, work_pool
-from define.compiler.association_resolution import (
-    association_resolver,
-    association_tables,
-)
+from define.compiler.association_resolution import association_resolver
 from define.compiler.validator.reference_graph import reference_graph_validator
 
 if typing.TYPE_CHECKING:
@@ -42,11 +39,8 @@ def validate_and_resolve_program(
     validation tests of behavior that requires such a program.
     """
     program_result = program.result
-    tables = association_tables.AssociationTables(
-        program.project_roots, program_result.source_map
-    )
     resolver = association_resolver.AssociationResolver(
-        program_result.definitions, tables
+        program_result.definitions, program.project_roots
     )
     validator = reference_graph_validator.ReferenceGraphValidator(
         program_result.definitions,
@@ -69,7 +63,7 @@ def validate_and_resolve_program(
         program_result.encoding_operations
     )
     program_result.diagnostic_lists.extend(
-        [found_diagnostics, encoding_operation_diagnostics, tables.config_diagnostics()]
+        [found_diagnostics, encoding_operation_diagnostics]
     )
     return CompilerValidationResult(
         program_validation=program_result,

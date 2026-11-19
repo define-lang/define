@@ -146,6 +146,7 @@ py_library(
     srcs = ["project_roots.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":association_config",
         ":config_loader",
         ":local_deps_config",
         "//crates/source_rendering/python:rendering",

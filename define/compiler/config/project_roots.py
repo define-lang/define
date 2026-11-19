@@ -2,18 +2,25 @@
 
 from __future__ import annotations
 
+import types
 import typing
 
 import msgspec
 
 from define.compiler import constants
-from define.compiler.config import config_loader
+from define.compiler.config import association_config, config_loader
 from define.compiler.data_structures import define_path
 from define.compiler.errors import diagnostics
 
 if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from define.compiler.config import local_deps_config
+
+
+_NO_ASSOCIATIONS = association_config.AssociationTable(
+    value_encodings=types.MappingProxyType({}),
+    encoding_operations=types.MappingProxyType({}),
+)
 
 
 @typing.final
@@ -48,10 +55,11 @@ class _SubRootTreeNode(msgspec.Struct, eq=False):
 
 @typing.final
 class ProjectRoots:
-    """The program's project roots, with their configs and the sub-roots that their configs list.
+    """The program's project roots, with their configs, the sub-roots that their configs list, and their associations.
 
-    Loads each project config once, and records the diagnostics that loading
-    finds. Only the coordinator thread may use it.
+    Loads each project config and each project's associations once, and
+    records the diagnostics that loading finds. Only the coordinator thread may
+    use it.
     """
 
     def __init__(self, source_map: rendering.SourceMap):
@@ -61,6 +69,9 @@ class ProjectRoots:
         self._by_universe: dict[
             str, tuple[define_path.DefinePath, config_loader.Config]
         ] = {}
+        # The associations of each universe that has a loaded project root and
+        # whose associations were read.
+        self._association_tables: dict[str, association_config.AssociationTable] = {}
         # The project roots whose config cannot be used.
         self._failed: set[define_path.DefinePath] = set()
         # A tree of directories, because a reference has to find whether any
@@ -131,6 +142,29 @@ class ProjectRoots:
     ) -> tuple[define_path.DefinePath, config_loader.Config] | None:
         """Return the path and config of the project root whose universe is universe, if it is loaded."""
         return self._by_universe.get(universe)
+
+    def get_association_table(
+        self, universe: str
+    ) -> association_config.AssociationTable:
+        """Return the associations of the project whose universe is universe, loading them if this is the first read."""
+        table = self._association_tables.get(universe)
+        if table is not None:
+            return table
+        loaded_root = self._by_universe.get(universe)
+        # Source compiled without a project root has no associations.
+        # TODO: Decide whether source compiled in a non-filesystem context,
+        # such as a REPL, uses the associations of the project root it is
+        # compiled in. Today it does only when one of its references
+        # happened to load the project config.
+        if loaded_root is None:
+            return _NO_ASSOCIATIONS
+        root, root_config = loaded_root
+        table, table_diagnostics = association_config.load_association_table(
+            root, self._source_map, root_config
+        )
+        self.diagnostics.extend(table_diagnostics)
+        self._association_tables[universe] = table
+        return table
 
     def find_sub_root_between(
         self, root: define_path.DefinePath, path: define_path.DefinePath

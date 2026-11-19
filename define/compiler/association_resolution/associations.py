@@ -13,8 +13,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
     from define.compiler import ast
-    from define.compiler.association_resolution import association_tables
-    from define.compiler.config import encoding_operations_config
+    from define.compiler.config import encoding_operations_config, project_roots
 
 
 class ChosenEncodingOperation(msgspec.Struct, frozen=True):
@@ -36,9 +35,9 @@ class Associations:
     others, and only after everything that reads its associations is added.
     """
 
-    def __init__(self, tables: association_tables.AssociationTables):
-        """Initialize with each project's association table, and nothing added."""
-        self._tables = tables
+    def __init__(self, roots: project_roots.ProjectRoots):
+        """Initialize with the program's project roots, whose configs have the associations, and nothing added."""
+        self._project_roots = roots
         # The edge to each value quality's one encoding, by the value
         # quality's full typed name.
         self._value_encodings: dict[str, reference_graph.ReferenceEdge] = {}
@@ -71,7 +70,7 @@ class Associations:
     ) -> list[diagnostics.Diagnostic]:
         """Find the one encoding associated with a value quality, and return a diagnostic if it has none."""
         name_content = definition.typed_name.name_content
-        value_encodings = self._tables.table(
+        value_encodings = self._project_roots.get_association_table(
             name_content.fqun.canonical
         ).value_encodings
         # The diagnostic that keeps the project's Value Encoding Associations
@@ -112,7 +111,7 @@ class Associations:
     ) -> list[diagnostics.Diagnostic]:
         """Add a logical operation's associations with Encoding Operations, and return a diagnostic for each association that cannot be used."""
         name_content = definition.typed_name.name_content
-        associated_encoding_operations = self._tables.table(
+        associated_encoding_operations = self._project_roots.get_association_table(
             name_content.fqun.canonical
         ).encoding_operations
         # The diagnostic that keeps the project's Encoding Operation
