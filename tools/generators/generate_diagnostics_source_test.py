@@ -6,7 +6,7 @@ import click.testing
 import pytest
 
 from define.compiler import driver
-from define.compiler.errors import diagnostics
+from define.compiler.errors import parser_diagnostics, reference_graph_diagnostics
 from define.compiler.parsing import parser
 from tools.generators import generate_diagnostics_source as gen
 
@@ -21,7 +21,10 @@ def test_exact_diagnostics_and_formatting(count: int, name_length: int, padding:
     all_diagnostics = result.program_validation.sorted_diagnostics()
     lines: list[int] = []
     for diagnostic in all_diagnostics:
-        assert type(diagnostic) is diagnostics.CreateInOccupiedPositionDiagnostic
+        assert (
+            type(diagnostic)
+            is reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+        )
         lines.append(diagnostic.location.line)
     assert lines == list(range(padding + 7, padding + 7 + 3 * count, 3))
     formatted = result.error_strings()
@@ -69,7 +72,7 @@ def test_indentation_diagnostics(width: int):
     result = parser.parse(source.encode(), "test.dfn")
     assert result.load_failure is None
     assert [type(diagnostic) for diagnostic in result.diagnostics] == [
-        diagnostics.IncorrectIndentationDiagnostic
+        parser_diagnostics.IncorrectIndentationDiagnostic
     ] * 10
 
 

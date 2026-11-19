@@ -5,12 +5,14 @@ from __future__ import annotations
 import typing
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import abstract_program
 from define.compiler.validator.structural import name_validators
 
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Mapping, Sequence
+
+    from define.compiler.errors import diagnostics
 
 
 class OperationArgumentsValidator:
@@ -170,7 +172,7 @@ class OperationArgumentsValidator:
             index = view_indexes.get(view_name)
             if index is None:
                 validation_diagnostics.append(
-                    diagnostics.UndefinedOperationViewDiagnostic(
+                    reference_graph_diagnostics.UndefinedOperationViewDiagnostic(
                         location=argument.view.location,
                         view_name=view_name,
                         operation_name=operation_name,
@@ -200,7 +202,7 @@ class OperationArgumentsValidator:
                 # misplaced argument, instead of reporting each one relative to
                 # another.
                 validation_diagnostics.append(
-                    diagnostics.OperationArgumentOrderDiagnostic(
+                    reference_graph_diagnostics.OperationArgumentOrderDiagnostic(
                         location=argument.view.location,
                         view_name=argument.view.source_typed_name,
                         operation_name=operation_name,
@@ -227,7 +229,7 @@ class OperationArgumentsValidator:
             # Views that share a name share an argument.
             if view_indexes[view_name] not in arguments:
                 validation_diagnostics.append(
-                    diagnostics.MissingOperationArgumentDiagnostic(
+                    reference_graph_diagnostics.MissingOperationArgumentDiagnostic(
                         location=executed_name.location,
                         view_name=view_name,
                         operation_name=operation_name,
@@ -255,7 +257,7 @@ class OperationArgumentsValidator:
             case ast.Literal():
                 if interface_view.is_output:
                     validation_diagnostics.append(
-                        diagnostics.OutputViewLooksAtLiteralDiagnostic(
+                        reference_graph_diagnostics.OutputViewLooksAtLiteralDiagnostic(
                             location=looking_at.location,
                             view_name=argument.view.source_typed_name,
                             operation_name=operation_name,
@@ -264,10 +266,10 @@ class OperationArgumentsValidator:
                 return
             case ast.LocalTypedNameReference():
                 looked_at_name = looking_at.source_typed_name
-                looked_at_kind = diagnostics.LookedAtKind.VIEW
+                looked_at_kind = reference_graph_diagnostics.LookedAtKind.VIEW
             case ast.PositionReference():
                 looked_at_name = looking_at.source_chained_name
-                looked_at_kind = diagnostics.LookedAtKind.POSITION
+                looked_at_kind = reference_graph_diagnostics.LookedAtKind.POSITION
         qualities = looked_at_qualities.get(argument)
         if qualities is None:
             return
@@ -282,7 +284,7 @@ class OperationArgumentsValidator:
                 missing.append(quality.source_form_in_universe(self._enclosing_fqun))
         if missing:
             validation_diagnostics.append(
-                diagnostics.OperationArgumentMissingQualitiesDiagnostic(
+                reference_graph_diagnostics.OperationArgumentMissingQualitiesDiagnostic(
                     location=looking_at.location,
                     view_name=argument.view.source_typed_name,
                     looked_at_name=looked_at_name,

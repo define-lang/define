@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -35,7 +35,9 @@ def test_caller_sees_requirement_when_interface_moved_to_local(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
@@ -93,12 +95,16 @@ def test_caller_sees_requirement_on_unused_position_when_interface_moved_to_loca
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.UnreferencedPositionDiagnostic
+    )
     assert all_diags[0].position_name == "position<extra>"
     assert all_diags[0].location.line == 4
     assert all_diags[0].location.column == 16
     assert all_diags[0].location.file_path == "inner.dfn"
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 24
     assert all_diags[1].location.column == 30
@@ -148,13 +154,17 @@ def test_requirement_inferred_when_trigger_moved_to_local(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.UnreferencedPositionDiagnostic
+    )
     assert all_diags[0].position_name == "position<extra>"
     assert all_diags[0].location.line == 3
     assert all_diags[0].location.column == 16
     assert all_diags[0].location.file_path == "inner.dfn"
     diag = all_diags[1]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 25
     assert diag.location.column == 49
@@ -205,7 +215,9 @@ def test_caller_sees_requirement_when_iface_with_child_moved_to_local(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 14
     assert diag.location.column == 30
@@ -264,7 +276,9 @@ def test_caller_sees_requirement_when_iface_intermediate_with_child_moved_to_loc
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 15
     assert diag.location.column == 30
@@ -323,7 +337,9 @@ def test_complex_chain_interaction_iface(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 17
     assert diag.location.column == 30
@@ -382,7 +398,8 @@ def test_caller_cannot_occupy_implied_action_interface_when_implied_moved_to_loc
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
@@ -408,7 +425,9 @@ def test_caller_sees_requirement_when_implied_moved_to_interface(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
@@ -467,7 +486,9 @@ def test_caller_sees_requirement_when_implied_with_child_moved_to_local(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 15
     assert diag.location.column == 30
@@ -526,7 +547,9 @@ def test_caller_sees_requirement_when_implied_intermediate_with_child_moved_to_l
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 16
     assert diag.location.column == 30
@@ -585,7 +608,9 @@ def test_complex_chain_interaction_implied(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 18
     assert diag.location.column == 30
@@ -654,7 +679,9 @@ def test_diagnostic_when_interface_moved_to_sibling_interface_source_unfilled(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 12
     assert diag.location.column == 30
@@ -695,7 +722,9 @@ def test_caller_sees_requirement_when_interface_moved_to_implied(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
@@ -764,7 +793,9 @@ def test_diagnostic_when_implied_moved_to_implied_source_unfilled(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 13
     assert diag.location.column == 30

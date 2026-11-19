@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ def test_interface_view_written_twice(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingInterfaceViewWrittenTwiceDiagnostic(
+        reference_graph_diagnostics.ViewSettingInterfaceViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(
                 line=21,
                 column=26,
@@ -46,7 +46,7 @@ def test_local_view_written_twice(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingLocalViewWrittenTwiceDiagnostic(
+        reference_graph_diagnostics.ViewSettingLocalViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(
                 line=22, column=26, end_line=22, end_column=35, file_path="double.dfn"
             ),
@@ -63,7 +63,7 @@ def test_output_only_target(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingOutputOnlyTargetDiagnostic(
+        structural_diagnostics.ViewSettingOutputOnlyTargetDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=26, end_line=25, end_column=38, file_path="negate.dfn"
             ),
@@ -77,13 +77,13 @@ def test_read_from_unwritten_local_view(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingReadFromUnwrittenLocalViewDiagnostic(
+        reference_graph_diagnostics.ViewSettingReadFromUnwrittenLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=20, column=42, end_line=20, end_column=56, file_path="double.dfn"
             ),
             view_name="view<unwritten>",
         ),
-        diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
+        reference_graph_diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=22, column=37, end_line=22, end_column=51, file_path="double.dfn"
             ),
@@ -99,7 +99,7 @@ def test_read_from_unwritten_output_view(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingReadFromUnwrittenOutputViewDiagnostic(
+        reference_graph_diagnostics.ViewSettingReadFromUnwrittenOutputViewDiagnostic(
             location=rendering.SourceLocation(
                 line=15, column=42, end_line=15, end_column=53, file_path="negate.dfn"
             ),
@@ -113,7 +113,7 @@ def test_read_from_written_read_write_view(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingReadFromWrittenReadWriteViewDiagnostic(
+        reference_graph_diagnostics.ViewSettingReadFromWrittenReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=35,
                 column=42,
@@ -130,7 +130,7 @@ def test_read_from_written_read_write_view(
                 file_path="negate_twice_in_place_and_add.dfn",
             ),
         ),
-        diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
+        reference_graph_diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=38,
                 column=37,
@@ -157,7 +157,7 @@ def test_read_write_target_after_missing_logical_operation(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ReferencedFileNotFoundDiagnostic(
+        structural_diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=16,
                 column=39,
@@ -175,7 +175,7 @@ def test_read_write_target_after_undefined_executed_view(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.MissingOperationArgumentDiagnostic(
+        reference_graph_diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=16,
                 column=21,
@@ -186,7 +186,7 @@ def test_read_write_target_after_undefined_executed_view(
             view_name="view<result>",
             operation_name="logical_operation<standard:/number/negate>",
         ),
-        diagnostics.UndefinedOperationViewDiagnostic(
+        reference_graph_diagnostics.UndefinedOperationViewDiagnostic(
             location=rendering.SourceLocation(
                 line=18,
                 column=18,
@@ -206,7 +206,7 @@ def test_read_write_target_not_read(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingReadWriteTargetNotFromExecutionDiagnostic(
+        reference_graph_diagnostics.ViewSettingReadWriteTargetNotFromExecutionDiagnostic(
             location=rendering.SourceLocation(
                 line=36,
                 column=26,
@@ -225,7 +225,7 @@ def test_read_write_target_source_not_local(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingReadWriteTargetSourceNotLocalDiagnostic(
+        structural_diagnostics.ViewSettingReadWriteTargetSourceNotLocalDiagnostic(
             location=rendering.SourceLocation(
                 line=27,
                 column=43,
@@ -244,7 +244,7 @@ def test_read_write_target_source_not_written(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingReadWriteTargetNotFromExecutionDiagnostic(
+        reference_graph_diagnostics.ViewSettingReadWriteTargetNotFromExecutionDiagnostic(
             location=rendering.SourceLocation(
                 line=42,
                 column=26,
@@ -263,7 +263,7 @@ def test_read_write_target_without_execution(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingReadWriteTargetWithoutExecutionDiagnostic(
+        reference_graph_diagnostics.ViewSettingReadWriteTargetWithoutExecutionDiagnostic(
             location=rendering.SourceLocation(
                 line=31,
                 column=26,
@@ -281,7 +281,7 @@ def test_same_view(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingSameViewDiagnostic(
+        structural_diagnostics.ViewSettingSameViewDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=45, end_line=25, end_column=57, file_path="negate.dfn"
             ),
@@ -295,7 +295,7 @@ def test_undefined_source(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.UndefinedLocalNameDiagnostic(
+        structural_diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=21, column=42, end_line=21, end_column=54, file_path="double.dfn"
             ),
@@ -309,7 +309,7 @@ def test_undefined_target(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.UndefinedLocalNameDiagnostic(
+        structural_diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=26, end_line=25, end_column=38, file_path="negate.dfn"
             ),

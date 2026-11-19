@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.validation_pipeline import (
@@ -21,7 +21,9 @@ def test_multiple_pending_depth_updates_do_not_hide_cycle(
     diagnostics_found = result.program_validation.sorted_diagnostics()
     assert len(diagnostics_found) == 1
     diagnostic = diagnostics_found[0]
-    assert isinstance(diagnostic, diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert diagnostic.location.line == 3
     assert diagnostic.location.column == 20
     assert diagnostic.location.end_line == 3
@@ -42,7 +44,9 @@ def test_rejected_cycle_restores_depths_for_later_edge(
     diagnostics_found = result.program_validation.sorted_diagnostics()
     assert len(diagnostics_found) == 2
     first_diagnostic = diagnostics_found[0]
-    assert isinstance(first_diagnostic, diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        first_diagnostic, structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert first_diagnostic.location.line == 3
     assert first_diagnostic.location.column == 20
     assert first_diagnostic.location.end_line == 3
@@ -56,7 +60,9 @@ def test_rejected_cycle_restores_depths_for_later_edge(
         "position<mv:define-lang.org:reference_graph_rollback:/test>",
     ]
     second_diagnostic = diagnostics_found[1]
-    assert isinstance(second_diagnostic, diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        second_diagnostic, structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert second_diagnostic.location.line == 4
     assert second_diagnostic.location.column == 20
     assert second_diagnostic.location.end_line == 4
@@ -77,7 +83,9 @@ def test_visited_reference_does_not_skip_independent_definition(
     diagnostics_found = result.program_validation.sorted_diagnostics()
     assert len(diagnostics_found) == 1
     diagnostic = diagnostics_found[0]
-    assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 13

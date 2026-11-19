@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -84,7 +84,9 @@ def test_duplicate_source_definition_does_not_add_missing_quality_diagnostics(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.DuplicateDefinitionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].definition_type == "action"
     assert all_diags[0].path == "/test"
@@ -99,7 +101,7 @@ def test_undefined_from_position(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "position<no_such_pos>"
     assert diags[0].location.line == 6
@@ -112,7 +114,7 @@ def test_undefined_to_position(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "position<no_such_pos>"
     assert diags[0].location.line == 6
@@ -127,7 +129,7 @@ def test_undefined_move_destination_is_not_treated_as_defined_position(
     ).program_validation
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].local_name == "position<no_such_pos>"
     assert diags[0].location.line == 12
@@ -140,12 +142,12 @@ def test_both_positions_undefined(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "position<bad_from>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 30
-    assert isinstance(diags[1], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[1].location.file_path is None
     assert diags[1].local_name == "position<bad_to>"
     assert diags[1].location.line == 6
@@ -159,7 +161,7 @@ def test_same_fqun_must_use_short_form_in_from(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+        all_diags[0], structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic
     )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].fqun == "my.domain.com:my_lib"
@@ -174,7 +176,7 @@ def test_same_fqun_must_use_short_form_in_to(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+        all_diags[0], structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic
     )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].fqun == "my.domain.com:my_lib"
@@ -190,7 +192,7 @@ def test_valid_global_to_position(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert isinstance(all_diags[0], structural_diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_global_name == "position</global_pos>"
     assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/global_pos>"
@@ -204,12 +206,14 @@ def test_move_to_same_position_does_not_mark_error(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.MoveToSamePositionDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].location.line == 8
     assert diags[0].location.column == 45
     assert diags[0].position_name == "position<a>"
-    assert isinstance(diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        diags[1], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert diags[1].location.file_path is None
     assert diags[1].populated_at.column == 30
     assert diags[1].populated_at.file_path is None
@@ -227,7 +231,9 @@ def test_move_to_chained_prefix_marks_error(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.MoveIntoDefiningPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 74

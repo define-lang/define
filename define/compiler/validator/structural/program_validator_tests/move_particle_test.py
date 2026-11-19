@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.structural_validation import (
@@ -20,7 +20,7 @@ def test_move_from_a_position_to_itself(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.MoveToSamePositionDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.MoveToSamePositionDiagnostic)
     assert diags[0].location.line == 7
     assert diags[0].location.column == 45
     assert diags[0].location.file_path is None
@@ -33,7 +33,7 @@ def test_move_from_a_chained_position_to_itself(
     result = validate_testdata_structural()
     all_diags = result.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
+    assert isinstance(all_diags[0], structural_diagnostics.MoveToSamePositionDiagnostic)
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 72
     assert all_diags[0].location.file_path == "test.dfn"
@@ -49,7 +49,9 @@ def test_move_to_chained_prefix_position(
     assert result.file_results[1].file_path == define_path.DefinePath("target_pos.dfn")
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.MoveIntoDefiningPositionDiagnostic
+    )
     assert diags[0].location.line == 11
     assert diags[0].location.column == 74
     assert diags[0].location.file_path == "test.dfn"

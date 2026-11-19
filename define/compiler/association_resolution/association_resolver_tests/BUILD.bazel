@@ -31,7 +31,10 @@ py_test(
     deps = [
         "//crates/source_rendering/python:rendering",
         "//define/compiler:literal_parsers",
-        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:association_resolution_diagnostics",
+        "//define/compiler/errors:config_diagnostics",
+        "//define/compiler/errors:reference_graph_diagnostics",
+        "//define/compiler/errors:structural_diagnostics",
         "//define/compiler/errors:syntax_errors",
         "//define/compiler/test_fixtures:validation_pipeline",
         "//define/compiler/validator:test_helpers",

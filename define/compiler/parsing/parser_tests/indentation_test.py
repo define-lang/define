@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import parser_diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -30,7 +30,7 @@ def test_over_indented_quality_assignment(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=1, end_line=3, end_column=10
             ),
@@ -53,7 +53,7 @@ def test_under_indented_quality_assignment(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=1, end_line=3, end_column=6
             ),
@@ -76,7 +76,7 @@ def test_misindented_opener_does_not_move_its_block_contents(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=2, column=1, end_line=2, end_column=2
             ),
@@ -99,7 +99,7 @@ def test_under_indented_quality_assignment_block_close(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=1, end_line=4, end_column=2
             ),
@@ -122,7 +122,7 @@ def test_indented_definition_block_close(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=5, column=1, end_line=5, end_column=1
             ),
@@ -146,7 +146,7 @@ def test_under_indented_comment_in_block(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=2, column=1, end_line=2, end_column=3
             ),
@@ -170,7 +170,7 @@ def test_unindented_comment_in_block(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=2, column=1, end_line=2, end_column=1
             ),
@@ -194,7 +194,7 @@ def test_under_indented_non_ascii_comment_in_block(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=2, column=1, end_line=2, end_column=3
             ),
@@ -213,7 +213,7 @@ def test_indented_top_level_comment(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=1, end_line=1, end_column=2
             ),
@@ -239,14 +239,14 @@ def test_indentation_diagnostic_before_syntax_error(
         line=3, column=34, end_line=3, end_column=34
     )
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=2, column=1, end_line=2, end_column=2
             ),
             expected_indent=4,
             actual_indent=2,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=1, end_line=3, end_column=6
             ),
@@ -272,14 +272,14 @@ def test_action_statement_under_indented_after_blank_line(
         line=5, column=1, end_line=5, end_column=1
     )
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=1, end_line=4, end_column=1
             ),
             expected_indent=4,
             actual_indent=0,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=5, column=1, end_line=5, end_column=1
             ),
@@ -304,28 +304,28 @@ def test_trigger_conditions_block_not_indented_in_action_block(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=1, end_line=3, end_column=1
             ),
             expected_indent=4,
             actual_indent=0,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=1, end_line=4, end_column=4
             ),
             expected_indent=8,
             actual_indent=4,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=5, column=1, end_line=5, end_column=1
             ),
             expected_indent=4,
             actual_indent=0,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=6, column=1, end_line=6, end_column=1
             ),
@@ -350,28 +350,28 @@ def test_trigger_conditions_block_under_indented(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=1, end_line=3, end_column=2
             ),
             expected_indent=4,
             actual_indent=2,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=1, end_line=4, end_column=6
             ),
             expected_indent=8,
             actual_indent=6,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=5, column=1, end_line=5, end_column=2
             ),
             expected_indent=4,
             actual_indent=2,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=6, column=1, end_line=6, end_column=2
             ),
@@ -396,28 +396,28 @@ def test_trigger_conditions_block_over_indented(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=1, end_line=3, end_column=8
             ),
             expected_indent=4,
             actual_indent=8,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=1, end_line=4, end_column=12
             ),
             expected_indent=8,
             actual_indent=12,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=5, column=1, end_line=5, end_column=8
             ),
             expected_indent=4,
             actual_indent=8,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=6, column=1, end_line=6, end_column=8
             ),
@@ -442,7 +442,7 @@ def test_action_close_brace_indented(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=7, column=1, end_line=7, end_column=4
             ),
@@ -461,7 +461,7 @@ def test_top_level_definition_indented(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=1, end_line=1, end_column=4
             ),
@@ -487,7 +487,7 @@ def test_comment_in_action_block_not_indented(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=1, end_line=3, end_column=1
             ),
@@ -513,42 +513,42 @@ def test_indentation_wrong_in_several_definitions(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=1, end_line=1, end_column=2
             ),
             expected_indent=0,
             actual_indent=2,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=1, end_line=4, end_column=2
             ),
             expected_indent=4,
             actual_indent=2,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=5, column=1, end_line=5, end_column=6
             ),
             expected_indent=8,
             actual_indent=6,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=6, column=1, end_line=6, end_column=2
             ),
             expected_indent=4,
             actual_indent=2,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=7, column=1, end_line=7, end_column=2
             ),
             expected_indent=4,
             actual_indent=2,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=1, end_line=8, end_column=2
             ),
@@ -574,42 +574,42 @@ def test_action_lines_indented_at_random(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=1, end_line=3, end_column=1
             ),
             expected_indent=4,
             actual_indent=1,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=1, end_line=4, end_column=5
             ),
             expected_indent=8,
             actual_indent=5,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=5, column=1, end_line=5, end_column=3
             ),
             expected_indent=4,
             actual_indent=3,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=6, column=1, end_line=6, end_column=5
             ),
             expected_indent=8,
             actual_indent=5,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=7, column=1, end_line=7, end_column=7
             ),
             expected_indent=4,
             actual_indent=7,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=1, end_line=8, end_column=11
             ),
@@ -632,42 +632,42 @@ def test_every_line_of_shifted_definition_is_reported(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=1, end_line=1, end_column=2
             ),
             expected_indent=0,
             actual_indent=2,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=2, column=1, end_line=2, end_column=6
             ),
             expected_indent=4,
             actual_indent=6,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=1, end_line=3, end_column=6
             ),
             expected_indent=4,
             actual_indent=6,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=1, end_line=4, end_column=10
             ),
             expected_indent=8,
             actual_indent=10,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=5, column=1, end_line=5, end_column=6
             ),
             expected_indent=4,
             actual_indent=6,
         ),
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=6, column=1, end_line=6, end_column=2
             ),
@@ -687,7 +687,7 @@ def test_encoding_quality_assignment_under_indented(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=2, column=1, end_line=2, end_column=2
             ),
@@ -715,7 +715,7 @@ def test_view_direction_statement_under_indented(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=1, end_line=3, end_column=6
             ),
@@ -745,7 +745,7 @@ def test_operation_argument_under_indented(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=10, column=1, end_line=10, end_column=8
             ),

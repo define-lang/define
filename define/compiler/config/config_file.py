@@ -10,13 +10,14 @@ import protovalidate
 from google.protobuf import message
 
 from defcl.python import loader as defcl_loader
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics
 
 if typing.TYPE_CHECKING:
     from pathlib import PurePosixPath
 
     from crates.source_rendering.python import rendering
     from define.compiler.data_structures import define_path
+    from define.compiler.errors import diagnostics
 
 
 class ConfigFile[M: message.Message](msgspec.Struct, frozen=True):
@@ -65,11 +66,11 @@ class ConfigFileReader[M: message.Message]:
         result = defcl_loader.load_file(
             str(self.path()), self._config_file.message_type, self._source_map
         )
-        config_diagnostics: list[diagnostics.FormattableDiagnostic] = list(
+        file_diagnostics: list[diagnostics.FormattableDiagnostic] = list(
             result.diagnostics
         )
         if result.loaded is None:
-            return None, config_diagnostics
+            return None, file_diagnostics
         try:
             protovalidate.validate(result.loaded.message)
         except protovalidate.ValidationError as e:
@@ -87,12 +88,12 @@ class ConfigFileReader[M: message.Message]:
                     subscript = element.subscript
                     if subscript is not None and subscript.field == "index":
                         field_path.append(subscript.value)
-                config_diagnostics.append(
-                    diagnostics.ConfigViolationDiagnostic(
+                file_diagnostics.append(
+                    config_diagnostics.ConfigViolationDiagnostic(
                         location=result.loaded.file.location_of(tuple(field_path)),
                         field_path=tuple(field_path),
                         violation_message=violation.proto.message,
                     )
                 )
-            return None, config_diagnostics
-        return result.loaded, config_diagnostics
+            return None, file_diagnostics
+        return result.loaded, file_diagnostics

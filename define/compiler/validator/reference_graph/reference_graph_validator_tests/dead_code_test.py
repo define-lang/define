@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
@@ -35,7 +35,9 @@ def test_unreferenced_child_position_on_local_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</thing>"
     assert all_diags[0].position_name == "position<box>"
@@ -49,7 +51,9 @@ def test_callee_interface_position_named_like_local_does_not_keep_local_quality_
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "mid.dfn"
     assert all_diags[0].quality_name == "position</extra>"
     assert all_diags[0].position_name == "position<item>"
@@ -65,7 +69,9 @@ def test_unreferenced_child_position_on_interface_is_dead(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</thing>"
     assert all_diags[0].position_name == "position<run>"
@@ -79,7 +85,9 @@ def test_unresolved_quality_assignment_is_not_reported_as_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert all_diags[0].file_path == "missing.dfn"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 37
@@ -92,12 +100,16 @@ def test_guarantee_on_unresolved_implied_position_is_ignored(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert all_diags[0].file_path == "copy.dfn"
     assert all_diags[0].location.line == 4
     assert all_diags[0].location.column == 34
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+    )
     assert all_diags[1].quality_name == "value<standard:/number/natural>"
     assert all_diags[1].position_name == "position<box>"
     assert all_diags[1].location.line == 10
@@ -166,7 +178,9 @@ def test_redundant_destination_quality_assignment_on_move_filled_position_is_dea
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</thing>"
     assert all_diags[0].position_name == "position<dest>"
@@ -180,13 +194,17 @@ def test_back_and_forth_moves_do_not_make_child_position_assignments_alive(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].quality_name == "position</thing>"
     assert all_diags[0].position_name == "position<first>"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[1].quality_name == "position</thing>"
     assert all_diags[1].position_name == "position<second>"
     assert all_diags[1].location.line == 12
@@ -230,7 +248,9 @@ def test_quality_assignment_on_interface_position_filled_then_destroyed_is_dead(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</thing>"
     assert all_diags[0].position_name == "position<iface>"
@@ -264,7 +284,9 @@ def test_unused_quality_assignment_on_interface_position_with_inferred_occupied_
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</c>"
     assert all_diags[0].position_name == "position<iface>"
@@ -280,7 +302,9 @@ def test_unused_quality_assignment_on_interface_position_with_inferred_occupied_
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</c>"
     assert all_diags[0].position_name == "position<iface>"
@@ -296,7 +320,9 @@ def test_unused_quality_assignment_on_interface_position_with_inferred_occupied_
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</c>"
     assert all_diags[0].position_name == "position<iface>"
@@ -312,7 +338,9 @@ def test_unused_quality_assignment_on_interface_position_whose_particle_only_has
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</c>"
     assert all_diags[0].position_name == "position<iface>"
@@ -326,7 +354,9 @@ def test_dead_child_position_inside_constructor(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</thing>"
     assert all_diags[0].position_name == "position<box>"
@@ -340,7 +370,9 @@ def test_one_child_position_dead_while_a_sibling_is_referenced(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</b>"
     assert all_diags[0].position_name == "position<box>"
@@ -354,7 +386,9 @@ def test_quality_assignment_that_only_provides_a_moved_quality_by_implication_is
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "action</construct>"
     assert all_diags[0].position_name == "position<box2>"
@@ -378,7 +412,9 @@ def test_untriggered_action_on_local_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "action</coin>"
     assert all_diags[0].position_name == "position<box>"
@@ -394,7 +430,9 @@ def test_untriggered_action_on_interface_is_dead(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "action</coin>"
     assert all_diags[0].position_name == "position<run>"
@@ -422,13 +460,17 @@ def test_action_interface_filled_but_never_triggered_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "action</twoport>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[1].action_name == "action</twoport>"
     assert all_diags[1].position_name == (
         "position<box>::action</twoport>::position<slot>"
@@ -446,7 +488,9 @@ def test_action_interface_occupation_requires_trigger_when_quality_assignment_is
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[0].action_name == "action</worker>"
     assert all_diags[0].position_name == (
         "position<box>::action</worker>::position<input>"
@@ -465,7 +509,9 @@ def test_action_interface_occupation_survives_particle_move_out_without_trigger(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[0].action_name == "action</worker>"
     assert all_diags[0].position_name == (
         "position<box>::action</worker>::position<input>"
@@ -484,7 +530,9 @@ def test_action_interface_occupation_survives_parent_and_particle_moves_without_
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[0].action_name == "action</worker>"
     assert all_diags[0].position_name == (
         "position<source>::action</worker>::position<input>"
@@ -503,7 +551,7 @@ def test_action_trigger_after_interface_particle_replacement_is_alive(
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0],
-        diagnostics.UntriggeredActionInterfaceDiagnostic,
+        reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic,
     )
     assert all_diags[0].action_name == "action</worker>"
     assert all_diags[0].position_name == (
@@ -531,7 +579,7 @@ def test_action_interface_particle_arriving_after_trigger_cannot_depart_before_n
     assert len(all_diags) == 1
     assert isinstance(
         all_diags[0],
-        diagnostics.UntriggeredActionInterfaceDiagnostic,
+        reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic,
     )
     assert all_diags[0].action_name == "action</worker>"
     assert all_diags[0].position_name == (
@@ -552,7 +600,9 @@ def test_action_interface_particle_arriving_after_last_trigger_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[0].action_name == "action</worker>"
     assert all_diags[0].position_name == (
         "position<box>::action</worker>::position<input>"
@@ -571,7 +621,9 @@ def test_guaranteed_interface_particle_departure_leaves_pending_arrival(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[0].action_name == "action</worker>"
     assert all_diags[0].position_name == (
         "position<box>::action</worker>::position<input>"
@@ -590,7 +642,9 @@ def test_action_trigger_only_satisfies_arrivals_for_its_parent_particle(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[0].action_name == "action</worker>"
     assert all_diags[0].position_name == (
         "position<box>::action</worker>::position<input>"
@@ -607,7 +661,9 @@ def test_action_interface_child_destroyed_before_trigger_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[0].action_name == "action</worker>"
     assert all_diags[0].position_name == (
         "position<box>::action</worker>::position<input>::position</child>"
@@ -624,7 +680,9 @@ def test_action_interface_child_destroyed_with_parent_before_trigger_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[0].action_name == "action</worker>"
     assert all_diags[0].position_name == (
         "position<box>::action</worker>::position<input>"
@@ -632,7 +690,9 @@ def test_action_interface_child_destroyed_with_parent_before_trigger_is_dead(
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 45
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[1].action_name == "action</worker>"
     assert all_diags[1].position_name == (
         "position<box>::action</worker>::position<input>::position</child>"
@@ -649,7 +709,9 @@ def test_action_interface_child_moved_before_trigger_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[0].action_name == "action</worker>"
     assert all_diags[0].position_name == (
         "position<box>::action</worker>::position<input>::position</child>"
@@ -674,13 +736,17 @@ def test_action_on_occupied_interface_referenced_but_never_triggered_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].quality_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[1].action_name == "action</worker>"
     assert (
         all_diags[1].position_name == "position<box>::action</worker>::position<input>"
@@ -699,13 +765,17 @@ def test_move_from_empty_action_interface_does_not_mark_action_alive(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].quality_name == "action</worker>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 4
     assert all_diags[0].location.column == 24
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert (
         all_diags[1].position_name == "position<box>::action</worker>::position<input>"
     )
@@ -723,7 +793,9 @@ def test_transitive_action_interface_occupied_without_trigger_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[0].action_name == "action</worker>"
     assert (
         all_diags[0].position_name
@@ -734,7 +806,7 @@ def test_transitive_action_interface_occupied_without_trigger_is_dead(
     assert all_diags[0].location.file_path == "runner.dfn"
     assert isinstance(
         all_diags[1],
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert all_diags[1].action_name == "action</middle>"
     assert (
@@ -760,7 +832,9 @@ def test_transitive_action_interface_particle_destroyed_before_trigger_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[0].action_name == "action</worker>"
     assert all_diags[0].position_name == (
         "position<wrapper>::action</middle>::position<box>::action</worker>::position<input>"
@@ -806,12 +880,16 @@ def test_implied_action_must_trigger_in_callee_even_after_caller_triggered_it(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
     assert all_diags[0].implied_action_name == "action</worker>"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
     assert all_diags[0].location.file_path == "other.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[1].action_name == "action</worker>"
     assert all_diags[1].position_name == "action</worker>::position<item>"
     assert all_diags[1].location.line == 7
@@ -829,12 +907,16 @@ def test_implied_action_referenced_but_never_triggered_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
     assert all_diags[0].implied_action_name == "action</worker>"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[1].action_name == "action</worker>"
     assert all_diags[1].position_name == "action</worker>::position<input>"
     assert all_diags[1].location.line == 6
@@ -849,18 +931,24 @@ def test_implied_action_interface_child_without_trigger_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
-    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
     assert all_diags[0].implied_action_name == "action</worker>"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[1].action_name == "action</worker>"
     assert all_diags[1].position_name == "action</worker>::position<input>"
     assert all_diags[1].location.line == 6
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == "test.dfn"
-    assert isinstance(all_diags[2], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[2], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[2].action_name == "action</worker>"
     assert all_diags[2].position_name == (
         "action</worker>::position<input>::position</child>"
@@ -885,23 +973,31 @@ def test_multiple_implied_actions_referenced_but_never_triggered_are_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 4
-    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
     assert all_diags[0].implied_action_name == "action</first>"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
     assert all_diags[1].implied_action_name == "action</second>"
     assert all_diags[1].location.line == 3
     assert all_diags[1].location.column == 25
     assert all_diags[1].location.file_path == "test.dfn"
-    assert isinstance(all_diags[2], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[2], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[2].action_name == "action</first>"
     assert all_diags[2].position_name == "action</first>::position<input>"
     assert all_diags[2].location.line == 7
     assert all_diags[2].location.column == 30
     assert all_diags[2].location.file_path == "test.dfn"
-    assert isinstance(all_diags[3], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[3], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[3].action_name == "action</second>"
     assert all_diags[3].position_name == "action</second>::position<input>"
     assert all_diags[3].location.line == 8
@@ -916,12 +1012,16 @@ def test_destructor_cannot_be_implied(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
     assert all_diags[0].implied_action_name == "action</cleanup>"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[1].action_name == "action</cleanup>"
     assert all_diags[1].position_name == "action</cleanup>::position<child>"
     assert all_diags[1].location.line == 6
@@ -936,12 +1036,16 @@ def test_nested_trigger_marks_only_final_implied_action_alive(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
     assert all_diags[0].implied_action_name == "action</runner>"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[1].action_name == "action</runner>"
     assert all_diags[1].position_name == "action</runner>::position<iface>"
     assert all_diags[1].location.line == 6
@@ -959,18 +1063,24 @@ def test_nested_non_trigger_marks_no_implied_action_alive(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
-    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
     assert all_diags[0].implied_action_name == "action</runner>"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[1].action_name == "action</runner>"
     assert all_diags[1].position_name == "action</runner>::position<iface>"
     assert all_diags[1].location.line == 6
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == "test.dfn"
-    assert isinstance(all_diags[2], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[2], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[2].action_name == "action</worker>"
     assert all_diags[2].position_name == (
         "action</runner>::position<iface>::action</worker>::position<non_trigger>"
@@ -987,12 +1097,16 @@ def test_implied_action_triggered_on_another_particle_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
     assert all_diags[0].implied_action_name == "action</worker>"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[1].action_name == "action</worker>"
     assert all_diags[1].position_name == "action</worker>::position<input>"
     assert all_diags[1].location.line == 14
@@ -1007,12 +1121,16 @@ def test_implied_constructor_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
     assert all_diags[0].implied_action_name == "action</init>"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[1].action_name == "action</init>"
     assert all_diags[1].position_name == "action</init>::position<result>"
     assert all_diags[1].location.line == 6
@@ -1027,12 +1145,16 @@ def test_implied_constructor_fired_on_another_particle_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
     assert all_diags[0].implied_action_name == "action</init>"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[1].action_name == "action</init>"
     assert all_diags[1].position_name == "action</init>::position<result>"
     assert all_diags[1].location.line == 14
@@ -1054,19 +1176,25 @@ def test_child_position_assignment_moved_to_untriggered_action_contract_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].quality_name == "action</consumer>"
     assert all_diags[0].position_name == "position<holder>"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[1].quality_name == "position</thing>"
     assert all_diags[1].position_name == "position<source>"
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 28
     assert all_diags[1].location.file_path == "test.dfn"
-    assert isinstance(all_diags[2], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[2], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[2].action_name == "action</consumer>"
     assert all_diags[2].position_name == (
         "position<holder>::action</consumer>::position<input>"
@@ -1104,13 +1232,17 @@ def test_back_and_forth_moves_do_not_make_child_action_assignments_alive(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].quality_name == "action</worker>"
     assert all_diags[0].position_name == "position<first>"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[1].quality_name == "action</worker>"
     assert all_diags[1].position_name == "position<second>"
     assert all_diags[1].location.line == 12
@@ -1132,13 +1264,17 @@ def test_destructor_quality_assignment_is_never_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</thing>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].quality_name == "action</coin>"
     assert all_diags[1].position_name == "position<box>"
@@ -1152,7 +1288,9 @@ def test_constructor_quality_assignment_reached_only_by_move_is_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "action</construct>"
     assert all_diags[0].position_name == "position<box2>"
@@ -1184,7 +1322,9 @@ def test_constructor_on_interface_position_dead_when_never_created(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "action</construct>"
     assert all_diags[0].position_name == "position<run>"
@@ -1201,13 +1341,17 @@ def test_dead_child_position_and_untriggered_action_on_same_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</thing>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
-    assert isinstance(all_diags[1], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].quality_name == "action</coin>"
     assert all_diags[1].position_name == "position<box>"
@@ -1221,7 +1365,9 @@ def test_interface_quality_assignment_referenced_only_in_another_definition_is_d
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "consumer.dfn"
     assert all_diags[0].quality_name == "position</thing>"
     assert all_diags[0].position_name == "position<run>"
@@ -1251,13 +1397,17 @@ def test_two_child_positions_on_one_position_are_both_dead(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "position</a>"
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
-    assert isinstance(all_diags[1], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].quality_name == "position</b>"
     assert all_diags[1].position_name == "position<box>"
@@ -1280,14 +1430,14 @@ def test_operation_execution_does_not_keep_child_quality_assignments_alive(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.sorted_diagnostics() == [
-        diagnostics.DeadChildPositionDiagnostic(
+        reference_graph_diagnostics.DeadChildPositionDiagnostic(
             location=rendering.SourceLocation(
                 line=46, column=28, end_line=46, end_column=43, file_path=None
             ),
             quality_name="position</child>",
             position_name="position<box>",
         ),
-        diagnostics.UntriggeredActionDiagnostic(
+        reference_graph_diagnostics.UntriggeredActionDiagnostic(
             location=rendering.SourceLocation(
                 line=47, column=28, end_line=47, end_column=40, file_path=None
             ),
@@ -1310,17 +1460,23 @@ def test_callee_requirement_on_unresolved_position_keeps_no_quality_assignment_a
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
-    assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert all_diags[0].file_path == "missing.dfn"
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 34
     assert all_diags[0].location.file_path == "callee.dfn"
-    assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        all_diags[1], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert all_diags[1].file_path == "missing.dfn"
     assert all_diags[1].location.line == 4
     assert all_diags[1].location.column == 34
     assert all_diags[1].location.file_path == "test.dfn"
-    assert isinstance(all_diags[2], diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert isinstance(
+        all_diags[2], reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+    )
     assert all_diags[2].quality_name == "value<standard:/number/natural>"
     assert all_diags[2].position_name == "position<box>"
     assert all_diags[2].location.line == 11

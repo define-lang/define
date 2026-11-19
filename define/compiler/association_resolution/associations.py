@@ -7,7 +7,7 @@ import typing
 import msgspec
 
 from define.compiler.config import project_config, project_roots
-from define.compiler.errors import diagnostics
+from define.compiler.errors import association_resolution_diagnostics
 from define.compiler.graphs import reference_graph
 
 if typing.TYPE_CHECKING:
@@ -15,6 +15,7 @@ if typing.TYPE_CHECKING:
 
     from define.compiler import ast
     from define.compiler.config import encoding_operations_config
+    from define.compiler.errors import diagnostics
 
 
 class ChosenEncodingOperation(msgspec.Struct, frozen=True):
@@ -74,7 +75,7 @@ class Associations:
         table = self._project_roots.get_association_table(name_content.fqun.canonical)
         if isinstance(table, project_roots.NoProjectConfig):
             return [
-                diagnostics.NoProjectRootForAssociationsDiagnostic(
+                association_resolution_diagnostics.NoProjectRootForAssociationsDiagnostic(
                     location=definition.typed_name.location,
                     value_quality=definition.typed_name.source_typed_name,
                     config_path=str(project_config.CONFIG_FILE.path),
@@ -90,7 +91,7 @@ class Associations:
         # encoding, so without one nothing can ever hold the value.
         if associated_encodings is None:
             return [
-                diagnostics.ValueHasNoEncodingDiagnostic(
+                association_resolution_diagnostics.ValueHasNoEncodingDiagnostic(
                     location=definition.typed_name.location,
                     value_quality=definition.typed_name.source_typed_name,
                 )
@@ -155,7 +156,7 @@ class Associations:
                 encoding_operation = association.reference
                 first_encoding_operation = first.reference
                 association_diagnostics.append(
-                    diagnostics.DuplicateAssociatedEncodingOperationDiagnostic(
+                    association_resolution_diagnostics.DuplicateAssociatedEncodingOperationDiagnostic(
                         location=encoding_operation.location,
                         encoding_operation_name=encoding_operation.source_typed_name,
                         first_encoding_operation_name=first_encoding_operation.source_typed_name,
@@ -248,7 +249,7 @@ def _view_name_diagnostics(
     # differ.
     if len(association.views) != len(logical_views):
         return [
-            diagnostics.AssociationLogicalOperationViewCountDiagnostic(
+            association_resolution_diagnostics.AssociationLogicalOperationViewCountDiagnostic(
                 location=association.reference.location,
                 encoding_operation_name=encoding_operation_name,
                 view_count=len(association.views),
@@ -268,7 +269,7 @@ def _view_name_diagnostics(
     ):
         if associated_view.name != logical_view.typed_name.name_content.name:
             view_diagnostics.append(
-                diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+                association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
                     location=associated_view.name_location,
                     view_number=number,
                     view_name=associated_view.name,

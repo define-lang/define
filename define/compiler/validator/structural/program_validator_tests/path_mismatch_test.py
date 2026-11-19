@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ def test_path_mismatch_error(
     result = validate_testdata_structural(entry_file="foo/bar.dfn")
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.PathMismatchDiagnostic)
     assert diags[0].expected_path == "/foo/bar"
     assert diags[0].actual_path == "/wrong/path"
     assert diags[0].location.line == 1

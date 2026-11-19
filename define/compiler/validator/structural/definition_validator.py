@@ -10,7 +10,10 @@ from define.compiler import (
     name_types,
 )
 from define.compiler.config import global_names
-from define.compiler.errors import diagnostics
+from define.compiler.errors import (
+    config_diagnostics,
+    structural_diagnostics,
+)
 from define.compiler.graphs import reference_graph
 from define.compiler.validator import scope_tracker
 from define.compiler.validator.structural import (
@@ -22,6 +25,9 @@ from define.compiler.validator.structural import (
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
 
+    from define.compiler.errors import (
+        diagnostics,
+    )
     from define.compiler.validator.structural import file_validation_context
 
 
@@ -192,14 +198,14 @@ class DefinitionStructuralValidator:
         self._diagnostics.extend(view_setting_order.check_operation_end())
         if not has_execution:
             self._diagnostics.append(
-                diagnostics.OperationWithoutExecutionDiagnostic(
+                structural_diagnostics.OperationWithoutExecutionDiagnostic(
                     location=definition.operation_statements.location
                 )
             )
         for view in self._unreferenced_views.values():
             if isinstance(view, ast.LocalViewDefinition):
                 self._diagnostics.append(
-                    diagnostics.UnreferencedLocalViewDiagnostic(
+                    structural_diagnostics.UnreferencedLocalViewDiagnostic(
                         location=view.typed_name.location,
                         view_name=view.typed_name.source_typed_name,
                     )
@@ -208,7 +214,7 @@ class DefinitionStructuralValidator:
             # interface view, so executing it references all of them.
             elif not executes_all_views:
                 self._diagnostics.append(
-                    diagnostics.UnreferencedViewDiagnostic(
+                    structural_diagnostics.UnreferencedViewDiagnostic(
                         location=view.typed_name.location,
                         view_name=view.typed_name.source_typed_name,
                     )
@@ -235,7 +241,7 @@ class DefinitionStructuralValidator:
         view_setting_order.record_target(target)
         if source_ok and target.full_typed_name == source.full_typed_name:
             self._diagnostics.append(
-                diagnostics.ViewSettingSameViewDiagnostic(
+                structural_diagnostics.ViewSettingSameViewDiagnostic(
                     location=source.location, view_name=source.source_typed_name
                 )
             )
@@ -244,13 +250,13 @@ class DefinitionStructuralValidator:
         if isinstance(target_view, ast.InterfaceViewDefinition):
             if not target_view.is_output:
                 self._diagnostics.append(
-                    diagnostics.ViewSettingInputOnlyTargetDiagnostic(
+                    structural_diagnostics.ViewSettingInputOnlyTargetDiagnostic(
                         location=target.location, view_name=target.source_typed_name
                     )
                 )
             elif not target_view.is_input:
                 self._diagnostics.append(
-                    diagnostics.ViewSettingOutputOnlyTargetDiagnostic(
+                    structural_diagnostics.ViewSettingOutputOnlyTargetDiagnostic(
                         location=target.location, view_name=target.source_typed_name
                     )
                 )
@@ -264,7 +270,7 @@ class DefinitionStructuralValidator:
             and not isinstance(source_view, ast.LocalViewDefinition)
         ):
             self._diagnostics.append(
-                diagnostics.ViewSettingReadWriteTargetSourceNotLocalDiagnostic(
+                structural_diagnostics.ViewSettingReadWriteTargetSourceNotLocalDiagnostic(
                     location=source.location,
                     target_name=target.source_typed_name,
                     source_name=source.source_typed_name,
@@ -296,7 +302,7 @@ class DefinitionStructuralValidator:
                 and target_encoding.full_typed_name != source_encoding.full_typed_name
             ):
                 self._diagnostics.append(
-                    diagnostics.ViewSettingEncodingMismatchDiagnostic(
+                    structural_diagnostics.ViewSettingEncodingMismatchDiagnostic(
                         location=statement.location,
                         target_view=target.source_typed_name,
                         source_view=source.source_typed_name,
@@ -315,7 +321,7 @@ class DefinitionStructuralValidator:
             != source_value_quality.full_typed_name
         ):
             self._diagnostics.append(
-                diagnostics.ViewSettingValueQualityMismatchDiagnostic(
+                structural_diagnostics.ViewSettingValueQualityMismatchDiagnostic(
                     location=statement.location,
                     target_view=target.source_typed_name,
                     source_view=source.source_typed_name,
@@ -348,7 +354,7 @@ class DefinitionStructuralValidator:
                 and quality.name_type != name_types.NameType.VALUE
             ):
                 self._diagnostics.append(
-                    diagnostics.LocalViewNonValueQualityDiagnostic(
+                    structural_diagnostics.LocalViewNonValueQualityDiagnostic(
                         location=quality.location,
                         quality_name=quality.source_typed_name,
                     )
@@ -359,7 +365,7 @@ class DefinitionStructuralValidator:
                 name_types.NameType.ACTION,
             }:
                 self._diagnostics.append(
-                    diagnostics.ViewPositionOrActionQualityDiagnostic(
+                    structural_diagnostics.ViewPositionOrActionQualityDiagnostic(
                         location=quality.location,
                         quality_name=quality.source_typed_name,
                     )
@@ -370,7 +376,7 @@ class DefinitionStructuralValidator:
                 and quality.name_type == name_types.NameType.VALUE
             ):
                 self._diagnostics.append(
-                    diagnostics.EncodingOperationViewValueQualityDiagnostic(
+                    structural_diagnostics.EncodingOperationViewValueQualityDiagnostic(
                         location=quality.location,
                         quality_name=quality.source_typed_name,
                     )
@@ -381,7 +387,7 @@ class DefinitionStructuralValidator:
                 and quality.name_type == name_types.NameType.ENCODING
             ):
                 self._diagnostics.append(
-                    diagnostics.ValueOperationViewEncodingDiagnostic(
+                    structural_diagnostics.ValueOperationViewEncodingDiagnostic(
                         location=quality.location,
                         quality_name=quality.source_typed_name,
                     )
@@ -391,12 +397,12 @@ class DefinitionStructuralValidator:
             statements.append(statement)
         self._validate_quality_assignment_statements(
             statements,
-            multiple_values_diagnostic=diagnostics.ViewMultipleValueQualitiesDiagnostic,
+            multiple_values_diagnostic=structural_diagnostics.ViewMultipleValueQualitiesDiagnostic,
         )
         if isinstance(definition, ast.EncodingOperationDefinition):
             if name_types.NameType.ENCODING not in quality_name_types:
                 self._diagnostics.append(
-                    diagnostics.ViewMissingEncodingDiagnostic(
+                    structural_diagnostics.ViewMissingEncodingDiagnostic(
                         location=view.typed_name.location,
                         view_name=view.typed_name.source_typed_name,
                     )
@@ -406,14 +412,14 @@ class DefinitionStructuralValidator:
             return
         if isinstance(view, ast.LocalViewDefinition):
             self._diagnostics.append(
-                diagnostics.LocalViewMissingValueQualityDiagnostic(
+                structural_diagnostics.LocalViewMissingValueQualityDiagnostic(
                     location=view.typed_name.location,
                     view_name=view.typed_name.source_typed_name,
                 )
             )
             return
         self._diagnostics.append(
-            diagnostics.ViewMissingValueQualityDiagnostic(
+            structural_diagnostics.ViewMissingValueQualityDiagnostic(
                 location=view.typed_name.location,
                 view_name=view.typed_name.source_typed_name,
             )
@@ -429,7 +435,7 @@ class DefinitionStructuralValidator:
             quality = statement.typed_global_name
             if quality.name_type != name_types.NameType.ENCODING:
                 self._diagnostics.append(
-                    diagnostics.LocalViewNonEncodingDiagnostic(
+                    structural_diagnostics.LocalViewNonEncodingDiagnostic(
                         location=quality.location,
                         quality_name=quality.source_typed_name,
                     )
@@ -442,7 +448,7 @@ class DefinitionStructuralValidator:
                 and quality.full_typed_name != first_encoding.full_typed_name
             ):
                 self._diagnostics.append(
-                    diagnostics.LocalViewMultipleEncodingsDiagnostic(
+                    structural_diagnostics.LocalViewMultipleEncodingsDiagnostic(
                         location=quality.location,
                         first_encoding_name=first_encoding.source_typed_name,
                         first_assignment_line=first_encoding.location.line,
@@ -456,11 +462,11 @@ class DefinitionStructuralValidator:
         # are reported.
         self._validate_quality_assignment_statements(
             statements,
-            multiple_values_diagnostic=diagnostics.ViewMultipleValueQualitiesDiagnostic,
+            multiple_values_diagnostic=structural_diagnostics.ViewMultipleValueQualitiesDiagnostic,
         )
         if first_encoding is None:
             self._diagnostics.append(
-                diagnostics.LocalViewMissingEncodingDiagnostic(
+                structural_diagnostics.LocalViewMissingEncodingDiagnostic(
                     location=view.typed_name.location,
                     view_name=view.typed_name.source_typed_name,
                 )
@@ -476,7 +482,7 @@ class DefinitionStructuralValidator:
             has_output_view = has_output_view or view.is_output
         if not has_output_view:
             self._diagnostics.append(
-                diagnostics.LogicalOperationWithoutOutputViewDiagnostic(
+                structural_diagnostics.LogicalOperationWithoutOutputViewDiagnostic(
                     location=definition.typed_name.location
                 )
             )
@@ -495,7 +501,7 @@ class DefinitionStructuralValidator:
             first_line = seen_lines.get(logical_operation.full_typed_name)
             if first_line is not None:
                 self._diagnostics.append(
-                    diagnostics.DuplicateLogicalOperationSupportDiagnostic(
+                    structural_diagnostics.DuplicateLogicalOperationSupportDiagnostic(
                         location=logical_operation.location,
                         logical_operation_name=logical_operation.source_typed_name,
                         first_support_line=first_line,
@@ -510,7 +516,7 @@ class DefinitionStructuralValidator:
             name = logical_operation.full_typed_name
             if greatest_name is not None and name < greatest_name:
                 self._diagnostics.append(
-                    diagnostics.LogicalOperationSupportOrderDiagnostic(
+                    structural_diagnostics.LogicalOperationSupportOrderDiagnostic(
                         location=logical_operation.location,
                         logical_operation_name=name,
                         logical_operation_name_it_must_precede=greatest_name,
@@ -534,7 +540,7 @@ class DefinitionStructuralValidator:
         )
         if views.is_defined(view.typed_name):
             self._diagnostics.append(
-                diagnostics.LocalNameConflictDiagnostic(
+                structural_diagnostics.LocalNameConflictDiagnostic(
                     location=view.typed_name.location,
                     local_name=view.typed_name.name_content.name,
                     first_definition_line=views.defined_on_line(view.typed_name),
@@ -598,7 +604,7 @@ class DefinitionStructuralValidator:
                 looked_at_lines[canonical_name] = looking_at.location.line
             else:
                 self._diagnostics.append(
-                    diagnostics.AliasedViewDiagnostic(
+                    structural_diagnostics.AliasedViewDiagnostic(
                         location=looking_at.location,
                         looked_at_name=source_name,
                         first_argument_line=first_line,
@@ -622,7 +628,7 @@ class DefinitionStructuralValidator:
         first_line = argument_lines.get(view.full_typed_name)
         if first_line is not None:
             self._diagnostics.append(
-                diagnostics.DuplicateOperationArgumentDiagnostic(
+                structural_diagnostics.DuplicateOperationArgumentDiagnostic(
                     location=view.location,
                     view_name=view.source_typed_name,
                     first_argument_line=first_line,
@@ -644,7 +650,7 @@ class DefinitionStructuralValidator:
             return False
         if not views.is_defined(view):
             self._diagnostics.append(
-                diagnostics.UndefinedLocalNameDiagnostic(
+                structural_diagnostics.UndefinedLocalNameDiagnostic(
                     location=view.location,
                     local_name=view.full_typed_name,
                 )
@@ -669,7 +675,7 @@ class DefinitionStructuralValidator:
     ):
         if not action_statements.statements:
             self._diagnostics.append(
-                diagnostics.EmptyActionStatementsBlockDiagnostic(
+                structural_diagnostics.EmptyActionStatementsBlockDiagnostic(
                     location=action_statements.location,
                 )
             )
@@ -710,7 +716,7 @@ class DefinitionStructuralValidator:
                     == stmt.source.canonical_chained_name_tuple
                 ):
                     self._diagnostics.append(
-                        diagnostics.ValueSettingSamePositionDiagnostic(
+                        structural_diagnostics.ValueSettingSamePositionDiagnostic(
                             location=stmt.source.location,
                             position_name=stmt.source.source_chained_name,
                         )
@@ -745,7 +751,7 @@ class DefinitionStructuralValidator:
         if block is not None:
             self._validate_quality_assignment_statements(
                 block.statements,
-                multiple_values_diagnostic=diagnostics.PositionMultipleValueQualitiesDiagnostic,
+                multiple_values_diagnostic=structural_diagnostics.PositionMultipleValueQualitiesDiagnostic,
             )
 
     def _validate_local_name_format_and_conflicts(
@@ -761,7 +767,7 @@ class DefinitionStructuralValidator:
         name = local_def.typed_name.name_content.name
         if scope.is_defined(local_def.typed_name):
             self._diagnostics.append(
-                diagnostics.LocalNameConflictDiagnostic(
+                structural_diagnostics.LocalNameConflictDiagnostic(
                     location=local_def.typed_name.location,
                     local_name=name,
                     first_definition_line=scope.defined_on_line(local_def.typed_name),
@@ -832,7 +838,7 @@ class DefinitionStructuralValidator:
 
         if len(from_pos.typed_names) == len(to_pos.typed_names):
             self._diagnostics.append(
-                diagnostics.MoveToSamePositionDiagnostic(
+                structural_diagnostics.MoveToSamePositionDiagnostic(
                     location=to_pos.typed_names[-1].location,
                     position_name=to_pos.source_chained_name,
                 )
@@ -841,7 +847,7 @@ class DefinitionStructuralValidator:
 
         divergence = to_pos.typed_names[len(from_pos.typed_names)]
         self._diagnostics.append(
-            diagnostics.MoveIntoDefiningPositionDiagnostic(
+            structural_diagnostics.MoveIntoDefiningPositionDiagnostic(
                 location=divergence.location,
                 source_position=from_pos.source_chained_name,
                 target_position=to_pos.source_chained_name,
@@ -886,7 +892,7 @@ class DefinitionStructuralValidator:
         is_chained_self_reference = is_self_reference and len(chain.typed_names) > 1
         if is_chained_self_reference:
             self._diagnostics.append(
-                diagnostics.UnnecessarySelfReferenceDiagnostic(
+                structural_diagnostics.UnnecessarySelfReferenceDiagnostic(
                     location=first.location,
                     definition_name=self._definition.typed_name.source_typed_name,
                 )
@@ -895,7 +901,7 @@ class DefinitionStructuralValidator:
 
         if not scope.is_defined(first) and ast.is_local_reference(first):
             self._diagnostics.append(
-                diagnostics.UndefinedLocalNameDiagnostic(
+                structural_diagnostics.UndefinedLocalNameDiagnostic(
                     location=first.location,
                     local_name=first.full_typed_name,
                 )
@@ -907,7 +913,7 @@ class DefinitionStructuralValidator:
                 self._used_implied_qualities.add(first.full_typed_name)
             else:
                 self._diagnostics.append(
-                    diagnostics.UnknownGlobalNameDiagnostic(
+                    structural_diagnostics.UnknownGlobalNameDiagnostic(
                         location=first.location,
                         source_global_name=first.source_typed_name,
                         full_global_name=first.full_typed_name,
@@ -928,7 +934,7 @@ class DefinitionStructuralValidator:
                 )
             ):
                 self._diagnostics.append(
-                    diagnostics.ChainedLocalNameRequiresActionDiagnostic(
+                    structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic(
                         location=typed_name.location,
                         local_name=typed_name.full_typed_name,
                         preceding_name=previous_element.full_typed_name,
@@ -941,7 +947,7 @@ class DefinitionStructuralValidator:
 
         if last_typed_name.name_type != name_types.NameType.POSITION:
             self._diagnostics.append(
-                diagnostics.PositionReferenceChainEndDiagnostic(
+                structural_diagnostics.PositionReferenceChainEndDiagnostic(
                     location=last_typed_name.location,
                 )
             )
@@ -983,7 +989,7 @@ class DefinitionStructuralValidator:
             self._process_reference(chain_element)
         elif chain_element.name_type == name_types.NameType.ACTION:
             self._diagnostics.append(
-                diagnostics.LocalActionNameDiagnostic(
+                structural_diagnostics.LocalActionNameDiagnostic(
                     location=chain_element.location,
                     local_name=chain_element.name_content.name,
                 )
@@ -993,7 +999,9 @@ class DefinitionStructuralValidator:
         self,
         statements: Sequence[ast.QualityAssignmentStatement],
         *,
-        multiple_values_diagnostic: type[diagnostics.MultipleValueQualitiesDiagnostic],
+        multiple_values_diagnostic: type[
+            structural_diagnostics.MultipleValueQualitiesDiagnostic
+        ],
     ):
         seen_lines: dict[str, int] = {}
         first_value: ast.GlobalTypedNameReference | None = None
@@ -1007,7 +1015,7 @@ class DefinitionStructuralValidator:
             first_line = seen_lines.get(statement.typed_global_name.full_typed_name)
             if first_line is not None:
                 self._diagnostics.append(
-                    diagnostics.DuplicateQualityAssignmentDiagnostic(
+                    structural_diagnostics.DuplicateQualityAssignmentDiagnostic(
                         location=statement.typed_global_name.location,
                         quality_name=statement.typed_global_name.source_typed_name,
                         first_assignment_line=first_line,
@@ -1045,7 +1053,7 @@ class DefinitionStructuralValidator:
             first_line = seen_lines.get(implication.typed_global_name.full_typed_name)
             if first_line is not None:
                 self._diagnostics.append(
-                    diagnostics.DuplicateQualityImplicationDiagnostic(
+                    structural_diagnostics.DuplicateQualityImplicationDiagnostic(
                         location=implication.typed_global_name.location,
                         implication_name=implication.typed_global_name.source_typed_name,
                         first_implication_line=first_line,
@@ -1063,7 +1071,7 @@ class DefinitionStructuralValidator:
     def _check_unreferenced_positions(self):
         for local_def in self._unreferenced_positions.values():
             self._diagnostics.append(
-                diagnostics.UnreferencedPositionDiagnostic(
+                structural_diagnostics.UnreferencedPositionDiagnostic(
                     location=local_def.typed_name.location,
                     position_name=local_def.typed_name.source_typed_name,
                 )
@@ -1074,7 +1082,7 @@ class DefinitionStructuralValidator:
             if implied_name in self._used_implied_qualities:
                 continue
             self._diagnostics.append(
-                diagnostics.UnusedQualityImplicationDiagnostic(
+                structural_diagnostics.UnusedQualityImplicationDiagnostic(
                     location=implication.typed_global_name.location,
                     implication_name=implication.typed_global_name.source_typed_name,
                 )
@@ -1118,7 +1126,7 @@ class DefinitionStructuralValidator:
             if fqun_string not in root_config.sub_roots:
                 self._unknown_fquns.add(fqun_string)
                 self._diagnostics.append(
-                    diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+                    config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
                         location=global_name.fqun.location,
                         universe=fqun_string,
                         current_universe_name=root_config.fqun.canonical,

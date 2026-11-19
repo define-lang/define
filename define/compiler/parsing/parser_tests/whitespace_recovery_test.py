@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from define.compiler import ast
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import parser_diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -26,7 +26,7 @@ def test_comment_without_space_after_terminator_does_not_stop_the_next_definitio
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
+        parser_diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=64, end_line=1, end_column=65
             )
@@ -52,7 +52,7 @@ def test_comment_without_space_after_block_open_does_not_stop_the_block(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
+        parser_diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=64, end_line=1, end_column=65
             )
@@ -82,7 +82,7 @@ def test_comment_without_space_after_block_close_does_not_stop_the_next_definiti
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
+        parser_diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
             location=rendering.SourceLocation(
                 line=5, column=1, end_line=5, end_column=2
             )
@@ -108,7 +108,7 @@ def test_spaces_before_angle_bracket_in_reference_keep_the_reference(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
+        parser_diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=28, end_line=3, end_column=29
             )
@@ -134,7 +134,7 @@ def test_space_before_angle_bracket_in_global_definition_keeps_the_definition(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
+        parser_diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=30, end_line=1, end_column=30
             )
@@ -162,7 +162,7 @@ def test_space_before_angle_bracket_in_local_definition_keeps_the_definition(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
+        parser_diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
             location=rendering.SourceLocation(
                 line=2, column=24, end_line=2, end_column=24
             )
@@ -190,7 +190,7 @@ def test_missing_newline_at_end_of_file_after_block_keeps_the_definition(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingNewlineAtEndOfFileDiagnostic(
+        parser_diagnostics.MissingNewlineAtEndOfFileDiagnostic(
             location=rendering.SourceLocation(
                 line=5, column=2, end_line=5, end_column=2
             )
@@ -212,17 +212,17 @@ def test_each_whitespace_mistake_gets_its_own_diagnostic(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
+        parser_diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=30, end_line=1, end_column=30
             )
         ),
-        diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
+        parser_diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=65, end_line=1, end_column=66
             )
         ),
-        diagnostics.MissingNewlineAtEndOfFileDiagnostic(
+        parser_diagnostics.MissingNewlineAtEndOfFileDiagnostic(
             location=rendering.SourceLocation(
                 line=2, column=66, end_line=2, end_column=66
             )
@@ -244,7 +244,7 @@ def test_whitespace_mistake_before_a_syntax_error_is_reported_with_it(
         + "define the potential position<mv:define-lang.org:parser:/second>\n"
     )
     assert result.diagnostics == [
-        diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
+        parser_diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=64, end_line=1, end_column=65
             )

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -55,7 +55,9 @@ def test_destroyed_particle_guarantees_do_not_make_replacement_particle_occupied
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.DestroyInEmptyInterfacePositionDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.DestroyInEmptyInterfacePositionDiagnostic
+    )
     assert diag.location.line == 34
     assert diag.location.column == 33
     assert diag.location.end_line == 34
@@ -112,7 +114,9 @@ def test_occupied_guarantee_creates_empty_requirement(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
@@ -170,7 +174,9 @@ def test_move_guarantee_creates_occupied_in_distant_caller(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 15
     assert all_diags[0].populated_at.column == 83
     assert all_diags[0].populated_at.file_path == "outer.dfn"
@@ -193,7 +199,9 @@ def test_callee_guarantee_below_particle_its_caller_replaced_does_not_apply(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 15
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "test.dfn"
@@ -216,7 +224,9 @@ def test_caller_guarantee_below_particle_its_callee_created_applies(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "middle.dfn"
@@ -239,7 +249,9 @@ def test_earlier_callee_move_applies_before_later_callee_refills_its_origin(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 9
     assert all_diags[0].populated_at.column == 46
     assert all_diags[0].populated_at.file_path == "mover.dfn"
@@ -255,7 +267,9 @@ def test_callee_guarantee_below_particle_its_caller_moved_follows_particle(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 8
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "fill_child.dfn"
@@ -274,7 +288,9 @@ def test_caller_emptying_position_its_child_particle_callee_filled_reads_empty(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 17
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "test.dfn"
@@ -293,7 +309,9 @@ def test_later_of_two_callees_on_child_particle_decides_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 8
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "fill.dfn"
@@ -312,7 +330,9 @@ def test_child_particle_callee_guarantee_below_position_its_caller_replaced_does
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 18
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "test.dfn"
@@ -331,7 +351,9 @@ def test_callee_move_into_particle_its_caller_then_moved_follows_particle(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 9
     assert all_diags[0].populated_at.column == 46
     assert all_diags[0].populated_at.file_path == "mover.dfn"
@@ -347,7 +369,9 @@ def test_callee_moving_particle_below_new_particle_in_its_origin_applies(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 11
     assert all_diags[0].populated_at.column == 47
     assert all_diags[0].populated_at.file_path == "mover.dfn"
@@ -366,7 +390,9 @@ def test_callee_moving_particle_and_one_below_it_moves_each_to_its_own_destinati
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 65
     assert all_diags[0].populated_at.file_path == "mover.dfn"
@@ -382,7 +408,9 @@ def test_callee_moving_particle_back_below_new_particle_leaves_it_there(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 13
     assert all_diags[0].populated_at.column == 55
     assert all_diags[0].populated_at.file_path == "mover.dfn"
@@ -401,7 +429,9 @@ def test_transitive_child_guarantee_follows_particle_through_move(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 27
     assert all_diags[0].populated_at.column == 57
     assert all_diags[0].populated_at.file_path == "outer.dfn"
@@ -426,7 +456,9 @@ def test_transitive_child_guarantee_at_moved_position_follows_particle(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 14
@@ -455,7 +487,9 @@ def test_body_move_carries_pending_callee_guarantees(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert diagnostic.location.line == 22
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 22
@@ -479,7 +513,9 @@ def test_guarantee_move_carries_pending_callee_guarantees(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert diagnostic.location.line == 17
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 17
@@ -503,7 +539,9 @@ def test_later_sibling_callee_empties_position_an_earlier_sibling_filled(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert diagnostic.location.line == 17
     assert diagnostic.location.column == 33
     assert diagnostic.location.end_line == 17
@@ -521,7 +559,9 @@ def test_callee_of_callee_empties_position_its_caller_filled(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert diagnostic.location.line == 17
     assert diagnostic.location.column == 33
     assert diagnostic.location.end_line == 17
@@ -539,7 +579,9 @@ def test_implied_callee_of_callee_empties_position_its_caller_filled(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert diagnostic.location.line == 18
     assert diagnostic.location.column == 33
     assert diagnostic.location.end_line == 18
@@ -556,7 +598,9 @@ def test_callee_guarantee_below_particle_the_same_callee_moved_is_published(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert all_diags[0].position_name == "position</destination>::position</marker>"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
@@ -569,7 +613,9 @@ def test_callee_moving_particle_then_its_child_particle_moves_what_is_below_it(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "test.dfn"
@@ -588,7 +634,9 @@ def test_particle_below_child_particle_a_callee_moved_then_destroyed_is_not_publ
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert all_diags[0].position_name == "position</destination>::position</a>"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
@@ -601,7 +649,9 @@ def test_callee_moving_child_particle_then_its_parent_particle_moves_what_is_bel
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 11
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "test.dfn"
@@ -617,7 +667,9 @@ def test_caller_publishes_child_particle_its_callee_moved_after_its_parent_parti
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 8
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "middle.dfn"
@@ -636,7 +688,9 @@ def test_callee_moving_particle_out_of_two_particles_it_then_moves_follows_all_t
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 78
     assert all_diags[0].populated_at.file_path == "inner.dfn"
@@ -652,7 +706,9 @@ def test_callee_moving_child_particle_then_destroying_its_parent_particle_keeps_
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 10
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "test.dfn"
@@ -668,7 +724,9 @@ def test_callee_replacing_particle_removes_what_its_caller_tracked_below_it(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert all_diags[0].position_name == "position</input>::position</a>::position</x>"
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 33
@@ -681,7 +739,9 @@ def test_callee_moving_two_child_particles_out_then_destroying_their_parent_keep
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 7
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "filler.dfn"
@@ -689,7 +749,9 @@ def test_callee_moving_two_child_particles_out_then_destroying_their_parent_keep
     assert all_diags[0].location.line == 22
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[1].populated_at.line == 8
     assert all_diags[1].populated_at.column == 30
     assert all_diags[1].populated_at.file_path == "filler.dfn"

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -38,7 +38,9 @@ def test_move_mismatched_value(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert diagnostic.location.line == 27
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == "test.dfn"
@@ -53,7 +55,9 @@ def test_move_without_value(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert diagnostic.location.line == 19
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == "test.dfn"
@@ -84,14 +88,18 @@ def test_action_mismatched_value(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 2
     untriggered = result.sorted_diagnostics()[0]
-    assert isinstance(untriggered, diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        untriggered, reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert untriggered.location.line == 9
     assert untriggered.location.column == 28
     assert untriggered.location.file_path == "test.dfn"
     assert untriggered.position_name == "position<worker>"
     assert untriggered.quality_name == "action</consume>"
     diagnostic = result.sorted_diagnostics()[1]
-    assert isinstance(diagnostic, diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert diagnostic.location.line == 22
     assert diagnostic.location.column == 50
     assert diagnostic.location.file_path == "test.dfn"
@@ -125,7 +133,9 @@ def test_value_use_keeps_only_origin_alive(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+    )
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.quality_name == "value<standard:/number/natural>"
@@ -139,14 +149,16 @@ def test_value_setting_target_keeps_only_origin_alive(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 2
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+    )
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.quality_name == "value<standard:/number/natural>"
     assert diagnostic.location.line == 13
     assert diagnostic.location.file_path == "test.dfn"
     dead_write = result.sorted_diagnostics()[1]
-    assert isinstance(dead_write, diagnostics.DeadValueWriteDiagnostic)
+    assert isinstance(dead_write, reference_graph_diagnostics.DeadValueWriteDiagnostic)
     assert dead_write.location.line == 26
     assert dead_write.location.column == 26
     assert dead_write.location.file_path == "test.dfn"
@@ -179,7 +191,9 @@ def test_guaranteed_value_through_local(
     ).program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+    )
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<middle>"
     assert diagnostic.quality_name == "value</number>"
@@ -202,7 +216,9 @@ def test_callee_contract_keeps_only_origin_alive(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+    )
     assert diagnostic.location.column == 28
     assert diagnostic.position_name == "position<middle>"
     assert diagnostic.quality_name == "value<standard:/number/natural>"
@@ -223,7 +239,9 @@ def test_unused_local_value_is_dead(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+    )
     assert diagnostic.position_name == "position<item>"
     assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.file_path == "test.dfn"
@@ -237,14 +255,18 @@ def test_moving_values_does_not_keep_quality_assignments_alive(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 2
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+    )
     assert diagnostic.position_name == "position<source>"
     assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 28
     diagnostic = result.sorted_diagnostics()[1]
-    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+    )
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.file_path == "test.dfn"
@@ -258,7 +280,9 @@ def test_callee_without_qualities_does_not_keep_value_alive(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+    )
     assert diagnostic.position_name == "position<source>"
     assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.file_path == "test.dfn"
@@ -274,7 +298,9 @@ def test_value_read_keeps_only_interface_origin_alive(
     ).program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+    )
     assert diagnostic.position_name == "position<moved>"
     assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.file_path == "test.dfn"
@@ -290,7 +316,9 @@ def test_unused_interface_value_is_dead(
     ).program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueQualityAssignmentDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+    )
     assert diagnostic.position_name == "position<input>"
     assert diagnostic.quality_name == "value</number>"
     assert diagnostic.location.file_path == "test.dfn"
@@ -303,7 +331,7 @@ def test_associated_encoding_not_defined(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.ReferencedFileNotFoundDiagnostic(
+        structural_diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=5,
                 column=18,
@@ -321,13 +349,13 @@ def test_literal_sets_undefined_value(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.ReferencedFileNotFoundDiagnostic(
+        structural_diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=34, end_line=8, end_column=39, file_path="test.dfn"
             ),
             file_path="count.dfn",
         ),
-        diagnostics.DeadValueWriteDiagnostic(
+        reference_graph_diagnostics.DeadValueWriteDiagnostic(
             location=rendering.SourceLocation(
                 line=12, column=26, end_line=12, end_column=39, file_path="test.dfn"
             ),

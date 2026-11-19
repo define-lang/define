@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.structural_validation import (
@@ -26,7 +26,9 @@ def test_action_local_position_requires_missing_global(
     result = validate_testdata_structural()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
     assert diags[0].file_path == "test.dfn"
     assert diags[0].definition_name == "position<mv:define-lang.org:test_files:/test>"
     assert diags[0].location.line == 7
@@ -42,7 +44,9 @@ def test_same_fqun_quality_assignment_reference_in_global_position_must_use_shor
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+    )
     assert diags[0].fqun == "mv:define-lang.org:test_files"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
@@ -57,14 +61,18 @@ def test_same_fqun_quality_assignment_reference_in_move_must_use_short_form(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+    )
     assert diags[0].fqun == "mv:define-lang.org:test_files"
     assert diags[0].location.line == 8
     assert diags[0].location.column == 37
     assert diags[0].location.end_line == 8
     assert diags[0].location.end_column == 65
     assert diags[0].location.file_path is None
-    assert isinstance(diags[1], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert isinstance(
+        diags[1], structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+    )
     assert diags[1].fqun == "mv:define-lang.org:test_files"
     assert diags[1].location.line == 12
     assert diags[1].location.column == 80
@@ -79,7 +87,9 @@ def test_quality_assignment_reference_with_invalid_path(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].segment == "Bad"
     assert diags[0].chars == ("B",)
@@ -93,7 +103,9 @@ def test_same_fqun_quality_assignment_reference_must_use_short_form(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].fqun == "my.domain.com:my_lib"
     assert diags[0].location.line == 3
@@ -106,7 +118,9 @@ def test_same_fqun_quality_assignment_reference_in_local_position_must_use_short
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].fqun == "my.domain.com:my_lib"
     assert diags[0].location.line == 4
@@ -123,7 +137,7 @@ def test_invalid_quality_assignment_does_not_skip_remaining_quality_assignments(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
+        structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
     )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].segment == "Bad"
@@ -144,7 +158,7 @@ def test_referenced_global_name_wrong_type_position(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.ReferencedDefinitionNotFoundDiagnostic,
+        structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].file_path == "target.dfn"
@@ -167,12 +181,12 @@ def test_referenced_global_name_wrong_type_for_two_definitions_in_same_file(
     assert len(diags) == 2
     assert isinstance(
         diags[0],
-        diagnostics.ReferencedDefinitionNotFoundDiagnostic,
+        structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
     assert diags[0].location.file_path == "test.dfn"
     assert isinstance(
         diags[1],
-        diagnostics.ReferencedDefinitionNotFoundDiagnostic,
+        structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
     assert diags[1].location.file_path == "test.dfn"
     assert diags[0].file_path == "target.dfn"

@@ -27,7 +27,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.config import (
         config_file,
     )
-    from define.compiler.errors import diagnostics
+    from define.compiler.errors import config_diagnostics, diagnostics
 
 
 def load_config(
@@ -55,7 +55,7 @@ def load_association_table(
 
 def config_field_location[M: message.Message](
     config_file: config_file.ConfigFile[M],
-    field_path: diagnostics.FieldPath,
+    field_path: config_diagnostics.FieldPath,
     root: define_path.DefinePath = constants.PROJECT_ROOT,
 ) -> rendering.SourceLocation:
     """Return the location of the field at field_path in config_file of the project at root, relative to the current directory."""

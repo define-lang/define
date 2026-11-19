@@ -7,7 +7,7 @@ import typing
 import msgspec
 
 from define.compiler import constants
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import structural_diagnostics, syntax_errors
 from define.compiler.validator.structural import (
     file_validation_context,
 )
@@ -17,6 +17,7 @@ if typing.TYPE_CHECKING:
     from define.compiler import ast
     from define.compiler.config import project_roots
     from define.compiler.data_structures import define_path
+    from define.compiler.errors import diagnostics
     from define.compiler.graphs import reference_graph
     from define.compiler.validator.structural import (
         file_loader,
@@ -159,7 +160,7 @@ class ReferenceResolver:
         if sub_root is not None:
             sub_root_path, entry = sub_root
             return Unresolved(
-                diagnostics.PathInsideOtherUniverseDiagnostic(
+                structural_diagnostics.PathInsideOtherUniverseDiagnostic(
                     location=edge.global_name_reference.name_content.path.location,
                     path=str(target_file),
                     other_universe=entry.universe,
@@ -245,7 +246,7 @@ class ReferenceResolver:
         # Reported at the reference, like a missing file.
         if isinstance(target_read_failure, syntax_errors.SourceFileUnreadable):
             self._path_tracker.mark_not_found(target_file)
-            return diagnostics.ReferencedFileUnreadableDiagnostic(
+            return structural_diagnostics.ReferencedFileUnreadableDiagnostic(
                 location=edge.global_name_reference.name_content.path.location,
                 file_path=str(target_file),
                 reason=target_read_failure.reason,
@@ -260,20 +261,20 @@ class ReferenceResolver:
                 self._path_tracker.mark_not_found(target_file)
             elif target_definition is not None:
                 return ResolvedDefinition(target_loaded_file, target_definition)
-            return diagnostics.StandardDefinitionNotFoundDiagnostic(
+            return structural_diagnostics.StandardDefinitionNotFoundDiagnostic(
                 location=edge.global_name_reference.location,
                 definition_name=edge.global_name_reference.full_typed_name,
             )
 
         if isinstance(target_read_failure, syntax_errors.SourceFileNotFound):
             self._path_tracker.mark_not_found(target_file)
-            return diagnostics.ReferencedFileNotFoundDiagnostic(
+            return structural_diagnostics.ReferencedFileNotFoundDiagnostic(
                 location=edge.global_name_reference.name_content.path.location,
                 file_path=str(target_file),
             )
 
         if target_definition is None:
-            return diagnostics.ReferencedDefinitionNotFoundDiagnostic(
+            return structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic(
                 location=edge.global_name_reference.location,
                 file_path=str(target_file),
                 definition_name=edge.global_name_reference.full_typed_name,

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from define.compiler import ast
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import parser_diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -356,7 +356,7 @@ def test_comment_directly_after_block_open(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
+        parser_diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=64, end_line=1, end_column=65
             )
@@ -377,7 +377,7 @@ def test_comment_directly_after_block_close(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
+        parser_diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=5, end_line=4, end_column=6
             )
@@ -466,7 +466,7 @@ def test_whitespace_line_at_start_of_potential_position_definition_block(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=1,
@@ -491,7 +491,7 @@ def test_whitespace_line_after_quality_assignment_block(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=5,
                 column=1,
@@ -516,7 +516,7 @@ def test_whitespace_line_at_start_of_quality_assignment_block(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=3,
                 column=1,
@@ -541,7 +541,7 @@ def test_whitespace_line_after_quality_assignment_statement(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=4,
                 column=1,

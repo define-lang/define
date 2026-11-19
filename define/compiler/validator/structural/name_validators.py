@@ -8,12 +8,13 @@ import typing
 from pathlib import Path
 
 from define.compiler import ast, constants
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
 
     from crates.source_rendering.python import rendering
+    from define.compiler.errors import diagnostics
 
 _RESERVED_WORDS_DIR = Path(__file__).parent.parent.parent.parent / "reserved_words"
 
@@ -173,7 +174,7 @@ def _validate_multiverse_name_format(
     result: list[diagnostics.Diagnostic] = []
     if len(name) < 2:
         result.append(
-            diagnostics.MultiverseNameTooShortDiagnostic(
+            structural_diagnostics.MultiverseNameTooShortDiagnostic(
                 location=multiverse.location,
                 multiverse_name=name,
             )
@@ -181,7 +182,7 @@ def _validate_multiverse_name_format(
     invalid_indexes = _MULTIVERSE_CHARACTERS.invalid_indexes(name)
     if invalid_indexes:
         result.append(
-            diagnostics.MultiverseNameInvalidCharDiagnostic(
+            structural_diagnostics.MultiverseNameInvalidCharDiagnostic(
                 location=_character_location(
                     multiverse.location,
                     multiverse.location.column + invalid_indexes[0],
@@ -195,11 +196,11 @@ def _validate_multiverse_name_format(
 
 def _validate_multiverse_name_reserved(
     multiverse: ast.Multiverse,
-) -> list[diagnostics.ReservedMultiverseNameDiagnostic]:
+) -> list[structural_diagnostics.ReservedMultiverseNameDiagnostic]:
     """Validate a multiverse name against reserved names."""
     if multiverse.name.lower() in _RESERVED_MULTIVERSE_NAMES:
         return [
-            diagnostics.ReservedMultiverseNameDiagnostic(
+            structural_diagnostics.ReservedMultiverseNameDiagnostic(
                 location=multiverse.location,
                 reserved_name=multiverse.name,
             )
@@ -226,7 +227,7 @@ def _validate_authority_domain_format(
     result: list[diagnostics.Diagnostic] = []
     if len(domain) < 2:
         result.append(
-            diagnostics.AuthorityDomainTooShortDiagnostic(
+            structural_diagnostics.AuthorityDomainTooShortDiagnostic(
                 location=authority.location,
                 domain=domain,
             )
@@ -234,7 +235,7 @@ def _validate_authority_domain_format(
     invalid_indexes = _AUTHORITY_DOMAIN_CHARACTERS.invalid_indexes(domain)
     if invalid_indexes:
         result.append(
-            diagnostics.AuthorityDomainInvalidCharDiagnostic(
+            structural_diagnostics.AuthorityDomainInvalidCharDiagnostic(
                 location=_character_location(
                     authority.location,
                     authority.location.column + invalid_indexes[0],
@@ -272,14 +273,14 @@ def _validate_authority_path_segment(
     segment: str,
 ) -> diagnostics.Diagnostic | None:
     if segment == "":
-        return diagnostics.AuthorityPathEmptySegmentDiagnostic(
+        return structural_diagnostics.AuthorityPathEmptySegmentDiagnostic(
             location=_character_location(authority_location, column - 1),
             authority=authority_name,
         )
     invalid_indexes = _AUTHORITY_PATH_CHARACTERS.invalid_indexes(segment)
     if not invalid_indexes:
         return None
-    return diagnostics.InvalidAuthorityPathSegmentDiagnostic(
+    return structural_diagnostics.InvalidAuthorityPathSegmentDiagnostic(
         location=_character_location(authority_location, column + invalid_indexes[0]),
         segment=segment,
         chars=_distinct_characters(segment, invalid_indexes),
@@ -288,14 +289,14 @@ def _validate_authority_path_segment(
 
 def _validate_authority_reserved(
     authority: ast.Authority, multiverse: ast.Multiverse | None
-) -> list[diagnostics.ReservedNameDiagnostic]:
+) -> list[structural_diagnostics.ReservedNameDiagnostic]:
     """Validate an authority name against reserved names."""
     domain, _ = _split_authority_name(authority.name)
     lowered_domain = domain.lower()
 
     if lowered_domain in _RESERVED_AUTHORITY_DOMAINS:
         return [
-            diagnostics.ReservedAuthorityDomainDiagnostic(
+            structural_diagnostics.ReservedAuthorityDomainDiagnostic(
                 location=authority.location,
                 reserved_name=domain,
             )
@@ -309,7 +310,7 @@ def _validate_authority_reserved(
         and "." not in lowered_domain
     ):
         return [
-            diagnostics.DotlessAuthorityDomainDiagnostic(
+            structural_diagnostics.DotlessAuthorityDomainDiagnostic(
                 location=authority.location,
                 reserved_name=domain,
                 multiverse_name=effective_multiverse,
@@ -345,7 +346,7 @@ def _validate_universe_name_format(
     result: list[diagnostics.Diagnostic] = []
     if len(name) < 2:
         result.append(
-            diagnostics.UniverseNameTooShortDiagnostic(
+            structural_diagnostics.UniverseNameTooShortDiagnostic(
                 location=universe.location,
                 universe_name=name,
             )
@@ -353,7 +354,7 @@ def _validate_universe_name_format(
     invalid_indexes = _UNIVERSE_CHARACTERS.invalid_indexes(name)
     if invalid_indexes:
         result.append(
-            diagnostics.UniverseNameInvalidCharDiagnostic(
+            structural_diagnostics.UniverseNameInvalidCharDiagnostic(
                 location=_character_location(
                     universe.location,
                     universe.location.column + invalid_indexes[0],
@@ -367,11 +368,11 @@ def _validate_universe_name_format(
 
 def _validate_universe_name_reserved(
     universe: ast.Universe,
-) -> list[diagnostics.ReservedUniverseNameDiagnostic]:
+) -> list[structural_diagnostics.ReservedUniverseNameDiagnostic]:
     """Validate a universe name against reserved names."""
     if universe.name.lower() in _RESERVED_UNIVERSE_NAMES:
         return [
-            diagnostics.ReservedUniverseNameDiagnostic(
+            structural_diagnostics.ReservedUniverseNameDiagnostic(
                 location=universe.location,
                 reserved_name=universe.name,
             )
@@ -394,7 +395,7 @@ def validate_fqun(fqun: ast.Fqun) -> list[diagnostics.Diagnostic]:
     if fqun.authority is None:
         if fqun.universe.name.lower() != constants.STANDARD_UNIVERSE:
             result.append(
-                diagnostics.UniverseWithoutAuthorityDiagnostic(
+                structural_diagnostics.UniverseWithoutAuthorityDiagnostic(
                     location=fqun.universe.location,
                     universe_name=fqun.universe.name,
                 )
@@ -439,7 +440,7 @@ def validate_global_name(
             and name.fqun.canonical == must_use_short_form
         ):
             result.append(
-                diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
+                structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
                     location=name.fqun.location,
                     fqun=must_use_short_form,
                 )
@@ -463,7 +464,7 @@ def _validate_global_name_path(
     # The parser accepts a global name only when its path starts with `/`.
     if path_name.endswith("/"):
         result.append(
-            diagnostics.GlobalNamePathTrailingSlashDiagnostic(
+            structural_diagnostics.GlobalNamePathTrailingSlashDiagnostic(
                 location=path.location.at(
                     line=path.location.line,
                     column=path.location.column + len(path_name) - 1,
@@ -481,7 +482,7 @@ def _validate_global_name_path(
         segment = path_name[segment_start:segment_end]
         if segment == "":
             result.append(
-                diagnostics.GlobalNamePathEmptySegmentDiagnostic(
+                structural_diagnostics.GlobalNamePathEmptySegmentDiagnostic(
                     location=path.location.at(
                         line=path.location.line,
                         column=path.location.column + segment_start - 1,
@@ -494,7 +495,7 @@ def _validate_global_name_path(
         invalid_indexes = _PATH_SEGMENT_CHARACTERS.invalid_indexes(segment)
         if invalid_indexes:
             result.append(
-                diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
+                structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
                     location=_character_location(
                         path.location,
                         path.location.column + segment_start + invalid_indexes[0],
@@ -516,14 +517,14 @@ def _validate_global_name_path(
 
 def validate_local_name_format(
     local_name: ast.LocalNameContent,
-) -> list[diagnostics.InvalidLocalNameFormatDiagnostic]:
+) -> list[structural_diagnostics.InvalidLocalNameFormatDiagnostic]:
     """Validate local name character format."""
     name = local_name.name
     invalid_indexes = _LOCAL_NAME_CHARACTERS.invalid_indexes(name)
     if not invalid_indexes:
         return []
     return [
-        diagnostics.InvalidLocalNameFormatDiagnostic(
+        structural_diagnostics.InvalidLocalNameFormatDiagnostic(
             location=_character_location(
                 local_name.location,
                 local_name.location.column + invalid_indexes[0],

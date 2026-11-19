@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.validation_pipeline import (
@@ -24,7 +24,8 @@ def test_move_interface_to_implied(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(
-        all_diags[0], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestroyInEmptyInterfacePositionDiagnostic,
     )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 33
@@ -38,7 +39,9 @@ def test_move_interface_to_implied(
     assert all_diags[0].inferred_at.end_line == 8
     assert all_diags[0].inferred_at.end_column == 43
     assert all_diags[0].inferred_at.file_path == "inner.dfn"
-    assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 15
@@ -58,7 +61,9 @@ def test_move_implied_to_interface(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
@@ -70,7 +75,9 @@ def test_move_implied_to_interface(
     assert all_diags[0].populated_at.end_line == 9
     assert all_diags[0].populated_at.end_column == 65
     assert all_diags[0].populated_at.file_path == "inner.dfn"
-    assert isinstance(all_diags[1], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert all_diags[1].location.line == 14
     assert all_diags[1].location.column == 33
     assert all_diags[1].location.end_line == 14
@@ -85,7 +92,9 @@ def test_move_interface_through_implied_back_to_interface(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 14
@@ -98,7 +107,8 @@ def test_move_interface_through_implied_back_to_interface(
     assert all_diags[0].populated_at.end_column == 65
     assert all_diags[0].populated_at.file_path == "inner.dfn"
     assert isinstance(
-        all_diags[1], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
+        all_diags[1],
+        reference_graph_diagnostics.DestroyInEmptyInterfacePositionDiagnostic,
     )
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 33
@@ -112,7 +122,9 @@ def test_move_interface_through_implied_back_to_interface(
     assert all_diags[1].inferred_at.end_line == 9
     assert all_diags[1].inferred_at.end_column == 42
     assert all_diags[1].inferred_at.file_path == "inner.dfn"
-    assert isinstance(all_diags[2], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[2], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert all_diags[2].location.line == 16
     assert all_diags[2].location.column == 33
     assert all_diags[2].location.end_line == 16
@@ -128,7 +140,8 @@ def test_interface_to_implied_propagates_across_fqun(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(
-        all_diags[0], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestroyInEmptyInterfacePositionDiagnostic,
     )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 33
@@ -145,7 +158,9 @@ def test_interface_to_implied_propagates_across_fqun(
     assert all_diags[0].inferred_at.end_line == 8
     assert all_diags[0].inferred_at.end_column == 43
     assert all_diags[0].inferred_at.file_path == "lib/inner.dfn"
-    assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 15
@@ -165,7 +180,9 @@ def test_action_creates_in_both_interface_and_implied(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 13
@@ -177,7 +194,9 @@ def test_action_creates_in_both_interface_and_implied(
     assert all_diags[0].populated_at.end_line == 8
     assert all_diags[0].populated_at.end_column == 43
     assert all_diags[0].populated_at.file_path == "inner.dfn"
-    assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[1].location.line == 14
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 14
@@ -197,7 +216,9 @@ def test_swap_interface_and_implied_via_local(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 14
@@ -209,7 +230,9 @@ def test_swap_interface_and_implied_via_local(
     assert all_diags[0].populated_at.end_line == 11
     assert all_diags[0].populated_at.end_column == 65
     assert all_diags[0].populated_at.file_path == "inner.dfn"
-    assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 15

@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 from define.compiler import ast, constants
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import config_diagnostics, syntax_errors
 from define.compiler.parsing import parser
 from define.compiler.validator.structural import name_validators
 
@@ -15,11 +15,12 @@ if typing.TYPE_CHECKING:
     from defcl.python import validator as defcl_validator
     from define.compiler import name_types
     from define.compiler.config import local_deps_config
+    from define.compiler.errors import diagnostics
 
 
 def config_global_name(
     file: defcl_validator.ValidatedFile,
-    field_path: diagnostics.FieldPath,
+    field_path: config_diagnostics.FieldPath,
     name: str,
     fqun: str,
 ) -> tuple[ast.ReferenceGlobalNameContent | None, list[diagnostics.Diagnostic]]:
@@ -47,7 +48,7 @@ def config_global_name(
 
 def config_fqun(
     file: defcl_validator.ValidatedFile,
-    field_path: diagnostics.FieldPath,
+    field_path: config_diagnostics.FieldPath,
     name: str,
 ) -> tuple[ast.Fqun | None, list[diagnostics.Diagnostic]]:
     """Parse and validate the fully qualified universe name in the config file's field at field_path.
@@ -78,7 +79,7 @@ def check_global_name_in_this_universe(
     # in another universe.
     if content.fqun is None:
         return None
-    return diagnostics.AssociationNameInAnotherUniverseDiagnostic(
+    return config_diagnostics.AssociationNameInAnotherUniverseDiagnostic(
         location=content.location,
         field_name=field_name,
         name=content.source_name,
@@ -110,7 +111,7 @@ def check_universe_configured(
     name: ast.ReferenceGlobalNameContent,
     fqun: ast.Fqun,
     sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry],
-) -> diagnostics.ExternalUniverseNotConfiguredDiagnostic | None:
+) -> config_diagnostics.ExternalUniverseNotConfiguredDiagnostic | None:
     """Return a diagnostic if name is in a universe that the project whose universe is fqun and whose sub-roots are sub_roots must configure before referencing it, and does not."""
     name_fqun = name.fqun
     if (
@@ -119,7 +120,7 @@ def check_universe_configured(
         or name_fqun.canonical in sub_roots
     ):
         return None
-    return diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+    return config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
         location=name_fqun.location,
         universe=name_fqun.canonical,
         current_universe_name=fqun.canonical,

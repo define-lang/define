@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -85,7 +85,9 @@ def test_destroy_does_not_fire_non_destructor_action_quality(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == "test.dfn"
@@ -119,7 +121,9 @@ def test_destroy_empty_position_does_not_fire_destructor(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == "test.dfn"
@@ -133,13 +137,17 @@ def test_destroy_parent_not_occupied_does_not_fire_destructor(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].quality_name == "action</inner>"
     assert all_diags[0].position_name == "position<box>"
-    assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert all_diags[1].location.line == 10
     assert all_diags[1].location.column == 33
     assert all_diags[1].location.file_path == "test.dfn"
@@ -154,7 +162,9 @@ def test_missing_destructor_file_is_reported_and_skipped(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert all_diags[0].file_path == "destructor.dfn"
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 35
@@ -190,7 +200,7 @@ def test_destroy_triggers_destructor_with_occupied_interface_below_implied_posit
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</destructor>"
     assert (
@@ -218,7 +228,7 @@ def test_automatic_destruction_triggers_destructor_with_occupied_interface_below
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</destructor>"
     assert (

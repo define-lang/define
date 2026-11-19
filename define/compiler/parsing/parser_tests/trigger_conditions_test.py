@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from define.compiler import ast, name_types
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import parser_diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -213,7 +213,7 @@ def test_trigger_condition_without_terminator_gets_a_diagnostic(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=41, end_line=4, end_column=41
             )
@@ -279,7 +279,7 @@ def test_comment_trailing_space_in_trigger_block(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=4,
                 column=18,
@@ -306,7 +306,7 @@ def test_comment_trailing_space_after_trigger_condition(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=5,
                 column=18,

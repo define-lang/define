@@ -11,7 +11,11 @@ from define.compiler.config import (
     project_config,
 )
 from define.compiler.config_tests import test_helpers
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import (
+    config_diagnostics,
+    structural_diagnostics,
+    syntax_errors,
+)
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -60,7 +64,7 @@ def test_missing_encodings(
             value_encodings=None, encoding_operations={}
         ),
         [
-            diagnostics.EncodingsConfigNotFoundDiagnostic(
+            config_diagnostics.EncodingsConfigNotFoundDiagnostic(
                 location=test_helpers.config_field_location(
                     project_config.CONFIG_FILE,
                     ("project", "associations", "has_encodings"),
@@ -78,7 +82,7 @@ def test_value_in_another_universe(
 
     table, table_diagnostics = test_helpers.load_association_table()
     (diagnostic,) = table_diagnostics
-    assert diagnostic == diagnostics.AssociationNameInAnotherUniverseDiagnostic(
+    assert diagnostic == config_diagnostics.AssociationNameInAnotherUniverseDiagnostic(
         location=rendering.SourceLocation(
             line=4,
             column=15,
@@ -119,15 +123,18 @@ def test_value_full_name_in_own_universe(
 
     table, table_diagnostics = test_helpers.load_association_table()
     (diagnostic,) = table_diagnostics
-    assert diagnostic == diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
-        location=rendering.SourceLocation(
-            line=4,
-            column=15,
-            end_line=4,
-            end_column=37,
-            file_path=str(encodings_config.CONFIG_FILE.path),
-        ),
-        fqun="test.example.com:my_lib",
+    assert (
+        diagnostic
+        == structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
+            location=rendering.SourceLocation(
+                line=4,
+                column=15,
+                end_line=4,
+                end_column=37,
+                file_path=str(encodings_config.CONFIG_FILE.path),
+            ),
+            fqun="test.example.com:my_lib",
+        )
     )
     assert test_helpers.associated_names(table.value_encodings) == {}
 
@@ -170,15 +177,18 @@ def test_encoding_full_name_in_own_universe(
 
     table, table_diagnostics = test_helpers.load_association_table()
     (diagnostic,) = table_diagnostics
-    assert diagnostic == diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
-        location=rendering.SourceLocation(
-            line=5,
-            column=18,
-            end_line=5,
-            end_column=40,
-            file_path=str(encodings_config.CONFIG_FILE.path),
-        ),
-        fqun="test.example.com:my_lib",
+    assert (
+        diagnostic
+        == structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
+            location=rendering.SourceLocation(
+                line=5,
+                column=18,
+                end_line=5,
+                end_column=40,
+                file_path=str(encodings_config.CONFIG_FILE.path),
+            ),
+            fqun="test.example.com:my_lib",
+        )
     )
     assert test_helpers.associated_names(table.value_encodings) == {}
 
@@ -190,7 +200,7 @@ def test_unsorted_values(
 
     table, table_diagnostics = test_helpers.load_association_table()
     (diagnostic,) = table_diagnostics
-    assert diagnostic == diagnostics.UnsortedValueEncodingDiagnostic(
+    assert diagnostic == config_diagnostics.UnsortedValueEncodingDiagnostic(
         location=test_helpers.config_field_location(
             encodings_config.CONFIG_FILE, ("encodings", "value_encodings", 1, "value")
         ),
@@ -210,7 +220,7 @@ def test_duplicate_value_encoding(
 
     table, table_diagnostics = test_helpers.load_association_table()
     (diagnostic,) = table_diagnostics
-    assert diagnostic == diagnostics.DuplicateValueEncodingDiagnostic(
+    assert diagnostic == config_diagnostics.DuplicateValueEncodingDiagnostic(
         location=test_helpers.config_field_location(
             encodings_config.CONFIG_FILE, ("encodings", "value_encodings", 1)
         ),
@@ -250,7 +260,7 @@ def test_duplicate_value_encoding_with_invalid_name(
             file_path=str(encodings_config.CONFIG_FILE.path),
         )
     )
-    assert duplicate == diagnostics.DuplicateValueEncodingDiagnostic(
+    assert duplicate == config_diagnostics.DuplicateValueEncodingDiagnostic(
         location=test_helpers.config_field_location(
             encodings_config.CONFIG_FILE, ("encodings", "value_encodings", 1)
         ),
@@ -271,7 +281,7 @@ def test_encodings_only_in_unconfigured_universe(
     table, table_diagnostics = test_helpers.load_association_table()
     # Both encodings are in the same universe, which is reported once.
     (diagnostic,) = table_diagnostics
-    assert diagnostic == diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+    assert diagnostic == config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
         location=rendering.SourceLocation(
             line=5,
             column=18,
@@ -297,7 +307,7 @@ def test_encoding_missing(
             value_encodings=None, encoding_operations={}
         ),
         [
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     encodings_config.CONFIG_FILE,
                     ("encodings", "value_encodings", 0, "encoding"),

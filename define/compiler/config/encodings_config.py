@@ -9,7 +9,7 @@ from pathlib import PurePosixPath
 from define.compiler import name_types
 from define.compiler.config import config_file, global_names
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics
 from define.config.encodings import encodings_pb2
 
 if typing.TYPE_CHECKING:
@@ -19,6 +19,7 @@ if typing.TYPE_CHECKING:
     from defcl.python import validator as defcl_validator
     from define.compiler import ast
     from define.compiler.config import config_loader, local_deps_config
+    from define.compiler.errors import diagnostics
 
 CONFIG_FILE = config_file.ConfigFile(
     path=define_path.DefinePathFromPosix(
@@ -64,7 +65,7 @@ class EncodingsConfigReader(config_file.ConfigFileReader[encodings_pb2.Encodings
         # The project config says the file exists, so only then is it checked.
         if not self.exists():
             return None, [
-                diagnostics.EncodingsConfigNotFoundDiagnostic(
+                config_diagnostics.EncodingsConfigNotFoundDiagnostic(
                     location=config.has_encodings_location,
                     encodings_config_path=str(self.path()),
                 )
@@ -84,7 +85,7 @@ class EncodingsConfigReader(config_file.ConfigFileReader[encodings_pb2.Encodings
 
 def _value_encoding(
     file: defcl_validator.ValidatedFile,
-    field_path: diagnostics.FieldPath,
+    field_path: config_diagnostics.FieldPath,
     association: encodings_pb2.ValueEncoding,
     fqun: str,
 ) -> tuple[
@@ -146,7 +147,7 @@ def _value_encodings(
         association_diagnostics.extend(name_diagnostics)
         if association.value < previous_value:
             association_diagnostics.append(
-                diagnostics.UnsortedValueEncodingDiagnostic(
+                config_diagnostics.UnsortedValueEncodingDiagnostic(
                     location=file.location_of((*field_path, "value")),
                     value=association.value,
                     previous_value=previous_value,
@@ -157,7 +158,7 @@ def _value_encodings(
         first_index = first_indexes.get(pair)
         if first_index is not None:
             association_diagnostics.append(
-                diagnostics.DuplicateValueEncodingDiagnostic(
+                config_diagnostics.DuplicateValueEncodingDiagnostic(
                     location=file.location_of(field_path),
                     value=association.value,
                     encoding=association.encoding,

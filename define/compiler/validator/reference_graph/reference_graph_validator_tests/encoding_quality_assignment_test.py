@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -21,7 +21,9 @@ def test_unused_encoding_is_dead(
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadEncodingQualityAssignmentDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DeadEncodingQualityAssignmentDiagnostic
+    )
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 28
@@ -56,7 +58,9 @@ def test_callee_without_qualities_does_not_keep_encoding_alive(
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadEncodingQualityAssignmentDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.DeadEncodingQualityAssignmentDiagnostic
+    )
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 28
     assert diagnostic.location.column == 28

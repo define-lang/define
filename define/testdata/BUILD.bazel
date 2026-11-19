@@ -29,7 +29,12 @@ py_library(
     srcs = ["diagnostic_assertions.py"],
     deps = [
         "//defcl/python:errors",
+        "//define/compiler/errors:association_resolution_diagnostics",
+        "//define/compiler/errors:config_diagnostics",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:parser_diagnostics",
+        "//define/compiler/errors:reference_graph_diagnostics",
+        "//define/compiler/errors:structural_diagnostics",
         "//define/compiler/errors:syntax_errors",
     ],
 )

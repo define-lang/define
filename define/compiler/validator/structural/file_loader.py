@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, cast
 
 import msgspec
 
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import structural_diagnostics, syntax_errors
 from define.compiler.parsing import parser
 from define.compiler.validator.structural import (
     file_validation_context,
@@ -21,6 +21,7 @@ from define.compiler.validator.structural import (
 if TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from define.compiler import ast
+    from define.compiler.errors import diagnostics
 
 
 class LoadedFile(msgspec.Struct):
@@ -127,7 +128,7 @@ def _check_file(
             definitions[definition_name] = definition
             continue
         file_diagnostics.append(
-            diagnostics.DuplicateDefinitionDiagnostic(
+            structural_diagnostics.DuplicateDefinitionDiagnostic(
                 location=definition.location,
                 definition_type=definition.typed_name.name_type.value,
                 path=definition.typed_name.name_content.path.name,
@@ -151,7 +152,7 @@ def _path_mismatch_diagnostics(
     if definition_path == expected_path:
         return []
     return [
-        diagnostics.PathMismatchDiagnostic(
+        structural_diagnostics.PathMismatchDiagnostic(
             location=definition.typed_name.name_content.path.location,
             expected_path=expected_path,
             actual_path=definition_path,
@@ -171,7 +172,7 @@ def _fqun_mismatch_diagnostics(
     if actual == expected_fqun:
         return []
     return [
-        diagnostics.FqunMismatchDiagnostic(
+        structural_diagnostics.FqunMismatchDiagnostic(
             location=definition.typed_name.name_content.fqun.location,
             expected=expected_fqun,
             actual=actual,

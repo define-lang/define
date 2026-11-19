@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -106,7 +106,9 @@ def test_single_level_transitivity_does_not_include_unrelated(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 50
     assert all_diags[0].location.file_path == "test.dfn"
@@ -135,7 +137,9 @@ def test_diamond_transitivity_create_conflict_detected(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.required_empty is True
     assert diag.action_name == "action<my.domain.com:my_lib:/implier_two>"
@@ -204,7 +208,9 @@ def test_matching_implied_but_not_matching_impliers_for_move(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 50
     assert all_diags[0].location.file_path == "test.dfn"
@@ -263,7 +269,9 @@ def test_same_path_in_different_fquns_are_distinct_qualities(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 50
     assert all_diags[0].location.file_path == "test.dfn"
@@ -287,7 +295,9 @@ def test_constructor_filled_position_blocks_caller_create(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
@@ -307,7 +317,9 @@ def test_unresolved_implication_target_is_skipped(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert all_diags[0].location.file_path == "implier.dfn"
     assert all_diags[0].file_path == "missing.dfn"
     assert all_diags[0].location.line == 2
@@ -319,7 +331,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
 ):
     result = validate_testdata_project_with_reference_graph(max_workers=1)
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.UntriggeredImpliedActionDiagnostic(
+        reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=25,
@@ -329,7 +341,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
             ),
             implied_action_name="action</b>",
         ),
-        diagnostics.UntriggeredActionInterfaceDiagnostic(
+        reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic(
             location=rendering.SourceLocation(
                 line=8,
                 column=30,
@@ -340,7 +352,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
             action_name="action</b>",
             position_name="action</b>::position<kept>",
         ),
-        diagnostics.UnusedQualityImplicationDiagnostic(
+        structural_diagnostics.UnusedQualityImplicationDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=25,
@@ -350,7 +362,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
             ),
             implication_name="action</a>",
         ),
-        diagnostics.CircularGlobalReferenceDiagnostic(
+        structural_diagnostics.CircularGlobalReferenceDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=25,
@@ -364,7 +376,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
                 "action<my.domain.com:my_lib:/a>",
             ],
         ),
-        diagnostics.UntriggeredImpliedActionDiagnostic(
+        reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=25,
@@ -374,7 +386,7 @@ def test_circular_implication_with_particle_left_in_implied_position(
             ),
             implied_action_name="action</a>",
         ),
-        diagnostics.UnreferencedPositionDiagnostic(
+        structural_diagnostics.UnreferencedPositionDiagnostic(
             location=rendering.SourceLocation(
                 line=3,
                 column=16,

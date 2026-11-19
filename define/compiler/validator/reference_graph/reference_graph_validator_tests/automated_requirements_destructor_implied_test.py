@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -39,7 +39,9 @@ def test_occupied_implied_requirement_violated(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 33
@@ -92,7 +94,8 @@ def test_destructor_requiring_empty_implied_position_is_reported(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
@@ -107,7 +110,9 @@ def test_destructor_in_constructor_checks_implied_requirement_locally(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 33

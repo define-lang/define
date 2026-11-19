@@ -3,7 +3,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import (
+    reference_graph_diagnostics,
+    structural_diagnostics,
+    syntax_errors,
+)
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
@@ -32,7 +36,9 @@ def test_self_constructor_reference_reports_circular_reference(
     result = validate_testdata_non_filesystem_with_reference_graph(max_workers=1)
     all_diagnostics = result.sorted_diagnostics()
     assert len(all_diagnostics) == 1
-    assert isinstance(all_diagnostics[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        all_diagnostics[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert all_diagnostics[0].location.column == 28
     assert all_diagnostics[0].location.file_path is None
     assert all_diagnostics[0].cycle == [_TEST, _TEST]
@@ -47,7 +53,7 @@ def test_destroy_with_unresolved_action_quality_reports_reference_error(
     assert len(all_diagnostics) == 1
     assert isinstance(
         all_diagnostics[0],
-        diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
+        structural_diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
     )
     assert all_diagnostics[0].location.column == 24
     assert all_diagnostics[0].location.file_path is None
@@ -140,7 +146,7 @@ def test_move_from_trigger_position_to_itself_does_not_retrigger(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveToSamePositionDiagnostic)
+    assert isinstance(all_diags[0], structural_diagnostics.MoveToSamePositionDiagnostic)
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 125
     assert all_diags[0].location.file_path == "test.dfn"
@@ -201,7 +207,7 @@ def test_self_trigger(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.ActionSelfTriggerDiagnostic,
+        reference_graph_diagnostics.ActionSelfTriggerDiagnostic,
     )
     assert diags[0].location.line == 8
     assert diags[0].location.column == 30
@@ -219,7 +225,7 @@ def test_duplicate_action_does_not_add_trigger_edges(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.DuplicateDefinitionDiagnostic,
+        structural_diagnostics.DuplicateDefinitionDiagnostic,
     )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].definition_type == "action"
@@ -246,7 +252,7 @@ def test_no_body_effect_when_create_target_has_error_state(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.MoveFromEmptyPositionDiagnostic,
+        reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic,
     )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].position_name == "position<a>"
@@ -264,7 +270,7 @@ def test_no_body_effect_when_move_target_has_error_state(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.MoveFromEmptyPositionDiagnostic,
+        reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic,
     )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].position_name == "position<a>"
@@ -280,7 +286,7 @@ def test_no_trigger_edge_on_unknown_global_chain_start(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert isinstance(all_diags[0], structural_diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].location.line == 5
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -323,7 +329,9 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
-    assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert all_diags[0].cycle == [
         "action<my.domain.com:my_lib:/test>",
         "position<my.domain.com:my_lib:/pos>",
@@ -332,7 +340,9 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     assert all_diags[0].location.line == 3
     assert all_diags[0].location.column == 20
     assert all_diags[0].location.file_path == "pos.dfn"
-    assert isinstance(all_diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        all_diags[1], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert all_diags[1].cycle == [
         "action<my.domain.com:my_lib:/test>",
         "action<my.domain.com:my_lib:/test>",
@@ -340,7 +350,9 @@ def test_action_interface_reference_with_circular_contract_reports_circular_refe
     assert all_diags[1].location.line == 11
     assert all_diags[1].location.column == 61
     assert all_diags[1].location.file_path == "test.dfn"
-    assert isinstance(all_diags[2], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[2], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[2].action_name == "action</test>"
     assert (
         all_diags[2].position_name
@@ -375,7 +387,8 @@ def test_action_requirement_for_unparseable_child_position_reports_errors(
     assert all_diagnostics[0].location.column == 1
     assert all_diagnostics[0].location.file_path == "child.dfn"
     assert isinstance(
-        all_diagnostics[1], diagnostics.ReferencedDefinitionNotFoundDiagnostic
+        all_diagnostics[1],
+        structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
     assert all_diagnostics[1].location.line == 2
     assert all_diagnostics[1].location.column == 25
@@ -383,7 +396,8 @@ def test_action_requirement_for_unparseable_child_position_reports_errors(
     assert all_diagnostics[1].file_path == "child.dfn"
     assert all_diagnostics[1].definition_name == "position<my.domain.com:my_lib:/child>"
     assert isinstance(
-        all_diagnostics[2], diagnostics.ReferencedDefinitionNotFoundDiagnostic
+        all_diagnostics[2],
+        structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
     assert all_diagnostics[2].location.line == 2
     assert all_diagnostics[2].location.column == 25

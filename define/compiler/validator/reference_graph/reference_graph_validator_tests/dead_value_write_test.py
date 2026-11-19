@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -22,7 +22,7 @@ def test_overwritten_value_is_dead(
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
+    assert isinstance(diagnostic, reference_graph_diagnostics.DeadValueWriteDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 26
@@ -35,7 +35,7 @@ def test_unused_value_is_dead(
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
+    assert isinstance(diagnostic, reference_graph_diagnostics.DeadValueWriteDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 26
@@ -47,7 +47,7 @@ def test_unused_operation_output_is_dead(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.sorted_diagnostics() == [
-        diagnostics.DeadValueWriteDiagnostic(
+        reference_graph_diagnostics.DeadValueWriteDiagnostic(
             location=rendering.SourceLocation(
                 line=48, column=42, end_line=48, end_column=57, file_path=None
             ),
@@ -92,7 +92,7 @@ def test_value_on_destroyed_caller_particle_is_dead(
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
+    assert isinstance(diagnostic, reference_graph_diagnostics.DeadValueWriteDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 17
     assert diagnostic.location.column == 26
@@ -105,7 +105,7 @@ def test_copied_value_error_is_not_a_dead_write(
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
+    assert isinstance(diagnostic, reference_graph_diagnostics.UnsetValueDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 24
     assert diagnostic.location.column == 47
@@ -118,7 +118,7 @@ def test_callee_written_value_on_destroyed_particle_is_not_tracked_by_caller(
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DeadValueWriteDiagnostic)
+    assert isinstance(diagnostic, reference_graph_diagnostics.DeadValueWriteDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 56
     assert diagnostic.location.column == 26

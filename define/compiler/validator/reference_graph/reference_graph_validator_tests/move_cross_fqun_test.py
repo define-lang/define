@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -31,7 +31,9 @@ def test_cross_fqun_local_to_local_violates(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
     assert all_diags[0].location.file_path == "test.dfn"
@@ -55,7 +57,9 @@ def test_cross_fqun_local_to_chained_violates(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 52
     assert all_diags[0].location.file_path == "test.dfn"
@@ -82,7 +86,9 @@ def test_cross_fqun_chained_to_local_violates(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 86
     assert all_diags[0].location.file_path == "test.dfn"
@@ -109,7 +115,9 @@ def test_cross_fqun_move_to_chained_action_local_violates(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 47
     assert all_diags[0].location.file_path == "test.dfn"
@@ -130,7 +138,8 @@ def test_cross_fqun_move_from_chained_nonexistent_local_to_position_with_qualiti
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.ChainElementNotInterfacePositionDiagnostic,
     )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].element_name == "position<no_such>"

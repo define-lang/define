@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -72,7 +72,9 @@ def test_implied_action_iface_requirement_does_not_propagate_to_caller(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 7
     assert diag.location.column == 30
@@ -112,7 +114,9 @@ def test_implied_action_with_iface_routing_to_inner_action_propagates(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 20
     assert diag.location.column == 30

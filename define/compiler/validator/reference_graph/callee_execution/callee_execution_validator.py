@@ -7,7 +7,7 @@ import typing
 import msgspec
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph.callee_execution import (
     callee_execution,
 )
@@ -20,6 +20,7 @@ if typing.TYPE_CHECKING:
 
     from crates.source_rendering.python import rendering
     from define.compiler import chained_name
+    from define.compiler.errors import diagnostics
     from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph import (
         action_contract,
@@ -262,7 +263,7 @@ class CalleeExecutionValidator:
             # is there now cannot be trusted.
             self._tracker.mark_error_by_key(position)
             validation_diagnostics.append(
-                diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic(
+                reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic(
                     location=execution.diagnostic_location,
                     arrived_at=arrived_at,
                     action_name=execution.action_chain.get_last_action().source_typed_name,

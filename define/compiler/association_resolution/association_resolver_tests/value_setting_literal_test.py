@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from define.compiler import literal_parsers
-from define.compiler.errors import diagnostics
+from define.compiler.errors import association_resolution_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ def test_empty_literal_content(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLiteralContentDiagnostic(
+        association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=75, end_line=8, end_column=75, file_path="test.dfn"
             ),
@@ -55,7 +55,7 @@ def test_invalid_literal_content(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLiteralContentDiagnostic(
+        association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=75, end_line=8, end_column=75, file_path="test.dfn"
             ),
@@ -72,7 +72,7 @@ def test_no_literal_parser(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.LiteralCannotSetValueDiagnostic(
+        association_resolution_diagnostics.LiteralCannotSetValueDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=49, end_line=8, end_column=62, file_path="test.dfn"
             ),
@@ -98,7 +98,7 @@ def test_only_matching_encodings_suggested(
     )
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.LiteralCannotSetValueDiagnostic(
+        association_resolution_diagnostics.LiteralCannotSetValueDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=49, end_line=8, end_column=62, file_path="test.dfn"
             ),
@@ -119,7 +119,7 @@ def test_value_has_no_encoding(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ValueHasNoEncodingDiagnostic(
+        association_resolution_diagnostics.ValueHasNoEncodingDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=22, end_line=1, end_column=56, file_path="number.dfn"
             ),
@@ -140,7 +140,7 @@ def test_invalid_boolean_literal_content(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLiteralContentDiagnostic(
+        association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=76, end_line=8, end_column=76, file_path="test.dfn"
             ),
@@ -157,7 +157,7 @@ def test_boolean_literal_sets_natural(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.LiteralCannotSetValueDiagnostic(
+        association_resolution_diagnostics.LiteralCannotSetValueDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=49, end_line=8, end_column=74, file_path="test.dfn"
             ),
@@ -185,7 +185,7 @@ def test_invalid_binary_literal_content(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLiteralContentDiagnostic(
+        association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=77, end_line=8, end_column=77, file_path="test.dfn"
             ),
@@ -202,7 +202,7 @@ def test_binary_literal_sets_boolean(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.LiteralCannotSetValueDiagnostic(
+        association_resolution_diagnostics.LiteralCannotSetValueDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=49, end_line=8, end_column=73, file_path="test.dfn"
             ),
@@ -233,7 +233,7 @@ def test_negative_decimal_literal_sets_binary(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLiteralContentDiagnostic(
+        association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=75, end_line=8, end_column=75, file_path="test.dfn"
             ),
@@ -257,7 +257,7 @@ def test_negative_decimal_literal_sets_natural(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLiteralContentDiagnostic(
+        association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=75, end_line=8, end_column=75, file_path="test.dfn"
             ),
@@ -274,7 +274,7 @@ def test_fractional_decimal_literal_sets_integer(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLiteralContentDiagnostic(
+        association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=76, end_line=8, end_column=76, file_path="test.dfn"
             ),
@@ -298,7 +298,7 @@ def test_text_literal_with_two_scalars(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLiteralContentDiagnostic(
+        association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=74, end_line=8, end_column=74, file_path="test.dfn"
             ),
@@ -322,7 +322,7 @@ def test_invalid_code_point_literal_content(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLiteralContentDiagnostic(
+        association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=92, end_line=8, end_column=92, file_path="test.dfn"
             ),
@@ -346,7 +346,7 @@ def test_invalid_hex_literal_content(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLiteralContentDiagnostic(
+        association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=80, end_line=8, end_column=80, file_path="test.dfn"
             ),

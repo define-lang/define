@@ -6,7 +6,7 @@ import click.testing
 import pytest
 
 from define.compiler import driver
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from tools.generators import generate_triggered_children_destruction_source as gen
 
 if TYPE_CHECKING:
@@ -64,7 +64,9 @@ def test_error_program_reports_its_one_error(tmp_path: Path):
     result = driver.Driver().compile_source(source, tmp_path / "generated")
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 30
     assert diagnostic.location.end_line == 13
@@ -83,25 +85,34 @@ def test_in_destructor_contracted_program_reports_each_child_required_empty_and_
     result = driver.Driver().compile_source(source, tmp_path / "generated")
     assert len(result.sorted_diagnostics()) == 4
     first, second, third, fourth = result.sorted_diagnostics()
-    assert isinstance(first, diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic)
+    assert isinstance(
+        first, reference_graph_diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+    )
     assert first.location.line == 75
     assert first.location.column == 30
     assert first.location.end_line == 75
     assert first.location.end_column == 49
     assert first.position_name == "position</kept>::position</child_1_0>"
-    assert isinstance(second, diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic)
+    assert isinstance(
+        second,
+        reference_graph_diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic,
+    )
     assert second.location.line == 77
     assert second.location.column == 30
     assert second.location.end_line == 77
     assert second.location.end_column == 49
     assert second.position_name == "position</kept>::position</child_1_1>"
-    assert isinstance(third, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
+    assert isinstance(
+        third, reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic
+    )
     assert third.location.line == 91
     assert third.location.column == 30
     assert third.location.end_line == 91
     assert third.location.end_column == 76
     assert third.position_name == "position</kept>::position</child_1_0>"
-    assert isinstance(fourth, diagnostics.DestructorRequiresEmptyPositionDiagnostic)
+    assert isinstance(
+        fourth, reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic
+    )
     assert fourth.location.line == 91
     assert fourth.location.column == 30
     assert fourth.location.end_line == 91

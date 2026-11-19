@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -24,13 +24,13 @@ def test_consecutive_local_targets_at_end_of_block(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingLocalTargetWithoutExecutionDiagnostic(
+        structural_diagnostics.ViewSettingLocalTargetWithoutExecutionDiagnostic(
             location=rendering.SourceLocation(
                 line=39, column=26, end_line=39, end_column=41
             ),
             target_name="view<first_copy>",
         ),
-        diagnostics.ViewSettingLocalTargetWithoutExecutionDiagnostic(
+        structural_diagnostics.ViewSettingLocalTargetWithoutExecutionDiagnostic(
             location=rendering.SourceLocation(
                 line=40, column=26, end_line=40, end_column=42
             ),
@@ -44,7 +44,7 @@ def test_input_only_target(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingInputOnlyTargetDiagnostic(
+        structural_diagnostics.ViewSettingInputOnlyTargetDiagnostic(
             location=rendering.SourceLocation(
                 line=34, column=26, end_line=34, end_column=37
             ),
@@ -58,7 +58,7 @@ def test_local_target_at_end_of_block(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingLocalTargetWithoutExecutionDiagnostic(
+        structural_diagnostics.ViewSettingLocalTargetWithoutExecutionDiagnostic(
             location=rendering.SourceLocation(
                 line=34, column=26, end_line=34, end_column=35
             ),
@@ -72,7 +72,7 @@ def test_local_target_before_local_view_definition(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingLocalTargetWithoutExecutionDiagnostic(
+        structural_diagnostics.ViewSettingLocalTargetWithoutExecutionDiagnostic(
             location=rendering.SourceLocation(
                 line=27, column=26, end_line=27, end_column=35
             ),
@@ -93,7 +93,7 @@ def test_local_target_before_view_setting_and_other_execution(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingLocalTargetNotLookedAtDiagnostic(
+        structural_diagnostics.ViewSettingLocalTargetNotLookedAtDiagnostic(
             location=rendering.SourceLocation(
                 line=44, column=26, end_line=44, end_column=35
             ),
@@ -108,7 +108,7 @@ def test_local_target_not_looked_at_with_source(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingLocalTargetNotLookedAtDiagnostic(
+        structural_diagnostics.ViewSettingLocalTargetNotLookedAtDiagnostic(
             location=rendering.SourceLocation(
                 line=30, column=26, end_line=30, end_column=35
             ),
@@ -123,7 +123,7 @@ def test_only_view_setting(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.OperationWithoutExecutionDiagnostic(
+        structural_diagnostics.OperationWithoutExecutionDiagnostic(
             location=rendering.SourceLocation(
                 line=11, column=5, end_line=18, end_column=5
             ),
@@ -136,7 +136,7 @@ def test_output_only_target(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingOutputOnlyTargetDiagnostic(
+        structural_diagnostics.ViewSettingOutputOnlyTargetDiagnostic(
             location=rendering.SourceLocation(
                 line=34, column=26, end_line=34, end_column=38
             ),
@@ -150,7 +150,7 @@ def test_read_write_target_source_not_local(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingReadWriteTargetSourceNotLocalDiagnostic(
+        structural_diagnostics.ViewSettingReadWriteTargetSourceNotLocalDiagnostic(
             location=rendering.SourceLocation(
                 line=35, column=43, end_line=35, end_column=54
             ),
@@ -165,7 +165,7 @@ def test_same_view(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingSameViewDiagnostic(
+        structural_diagnostics.ViewSettingSameViewDiagnostic(
             location=rendering.SourceLocation(
                 line=30, column=42, end_line=30, end_column=51
             ),
@@ -179,7 +179,7 @@ def test_source_was_target(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingSourceWasTargetDiagnostic(
+        structural_diagnostics.ViewSettingSourceWasTargetDiagnostic(
             location=rendering.SourceLocation(
                 line=42, column=49, end_line=42, end_column=64
             ),
@@ -194,13 +194,13 @@ def test_target_without_value_quality(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewMissingValueQualityDiagnostic(
+        structural_diagnostics.ViewMissingValueQualityDiagnostic(
             location=rendering.SourceLocation(
                 line=11, column=16, end_line=11, end_column=26
             ),
             view_name="view<value>",
         ),
-        diagnostics.ValueOperationViewEncodingDiagnostic(
+        structural_diagnostics.ValueOperationViewEncodingDiagnostic(
             location=rendering.SourceLocation(
                 line=15, column=24, end_line=15, end_column=63
             ),
@@ -214,7 +214,7 @@ def test_undefined_source(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.UndefinedLocalNameDiagnostic(
+        structural_diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=33, column=42, end_line=33, end_column=54
             ),
@@ -228,7 +228,7 @@ def test_undefined_target(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.UndefinedLocalNameDiagnostic(
+        structural_diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=26, end_line=25, end_column=35
             ),
@@ -249,7 +249,7 @@ def test_value_quality_mismatch(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewSettingValueQualityMismatchDiagnostic(
+        structural_diagnostics.ViewSettingValueQualityMismatchDiagnostic(
             location=rendering.SourceLocation(
                 line=33, column=9, end_line=33, end_column=54
             ),

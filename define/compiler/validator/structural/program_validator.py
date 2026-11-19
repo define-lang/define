@@ -17,7 +17,7 @@ import typing
 from crates.source_rendering.python import rendering
 from define.compiler import ast, work_pool
 from define.compiler.config import project_roots
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.graphs import reference_graph, reference_graph_order
 from define.compiler.validator import validation_result
 from define.compiler.validator.structural import (
@@ -36,6 +36,7 @@ if typing.TYPE_CHECKING:
 
     from define.compiler.config import config_loader
     from define.compiler.data_structures import define_path
+    from define.compiler.errors import diagnostics
     from define.compiler.validator.structural import structural_result
 
 
@@ -428,7 +429,7 @@ class _ProgramValidationRun:
             return True
         self._report(
             source_definition,
-            diagnostics.CircularGlobalReferenceDiagnostic(
+            structural_diagnostics.CircularGlobalReferenceDiagnostic(
                 location=edge.global_name_reference.location,
                 cycle=detected_cycle,
             ),
@@ -451,7 +452,7 @@ class _ProgramValidationRun:
         for position in definition.interface_positions:
             self._report(
                 entry_action_result,
-                diagnostics.EntryPointInterfacePositionDiagnostic(
+                structural_diagnostics.EntryPointInterfacePositionDiagnostic(
                     location=position.typed_name.location,
                     position_name=position.typed_name.source_typed_name,
                 ),

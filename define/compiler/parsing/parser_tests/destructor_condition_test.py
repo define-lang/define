@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from define.compiler import ast
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import parser_diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -92,7 +92,7 @@ def test_destructor_without_terminator_gets_a_diagnostic(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=41, end_line=3, end_column=41
             )
@@ -219,7 +219,7 @@ def test_destructor_action_block_missing_close_brace(
         line=1, column=1, end_line=1, end_column=67
     )
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=5, column=1, end_line=5, end_column=1
             ),

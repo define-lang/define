@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -120,7 +120,9 @@ def test_empty_guarantee_creates_occupied_requirement_in_caller_and_test_violate
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
@@ -178,7 +180,9 @@ def test_occupied_guarantee_creates_empty_requirement_in_caller_and_test_violate
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
@@ -255,7 +259,9 @@ def test_caller_filled_implied_position_does_not_propagate_inner_action_requirem
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
@@ -294,7 +300,9 @@ def test_inner_action_requirement_does_not_propagate_past_local_filler_of_implie
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 30
@@ -334,7 +342,9 @@ def test_grandchild_requirement_below_locally_created_particle_does_not_propagat
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 9
     assert diag.location.column == 30
@@ -377,7 +387,9 @@ def test_doubly_nested_implied_action_requirement_is_reported_where_inner_action
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 7
     assert diag.location.column == 30

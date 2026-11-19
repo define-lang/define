@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -41,7 +41,7 @@ def test_undefined_local_name(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "position<unknown>"
     assert diags[0].location.line == 3
@@ -54,17 +54,19 @@ def test_action_type_in_trigger_condition_is_rejected(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 3
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "action<my_act>"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 13
-    assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.LocalActionNameDiagnostic)
     assert diags[1].location.file_path is None
     assert diags[1].local_name == "my_act"
     assert diags[1].location.line == 3
     assert diags[1].location.column == 13
-    assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
+    assert isinstance(
+        diags[2], structural_diagnostics.PositionReferenceChainEndDiagnostic
+    )
     assert diags[2].location.file_path is None
     assert diags[2].location.line == 3
     assert diags[2].location.column == 13
@@ -76,14 +78,14 @@ def test_invalid_local_name_format(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].local_name == "position<BAD>"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 13
     assert diags[0].location.end_line == 3
     assert diags[0].location.end_column == 25
     assert diags[0].location.file_path is None
-    assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[1].local_name == "BAD"
     assert diags[1].chars == ("B", "A", "D")
     assert diags[1].location.line == 3

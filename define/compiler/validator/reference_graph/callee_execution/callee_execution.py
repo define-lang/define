@@ -7,7 +7,7 @@ import typing
 import msgspec
 
 from define.compiler import chained_name
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
@@ -64,7 +64,7 @@ class CalleeExecution(msgspec.Struct, frozen=True):
         position_in_caller: ast.PositionReference,
         occupant: particle_info.ParticleInfo | None,
         definition: ast.ActionDefinition,
-    ) -> diagnostics.InferredRequirementViolationDiagnostic:
+    ) -> reference_graph_diagnostics.InferredRequirementViolationDiagnostic:
         """Return the diagnostic for a requirement of the callee, in ``position_in_caller``, that the state of ``definition`` violates."""
         position_name = position_in_caller.source_form_in_universe(
             definition.typed_name.name_content.fqun
@@ -174,7 +174,7 @@ class DestructorCalleeExecution(DestructorExecution, frozen=True):
         position_in_caller: ast.PositionReference,
         occupant: particle_info.ParticleInfo | None,
         definition: ast.ActionDefinition,
-    ) -> diagnostics.InferredRequirementViolationDiagnostic:
+    ) -> reference_graph_diagnostics.InferredRequirementViolationDiagnostic:
         enclosing_fqun = definition.typed_name.name_content.fqun
         definition_name = definition.typed_name.source_typed_name
         destructor_name = requirement.enclosing_action.typed_name.source_typed_name
@@ -334,7 +334,7 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
         position_in_caller: ast.PositionReference,
         occupant: particle_info.ParticleInfo | None,
         definition: ast.ActionDefinition,
-    ) -> diagnostics.InferredRequirementViolationDiagnostic:
+    ) -> reference_graph_diagnostics.InferredRequirementViolationDiagnostic:
         return self.destruction_requirement_violation(
             requirement, position_in_caller, definition
         )
@@ -344,7 +344,7 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
         requirement: action_contract.ActionRequirement,
         position: ast.PositionReference,
         definition: ast.ActionDefinition,
-    ) -> diagnostics.InferredRequirementViolationDiagnostic:
+    ) -> reference_graph_diagnostics.InferredRequirementViolationDiagnostic:
         """Return the diagnostic for ``requirement``, one of the Destructor's on ``position``, which the state at the moment of destruction violates."""
         enclosing_fqun = definition.typed_name.name_content.fqun
         destruction_fact = self.root.destruction_fact
@@ -430,8 +430,8 @@ def _diagnostic(
     requirement: action_contract.ActionRequirement,
     action_name: str,
     steps: list[propagation_step.PropagationStep],
-) -> diagnostics.InferredRequirementViolationDiagnostic:
-    return diagnostics.InferredRequirementViolationDiagnostic(
+) -> reference_graph_diagnostics.InferredRequirementViolationDiagnostic:
+    return reference_graph_diagnostics.InferredRequirementViolationDiagnostic(
         location=location,
         position_name=position_name,
         propagation_chain=steps,

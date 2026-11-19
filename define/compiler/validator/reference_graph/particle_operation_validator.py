@@ -5,12 +5,13 @@ from __future__ import annotations
 import typing
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from define.compiler.errors import diagnostics
     from define.compiler.validator.reference_graph.particles import particle_tracker
 
 
@@ -39,7 +40,7 @@ class ParticleOperationValidator:
         if particle is not None:
             # Target is genuinely occupied — leave its known state intact so
             # later statements can still reason about the existing particle.
-            return diagnostics.CreateInOccupiedPositionDiagnostic(
+            return reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic(
                 location=target.location,
                 position_name=target.source_chained_name,
                 populated_at=particle.last_position.location,
@@ -74,7 +75,7 @@ class ParticleOperationValidator:
                 else None
             )
             diags.append(
-                diagnostics.MoveFromEmptyPositionDiagnostic(
+                reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic(
                     location=source.location,
                     position_name=source.source_chained_name,
                     is_action_interface_position=is_action_interface_position,
@@ -83,7 +84,7 @@ class ParticleOperationValidator:
             )
         if target_particle is not None:
             diags.append(
-                diagnostics.MoveToOccupiedPositionDiagnostic(
+                reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic(
                     location=target.location,
                     position_name=target.source_chained_name,
                     occupied_at=target_particle.last_position.location,
@@ -103,7 +104,7 @@ class ParticleOperationValidator:
             self._tracker.mark_error(source)
             self._tracker.mark_error(target)
             return [
-                diagnostics.MoveMissingQualitiesDiagnostic(
+                reference_graph_diagnostics.MoveMissingQualitiesDiagnostic(
                     location=target.location,
                     source_position=source.source_chained_name,
                     target_position=target.source_chained_name,
@@ -148,7 +149,7 @@ class ParticleOperationValidator:
             != source_value_quality.full_typed_name
         ):
             validation_diagnostics.append(
-                diagnostics.ValueSettingValueQualityMismatchDiagnostic(
+                reference_graph_diagnostics.ValueSettingValueQualityMismatchDiagnostic(
                     location=source.location,
                     target_position=target.source_chained_name,
                     source_position=source.source_chained_name,
@@ -167,7 +168,7 @@ class ParticleOperationValidator:
             particle_info.ParticleValueState.ERROR,
         }:
             validation_diagnostics.append(
-                diagnostics.UnsetValueDiagnostic(
+                reference_graph_diagnostics.UnsetValueDiagnostic(
                     location=source.location,
                     position_name=source.source_chained_name,
                 )
@@ -193,7 +194,7 @@ class ParticleOperationValidator:
         particle = self._tracker.get_occupant_or_none(position)
         if particle is None:
             validation_diagnostics.append(
-                diagnostics.ValueSettingEmptyPositionDiagnostic(
+                reference_graph_diagnostics.ValueSettingEmptyPositionDiagnostic(
                     location=position.location,
                     position_name=position.source_chained_name,
                 )
@@ -202,7 +203,7 @@ class ParticleOperationValidator:
         value_quality = particle.qualities.value_quality
         if value_quality is None:
             validation_diagnostics.append(
-                diagnostics.ValueSettingMissingValueQualityDiagnostic(
+                reference_graph_diagnostics.ValueSettingMissingValueQualityDiagnostic(
                     location=position.location,
                     position_name=position.source_chained_name,
                     origin_position_name=particle.origin_position.source_form_in_universe(
@@ -221,7 +222,7 @@ class ParticleOperationValidator:
             return parent_diagnostic
         particle = self._tracker.get_occupant_or_none(position)
         if particle is None:
-            return diagnostics.OperationArgumentEmptyPositionDiagnostic(
+            return reference_graph_diagnostics.OperationArgumentEmptyPositionDiagnostic(
                 location=position.location,
                 position_name=position.source_chained_name,
             )
@@ -234,7 +235,7 @@ class ParticleOperationValidator:
             particle_info.ParticleValueState.ERROR,
         }:
             self._tracker.mark_value_error(position)
-            return diagnostics.UnsetValueDiagnostic(
+            return reference_graph_diagnostics.UnsetValueDiagnostic(
                 location=position.location,
                 position_name=position.source_chained_name,
             )
@@ -254,12 +255,12 @@ class ParticleOperationValidator:
             from_action = target.get_last_action()
             if from_action is not None:
                 emptied_by = self._tracker.get_emptied_by(target)
-                return diagnostics.DestroyInEmptyInterfacePositionDiagnostic(
+                return reference_graph_diagnostics.DestroyInEmptyInterfacePositionDiagnostic(
                     location=target.location,
                     position_name=target.source_chained_name,
                     inferred_at=emptied_by.location if emptied_by else None,
                 )
-            return diagnostics.DestroyInEmptyPositionDiagnostic(
+            return reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic(
                 location=target.location,
                 position_name=target.source_chained_name,
             )
@@ -267,12 +268,12 @@ class ParticleOperationValidator:
 
     def _check_parents_occupied(
         self, target: ast.PositionReference
-    ) -> diagnostics.ParentPositionNotOccupiedDiagnostic | None:
+    ) -> reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic | None:
         """Report the first unoccupied parent position in chained-name order."""
         parent_position = self._tracker.first_unoccupied_parent(target)
         if parent_position is None:
             return None
-        return diagnostics.ParentPositionNotOccupiedDiagnostic(
+        return reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic(
             location=target.location,
             position_name=target.source_chained_name,
             parent_position_name=parent_position.source_chained_name,

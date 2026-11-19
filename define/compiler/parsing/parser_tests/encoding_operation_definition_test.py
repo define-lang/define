@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from define.compiler import ast, name_types
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import parser_diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -459,7 +459,7 @@ def test_computer_operation_without_terminator_gets_a_diagnostic(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=9, column=39, end_line=9, end_column=39
             )

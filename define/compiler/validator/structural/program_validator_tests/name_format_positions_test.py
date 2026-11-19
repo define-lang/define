@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -24,7 +24,9 @@ def test_authority_domain_leading_dot_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.AuthorityDomainInvalidCharDiagnostic
+    )
     assert diags[0].domain == ".define-lang.org"
     assert diags[0].chars == (".",)
     assert diags[0].location.line == 1
@@ -40,7 +42,9 @@ def test_authority_domain_trailing_dot_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.AuthorityDomainInvalidCharDiagnostic
+    )
     assert diags[0].domain == "define-lang.org."
     assert diags[0].chars == (".",)
     assert diags[0].location.line == 1
@@ -56,7 +60,9 @@ def test_authority_domain_trailing_hyphen_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.AuthorityDomainInvalidCharDiagnostic
+    )
     assert diags[0].domain == "define-lang.org-"
     assert diags[0].chars == ("-",)
     assert diags[0].location.line == 1
@@ -72,7 +78,9 @@ def test_authority_domain_uppercase_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.AuthorityDomainInvalidCharDiagnostic
+    )
     assert diags[0].domain == "Define-lang.org"
     assert diags[0].chars == ("D",)
     assert diags[0].location.line == 1
@@ -88,7 +96,9 @@ def test_global_name_path_hyphen_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert diags[0].segment == "test-path"
     assert diags[0].chars == ("-",)
     assert diags[0].location.line == 1
@@ -104,7 +114,9 @@ def test_global_name_path_special_character_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert diags[0].segment == "test@path"
     assert diags[0].chars == ("@",)
     assert diags[0].location.line == 1
@@ -120,7 +132,9 @@ def test_global_name_path_uppercase_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert diags[0].segment == "TestPath"
     assert diags[0].chars == ("T", "P")
     assert diags[0].location.line == 1
@@ -136,7 +150,9 @@ def test_later_path_segment_leading_digit_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert diags[0].segment == "9path"
     assert diags[0].chars == ("9",)
     assert diags[0].location.line == 1
@@ -152,14 +168,14 @@ def test_local_name_leading_digit_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UnreferencedPositionDiagnostic)
     assert diags[0].position_name == "position<1bad>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 20
     assert diags[0].location.end_line == 6
     assert diags[0].location.end_column == 33
     assert diags[0].location.file_path is None
-    assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[1].local_name == "1bad"
     assert diags[1].chars == ("1",)
     assert diags[1].location.line == 6
@@ -175,14 +191,14 @@ def test_local_name_special_character_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UnreferencedPositionDiagnostic)
     assert diags[0].position_name == "position<my@pos>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 20
     assert diags[0].location.end_line == 6
     assert diags[0].location.end_column == 35
     assert diags[0].location.file_path is None
-    assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[1].local_name == "my@pos"
     assert diags[1].chars == ("@",)
     assert diags[1].location.line == 6
@@ -198,14 +214,14 @@ def test_local_name_uppercase_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UnreferencedPositionDiagnostic)
     assert diags[0].position_name == "position<BadName>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 20
     assert diags[0].location.end_line == 6
     assert diags[0].location.end_column == 36
     assert diags[0].location.file_path is None
-    assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[1].local_name == "BadName"
     assert diags[1].chars == ("B", "N")
     assert diags[1].location.line == 6
@@ -221,7 +237,9 @@ def test_multiverse_trailing_underscore_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.MultiverseNameInvalidCharDiagnostic
+    )
     assert diags[0].multiverse_name == "mv_"
     assert diags[0].chars == ("_",)
     assert diags[0].location.line == 1
@@ -237,7 +255,9 @@ def test_multiverse_uppercase_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.MultiverseNameInvalidCharDiagnostic
+    )
     assert diags[0].multiverse_name == "Mv"
     assert diags[0].chars == ("M",)
     assert diags[0].location.line == 1
@@ -253,7 +273,9 @@ def test_path_segment_uppercase_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert diags[0].segment == "Path"
     assert diags[0].chars == ("P",)
     assert diags[0].location.line == 1
@@ -276,7 +298,9 @@ def test_path_trailing_slash_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.GlobalNamePathTrailingSlashDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.GlobalNamePathTrailingSlashDiagnostic
+    )
     assert diags[0].path == "/invalid/syntax/paths/trailing_slash/"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 97
@@ -291,7 +315,9 @@ def test_universe_trailing_underscore_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.UniverseNameInvalidCharDiagnostic
+    )
     assert diags[0].universe_name == "test_files_"
     assert diags[0].chars == ("_",)
     assert diags[0].location.line == 1
@@ -307,7 +333,9 @@ def test_universe_uppercase_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.UniverseNameInvalidCharDiagnostic
+    )
     assert diags[0].universe_name == "MY_LIB"
     assert diags[0].chars == ("M", "Y", "L", "I", "B")
     assert diags[0].location.line == 1
@@ -323,7 +351,9 @@ def test_multiverse_name_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.MultiverseNameInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.MultiverseNameInvalidCharDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].multiverse_name == "_mv"
     assert diags[0].chars == ("_",)
@@ -339,12 +369,12 @@ def test_multiverse_name_too_short(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.MultiverseNameTooShortDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.MultiverseNameTooShortDiagnostic)
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
     assert diags[0].location.file_path is None
     assert diags[0].multiverse_name == "m"
-    assert isinstance(diags[1], diagnostics.ReservedMultiverseNameDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.ReservedMultiverseNameDiagnostic)
     assert diags[1].location.line == 1
     assert diags[1].location.column == 31
     assert diags[1].location.file_path is None
@@ -357,7 +387,9 @@ def test_authority_domain_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.AuthorityDomainInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.AuthorityDomainInvalidCharDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].domain == "-example.com"
     assert diags[0].chars == ("-",)
@@ -373,12 +405,14 @@ def test_authority_domain_too_short(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.AuthorityDomainTooShortDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.AuthorityDomainTooShortDiagnostic
+    )
     assert diags[0].location.line == 1
     assert diags[0].location.column == 34
     assert diags[0].location.file_path is None
     assert diags[0].domain == "a"
-    assert isinstance(diags[1], diagnostics.DotlessAuthorityDomainDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.DotlessAuthorityDomainDiagnostic)
     assert diags[1].location.line == 1
     assert diags[1].location.column == 34
     assert diags[1].location.file_path is None
@@ -392,7 +426,9 @@ def test_authority_path_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.InvalidAuthorityPathSegmentDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.InvalidAuthorityPathSegmentDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].segment == ".hidden"
     assert diags[0].chars == (".",)
@@ -408,7 +444,9 @@ def test_authority_path_empty_segment(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.AuthorityPathEmptySegmentDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.AuthorityPathEmptySegmentDiagnostic
+    )
     assert diags[0].location.line == 1
     assert diags[0].location.column == 47
     assert diags[0].location.file_path is None
@@ -421,7 +459,9 @@ def test_universe_name_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.UniverseNameInvalidCharDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].universe_name == "_my_lib"
     assert diags[0].chars == ("_",)
@@ -437,7 +477,7 @@ def test_universe_name_too_short(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UniverseNameTooShortDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UniverseNameTooShortDiagnostic)
     assert diags[0].location.line == 1
     assert diags[0].location.column == 48
     assert diags[0].location.file_path is None
@@ -450,7 +490,9 @@ def test_path_segment_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].segment == "2bad"
     assert diags[0].chars == ("2",)
@@ -466,7 +508,9 @@ def test_global_name_path_empty_segment(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.GlobalNamePathEmptySegmentDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.GlobalNamePathEmptySegmentDiagnostic
+    )
     assert diags[0].location.line == 1
     assert diags[0].location.column == 59
     assert diags[0].location.file_path is None
@@ -479,13 +523,13 @@ def test_local_name_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "my-pos"
     assert diags[0].chars == ("-",)
     assert diags[0].location.line == 2
     assert diags[0].location.column == 27
-    assert isinstance(diags[1], diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.InvalidLocalNameFormatDiagnostic)
     assert diags[1].location.file_path is None
     assert diags[1].local_name == "my-pos"
     assert diags[1].chars == ("-",)

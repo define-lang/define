@@ -8,7 +8,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import (
+    config_diagnostics,
+    parser_diagnostics,
+    structural_diagnostics,
+)
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.structural_validation import (
@@ -25,12 +29,12 @@ def test_multiple_diagnostics_collected(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
     assert diags[0].reserved_name == "standard"
-    assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[1].location.file_path is None
     assert diags[1].location.line == 2
     assert diags[1].location.column == 31
@@ -42,12 +46,12 @@ def test_diagnostics_in_source_order(
 ):
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
-    assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
     assert diags[0].reserved_name == "standard"
-    assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[1].location.file_path is None
     assert diags[1].location.line == 2
     assert diags[1].location.column == 31
@@ -59,7 +63,7 @@ def test_non_filesystem_source_reports_trailing_space_but_not_indentation(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=9, column=60, end_line=9, end_column=61
             )
@@ -72,7 +76,7 @@ def test_program_diagnostics_in_file_order(
 ):
     result = validate_testdata_structural(max_workers=1)
     assert result.sorted_diagnostics() == [
-        diagnostics.SubRootFqunMismatchDiagnostic(
+        config_diagnostics.SubRootFqunMismatchDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=19,
@@ -84,7 +88,7 @@ def test_program_diagnostics_in_file_order(
             actual_fqun="alpha.com:wrong_lib",
             sub_root_path="alpha",
         ),
-        diagnostics.SubRootFqunMismatchDiagnostic(
+        config_diagnostics.SubRootFqunMismatchDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=19,

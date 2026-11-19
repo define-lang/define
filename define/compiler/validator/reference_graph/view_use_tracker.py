@@ -7,10 +7,11 @@ import typing
 import msgspec
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 
 if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
+    from define.compiler.errors import diagnostics
 
 
 class _ViewUse(msgspec.Struct):
@@ -66,7 +67,7 @@ class _ViewUse(msgspec.Struct):
             ):
                 self.has_reported_read_or_write_violation = True
                 use_diagnostics.append(
-                    diagnostics.ReadFromUnwrittenOutputViewDiagnostic(
+                    reference_graph_diagnostics.ReadFromUnwrittenOutputViewDiagnostic(
                         location=looking_at.location,
                         looked_at_name=looking_at.source_typed_name,
                         view_name=argument.view.source_typed_name,
@@ -76,7 +77,7 @@ class _ViewUse(msgspec.Struct):
             if view.is_input and self.first_write is not None:
                 self.has_reported_read_or_write_violation = True
                 use_diagnostics.append(
-                    diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
+                    reference_graph_diagnostics.ReadFromWrittenReadWriteViewDiagnostic(
                         location=looking_at.location,
                         looked_at_name=looking_at.source_typed_name,
                         view_name=argument.view.source_typed_name,
@@ -89,7 +90,7 @@ class _ViewUse(msgspec.Struct):
         if not view.is_output:
             self.has_reported_read_or_write_violation = True
             use_diagnostics.append(
-                diagnostics.WriteToInputOnlyViewDiagnostic(
+                reference_graph_diagnostics.WriteToInputOnlyViewDiagnostic(
                     location=looking_at.location,
                     looked_at_name=looking_at.source_typed_name,
                     view_name=argument.view.source_typed_name,
@@ -100,7 +101,7 @@ class _ViewUse(msgspec.Struct):
         first_write = self._record_write(looking_at.location)
         if first_write is not None:
             use_diagnostics.append(
-                diagnostics.InterfaceViewWrittenTwiceDiagnostic(
+                reference_graph_diagnostics.InterfaceViewWrittenTwiceDiagnostic(
                     location=looking_at.location,
                     looked_at_name=looking_at.source_typed_name,
                     view_name=argument.view.source_typed_name,
@@ -125,7 +126,7 @@ class _ViewUse(msgspec.Struct):
             if self.first_write is None and not self.has_unknown_use:
                 self.has_reported_read_or_write_violation = True
                 use_diagnostics.append(
-                    diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
+                    reference_graph_diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
                         location=looking_at.location,
                         looked_at_name=view_name,
                         view_name=argument.view.source_typed_name,
@@ -137,7 +138,7 @@ class _ViewUse(msgspec.Struct):
         first_write = self._record_write(looking_at.location)
         if first_write is not None:
             use_diagnostics.append(
-                diagnostics.LocalViewWrittenTwiceDiagnostic(
+                reference_graph_diagnostics.LocalViewWrittenTwiceDiagnostic(
                     location=looking_at.location,
                     looked_at_name=view_name,
                     view_name=argument.view.source_typed_name,
@@ -160,21 +161,21 @@ class _ViewUse(msgspec.Struct):
                 return []
             self.has_reported_read_or_write_violation = True
             return [
-                diagnostics.ViewSettingReadFromUnwrittenLocalViewDiagnostic(
+                reference_graph_diagnostics.ViewSettingReadFromUnwrittenLocalViewDiagnostic(
                     location=source.location, view_name=source.source_typed_name
                 )
             ]
         if not view.is_input and is_unwritten:
             self.has_reported_read_or_write_violation = True
             return [
-                diagnostics.ViewSettingReadFromUnwrittenOutputViewDiagnostic(
+                reference_graph_diagnostics.ViewSettingReadFromUnwrittenOutputViewDiagnostic(
                     location=source.location, view_name=source.source_typed_name
                 )
             ]
         if view.is_input and self.first_write is not None:
             self.has_reported_read_or_write_violation = True
             return [
-                diagnostics.ViewSettingReadFromWrittenReadWriteViewDiagnostic(
+                reference_graph_diagnostics.ViewSettingReadFromWrittenReadWriteViewDiagnostic(
                     location=source.location,
                     view_name=source.source_typed_name,
                     write=self.first_write,
@@ -199,14 +200,14 @@ class _ViewUse(msgspec.Struct):
             return []
         if isinstance(view, ast.LocalViewDefinition):
             return [
-                diagnostics.ViewSettingLocalViewWrittenTwiceDiagnostic(
+                reference_graph_diagnostics.ViewSettingLocalViewWrittenTwiceDiagnostic(
                     location=target.location,
                     view_name=target.source_typed_name,
                     first_write=first_write,
                 )
             ]
         return [
-            diagnostics.ViewSettingInterfaceViewWrittenTwiceDiagnostic(
+            reference_graph_diagnostics.ViewSettingInterfaceViewWrittenTwiceDiagnostic(
                 location=target.location,
                 view_name=target.source_typed_name,
                 first_write=first_write,
@@ -226,21 +227,21 @@ class _ViewUse(msgspec.Struct):
             if self.is_read:
                 return []
             return [
-                diagnostics.UnreadLocalViewDiagnostic(
+                reference_graph_diagnostics.UnreadLocalViewDiagnostic(
                     location=view.typed_name.location, view_name=view_name
                 )
             ]
         end_diagnostics: list[diagnostics.Diagnostic] = []
         if view.is_input and not self.is_read:
             end_diagnostics.append(
-                diagnostics.UnreadInputViewDiagnostic(
+                reference_graph_diagnostics.UnreadInputViewDiagnostic(
                     location=view.typed_name.location,
                     view_name=view_name,
                 )
             )
         if view.is_output and self.first_write is None:
             end_diagnostics.append(
-                diagnostics.UnwrittenOutputViewDiagnostic(
+                reference_graph_diagnostics.UnwrittenOutputViewDiagnostic(
                     location=view.typed_name.location,
                     view_name=view_name,
                 )
@@ -376,7 +377,7 @@ class ViewUseTracker:
         source = statement.source
         if not self._is_after_execution:
             setting_diagnostics.append(
-                diagnostics.ViewSettingReadWriteTargetWithoutExecutionDiagnostic(
+                reference_graph_diagnostics.ViewSettingReadWriteTargetWithoutExecutionDiagnostic(
                     location=target.location, target_name=target.source_typed_name
                 )
             )
@@ -388,7 +389,7 @@ class ViewUseTracker:
         ):
             return setting_diagnostics
         setting_diagnostics.append(
-            diagnostics.ViewSettingReadWriteTargetNotFromExecutionDiagnostic(
+            reference_graph_diagnostics.ViewSettingReadWriteTargetNotFromExecutionDiagnostic(
                 location=target.location,
                 target_name=target.source_typed_name,
                 source_name=source.source_typed_name,

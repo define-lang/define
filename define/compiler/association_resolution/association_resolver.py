@@ -12,7 +12,7 @@ from define.compiler.association_resolution import (
     literal_encoder,
     value_operation_resolver,
 )
-from define.compiler.errors import diagnostics
+from define.compiler.errors import association_resolution_diagnostics
 from define.compiler.validator.reference_graph import abstract_program
 
 if typing.TYPE_CHECKING:
@@ -20,6 +20,7 @@ if typing.TYPE_CHECKING:
 
     from define.compiler import ast
     from define.compiler.config import project_roots
+    from define.compiler.errors import diagnostics
     from define.compiler.graphs import reference_graph, reference_graph_order
 
 
@@ -227,7 +228,7 @@ def _missing_encoding_operation_diagnostic(
     action: ast.ActionDefinition,
     execution: abstract_program.ActionOperationExecution,
     missing: value_operation_resolver.MissingEncodingOperation,
-) -> diagnostics.MissingEncodingOperationDiagnostic:
+) -> association_resolution_diagnostics.MissingEncodingOperationDiagnostic:
     enclosing_fqun = action.typed_name.name_content.fqun
     # The encoding of each of the logical operation's views as it would be
     # written in the action's universe.
@@ -237,19 +238,19 @@ def _missing_encoding_operation_diagnostic(
     # The executions from the action down to the Logical Operation Execution
     # Statement, in the order they happen. Each execution is in the operation
     # that the one before it executes.
-    stack: list[diagnostics.OperationExecutionStep] = []
+    stack: list[association_resolution_diagnostics.OperationExecutionStep] = []
     executing_name = action.typed_name.source_typed_name
     for executed in (execution.operation, *missing.execution_stack):
         executed_name = executed.source_form_in_universe(enclosing_fqun)
         stack.append(
-            diagnostics.OperationExecutionStep(
+            association_resolution_diagnostics.OperationExecutionStep(
                 executing_name=executing_name,
                 executed_name=executed_name,
                 location=executed.location,
             )
         )
         executing_name = executed_name
-    return diagnostics.MissingEncodingOperationDiagnostic(
+    return association_resolution_diagnostics.MissingEncodingOperationDiagnostic(
         location=execution.operation.location,
         logical_operation_name=missing.logical_operation.source_form_in_universe(
             enclosing_fqun

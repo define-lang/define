@@ -7,7 +7,7 @@ from pprint import pformat
 from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
-    from define.compiler.errors import diagnostics
+    from define.compiler.errors import reference_graph_diagnostics
     from define.compiler.validator.reference_graph import propagation_step
 
 
@@ -23,7 +23,7 @@ class ExpectedPropagationStep(TypedDict):
 
 
 def assert_propagation_chain(
-    diag: diagnostics.InferredRequirementViolationDiagnostic,
+    diag: reference_graph_diagnostics.InferredRequirementViolationDiagnostic,
     *expected_steps: ExpectedPropagationStep,
 ):
     """Assert a requirement diagnostic's full propagation chain, outer to inner."""

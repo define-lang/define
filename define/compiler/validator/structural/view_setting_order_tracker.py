@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from define.compiler import ast
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
+
+if TYPE_CHECKING:
+    from define.compiler.errors import diagnostics
 
 
 class ViewSettingOrderTracker:
@@ -33,7 +38,7 @@ class ViewSettingOrderTracker:
         if target_line is None:
             return []
         return [
-            diagnostics.ViewSettingSourceWasTargetDiagnostic(
+            structural_diagnostics.ViewSettingSourceWasTargetDiagnostic(
                 location=source.location,
                 view_name=source.source_typed_name,
                 target_line=target_line,
@@ -75,7 +80,7 @@ class ViewSettingOrderTracker:
             ):
                 continue
             not_looked_at_diagnostics.append(
-                diagnostics.ViewSettingLocalTargetNotLookedAtDiagnostic(
+                structural_diagnostics.ViewSettingLocalTargetNotLookedAtDiagnostic(
                     location=target.location,
                     target_name=target.source_typed_name,
                     source_name=source.source_typed_name,
@@ -93,7 +98,7 @@ class ViewSettingOrderTracker:
         for view_setting_statement in self._pending_view_setting_statements:
             target = view_setting_statement.target
             without_execution_diagnostics.append(
-                diagnostics.ViewSettingLocalTargetWithoutExecutionDiagnostic(
+                structural_diagnostics.ViewSettingLocalTargetWithoutExecutionDiagnostic(
                     location=target.location, target_name=target.source_typed_name
                 )
             )

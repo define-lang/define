@@ -11,7 +11,7 @@ import pytest
 
 from define.compiler import driver, validation_pipeline
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import diagnostics, structural_diagnostics
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -84,7 +84,7 @@ class TestPathResolution:
 
         driver_result = driver.Driver().validate_program(source_file)
         assert driver_result.program_validation.sorted_diagnostics() == [
-            diagnostics.AbsolutePathOutsideProjectRootDiagnostic(
+            structural_diagnostics.AbsolutePathOutsideProjectRootDiagnostic(
                 input_path=source_file.as_posix(),
                 resolved_path=source_file.as_posix(),
                 project_root=project.as_posix(),
@@ -150,7 +150,7 @@ class TestPathResolution:
 
         driver_result = driver.Driver().validate_program(Path("link/../hello.dfn"))
         assert driver_result.program_validation.sorted_diagnostics() == [
-            diagnostics.RelativePathOutsideProjectRootDiagnostic(
+            structural_diagnostics.RelativePathOutsideProjectRootDiagnostic(
                 input_path="link/../hello.dfn",
                 resolved_path=(tmp_path.resolve() / "hello.dfn").as_posix(),
                 project_root=project.resolve().as_posix(),
@@ -215,7 +215,7 @@ class TestPathResolution:
 
         driver_result = driver.Driver().validate_program(Path("../hello.dfn"))
         assert driver_result.program_validation.sorted_diagnostics() == [
-            diagnostics.RelativePathOutsideProjectRootDiagnostic(
+            structural_diagnostics.RelativePathOutsideProjectRootDiagnostic(
                 input_path="../hello.dfn",
                 resolved_path=(tmp_path.resolve().parent / "hello.dfn").as_posix(),
                 project_root=tmp_path.resolve().as_posix(),
@@ -279,7 +279,9 @@ class TestSourceValidation:
         all_diagnostics = driver_result.program_validation.sorted_diagnostics()
         assert len(all_diagnostics) == 1
         diagnostic = all_diagnostics[0]
-        assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
+        assert isinstance(
+            diagnostic, structural_diagnostics.DuplicateDefinitionDiagnostic
+        )
         assert diagnostic.definition_type == "position"
         assert diagnostic.path == "/test"
         assert diagnostic.first_definition_line == 1

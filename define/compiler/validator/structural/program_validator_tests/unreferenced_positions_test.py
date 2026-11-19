@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -24,7 +24,7 @@ def test_unreferenced_interface_position_error(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UnreferencedPositionDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].position_name == "position<unused_iface>"
     assert diags[0].location.line == 3
@@ -37,7 +37,7 @@ def test_unreferenced_local_position_error(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UnreferencedPositionDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].position_name == "position<unused_local>"
     assert diags[0].location.line == 8
@@ -50,12 +50,12 @@ def test_two_unreferenced_local_positions(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UnreferencedPositionDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].position_name == "position<first_unused>"
     assert diags[0].location.line == 8
     assert diags[0].location.column == 20
-    assert isinstance(diags[1], diagnostics.UnreferencedPositionDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.UnreferencedPositionDiagnostic)
     assert diags[1].location.file_path is None
     assert diags[1].position_name == "position<second_unused>"
     assert diags[1].location.line == 9

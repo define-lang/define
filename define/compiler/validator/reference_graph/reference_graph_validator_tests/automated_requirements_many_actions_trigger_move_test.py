@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -36,7 +36,9 @@ def test_outer_move_into_inner_trigger_propagates_occupied_requirement(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
@@ -88,7 +90,9 @@ def test_inner_action_requirement_propagates_after_move(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
@@ -147,7 +151,9 @@ def test_three_deep_action_requirement_propagates_after_move(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 18
     assert diag.location.column == 30
@@ -221,7 +227,9 @@ def test_two_moves_without_the_input_violate_the_triggered_inner(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 30
@@ -289,7 +297,9 @@ def test_carrying_no_input_into_the_implied_middle_violates_the_triggered_inner(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
@@ -358,7 +368,9 @@ def test_replacement_child_does_not_satisfy_requirement_on_moved_particle(
     all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diagnostic.required_value is False
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 30
@@ -411,7 +423,9 @@ def test_missing_middle_child_violates_inner_requirement_after_move(
     all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diagnostic.required_value is False
     assert diagnostic.location.line == 15
     assert diagnostic.location.column == 30

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -37,7 +37,7 @@ def test_constructor_occupied_violation_via_destroy_of_implied(
     diag = all_diags[0]
     assert isinstance(
         diag,
-        diagnostics.InferredRequirementViolationDiagnostic,
+        reference_graph_diagnostics.InferredRequirementViolationDiagnostic,
     )
     assert diag.required_value is False
     assert diag.action_name == _P
@@ -86,7 +86,7 @@ def test_constructor_occupied_violation_via_move_source_of_implied(
     diag = all_diags[0]
     assert isinstance(
         diag,
-        diagnostics.InferredRequirementViolationDiagnostic,
+        reference_graph_diagnostics.InferredRequirementViolationDiagnostic,
     )
     assert diag.required_value is False
     assert diag.action_name == _P
@@ -139,7 +139,9 @@ def test_constructor_multiple_implied_positions_each_check_runs(
     assert len(all_diags) == 2
     diag_q = all_diags[0]
     diag_r = all_diags[1]
-    assert isinstance(diag_q, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag_q, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag_q.required_value is False
     assert diag_q.action_name == _P
     assert diag_q.required_empty is False
@@ -174,7 +176,9 @@ def test_constructor_multiple_implied_positions_each_check_runs(
             "file_path": "p.dfn",
         },
     )
-    assert isinstance(diag_r, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag_r, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag_r.required_value is False
     assert diag_r.action_name == _P
     assert diag_r.required_empty is False
@@ -220,7 +224,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_implied(
     diag = all_diags[0]
     assert isinstance(
         diag,
-        diagnostics.InferredRequirementViolationDiagnostic,
+        reference_graph_diagnostics.InferredRequirementViolationDiagnostic,
     )
     assert diag.required_value is False
     assert diag.action_name == _DESTROY_CHILD
@@ -267,7 +271,7 @@ def test_constructor_occupied_violation_via_move_source_of_child_of_implied(
     diag = all_diags[0]
     assert isinstance(
         diag,
-        diagnostics.InferredRequirementViolationDiagnostic,
+        reference_graph_diagnostics.InferredRequirementViolationDiagnostic,
     )
     assert diag.required_value is False
     assert diag.action_name == _MOVE_CHILD
@@ -321,7 +325,7 @@ def test_constructor_occupied_violation_via_destroy_of_grandchild_of_implied(
     diag = all_diags[0]
     assert isinstance(
         diag,
-        diagnostics.InferredRequirementViolationDiagnostic,
+        reference_graph_diagnostics.InferredRequirementViolationDiagnostic,
     )
     assert diag.required_value is False
     assert diag.action_name == _DESTROY_GRANDCHILD
@@ -371,7 +375,7 @@ def test_constructor_occupied_violation_via_destroy_of_child_of_position_in_impl
     diag = all_diags[0]
     assert isinstance(
         diag,
-        diagnostics.InferredRequirementViolationDiagnostic,
+        reference_graph_diagnostics.InferredRequirementViolationDiagnostic,
     )
     assert diag.required_value is False
     assert diag.action_name == _DESTROY_INTERFACE_CHILD
@@ -419,7 +423,9 @@ def test_constructor_action_requirement_violation_via_triggering_implied_action(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 7
     assert diag.location.column == 30

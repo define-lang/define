@@ -8,17 +8,34 @@ import inspect
 from typing import TYPE_CHECKING, cast
 
 from defcl.python import errors
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import (
+    association_resolution_diagnostics,
+    config_diagnostics,
+    diagnostics,
+    parser_diagnostics,
+    reference_graph_diagnostics,
+    structural_diagnostics,
+    syntax_errors,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
 
 # The names that tests import the modules of diagnostic classes as. Importing
-# syntax_errors here also registers its classes as subclasses of
+# these modules here also registers their classes as subclasses of
 # diagnostics.Diagnostic.
 _DIAGNOSTIC_MODULE_NAMES = frozenset(
     module.__name__.rpartition(".")[2]
-    for module in (diagnostics, syntax_errors, errors)
+    for module in (
+        association_resolution_diagnostics,
+        config_diagnostics,
+        diagnostics,
+        parser_diagnostics,
+        reference_graph_diagnostics,
+        structural_diagnostics,
+        syntax_errors,
+        errors,
+    )
 )
 # A defcl diagnostic's message is a field, and tests assert on the fields that
 # the message is made from instead.

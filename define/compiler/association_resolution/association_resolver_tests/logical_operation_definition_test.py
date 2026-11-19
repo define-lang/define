@@ -5,7 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import (
+    association_resolution_diagnostics,
+    config_diagnostics,
+    structural_diagnostics,
+)
 from define.compiler.validator.test_helpers import (
     assert_no_errors,
     standard_library_file,
@@ -25,7 +29,7 @@ def test_encoding_operation_with_fewer_views(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.AssociationLogicalOperationViewCountDiagnostic(
+        association_resolution_diagnostics.AssociationLogicalOperationViewCountDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
                 column=16,
@@ -49,7 +53,7 @@ def test_encoding_operation_with_different_view_name(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+        association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=9,
                 column=19,
@@ -74,7 +78,7 @@ def test_encoding_operation_with_different_view_direction(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
+        association_resolution_diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=16,
@@ -103,7 +107,7 @@ def test_encoding_operation_with_views_in_different_order(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+        association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=9,
                 column=19,
@@ -120,7 +124,7 @@ def test_encoding_operation_with_views_in_different_order(
                 line=2, column=16, end_line=2, end_column=27, file_path="negate.dfn"
             ),
         ),
-        diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+        association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=13,
                 column=19,
@@ -145,7 +149,7 @@ def test_encoding_operations_with_same_encodings(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.DuplicateAssociatedEncodingOperationDiagnostic(
+        association_resolution_diagnostics.DuplicateAssociatedEncodingOperationDiagnostic(
             location=rendering.SourceLocation(
                 line=26,
                 column=16,
@@ -172,7 +176,7 @@ def test_encoding_operation_with_read_write_view(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
+        association_resolution_diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=16,
@@ -201,7 +205,7 @@ def test_encoding_operation_view_without_encoding(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.ViewMissingEncodingDiagnostic(
+        structural_diagnostics.ViewMissingEncodingDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=16,
@@ -211,7 +215,7 @@ def test_encoding_operation_view_without_encoding(
             ),
             view_name="view<a>",
         ),
-        diagnostics.EncodingOperationViewValueQualityDiagnostic(
+        structural_diagnostics.EncodingOperationViewValueQualityDiagnostic(
             location=rendering.SourceLocation(
                 line=5,
                 column=24,
@@ -229,7 +233,7 @@ def test_associated_encoding_operation_not_defined(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.ReferencedFileNotFoundDiagnostic(
+        structural_diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
                 column=16,
@@ -254,7 +258,7 @@ def test_encoding_operation_in_unconfigured_universe(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+        config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
                 column=16,
@@ -273,7 +277,7 @@ def test_association_with_fewer_views(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.AssociationLogicalOperationViewCountDiagnostic(
+        association_resolution_diagnostics.AssociationLogicalOperationViewCountDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
                 column=16,
@@ -297,7 +301,7 @@ def test_association_with_different_view_name(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+        association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=13,
                 column=19,
@@ -322,7 +326,7 @@ def test_association_with_different_encoding(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.AssociationViewEncodingDiagnostic(
+        association_resolution_diagnostics.AssociationViewEncodingDiagnostic(
             location=rendering.SourceLocation(
                 line=14,
                 column=24,
@@ -350,7 +354,7 @@ def test_encoding_operation_with_fewer_views_than_its_association(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.AssociationViewCountDiagnostic(
+        association_resolution_diagnostics.AssociationViewCountDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
                 column=16,
@@ -377,7 +381,7 @@ def test_encoding_operation_with_different_view_name_than_its_association(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.AssociationViewNameDiagnostic(
+        association_resolution_diagnostics.AssociationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=13,
                 column=19,
@@ -405,7 +409,7 @@ def test_unusable_encoding_operations_config(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.EncodingOperationsConfigNotFoundDiagnostic(
+        config_diagnostics.EncodingOperationsConfigNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=5,
                 column=30,
@@ -430,7 +434,7 @@ def test_non_filesystem_source_logical_operation_without_project_root(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.sorted_diagnostics() == [
-        diagnostics.NoProjectRootForAssociationsDiagnostic(
+        association_resolution_diagnostics.NoProjectRootForAssociationsDiagnostic(
             location=rendering.SourceLocation(
                 line=10, column=22, end_line=10, end_column=56
             ),

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -22,7 +22,7 @@ def test_interface_position_is_rejected(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.EntryPointInterfacePositionDiagnostic,
+        structural_diagnostics.EntryPointInterfacePositionDiagnostic,
     )
     assert diags[0].position_name == "position<input>"
     assert diags[0].location.line == 2
@@ -38,7 +38,7 @@ def test_each_interface_position_is_rejected(
     assert len(diags) == 2
     assert isinstance(
         diags[0],
-        diagnostics.EntryPointInterfacePositionDiagnostic,
+        structural_diagnostics.EntryPointInterfacePositionDiagnostic,
     )
     assert diags[0].position_name == "position<run>"
     assert diags[0].location.line == 2
@@ -46,7 +46,7 @@ def test_each_interface_position_is_rejected(
     assert diags[0].location.file_path == "test.dfn"
     assert isinstance(
         diags[1],
-        diagnostics.EntryPointInterfacePositionDiagnostic,
+        structural_diagnostics.EntryPointInterfacePositionDiagnostic,
     )
     assert diags[1].position_name == "position<input>"
     assert diags[1].location.line == 3
@@ -75,8 +75,12 @@ def test_non_filesystem_only_last_constructor_interfaces_are_rejected(
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
     first, second = diags
-    assert isinstance(first, diagnostics.EntryPointInterfacePositionDiagnostic)
-    assert isinstance(second, diagnostics.EntryPointInterfacePositionDiagnostic)
+    assert isinstance(
+        first, structural_diagnostics.EntryPointInterfacePositionDiagnostic
+    )
+    assert isinstance(
+        second, structural_diagnostics.EntryPointInterfacePositionDiagnostic
+    )
     assert first.position_name == "position<input>"
     assert first.location.line == 12
     assert first.location.column == 16

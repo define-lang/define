@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -21,7 +21,9 @@ def test_move_missing_dest_qualities(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
@@ -38,7 +40,9 @@ def test_move_from_position_without_qualities_to_position_with_qualities(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 52
@@ -69,7 +73,9 @@ def test_local_move_missing_qualities_marks_error(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
@@ -95,7 +101,9 @@ def test_definition_local_to_statement_local_violates(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 51
@@ -123,7 +131,9 @@ def test_statement_local_to_definition_local_violates(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 52
     assert all_diags[0].location.file_path == "test.dfn"
@@ -151,7 +161,9 @@ def test_definition_local_to_definition_local_violates(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 52
     assert all_diags[0].location.file_path == "test.dfn"

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ def test_read_not_supported(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.LogicalOperationReadNotSupportedDiagnostic(
+        reference_graph_diagnostics.LogicalOperationReadNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=18, column=41, end_line=18, end_column=52, file_path="test.dfn"
             ),
@@ -44,7 +44,7 @@ def test_write_not_supported(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
+        reference_graph_diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=19, column=42, end_line=19, end_column=54, file_path="test.dfn"
             ),
@@ -60,7 +60,7 @@ def test_logical_operation_not_supported(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.LogicalOperationReadNotSupportedDiagnostic(
+        reference_graph_diagnostics.LogicalOperationReadNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=18, column=41, end_line=18, end_column=52, file_path="test.dfn"
             ),
@@ -68,7 +68,7 @@ def test_logical_operation_not_supported(
             logical_operation_name="logical_operation</negate>",
             value_name="value</number>",
         ),
-        diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
+        reference_graph_diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=19, column=42, end_line=19, end_column=54, file_path="test.dfn"
             ),
@@ -84,7 +84,7 @@ def test_write_to_input_only_view(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.WriteToInputOnlyViewDiagnostic(
+        reference_graph_diagnostics.WriteToInputOnlyViewDiagnostic(
             location=rendering.SourceLocation(
                 line=19, column=42, end_line=19, end_column=52, file_path="test.dfn"
             ),
@@ -100,7 +100,7 @@ def test_read_from_unwritten_output_view(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ReadFromUnwrittenOutputViewDiagnostic(
+        reference_graph_diagnostics.ReadFromUnwrittenOutputViewDiagnostic(
             location=rendering.SourceLocation(
                 line=18, column=37, end_line=18, end_column=47, file_path="test.dfn"
             ),
@@ -116,14 +116,14 @@ def test_undefined_logical_operation_view(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.MissingOperationArgumentDiagnostic(
+        reference_graph_diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=17, column=21, end_line=17, end_column=62, file_path="test.dfn"
             ),
             view_name="view<a>",
             operation_name="logical_operation<standard:/number/negate>",
         ),
-        diagnostics.UndefinedOperationViewDiagnostic(
+        reference_graph_diagnostics.UndefinedOperationViewDiagnostic(
             location=rendering.SourceLocation(
                 line=18, column=18, end_line=18, end_column=28, file_path="test.dfn"
             ),
@@ -139,7 +139,7 @@ def test_argument_order(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.OperationArgumentOrderDiagnostic(
+        reference_graph_diagnostics.OperationArgumentOrderDiagnostic(
             location=rendering.SourceLocation(
                 line=19, column=18, end_line=19, end_column=24, file_path="test.dfn"
             ),
@@ -155,7 +155,7 @@ def test_missing_argument(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.MissingOperationArgumentDiagnostic(
+        reference_graph_diagnostics.MissingOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=11, column=21, end_line=11, end_column=62, file_path="test.dfn"
             ),
@@ -170,7 +170,7 @@ def test_looks_at_undefined_view(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.UndefinedLocalNameDiagnostic(
+        structural_diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=12, column=37, end_line=12, end_column=49, file_path="test.dfn"
             ),
@@ -184,7 +184,7 @@ def test_missing_logical_operation(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.StandardDefinitionNotFoundDiagnostic(
+        structural_diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=17, column=21, end_line=17, end_column=63, file_path="test.dfn"
             ),
@@ -198,7 +198,7 @@ def test_missing_value(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.StandardDefinitionNotFoundDiagnostic(
+        structural_diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=6, column=24, end_line=6, end_column=54, file_path="test.dfn"
             ),
@@ -212,13 +212,13 @@ def test_view_without_value_quality(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewMissingValueQualityDiagnostic(
+        structural_diagnostics.ViewMissingValueQualityDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=16, end_line=3, end_column=27, file_path="test.dfn"
             ),
             view_name="view<amount>",
         ),
-        diagnostics.ValueOperationViewEncodingDiagnostic(
+        structural_diagnostics.ValueOperationViewEncodingDiagnostic(
             location=rendering.SourceLocation(
                 line=6, column=24, end_line=6, end_column=63, file_path="test.dfn"
             ),

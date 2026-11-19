@@ -7,7 +7,7 @@ import typing
 
 import msgspec
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics, diagnostics
 
 if typing.TYPE_CHECKING:
     from collections.abc import Sequence
@@ -70,7 +70,7 @@ def _diagnostic_order(
         return (location.file_path or "", location.line, location.column)
     # A diagnostic about a whole config file comes before the diagnostics at
     # places in it.
-    if isinstance(diagnostic, diagnostics.ConfigDiagnostic):
+    if isinstance(diagnostic, config_diagnostics.ConfigDiagnostic):
         return (diagnostic.config_path, 0, 0)
     # The rest have no location, such as the entry path's diagnostics and a
     # file that cannot be read, and come first, in the order they were found.

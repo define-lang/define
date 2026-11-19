@@ -71,6 +71,7 @@ py_binary(
         ":renderer_extension",
         ":rust_output",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:parser_diagnostics",
     ],
 )
 

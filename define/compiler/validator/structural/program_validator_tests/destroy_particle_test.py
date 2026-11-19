@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -27,7 +27,7 @@ def test_undefined_local_position_in_destroy(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.line == 5
     assert diags[0].location.column == 33
     assert diags[0].location.file_path is None
@@ -40,14 +40,15 @@ def test_non_self_ref_global_in_action_body(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UnknownGlobalNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].source_global_name == "action</other>"
     assert diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
     assert diags[0].location.line == 5
     assert diags[0].location.column == 33
     assert isinstance(
-        diags[1], diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic
+        diags[1],
+        structural_diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
     )
     assert diags[1].location.file_path is None
     assert diags[1].definition_name == "action</other>"

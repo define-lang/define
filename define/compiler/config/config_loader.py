@@ -10,7 +10,7 @@ from define.compiler.config import (
     local_deps_config,
     project_config,
 )
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
@@ -19,6 +19,7 @@ if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from define.compiler import ast
     from define.compiler.data_structures import define_path
+    from define.compiler.errors import diagnostics
 
 
 class Config(msgspec.Struct):
@@ -86,7 +87,7 @@ class ConfigLoader:
                 return ConfigLoadResult(
                     config=None,
                     diagnostics=[
-                        diagnostics.NotRunFromProjectRootDiagnostic(
+                        config_diagnostics.NotRunFromProjectRootDiagnostic(
                             config_path=str(config_path)
                         )
                     ],
@@ -94,7 +95,7 @@ class ConfigLoader:
             return ConfigLoadResult(
                 config=None,
                 diagnostics=[
-                    diagnostics.SubRootNotProjectRootDiagnostic(
+                    config_diagnostics.SubRootNotProjectRootDiagnostic(
                         location=declaring_entry.path_location,
                         sub_root_path=str(self._root),
                         sub_root_config_path=str(config_path),
@@ -104,19 +105,19 @@ class ConfigLoader:
         # Every config file is loaded even when another has diagnostics that
         # keep the configuration from being used, so that all of their
         # diagnostics are reported at once.
-        config_diagnostics: list[diagnostics.FormattableDiagnostic] = []
-        project = self._load_project(config_diagnostics)
-        sub_roots = self._load_sub_roots(config_diagnostics)
+        config_file_diagnostics: list[diagnostics.FormattableDiagnostic] = []
+        project = self._load_project(config_file_diagnostics)
+        sub_roots = self._load_sub_roots(config_file_diagnostics)
         if project is None:
-            return ConfigLoadResult(config=None, diagnostics=config_diagnostics)
+            return ConfigLoadResult(config=None, diagnostics=config_file_diagnostics)
         fqun_matches = True
         if (
             declaring_entry is not None
             and project.fqun.canonical != declaring_entry.universe
         ):
             fqun_matches = False
-            config_diagnostics.append(
-                diagnostics.SubRootFqunMismatchDiagnostic(
+            config_file_diagnostics.append(
+                config_diagnostics.SubRootFqunMismatchDiagnostic(
                     location=project.fqun.location,
                     expected_fqun=declaring_entry.universe,
                     actual_fqun=project.fqun.canonical,
@@ -124,7 +125,7 @@ class ConfigLoader:
                 )
             )
         if not fqun_matches or sub_roots is None:
-            return ConfigLoadResult(config=None, diagnostics=config_diagnostics)
+            return ConfigLoadResult(config=None, diagnostics=config_file_diagnostics)
         return ConfigLoadResult(
             config=Config(
                 fqun=project.fqun,
@@ -132,23 +133,23 @@ class ConfigLoader:
                 has_encodings_location=project.has_encodings_location,
                 has_encoding_operations_location=project.has_encoding_operations_location,
             ),
-            diagnostics=config_diagnostics,
+            diagnostics=config_file_diagnostics,
         )
 
     def _load_project(
-        self, config_diagnostics: list[diagnostics.FormattableDiagnostic]
+        self, config_file_diagnostics: list[diagnostics.FormattableDiagnostic]
     ) -> project_config.ProjectConfig | None:
-        """Load the project config, adding its diagnostics to config_diagnostics."""
+        """Load the project config, adding its diagnostics to config_file_diagnostics."""
         project, project_diagnostics = self._project_config.load()
-        config_diagnostics.extend(project_diagnostics)
+        config_file_diagnostics.extend(project_diagnostics)
         return project
 
     def _load_sub_roots(
-        self, config_diagnostics: list[diagnostics.FormattableDiagnostic]
+        self, config_file_diagnostics: list[diagnostics.FormattableDiagnostic]
     ) -> Mapping[str, local_deps_config.LocalDependencyEntry] | None:
-        """Load the sub-roots that the project declares, adding their diagnostics to config_diagnostics."""
+        """Load the sub-roots that the project declares, adding their diagnostics to config_file_diagnostics."""
         sub_roots, deps_diagnostics = local_deps_config.LocalDepsConfigReader(
             self._root, self._source_map
         ).load()
-        config_diagnostics.extend(deps_diagnostics)
+        config_file_diagnostics.extend(deps_diagnostics)
         return sub_roots

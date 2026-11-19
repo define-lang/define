@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -25,7 +25,9 @@ class TestUnnecessarySelfReference:
         result = validate_testdata_non_filesystem_with_reference_graph()
         diags = result.sorted_diagnostics()
         assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
+        assert isinstance(
+            diags[0], structural_diagnostics.UnnecessarySelfReferenceDiagnostic
+        )
         assert diags[0].definition_name == (
             "action<mv:define-lang.org:test_files:/invalid/references/unnecessary_self_reference>"
         )
@@ -42,7 +44,9 @@ class TestUnnecessarySelfReference:
         result = validate_testdata_non_filesystem_with_reference_graph()
         diags = result.sorted_diagnostics()
         assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
+        assert isinstance(
+            diags[0], structural_diagnostics.UnnecessarySelfReferenceDiagnostic
+        )
         assert diags[0].location.file_path is None
         assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
         assert diags[0].location.line == 7
@@ -55,7 +59,9 @@ class TestUnnecessarySelfReference:
         result = validate_testdata_non_filesystem_with_reference_graph()
         diags = result.sorted_diagnostics()
         assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
+        assert isinstance(
+            diags[0], structural_diagnostics.UnnecessarySelfReferenceDiagnostic
+        )
         assert diags[0].location.file_path is None
         assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
         assert diags[0].location.line == 6
@@ -68,7 +74,9 @@ class TestUnnecessarySelfReference:
         result = validate_testdata_non_filesystem_with_reference_graph()
         diags = result.sorted_diagnostics()
         assert len(diags) == 1
-        assert isinstance(diags[0], diagnostics.UnnecessarySelfReferenceDiagnostic)
+        assert isinstance(
+            diags[0], structural_diagnostics.UnnecessarySelfReferenceDiagnostic
+        )
         assert diags[0].location.file_path is None
         assert diags[0].definition_name == "action<my.domain.com:my_lib:/test>"
         assert diags[0].location.line == 7
@@ -81,11 +89,15 @@ class TestUnnecessarySelfReference:
         result = validate_testdata_non_filesystem_with_reference_graph()
         diags = result.sorted_diagnostics()
         assert len(diags) == 2
-        assert isinstance(diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert isinstance(
+            diags[0], structural_diagnostics.PositionReferenceChainEndDiagnostic
+        )
         assert diags[0].location.file_path is None
         assert diags[0].location.line == 6
         assert diags[0].location.column == 30
-        assert isinstance(diags[1], diagnostics.CircularGlobalReferenceDiagnostic)
+        assert isinstance(
+            diags[1], structural_diagnostics.CircularGlobalReferenceDiagnostic
+        )
         assert diags[1].location.file_path is None
         assert diags[1].location.line == 6
         assert diags[1].location.column == 30
@@ -103,7 +115,9 @@ class TestUnknownGlobalChainStart:
         result = validate_testdata_project_with_reference_graph()
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+        assert isinstance(
+            all_diags[0], structural_diagnostics.UnknownGlobalNameDiagnostic
+        )
         assert all_diags[0].source_global_name == "action</other>"
         assert all_diags[0].full_global_name == "action<my.domain.com:my_lib:/other>"
         assert all_diags[0].location.line == 5
@@ -119,7 +133,9 @@ class TestImpliedQualityChainStart:
         result = validate_testdata_project_with_reference_graph()
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
+        assert isinstance(
+            all_diags[0], reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+        )
         assert (
             all_diags[0].element_name
             == "position<mv:define-lang.org:test_pos_init_chain_bad:/wrong>"
@@ -150,7 +166,9 @@ class TestImpliedQualityChainStart:
         result = validate_testdata_project_with_reference_graph()
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
+        assert isinstance(
+            all_diags[0], reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+        )
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/z>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/x>"
         assert all_diags[0].location.line == 6
@@ -172,7 +190,8 @@ class TestImpliedQualityChainStart:
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
-            all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
+            all_diags[0],
+            reference_graph_diagnostics.ChainElementNotInterfacePositionDiagnostic,
         )
         assert all_diags[0].element_name == "position<not_iface>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/b>"
@@ -198,7 +217,9 @@ class TestMissingDefinitionInChain:
         result = validate_testdata_project_with_reference_graph()
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+        assert isinstance(
+            all_diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+        )
         assert all_diags[0].file_path == "middle.dfn"
         assert all_diags[0].location.line == 7
         assert all_diags[0].location.column == 37

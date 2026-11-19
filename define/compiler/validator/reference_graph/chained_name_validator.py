@@ -5,12 +5,13 @@ from __future__ import annotations
 import typing
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from define.compiler import chained_name
+    from define.compiler.errors import diagnostics
     from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph.particles import particle_tracker
 
@@ -160,7 +161,7 @@ class ChainedNameValidator:
                 chain,
                 child,
                 parent_name,
-                diagnostics.ChainGlobalNameAfterActionDiagnostic,
+                reference_graph_diagnostics.ChainGlobalNameAfterActionDiagnostic,
                 validation_diagnostics,
             )
             return 0
@@ -169,7 +170,7 @@ class ChainedNameValidator:
                 chain,
                 child,
                 parent_name,
-                diagnostics.ChainElementNotInterfacePositionDiagnostic,
+                reference_graph_diagnostics.ChainElementNotInterfacePositionDiagnostic,
                 validation_diagnostics,
             )
             return 0
@@ -201,7 +202,7 @@ class ChainedNameValidator:
         declared = block.as_set if block is not None else frozenset[str]()
         if element_name not in declared:
             validation_diagnostics.append(
-                diagnostics.ChainElementNotAssignedDiagnostic(
+                reference_graph_diagnostics.ChainElementNotAssignedDiagnostic(
                     location=element.location,
                     element_name=element_name,
                     parent_name=parent_name,
@@ -215,8 +216,8 @@ class ChainedNameValidator:
         element: ast.TypedNameReference,
         parent_name: str,
         diagnostic_class: type[
-            diagnostics.ChainGlobalNameAfterActionDiagnostic
-            | diagnostics.ChainElementNotInterfacePositionDiagnostic
+            reference_graph_diagnostics.ChainGlobalNameAfterActionDiagnostic
+            | reference_graph_diagnostics.ChainElementNotInterfacePositionDiagnostic
         ],
         validation_diagnostics: list[diagnostics.Diagnostic],
     ):

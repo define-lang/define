@@ -12,12 +12,18 @@ from __future__ import annotations
 import typing
 
 from define.compiler.config import global_names, project_config, project_roots
-from define.compiler.errors import diagnostics
+from define.compiler.errors import (
+    config_diagnostics,
+    structural_diagnostics,
+)
 from define.compiler.validator.structural.resolver import reference_resolver
 
 if typing.TYPE_CHECKING:
     from define.compiler import ast
     from define.compiler.data_structures import define_path
+    from define.compiler.errors import (
+        diagnostics,
+    )
     from define.compiler.graphs import reference_graph
     from define.compiler.validator.structural import (
         file_loader,
@@ -111,7 +117,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
             return reference_resolver.ALREADY_REPORTED
         self._unknown_universes.add(fqun.canonical)
         return reference_resolver.Unresolved(
-            diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+            config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
                 location=fqun.location,
                 universe=fqun.canonical,
                 current_universe_name=root_config.fqun.canonical,
@@ -125,7 +131,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         reference = edge.global_name_reference
         config_path = str(project_config.CONFIG_FILE.path)
         if reference.effective_fqun.canonical in self._source_universes:
-            return diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
+            return structural_diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
                 location=reference.location,
                 definition_name=reference.source_typed_name,
                 config_path=config_path,
@@ -133,7 +139,7 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         # A short-form reference names the universe of the definition it is
         # in, which the supplied source defines, so a reference to any other
         # universe writes its FQUN.
-        return diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
+        return structural_diagnostics.NoProjectRootInNonFilesystemContextDiagnostic(
             location=typing.cast("ast.Fqun", reference.name_content.fqun).location,
             universe=reference.effective_fqun.canonical,
             config_path=config_path,

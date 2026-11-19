@@ -152,6 +152,7 @@ py_test(
         ":validation_pipeline",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:structural_diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",
         "@pypi//pytest",

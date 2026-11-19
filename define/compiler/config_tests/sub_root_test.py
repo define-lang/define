@@ -12,7 +12,7 @@ from define.compiler.config import (
 )
 from define.compiler.config_tests import test_helpers
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -35,7 +35,7 @@ def test_not_a_project_root(
     ) == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.SubRootNotProjectRootDiagnostic(
+            config_diagnostics.SubRootNotProjectRootDiagnostic(
                 location=declaring_entry.path_location,
                 sub_root_path=str(_SUB_ROOT),
                 sub_root_config_path=str(_SUB_ROOT / project_config.CONFIG_FILE.path),
@@ -87,7 +87,7 @@ def test_project_config_validation_error(
     assert test_helpers.load_config(_SUB_ROOT) == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     project_config.CONFIG_FILE,
                     ("project", "universe_name"),
@@ -108,7 +108,7 @@ def test_local_deps_validation_error(
     assert test_helpers.load_config(_SUB_ROOT) == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE,
                     ("deps", "local", 0, "path"),

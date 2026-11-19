@@ -5,7 +5,7 @@ from __future__ import annotations
 import typing
 
 from define.compiler import ast, name_types
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import (
     action_contract,
     position_occupancy,
@@ -19,6 +19,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
     from define.compiler import chained_name
+    from define.compiler.errors import diagnostics
     from define.compiler.validator import scope_tracker
     from define.compiler.validator.reference_graph import position_quality_resolver
     from define.compiler.validator.reference_graph.particles import (
@@ -187,9 +188,13 @@ class DeadQualityAssignmentValidator:
         for candidate in (
             self._dead_quality_assignment_tracker.dead_value_and_encoding_assignments()
         ):
-            dead_diagnostic = diagnostics.DeadValueQualityAssignmentDiagnostic
+            dead_diagnostic = (
+                reference_graph_diagnostics.DeadValueQualityAssignmentDiagnostic
+            )
             if candidate.quality.name_type == name_types.NameType.ENCODING:
-                dead_diagnostic = diagnostics.DeadEncodingQualityAssignmentDiagnostic
+                dead_diagnostic = (
+                    reference_graph_diagnostics.DeadEncodingQualityAssignmentDiagnostic
+                )
             validation_diagnostics.append(
                 dead_diagnostic(
                     location=candidate.quality.location,
@@ -199,7 +204,7 @@ class DeadQualityAssignmentValidator:
             )
         for candidate in self._dead_quality_assignment_tracker.dead_child_positions():
             validation_diagnostics.append(
-                diagnostics.DeadChildPositionDiagnostic(
+                reference_graph_diagnostics.DeadChildPositionDiagnostic(
                     location=candidate.quality.location,
                     quality_name=candidate.quality.source_typed_name,
                     position_name=candidate.position.source_typed_name,
@@ -207,7 +212,7 @@ class DeadQualityAssignmentValidator:
             )
         for candidate in self._dead_quality_assignment_tracker.dead_child_actions():
             validation_diagnostics.append(
-                diagnostics.UntriggeredActionDiagnostic(
+                reference_graph_diagnostics.UntriggeredActionDiagnostic(
                     location=candidate.quality.location,
                     quality_name=candidate.quality.source_typed_name,
                     position_name=candidate.position.source_typed_name,
@@ -217,7 +222,7 @@ class DeadQualityAssignmentValidator:
             implied_action
         ) in self._dead_quality_assignment_tracker.untriggered_implied_actions():
             validation_diagnostics.append(
-                diagnostics.UntriggeredImpliedActionDiagnostic(
+                reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic(
                     location=implied_action.location,
                     implied_action_name=implied_action.source_typed_name,
                 )
@@ -227,7 +232,7 @@ class DeadQualityAssignmentValidator:
                 "ast.GlobalTypedNameReference", position.get_last_action()
             )
             validation_diagnostics.append(
-                diagnostics.UntriggeredActionInterfaceDiagnostic(
+                reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic(
                     location=action.location,
                     action_name=action.source_typed_name,
                     position_name=position.source_chained_name,

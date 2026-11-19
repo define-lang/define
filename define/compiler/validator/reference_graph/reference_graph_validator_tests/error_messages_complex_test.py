@@ -17,7 +17,7 @@ from __future__ import annotations
 import textwrap
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph.test_helpers import action_graph
 
 if TYPE_CHECKING:
@@ -265,8 +265,12 @@ def test_destruction_contract_traces_every_trigger_hop(
     ]
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     d2_diag = all_diags[0]
     d1_diag = all_diags[1]
     assert d2_diag.required_empty is False

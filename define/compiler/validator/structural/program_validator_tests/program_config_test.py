@@ -13,7 +13,7 @@ from crates.source_rendering.python import rendering
 from defcl.python import error_types, errors
 from define.compiler.config import project_config
 from define.compiler.config_tests import test_helpers as config_test_helpers
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics, structural_diagnostics
 from define.compiler.validator.structural import program_validator
 
 if TYPE_CHECKING:
@@ -27,7 +27,7 @@ def test_requires_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     result = program_validator.validate_program(PurePosixPath("test.dfn")).result
     assert result.file_results == []
     assert result.sorted_diagnostics() == [
-        diagnostics.NotRunFromProjectRootDiagnostic(
+        config_diagnostics.NotRunFromProjectRootDiagnostic(
             config_path=".define/project/config.defcl",
         )
     ]
@@ -51,7 +51,7 @@ def test_invalid_project_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     result = program_validator.validate_program(PurePosixPath("test.dfn")).result
     assert result.file_results == []
     assert result.sorted_diagnostics() == [
-        diagnostics.ConfigViolationDiagnostic(
+        config_diagnostics.ConfigViolationDiagnostic(
             location=config_test_helpers.config_field_location(
                 project_config.CONFIG_FILE, ("project", "universe_name")
             ),
@@ -93,7 +93,7 @@ def test_project_config_with_layout_error_is_still_used(
         file_path=".define/project/config.defcl",
     )
     assert blank_line.file_path == ".define/project/config.defcl"
-    assert duplicate_definition == diagnostics.DuplicateDefinitionDiagnostic(
+    assert duplicate_definition == structural_diagnostics.DuplicateDefinitionDiagnostic(
         location=rendering.SourceLocation(
             line=2, column=1, end_line=2, end_column=47, file_path="test.dfn"
         ),

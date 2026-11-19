@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -27,7 +27,9 @@ def test_same_position(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingSamePositionDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ValueSettingSamePositionDiagnostic
+    )
     assert diagnostic.position_name == "position<item>"
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7
@@ -40,7 +42,9 @@ def test_same_chained_position(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingSamePositionDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ValueSettingSamePositionDiagnostic
+    )
     assert diagnostic.position_name == "position<item>::position</child>"
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 8
@@ -74,12 +78,12 @@ def test_undefined_positions(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 2
     target, source = result.sorted_diagnostics()
-    assert isinstance(target, diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(target, structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert target.local_name == "position<target>"
     assert target.location.file_path is None
     assert target.location.line == 6
     assert target.location.column == 26
-    assert isinstance(source, diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(source, structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert source.local_name == "position<source>"
     assert source.location.file_path is None
     assert source.location.line == 6
@@ -92,13 +96,17 @@ def test_invalid_local_chains(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 2
     target, source = result.sorted_diagnostics()
-    assert isinstance(target, diagnostics.ChainedLocalNameRequiresActionDiagnostic)
+    assert isinstance(
+        target, structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
+    )
     assert target.preceding_name == "position<target>"
     assert target.local_name == "position<target_child>"
     assert target.location.file_path is None
     assert target.location.line == 8
     assert target.location.column == 44
-    assert isinstance(source, diagnostics.ChainedLocalNameRequiresActionDiagnostic)
+    assert isinstance(
+        source, structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
+    )
     assert source.preceding_name == "position<source>"
     assert source.local_name == "position<source_child>"
     assert source.location.file_path is None
@@ -112,13 +120,13 @@ def test_unknown_global_positions(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 2
     target, source = result.sorted_diagnostics()
-    assert isinstance(target, diagnostics.UnknownGlobalNameDiagnostic)
+    assert isinstance(target, structural_diagnostics.UnknownGlobalNameDiagnostic)
     assert target.full_global_name == "position<my.domain.com:my_lib:/target>"
     assert target.source_global_name == "position</target>"
     assert target.location.file_path is None
     assert target.location.line == 8
     assert target.location.column == 26
-    assert isinstance(source, diagnostics.UnknownGlobalNameDiagnostic)
+    assert isinstance(source, structural_diagnostics.UnknownGlobalNameDiagnostic)
     assert source.full_global_name == "position<my.domain.com:my_lib:/source>"
     assert source.source_global_name == "position</source>"
     assert source.location.file_path is None

@@ -12,7 +12,11 @@ from define.compiler.config import (
     project_config,
 )
 from define.compiler.config_tests import test_helpers
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import (
+    config_diagnostics,
+    structural_diagnostics,
+    syntax_errors,
+)
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -88,7 +92,7 @@ def test_empty_universe_name(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     project_config.CONFIG_FILE, ("project", "universe_name")
                 ),
@@ -131,7 +135,7 @@ def test_universe_name_is_not_a_valid_fqun(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.UniverseWithoutAuthorityDiagnostic(
+            structural_diagnostics.UniverseWithoutAuthorityDiagnostic(
                 location=test_helpers.universe_name_location("my_lib"),
                 universe_name="my_lib",
             )
@@ -147,14 +151,14 @@ def test_local_deps_diagnostics_reported_too(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     project_config.CONFIG_FILE, ("project", "universe_name")
                 ),
                 field_path=("project", "universe_name"),
                 violation_message="must be at least 1 characters",
             ),
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
                 ),
@@ -228,7 +232,7 @@ def test_layout_error_and_rule_violation(
         file_path=str(project_config.CONFIG_FILE.path),
     )
     assert blank_line.file_path == str(project_config.CONFIG_FILE.path)
-    assert violation == diagnostics.ConfigViolationDiagnostic(
+    assert violation == config_diagnostics.ConfigViolationDiagnostic(
         location=test_helpers.config_field_location(
             project_config.CONFIG_FILE, ("project", "universe_name")
         ),

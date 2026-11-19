@@ -7,7 +7,7 @@ import click.testing
 import pytest
 
 from define.compiler import driver
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from tools.generators import generate_reference_graph_project as gen
 
 
@@ -331,11 +331,11 @@ def test_invalid_project_shapes(
     )
     if shape == gen.Shape.CYCLES:
         assert [type(diagnostic) for diagnostic in result.sorted_diagnostics()] == [
-            diagnostics.CircularGlobalReferenceDiagnostic
+            structural_diagnostics.CircularGlobalReferenceDiagnostic
         ] * 3
     else:
         assert [type(diagnostic) for diagnostic in result.sorted_diagnostics()] == [
-            diagnostics.ReferencedFileNotFoundDiagnostic
+            structural_diagnostics.ReferencedFileNotFoundDiagnostic
         ] * 4
 
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ def test_duplicate_name_error(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
@@ -45,7 +45,7 @@ def test_three_locals_two_same_one_diagnostic(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
@@ -59,9 +59,9 @@ def test_three_same_name_two_diagnostics(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].location.file_path is None
-    assert isinstance(diags[1], diagnostics.LocalNameConflictDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.LocalNameConflictDiagnostic)
     assert diags[1].location.file_path is None
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
@@ -107,7 +107,7 @@ def test_action_statements_duplicate_name_error(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 6
@@ -121,7 +121,7 @@ def test_action_statements_name_conflicts_with_parent_scope(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "alpha"
     assert diags[0].first_definition_line == 2
@@ -135,9 +135,9 @@ def test_action_statements_two_duplicates_point_to_parent_scope_definition(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.LocalNameConflictDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.LocalNameConflictDiagnostic)
     assert diags[0].location.file_path is None
-    assert isinstance(diags[1], diagnostics.LocalNameConflictDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.LocalNameConflictDiagnostic)
     assert diags[1].location.file_path is None
     assert diags[0].local_name == "alpha"
     assert diags[1].local_name == "alpha"

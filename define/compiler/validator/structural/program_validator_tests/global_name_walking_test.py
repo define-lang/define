@@ -11,7 +11,7 @@ from unittest import mock
 
 from crates.source_rendering.python import rendering
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics, structural_diagnostics
 from define.compiler.validator.structural import (
     file_loader,
 )
@@ -58,7 +58,7 @@ def test_duplicate_does_not_corrupt_reference_resolution(
     assert len(diags) == 1
     assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
     assert result.file_results[2].file_path == define_path.DefinePath("dup.dfn")
-    assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.PathMismatchDiagnostic)
     assert diags[0].location.file_path == "dup.dfn"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 52
@@ -72,7 +72,9 @@ def test_duplicate_source_definition_does_not_add_reference_edges(
     result = validate_testdata_structural()
     all_diags = result.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.DuplicateDefinitionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].definition_type == "position"
     assert all_diags[0].path == "/test"
@@ -90,7 +92,7 @@ def test_cross_file_duplicate_definition_reports_path_mismatch(
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert result.file_results[1].file_path == define_path.DefinePath("other.dfn")
-    assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.PathMismatchDiagnostic)
     assert diags[0].expected_path == "/other"
     assert diags[0].actual_path == "/test"
     assert diags[0].location.line == 2
@@ -108,7 +110,7 @@ def test_back_reference_to_earlier_definition_does_not_load_its_file(
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.PathMismatchDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.PathMismatchDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].expected_path == "/test"
     assert diags[0].actual_path == "/other"
@@ -123,7 +125,9 @@ def test_same_file_position_must_precede_referencing_action(
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
     diagnostic = diags[0]
-    assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
     assert diagnostic.file_path == "test.dfn"
     assert diagnostic.definition_name == "position<my.domain.com:my_lib:/test>"
     assert diagnostic.location.line == 3
@@ -158,7 +162,7 @@ def test_same_target_file_referenced_as_two_types_loads_once(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.ReferencedDefinitionNotFoundDiagnostic,
+        structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].file_path == "target.dfn"
@@ -174,7 +178,9 @@ def test_self_cycle_emits_diagnostic(
     result = validate_testdata_structural()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].cycle == [
         "position<my.domain.com:my_lib:/test>",
@@ -193,7 +199,9 @@ def test_two_file_cycle_emits_diagnostic(
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
     assert result.file_results[1].file_path == define_path.DefinePath("loop.dfn")
-    assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert diags[0].location.file_path == "loop.dfn"
     assert diags[0].cycle == [
         "position<mv:define-lang.org:test_walk_cycle:/test>",
@@ -217,7 +225,9 @@ def test_cycle_path_search_skips_a_shared_definition_already_seen(
     result = validate_testdata_structural(max_workers=1)
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert diags[0].location.line == 3
     assert diags[0].location.column == 20
     assert diags[0].location.file_path == "end.dfn"
@@ -236,7 +246,9 @@ def test_unknown_universe_emits_diagnostic(
     result = validate_testdata_structural()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert isinstance(
+        diags[0], config_diagnostics.ExternalUniverseNotConfiguredDiagnostic
+    )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
@@ -250,7 +262,9 @@ def test_duplicate_unknown_universe_emits_one_diagnostic(
     result = validate_testdata_structural()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert isinstance(
+        diags[0], config_diagnostics.ExternalUniverseNotConfiguredDiagnostic
+    )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
@@ -264,13 +278,17 @@ def test_unknown_universe_across_files_reported_per_file(
     result = validate_testdata_structural()
     all_diags = result.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert isinstance(
+        all_diags[0], config_diagnostics.ExternalUniverseNotConfiguredDiagnostic
+    )
     assert all_diags[0].location.line == 3
     assert all_diags[0].location.column == 29
     assert all_diags[0].location.file_path == "other.dfn"
     assert all_diags[0].universe == "other.example.com:other_universe"
     assert all_diags[0].current_universe_name == "my.domain.com:my_lib"
-    assert isinstance(all_diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert isinstance(
+        all_diags[1], config_diagnostics.ExternalUniverseNotConfiguredDiagnostic
+    )
     assert all_diags[1].location.line == 3
     assert all_diags[1].location.column == 29
     assert all_diags[1].location.file_path == "test.dfn"
@@ -300,7 +318,9 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].cycle == [
         "position<my.domain.com:my_lib:/test>",
@@ -310,7 +330,7 @@ def test_circular_reference_does_not_skip_remaining_edge_validation(
     assert diags[0].location.column == 20
     assert isinstance(
         diags[1],
-        diagnostics.ReferencedDefinitionNotFoundDiagnostic,
+        structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
     assert diags[1].location.file_path == "test.dfn"
     assert diags[1].file_path == "wrong_type.dfn"
@@ -346,14 +366,16 @@ def test_reference_to_earlier_definition_with_mismatched_path_reaches_it(
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
     path_diag = diags[0]
-    assert isinstance(path_diag, diagnostics.PathMismatchDiagnostic)
+    assert isinstance(path_diag, structural_diagnostics.PathMismatchDiagnostic)
     assert path_diag.location.file_path == "x.dfn"
     assert path_diag.location.line == 1
     assert path_diag.location.column == 52
     assert path_diag.expected_path == "/x"
     assert path_diag.actual_path == "/y"
     not_found_diag = diags[1]
-    assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        not_found_diag, structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert not_found_diag.location.file_path == "x.dfn"
     assert not_found_diag.location.line == 3
     assert not_found_diag.location.column == 29
@@ -365,7 +387,7 @@ def test_unreferenced_duplicate_in_loaded_file_is_reported(
 ):
     result = validate_testdata_structural()
     assert result.sorted_diagnostics() == [
-        diagnostics.DuplicateDefinitionDiagnostic(
+        structural_diagnostics.DuplicateDefinitionDiagnostic(
             location=rendering.SourceLocation(
                 line=7,
                 column=1,

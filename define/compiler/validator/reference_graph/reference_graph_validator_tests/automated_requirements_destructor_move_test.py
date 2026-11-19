@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -37,7 +37,9 @@ def test_interface_to_local_occupied_violated(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
@@ -92,7 +94,9 @@ def test_implied_to_local_occupied_violated(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 33
@@ -150,13 +154,16 @@ def test_interface_to_implied_occupied_violated(
     # Moving the particle into the Destructor's implied position, the
     # point of this test, also requires that position to be empty.
     assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 50
     assert all_diags[0].location.file_path == "destructor.dfn"
     assert all_diags[0].position_name == "position</dest_marker>"
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 33
@@ -214,13 +221,16 @@ def test_implied_to_implied_occupied_violated(
     # Moving the particle into the Destructor's implied position, the
     # point of this test, also requires that position to be empty.
     assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 58
     assert all_diags[0].location.file_path == "destructor.dfn"
     assert all_diags[0].position_name == "position</dest_marker>"
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 13
     assert all_diags[1].location.column == 33

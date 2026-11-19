@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -39,7 +39,8 @@ def test_consumed_nested_interface_stays_empty(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestroyInEmptyInterfacePositionDiagnostic,
     )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 15
@@ -70,7 +71,9 @@ def test_create_twice_in_interface_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -86,7 +89,9 @@ def test_later_transitive_guarantee_wins_between_sibling_calls(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.line == 9
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -121,12 +126,16 @@ def test_untouched_interface_position_preserved_after_trigger(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.UnreferencedPositionDiagnostic
+    )
     assert all_diags[0].position_name == "position<item>"
     assert all_diags[0].location.line == 3
     assert all_diags[0].location.column == 16
     assert all_diags[0].location.file_path == "other.dfn"
-    assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[1].location.line == 14
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == "test.dfn"
@@ -145,7 +154,9 @@ def test_move_from_guarantee_emptied_interface_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -179,7 +190,9 @@ def test_post_trigger_guaranteed_occupied_position_rejects_create(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -198,7 +211,9 @@ def test_post_trigger_trigger_position_stays_occupied(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -239,7 +254,9 @@ def test_second_trigger_fails_when_guarantee_filled_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
@@ -286,7 +303,9 @@ def test_second_trigger_fails_when_existing_guarantee_leaves_position_occupied(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is True
@@ -333,7 +352,9 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[0].required_empty is False
@@ -360,7 +381,9 @@ def test_second_trigger_fails_occupied_requirement_after_guarantee_empties(
             "file_path": "other.dfn",
         },
     )
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[1].required_value is False
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/other>"
     assert all_diags[1].required_empty is True
@@ -448,7 +471,9 @@ def test_post_trigger_occupied_by_new_rejects_move_to(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 49
     assert all_diags[0].location.file_path == "test.dfn"
@@ -468,7 +493,9 @@ def test_post_trigger_occupied_by_existing_rejects_create(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -487,7 +514,9 @@ def test_post_trigger_occupied_by_existing_rejects_move_to(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 50
     assert all_diags[0].location.file_path == "test.dfn"
@@ -507,7 +536,9 @@ def test_constructor_trigger_applies_empty_guarantee(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "construct.dfn"
@@ -532,7 +563,9 @@ def test_constructor_trigger_applies_occupied_guarantee(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "construct.dfn"
@@ -564,7 +597,9 @@ def test_trigger_chain_create_guarantee_fills_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -596,7 +631,9 @@ def test_post_trigger_existing_guarantee_on_child_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 17
     assert all_diags[0].populated_at.column == 68
     assert all_diags[0].populated_at.file_path == "other.dfn"
@@ -618,7 +655,9 @@ def test_post_trigger_empty_guarantee_on_child_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.line == 21
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -639,7 +678,9 @@ def test_post_trigger_new_guarantee_on_child_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 12
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "other.dfn"
@@ -661,7 +702,9 @@ def test_post_trigger_empty_guarantee_deletes_children(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert all_diags[0].location.line == 28
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -684,7 +727,9 @@ def test_post_trigger_new_guarantee_deletes_old_children(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.line == 43
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -715,7 +760,9 @@ def test_post_trigger_parent_and_child_both_have_guarantees(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 17
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "other.dfn"
@@ -737,7 +784,9 @@ def test_post_trigger_child_guarantee_follows_parent_move(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 16
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "other.dfn"
@@ -759,7 +808,9 @@ def test_post_trigger_existing_guarantee_empties_origin_children(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert all_diags[0].location.line == 30
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -806,7 +857,9 @@ def test_long_chain_inner_requirement_enforced_through_nested_trigger(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
@@ -875,7 +928,9 @@ def test_destroy_prunes_children_from_caller(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -899,7 +954,9 @@ def test_retriggering_same_action_reapplies_its_guarantee_over_a_later_body_chan
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert diag.populated_at.line == 7
     assert diag.populated_at.column == 30
     assert diag.populated_at.file_path == "inner.dfn"
@@ -916,7 +973,9 @@ def test_two_actions_with_opposite_guarantees_on_a_shared_position_later_wins(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert diag.populated_at.line == 7
     assert diag.populated_at.column == 30
     assert diag.populated_at.file_path == "filler.dfn"
@@ -932,7 +991,9 @@ def test_existing_guarantee_on_child_survives_destroying_original_parent(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 17
     assert all_diags[0].populated_at.column == 68
     assert all_diags[0].populated_at.file_path == "other.dfn"
@@ -951,7 +1012,9 @@ def test_existing_guarantee_on_child_survives_recreating_original_parent(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].populated_at.line == 17
     assert all_diags[0].populated_at.column == 68
     assert all_diags[0].populated_at.file_path == "other.dfn"
@@ -970,7 +1033,9 @@ def test_nested_existing_guarantees_survive_destroying_original_parent(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"

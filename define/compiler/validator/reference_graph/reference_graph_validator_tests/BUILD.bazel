@@ -182,7 +182,9 @@ py_test(
         "//define/compiler:chained_name",
         "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:config_diagnostics",
+        "//define/compiler/errors:reference_graph_diagnostics",
+        "//define/compiler/errors:structural_diagnostics",
         "//define/compiler/errors:syntax_errors",
         "//define/compiler/test_fixtures:validation_pipeline",
         "//define/compiler/validator:test_helpers",
@@ -202,7 +204,7 @@ py_library(
     testonly = True,
     srcs = ["test_helpers.py"],
     deps = [
-        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:reference_graph_diagnostics",
         "//define/compiler/validator/reference_graph:propagation_step",
     ],
 )

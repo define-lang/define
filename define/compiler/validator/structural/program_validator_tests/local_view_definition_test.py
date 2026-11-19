@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -31,13 +31,13 @@ def test_missing_value_quality(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.LocalViewMissingValueQualityDiagnostic(
+        structural_diagnostics.LocalViewMissingValueQualityDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=20, end_line=25, end_column=32
             ),
             view_name="view<negated>",
         ),
-        diagnostics.LocalViewNonValueQualityDiagnostic(
+        structural_diagnostics.LocalViewNonValueQualityDiagnostic(
             location=rendering.SourceLocation(
                 line=27, column=28, end_line=27, end_column=61
             ),
@@ -51,7 +51,7 @@ def test_encoding(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.LocalViewNonValueQualityDiagnostic(
+        structural_diagnostics.LocalViewNonValueQualityDiagnostic(
             location=rendering.SourceLocation(
                 line=28, column=28, end_line=28, end_column=67
             ),
@@ -65,7 +65,7 @@ def test_multiple_value_qualities(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.ViewMultipleValueQualitiesDiagnostic(
+        structural_diagnostics.ViewMultipleValueQualitiesDiagnostic(
             location=rendering.SourceLocation(
                 line=28, column=28, end_line=28, end_column=58
             ),
@@ -80,13 +80,13 @@ def test_invalid_view_name(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.UnreferencedLocalViewDiagnostic(
+        structural_diagnostics.UnreferencedLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=20, end_line=25, end_column=32
             ),
             view_name="view<Negated>",
         ),
-        diagnostics.InvalidLocalNameFormatDiagnostic(
+        structural_diagnostics.InvalidLocalNameFormatDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=25, end_line=25, end_column=25
             ),
@@ -101,7 +101,7 @@ def test_conflicts_with_interface_view(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.LocalNameConflictDiagnostic(
+        structural_diagnostics.LocalNameConflictDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=20, end_line=25, end_column=31
             ),
@@ -116,7 +116,7 @@ def test_duplicate_local_view(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.LocalNameConflictDiagnostic(
+        structural_diagnostics.LocalNameConflictDiagnostic(
             location=rendering.SourceLocation(
                 line=30, column=20, end_line=30, end_column=32
             ),
@@ -131,7 +131,7 @@ def test_unreferenced_local_view(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.UnreferencedLocalViewDiagnostic(
+        structural_diagnostics.UnreferencedLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=30, column=20, end_line=30, end_column=31
             ),
@@ -145,7 +145,7 @@ def test_referenced_before_definition(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.UndefinedLocalNameDiagnostic(
+        structural_diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=27, column=42, end_line=27, end_column=54
             ),

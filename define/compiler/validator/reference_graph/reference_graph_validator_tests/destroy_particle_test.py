@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -62,7 +62,9 @@ def test_destroy_empty_local_position(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        diags[0], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].location.line == 7
     assert diags[0].location.column == 33
@@ -76,7 +78,8 @@ def test_destroy_already_emptied_interface_position(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.DestroyInEmptyInterfacePositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestroyInEmptyInterfacePositionDiagnostic,
     )
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 33
@@ -94,7 +97,9 @@ def test_destroy_parent_not_occupied(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == "test.dfn"
@@ -108,7 +113,9 @@ def test_destroy_prunes_children_within_action(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -122,7 +129,9 @@ def test_destroy_clears_error_state_on_children(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 72
     assert all_diags[0].location.file_path == "test.dfn"
@@ -131,7 +140,9 @@ def test_destroy_clears_error_state_on_children(
     assert all_diags[0].occupied_at.line == 13
     assert all_diags[0].occupied_at.column == 30
     assert all_diags[0].occupied_at.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert all_diags[1].location.line == 16
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == "test.dfn"
@@ -154,7 +165,9 @@ def test_destroy_chained_name_not_assigned(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+    )
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 46
     assert all_diags[0].location.file_path == "test.dfn"
@@ -171,7 +184,8 @@ def test_destroy_chained_name_not_in_action(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.ChainElementNotInterfacePositionDiagnostic,
     )
     assert all_diags[0].element_name == "position<no_such>"
     assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/child>"

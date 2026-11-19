@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -35,7 +35,7 @@ def test_read_before_write(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
+        reference_graph_diagnostics.ReadFromUnwrittenLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=23, column=37, end_line=23, end_column=49, file_path="test.dfn"
             ),
@@ -51,7 +51,7 @@ def test_written_twice(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.LocalViewWrittenTwiceDiagnostic(
+        reference_graph_diagnostics.LocalViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(
                 line=28, column=42, end_line=28, end_column=54, file_path="test.dfn"
             ),
@@ -70,7 +70,7 @@ def test_unread(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.UnreadLocalViewDiagnostic(
+        reference_graph_diagnostics.UnreadLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=17, column=20, end_line=17, end_column=32, file_path="test.dfn"
             ),
@@ -84,7 +84,7 @@ def test_write_not_supported(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
+        reference_graph_diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=24, column=42, end_line=24, end_column=54, file_path="test.dfn"
             ),
@@ -100,7 +100,7 @@ def test_value_quality_mismatch(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
+        reference_graph_diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=24, column=42, end_line=24, end_column=54, file_path="test.dfn"
             ),
@@ -108,13 +108,13 @@ def test_value_quality_mismatch(
             logical_operation_name="logical_operation</negate>",
             value_name="value</read_only_number>",
         ),
-        diagnostics.OperationArgumentMissingQualitiesDiagnostic(
+        reference_graph_diagnostics.OperationArgumentMissingQualitiesDiagnostic(
             location=rendering.SourceLocation(
                 line=27, column=41, end_line=27, end_column=53, file_path="test.dfn"
             ),
             view_name="view<value>",
             looked_at_name="view<negated>",
-            looked_at_kind=diagnostics.LookedAtKind.VIEW,
+            looked_at_kind=reference_graph_diagnostics.LookedAtKind.VIEW,
             missing_qualities=["value</number>"],
         ),
     ]
@@ -125,7 +125,7 @@ def test_written_by_missing_logical_operation(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.StandardDefinitionNotFoundDiagnostic(
+        structural_diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=22, column=21, end_line=22, end_column=63, file_path="test.dfn"
             ),
@@ -139,7 +139,7 @@ def test_duplicate_name(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.LocalNameConflictDiagnostic(
+        structural_diagnostics.LocalNameConflictDiagnostic(
             location=rendering.SourceLocation(
                 line=22, column=20, end_line=22, end_column=32, file_path="test.dfn"
             ),
@@ -154,7 +154,7 @@ def test_unreferenced(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.UnreferencedLocalViewDiagnostic(
+        structural_diagnostics.UnreferencedLocalViewDiagnostic(
             location=rendering.SourceLocation(
                 line=22, column=20, end_line=22, end_column=31, file_path="test.dfn"
             ),
@@ -168,13 +168,13 @@ def test_missing_logical_operation_looks_at_undefined_view(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.StandardDefinitionNotFoundDiagnostic(
+        structural_diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=17, column=21, end_line=17, end_column=63, file_path="test.dfn"
             ),
             definition_name="logical_operation<standard:/number/missing>",
         ),
-        diagnostics.UndefinedLocalNameDiagnostic(
+        structural_diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=19, column=42, end_line=19, end_column=56, file_path="test.dfn"
             ),
@@ -188,13 +188,13 @@ def test_written_twice_after_unknown_use(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ReferencedFileNotFoundDiagnostic(
+        structural_diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=26, column=39, end_line=26, end_column=46, file_path="test.dfn"
             ),
             file_path="missing.dfn",
         ),
-        diagnostics.LocalViewWrittenTwiceDiagnostic(
+        reference_graph_diagnostics.LocalViewWrittenTwiceDiagnostic(
             location=rendering.SourceLocation(
                 line=31, column=42, end_line=31, end_column=54, file_path="test.dfn"
             ),
@@ -213,7 +213,7 @@ def test_passed_to_read_write_view_after_write(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
+        reference_graph_diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=26, column=21, end_line=26, end_column=47, file_path="test.dfn"
             ),
@@ -228,7 +228,7 @@ def test_passed_to_read_write_view_before_write(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
+        reference_graph_diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
                 line=16, column=21, end_line=16, end_column=47, file_path="test.dfn"
             ),

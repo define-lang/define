@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import parser_diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 def test_file_all_spaces(parse_with_diagnostics: ParseWithDiagnostics):
     result = parse_with_diagnostics("   ")
     assert result.diagnostics == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=1, end_line=1, end_column=3
             )
@@ -36,17 +36,17 @@ def test_file_all_spaces(parse_with_diagnostics: ParseWithDiagnostics):
 def test_file_spaces_and_newlines_only(parse_with_diagnostics: ParseWithDiagnostics):
     result = parse_with_diagnostics(" \n  \n ")
     assert result.diagnostics == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=1, end_line=1, end_column=1
             )
         ),
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=2, column=1, end_line=2, end_column=2
             )
         ),
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=1, end_line=3, end_column=1
             )
@@ -231,7 +231,7 @@ def test_extra_space_before_local_name_in_quality_assignment_statement(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
+        parser_diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=28, end_line=3, end_column=29
             )
@@ -248,7 +248,7 @@ def test_space_before_name_in_position_definition(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
+        parser_diagnostics.SpaceBeforeOpenAngleBracketDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=30, end_line=1, end_column=30
             )

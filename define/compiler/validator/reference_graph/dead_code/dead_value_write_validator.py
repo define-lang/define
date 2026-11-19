@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typing
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
@@ -30,7 +30,7 @@ class DeadValueWriteValidator:
 
     def record_write(
         self, position: ast.PositionReference
-    ) -> list[diagnostics.DeadValueWriteDiagnostic]:
+    ) -> list[reference_graph_diagnostics.DeadValueWriteDiagnostic]:
         """Record a value write, and diagnose the particle's previous write if nothing used it."""
         particle = self._tracker.get_occupant(position)
         previous_write = self._unused_writes.get(particle)
@@ -63,7 +63,7 @@ class DeadValueWriteValidator:
             chained_name.PositionReferenceTuple,
             action_contract.PositionGuarantee,
         ],
-    ) -> list[diagnostics.DeadValueWriteDiagnostic]:
+    ) -> list[reference_graph_diagnostics.DeadValueWriteDiagnostic]:
         """Diagnose value writes that nothing used, unless this action guarantees them."""
         if not self._unused_writes:
             return []
@@ -78,8 +78,8 @@ class DeadValueWriteValidator:
 
 def _dead_value_write(
     position: ast.PositionReference,
-) -> diagnostics.DeadValueWriteDiagnostic:
-    return diagnostics.DeadValueWriteDiagnostic(
+) -> reference_graph_diagnostics.DeadValueWriteDiagnostic:
+    return reference_graph_diagnostics.DeadValueWriteDiagnostic(
         location=position.location,
         position_name=position.source_chained_name,
     )

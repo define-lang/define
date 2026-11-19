@@ -10,11 +10,12 @@ import msgspec
 from define.compiler import constants
 from define.compiler.config import association_config, config_loader
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics
 
 if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from define.compiler.config import local_deps_config
+    from define.compiler.errors import diagnostics
 
 
 _NO_ASSOCIATIONS = association_config.AssociationTable(
@@ -254,7 +255,7 @@ class ProjectRoots:
             _, existing_config = existing
             self._failed.add(root)
             self.diagnostics.append(
-                diagnostics.DuplicateFqunDiagnostic(
+                config_diagnostics.DuplicateFqunDiagnostic(
                     location=root_config.fqun.location,
                     fqun=root_config.fqun.canonical,
                     existing_location=existing_config.fqun.location,
@@ -282,7 +283,7 @@ class ProjectRoots:
         if entry.universe == root_config.fqun.canonical:
             self._disabled_universes.add((root, entry.universe))
             self.diagnostics.append(
-                diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
+                config_diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
                     location=entry.universe_location,
                     universe=entry.universe,
                 )
@@ -297,7 +298,7 @@ class ProjectRoots:
             return
         self._disabled_universes.add((root, entry.universe))
         self.diagnostics.append(
-            diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
+            config_diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
                 location=entry.path_location,
                 sub_root_path=str(sub_root_path),
                 first_location=node.dependency_entry.path_location,

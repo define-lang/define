@@ -5,13 +5,14 @@ from __future__ import annotations
 import typing
 
 from define.compiler import ast, chained_name
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import action_contract
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from define.compiler.errors import diagnostics
     from define.compiler.validator.reference_graph.particles import (
         particle_tracker,
     )
@@ -31,7 +32,7 @@ def destructor_requirements_to_publish(
         # The Destructor is already reported for the requirement, so its
         # callers do not check it again.
         validation_diagnostics.append(
-            diagnostics.DestructorRequiresEmptyPositionDiagnostic(
+            reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic(
                 location=requirement.inferred_at,
                 position_name=requirement.position.source_form_in_universe(
                     enclosing_fqun
@@ -76,7 +77,7 @@ def check_destructor_guarantees(
         match guarantee:
             case action_contract.EmptyGuarantee():
                 validation_diagnostics.append(
-                    diagnostics.DestructorProducesEmptyGuaranteeDiagnostic(
+                    reference_graph_diagnostics.DestructorProducesEmptyGuaranteeDiagnostic(
                         location=guarantee.caused_by.location,
                         position_name=position_name,
                     )
@@ -90,7 +91,7 @@ def check_destructor_guarantees(
                     for parent in chained_name.proper_prefixes(position)
                 ):
                     validation_diagnostics.append(
-                        diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic(
+                        reference_graph_diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic(
                             location=guarantee.caused_by.location,
                             position_name=position_name,
                         )
@@ -106,14 +107,14 @@ def check_destructor_guarantees(
                 }:
                     continue
                 validation_diagnostics.append(
-                    diagnostics.DestructorChangesValueDiagnostic(
+                    reference_graph_diagnostics.DestructorChangesValueDiagnostic(
                         location=tracker.value_written_at(position),
                         position_name=position_name,
                     )
                 )
             case action_contract.OccupiedByExistingGuarantee():
                 validation_diagnostics.append(
-                    diagnostics.DestructorProducesOccupiedByExistingGuaranteeDiagnostic(
+                    reference_graph_diagnostics.DestructorProducesOccupiedByExistingGuaranteeDiagnostic(
                         location=guarantee.caused_by.location,
                         position_name=position_name,
                         origin_name=guarantee.origin_position.source_form_in_universe(

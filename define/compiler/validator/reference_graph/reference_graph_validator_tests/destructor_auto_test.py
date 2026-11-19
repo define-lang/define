@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -60,7 +60,9 @@ def test_empty_local_position_does_not_fire_destructor(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UnreferencedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.UnreferencedPositionDiagnostic
+    )
     assert all_diags[0].position_name == "position<box>"
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 20
@@ -112,7 +114,9 @@ def test_auto_destruction_failing_occupied_requirement(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 12
     assert diag.location.column == 30
@@ -171,7 +175,9 @@ def test_constructor_auto_destruction_failing_requirement(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -233,7 +239,9 @@ def test_auto_destruction_reports_each_failing_destructor_requirement(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -287,7 +295,9 @@ def test_auto_destruction_reports_each_failing_destructor_requirement(
             "file_path": "destructor.dfn",
         },
     )
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[1].location.line == 18
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == "test.dfn"
@@ -349,7 +359,9 @@ def test_cascade_child_auto_destruction_failing_requirement(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -413,7 +425,9 @@ def test_interface_to_local_auto_destruction_failing_requirement(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 52
     assert all_diags[0].location.file_path == "test.dfn"
@@ -477,7 +491,9 @@ def test_implied_to_local_auto_destruction_failing_requirement(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 54
     assert all_diags[0].location.file_path == "test.dfn"
@@ -539,7 +555,9 @@ def test_destructor_requirement_propagates_to_caller_via_implied_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].location.line == 19
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"

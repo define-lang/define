@@ -8,7 +8,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import (
+    config_diagnostics,
+    reference_graph_diagnostics,
+    structural_diagnostics,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -26,7 +30,7 @@ def test_short_form_global_reference(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert isinstance(all_diags[0], structural_diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].source_global_name == "position</other>"
     assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
@@ -40,7 +44,9 @@ def test_create_in_interface_of_missing_action_reports_reference_error(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 35
     assert all_diags[0].file_path == "missing.dfn"
@@ -53,13 +59,15 @@ def test_create_in_missing_global_position_reports_reference_errors(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert isinstance(all_diags[0], structural_diagnostics.UnknownGlobalNameDiagnostic)
     assert all_diags[0].source_global_name == "position</missing>"
     assert all_diags[0].full_global_name == "position<my.domain.com:my_lib:/missing>"
     assert all_diags[0].location.line == 5
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        all_diags[1], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert all_diags[1].location.line == 5
     assert all_diags[1].location.column == 39
     assert all_diags[1].file_path == "missing.dfn"
@@ -72,13 +80,15 @@ def test_same_fqun_reference_must_use_short_form(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UnknownGlobalNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].source_global_name == "position<my.domain.com:my_lib:/other>"
     assert diags[0].full_global_name == "position<my.domain.com:my_lib:/other>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 30
-    assert isinstance(diags[1], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert isinstance(
+        diags[1], structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+    )
     assert diags[1].location.file_path is None
     assert diags[1].fqun == "my.domain.com:my_lib"
     assert diags[1].location.line == 6
@@ -98,13 +108,15 @@ def test_cross_universe_not_configured(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.UnknownGlobalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UnknownGlobalNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].source_global_name == "position<other.domain.com:other_lib:/dep>"
     assert diags[0].full_global_name == "position<other.domain.com:other_lib:/dep>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 30
-    assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert isinstance(
+        diags[1], config_diagnostics.ExternalUniverseNotConfiguredDiagnostic
+    )
     assert diags[1].location.file_path is None
     assert diags[1].universe == "other.domain.com:other_lib"
     assert diags[1].current_universe_name == "my.domain.com:my_lib"
@@ -118,7 +130,7 @@ def test_undefined_local_position(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "position<no_such_pos>"
     assert diags[0].location.line == 6
@@ -131,7 +143,7 @@ def test_local_position_defined_after_use(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "position<later_pos>"
     assert diags[0].location.line == 6
@@ -158,17 +170,19 @@ def test_single_action_in_position_reference(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 3
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "action<act_other>"
     assert diags[0].location.line == 6
     assert diags[0].location.column == 30
-    assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.LocalActionNameDiagnostic)
     assert diags[1].location.file_path is None
     assert diags[1].local_name == "act_other"
     assert diags[1].location.line == 6
     assert diags[1].location.column == 30
-    assert isinstance(diags[2], diagnostics.PositionReferenceChainEndDiagnostic)
+    assert isinstance(
+        diags[2], structural_diagnostics.PositionReferenceChainEndDiagnostic
+    )
     assert diags[2].location.file_path is None
     assert diags[2].location.line == 6
     assert diags[2].location.column == 30
@@ -187,7 +201,9 @@ def test_create_twice_in_local_chained_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -210,7 +226,9 @@ def test_create_twice_in_chained_position_in_constructor(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "construct.dfn"

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.structural_validation import (
@@ -24,7 +24,9 @@ def test_case_insensitive_reserved_universe_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.UniverseNameInvalidCharDiagnostic
+    )
     assert diags[0].universe_name == "STANDARD"
     assert diags[0].chars == ("S", "T", "A", "N", "D", "R")
     assert diags[0].location.line == 1
@@ -32,7 +34,7 @@ def test_case_insensitive_reserved_universe_position(
     assert diags[0].location.end_line == 1
     assert diags[0].location.end_column == 50
     assert diags[0].location.file_path is None
-    assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[1].reserved_name == "STANDARD"
     assert diags[1].location.line == 1
     assert diags[1].location.column == 50
@@ -47,7 +49,7 @@ def test_common_word_reserved_universe_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[0].reserved_name == "about"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 50
@@ -62,7 +64,7 @@ def test_define_reserved_universe_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[0].reserved_name == "define"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 50
@@ -77,7 +79,7 @@ def test_dotless_authority_with_multiverse_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.DotlessAuthorityDomainDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.DotlessAuthorityDomainDiagnostic)
     assert diags[0].reserved_name == "nodot"
     assert diags[0].multiverse_name == "mv"
     assert diags[0].location.line == 1
@@ -93,7 +95,7 @@ def test_reserved_package_repository_multiverse_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ReservedMultiverseNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.ReservedMultiverseNameDiagnostic)
     assert diags[0].reserved_name == "npm"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
@@ -108,7 +110,7 @@ def test_reserved_universe_name_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].reserved_name == "standard"
     assert diags[0].location.line == 1
@@ -121,7 +123,9 @@ def test_reserved_universe_name_reference(
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.StandardDefinitionNotFoundDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.StandardDefinitionNotFoundDiagnostic
+    )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 4
     assert diagnostic.location.column == 20
@@ -134,12 +138,14 @@ def test_reserved_universe_name_with_authority_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.ReservedAuthorityDomainDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].reserved_name == "example.com"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
-    assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[1].location.file_path is None
     assert diags[1].reserved_name == "example"
     assert diags[1].location.line == 1
@@ -152,7 +158,9 @@ def test_reserved_authority_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.ReservedAuthorityDomainDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].reserved_name == "example.com"
     assert diags[0].location.line == 1
@@ -165,7 +173,9 @@ def test_reserved_authority_with_multiverse_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ReservedAuthorityDomainDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.ReservedAuthorityDomainDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].reserved_name == "example.com"
     assert diags[0].location.line == 1
@@ -178,7 +188,7 @@ def test_dotless_authority_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.DotlessAuthorityDomainDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.DotlessAuthorityDomainDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].reserved_name == "localhost"
     assert diags[0].multiverse_name == "local"
@@ -192,7 +202,7 @@ def test_reserved_multiverse_position(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ReservedMultiverseNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.ReservedMultiverseNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].reserved_name == "python"
     assert diags[0].location.line == 1

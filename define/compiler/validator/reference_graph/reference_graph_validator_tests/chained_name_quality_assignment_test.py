@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -27,20 +27,20 @@ class TestCreateParticle:
         assert len(diags) == 4
         assert isinstance(
             diags[0],
-            diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
+            structural_diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
         )
         assert diags[0].location.file_path is None
         assert diags[0].config_path == ".define/project/config.defcl"
         assert diags[0].definition_name == "action</other>"
         assert diags[0].location.line == 4
         assert diags[0].location.column == 24
-        assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert isinstance(diags[1], structural_diagnostics.LocalActionNameDiagnostic)
         assert diags[1].location.file_path is None
         assert diags[1].local_name == "wrong"
         assert diags[1].location.line == 10
         assert diags[1].location.column == 47
         assert isinstance(
-            diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[2], structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].location.file_path is None
         assert diags[2].local_name == "action<wrong>"
@@ -48,7 +48,7 @@ class TestCreateParticle:
         assert diags[2].location.line == 10
         assert diags[2].location.column == 47
         assert isinstance(
-            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[3], structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[3].location.file_path is None
         assert diags[3].local_name == "position<pos_end>"
@@ -65,7 +65,9 @@ class TestCreateParticle:
         )
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
+        assert isinstance(
+            all_diags[0], reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+        )
         assert all_diags[0].element_name == "action<my.domain.com:my_lib:/wrong>"
         assert all_diags[0].parent_name == "position<x>"
         assert all_diags[0].location.line == 10
@@ -79,13 +81,13 @@ class TestCreateParticle:
         result = validate_testdata_non_filesystem_with_reference_graph()
         diags = result.sorted_diagnostics()
         assert len(diags) == 3
-        assert isinstance(diags[0], diagnostics.LocalActionNameDiagnostic)
+        assert isinstance(diags[0], structural_diagnostics.LocalActionNameDiagnostic)
         assert diags[0].location.file_path is None
         assert diags[0].local_name == "act_b"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 47
         assert isinstance(
-            diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[1], structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[1].location.file_path is None
         assert diags[1].local_name == "action<act_b>"
@@ -93,7 +95,7 @@ class TestCreateParticle:
         assert diags[1].location.line == 6
         assert diags[1].location.column == 47
         assert isinstance(
-            diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[2], structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].location.file_path is None
         assert diags[2].local_name == "position<pos_c>"
@@ -119,7 +121,9 @@ class TestCreateParticle:
         )
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.LocalNameConflictDiagnostic)
+        assert isinstance(
+            all_diags[0], structural_diagnostics.LocalNameConflictDiagnostic
+        )
         assert all_diags[0].local_name == "pos_a"
         assert all_diags[0].first_definition_line == 2
         assert all_diags[0].location.line == 7
@@ -133,7 +137,9 @@ class TestCreateParticle:
         result = validate_testdata_project_with_reference_graph()
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+        assert isinstance(
+            all_diags[0], structural_diagnostics.DuplicateDefinitionDiagnostic
+        )
         assert all_diags[0].definition_type == "action"
         assert all_diags[0].path == "/test"
         assert all_diags[0].first_definition_line == 1
@@ -150,20 +156,20 @@ class TestCreateParticle:
         assert len(diags) == 4
         assert isinstance(
             diags[0],
-            diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
+            structural_diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
         )
         assert diags[0].location.file_path is None
         assert diags[0].config_path == ".define/project/config.defcl"
         assert diags[0].definition_name == "position</child>"
         assert diags[0].location.line == 4
         assert diags[0].location.column == 24
-        assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert isinstance(diags[1], structural_diagnostics.LocalActionNameDiagnostic)
         assert diags[1].location.file_path is None
         assert diags[1].local_name == "child"
         assert diags[1].location.line == 10
         assert diags[1].location.column == 47
         assert isinstance(
-            diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[2], structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].location.file_path is None
         assert diags[2].local_name == "action<child>"
@@ -171,7 +177,7 @@ class TestCreateParticle:
         assert diags[2].location.line == 10
         assert diags[2].location.column == 47
         assert isinstance(
-            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[3], structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[3].location.file_path is None
         assert diags[3].local_name == "position<pos_end>"
@@ -186,18 +192,18 @@ class TestCreateParticle:
         result = validate_testdata_non_filesystem_with_reference_graph()
         diags = result.sorted_diagnostics()
         assert len(diags) == 4
-        assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+        assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
         assert diags[0].location.file_path is None
         assert diags[0].local_name == "position<no_such>"
         assert diags[0].location.line == 6
         assert diags[0].location.column == 30
-        assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert isinstance(diags[1], structural_diagnostics.LocalActionNameDiagnostic)
         assert diags[1].location.file_path is None
         assert diags[1].local_name == "act_b"
         assert diags[1].location.line == 6
         assert diags[1].location.column == 49
         assert isinstance(
-            diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[2], structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].location.file_path is None
         assert diags[2].local_name == "action<act_b>"
@@ -205,7 +211,7 @@ class TestCreateParticle:
         assert diags[2].location.line == 6
         assert diags[2].location.column == 49
         assert isinstance(
-            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[3], structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[3].location.file_path is None
         assert diags[3].local_name == "position<pos_c>"
@@ -222,7 +228,7 @@ class TestCreateParticle:
         assert len(diags) == 4
         assert isinstance(
             diags[0],
-            diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
+            structural_diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
         )
         assert diags[0].location.file_path is None
         assert diags[0].config_path == ".define/project/config.defcl"
@@ -230,21 +236,23 @@ class TestCreateParticle:
         assert diags[0].location.line == 4
         assert diags[0].location.column == 24
         assert isinstance(
-            diags[1], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[1], structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[1].location.file_path is None
         assert diags[1].local_name == "action<Bad>"
         assert diags[1].preceding_name == "position<pos_a>"
         assert diags[1].location.line == 10
         assert diags[1].location.column == 47
-        assert isinstance(diags[2], diagnostics.InvalidLocalNameFormatDiagnostic)
+        assert isinstance(
+            diags[2], structural_diagnostics.InvalidLocalNameFormatDiagnostic
+        )
         assert diags[2].location.file_path is None
         assert diags[2].local_name == "Bad"
         assert diags[2].chars == ("B",)
         assert diags[2].location.line == 10
         assert diags[2].location.column == 54
         assert isinstance(
-            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[3], structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[3].location.file_path is None
         assert diags[3].local_name == "position<pos_end>"
@@ -261,20 +269,20 @@ class TestCreateParticle:
         assert len(diags) == 4
         assert isinstance(
             diags[0],
-            diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
+            structural_diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic,
         )
         assert diags[0].location.file_path is None
         assert diags[0].config_path == ".define/project/config.defcl"
         assert diags[0].definition_name == "action</other>"
         assert diags[0].location.line == 4
         assert diags[0].location.column == 24
-        assert isinstance(diags[1], diagnostics.LocalActionNameDiagnostic)
+        assert isinstance(diags[1], structural_diagnostics.LocalActionNameDiagnostic)
         assert diags[1].location.file_path is None
         assert diags[1].local_name == "wrong"
         assert diags[1].location.line == 10
         assert diags[1].location.column == 47
         assert isinstance(
-            diags[2], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[2], structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[2].location.file_path is None
         assert diags[2].local_name == "action<wrong>"
@@ -282,7 +290,7 @@ class TestCreateParticle:
         assert diags[2].location.line == 10
         assert diags[2].location.column == 47
         assert isinstance(
-            diags[3], diagnostics.ChainedLocalNameRequiresActionDiagnostic
+            diags[3], structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic
         )
         assert diags[3].location.file_path is None
         assert diags[3].local_name == "position<pos_c>"

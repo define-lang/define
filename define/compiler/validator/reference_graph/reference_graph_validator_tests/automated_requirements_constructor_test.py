@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -36,7 +36,8 @@ def test_non_filesystem_entry_occupied_implied_position_is_rejected(
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
-        diagnostic, diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic,
     )
     assert diagnostic.position_name == "position</implied>"
     assert diagnostic.location.line == 16
@@ -58,7 +59,8 @@ def test_non_filesystem_entry_transitive_occupied_requirement_is_rejected(
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
-        diagnostic, diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic,
     )
     assert diagnostic.position_name == "position</implied>"
     assert diagnostic.location.line == 18
@@ -73,7 +75,8 @@ def test_non_filesystem_entry_filesystem_occupied_requirement_is_rejected(
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
-        diagnostic, diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic,
     )
     assert diagnostic.position_name == "position</implied>"
     assert diagnostic.location.line == 7
@@ -105,7 +108,7 @@ def test_entry_point_occupied_implied_position_requirement_reports_diagnostic(
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic,
+        reference_graph_diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic,
     )
     assert diagnostic.position_name == "position</implied>"
     assert diagnostic.location.line == 6
@@ -148,7 +151,7 @@ def test_entry_point_transitive_occupied_requirement_reports_diagnostic(
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic,
+        reference_graph_diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic,
     )
     assert diagnostic.position_name == "position</shared>"
     assert diagnostic.location.line == 6
@@ -161,7 +164,9 @@ def test_occupied_interface_requirement_always_violated(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
@@ -227,7 +232,9 @@ def test_constructor_empty_violation_via_create_in_implied(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.action_name == _P
     assert diag.required_empty is True
@@ -281,7 +288,9 @@ def test_constructor_empty_violation_via_create_in_child_of_implied(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.action_name == _P
     assert diag.required_empty is True

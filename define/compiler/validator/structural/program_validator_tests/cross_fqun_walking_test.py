@@ -12,7 +12,7 @@ from crates.source_rendering.python import rendering
 from define.compiler.config import local_deps_config
 from define.compiler.config_tests import test_helpers as config_test_helpers
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics, structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -47,7 +47,7 @@ def test_sub_root_redeclares_parent_fqun(
         define_path.DefinePath("lib/target.dfn"),
     ]
     assert result.sorted_diagnostics() == [
-        diagnostics.DuplicateFqunDiagnostic(
+        config_diagnostics.DuplicateFqunDiagnostic(
             location=config_test_helpers.universe_name_location(
                 "mv:define-lang.org:parent", root=define_path.DefinePath("lib/nested")
             ),
@@ -106,7 +106,7 @@ def test_cross_fqun_file_not_found(
     assert len(result.file_results) == 1
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 63
@@ -121,7 +121,7 @@ def test_cross_fqun_sub_root_missing_config(
         define_path.DefinePath("test.dfn"),
     ]
     assert result.sorted_diagnostics() == [
-        diagnostics.SubRootNotProjectRootDiagnostic(
+        config_diagnostics.SubRootNotProjectRootDiagnostic(
             location=config_test_helpers.config_field_location(
                 local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
@@ -140,7 +140,7 @@ def test_cross_fqun_sub_root_missing_config_across_files_reports_one_config_erro
         define_path.DefinePath("other.dfn"),
     ]
     assert result.sorted_diagnostics() == [
-        diagnostics.SubRootNotProjectRootDiagnostic(
+        config_diagnostics.SubRootNotProjectRootDiagnostic(
             location=config_test_helpers.config_field_location(
                 local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
@@ -158,7 +158,7 @@ def test_cross_fqun_sub_root_fqun_mismatch(
         define_path.DefinePath("test.dfn"),
     ]
     assert result.sorted_diagnostics() == [
-        diagnostics.SubRootFqunMismatchDiagnostic(
+        config_diagnostics.SubRootFqunMismatchDiagnostic(
             location=config_test_helpers.universe_name_location(
                 "mv:define-lang.org:actual_child", root=define_path.DefinePath("lib")
             ),
@@ -178,7 +178,7 @@ def test_second_universe_declared_at_same_sub_root_path(
         define_path.DefinePath("lib/target.dfn"),
     ]
     assert result.sorted_diagnostics() == [
-        diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
+        config_diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
             location=config_test_helpers.config_field_location(
                 local_deps_config.CONFIG_FILE, ("deps", "local", 1, "path")
             ),
@@ -201,7 +201,7 @@ def test_conflicting_sub_root_declaration_leaves_first_universe_usable(
         define_path.DefinePath("lib/b.dfn"),
     ]
     assert result.sorted_diagnostics() == [
-        diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
+        config_diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
             location=config_test_helpers.config_field_location(
                 local_deps_config.CONFIG_FILE, ("deps", "local", 1, "path")
             ),
@@ -210,7 +210,7 @@ def test_conflicting_sub_root_declaration_leaves_first_universe_usable(
                 local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
         ),
-        diagnostics.CircularGlobalReferenceDiagnostic(
+        structural_diagnostics.CircularGlobalReferenceDiagnostic(
             location=rendering.SourceLocation(
                 line=3,
                 column=20,
@@ -238,7 +238,9 @@ def test_path_inside_other_universe_before_its_sub_root_loads(
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
     path_diag = diags[0]
-    assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
+    assert isinstance(
+        path_diag, structural_diagnostics.PathInsideOtherUniverseDiagnostic
+    )
     assert path_diag.location.file_path == "test.dfn"
     assert path_diag.location.line == 5
     assert path_diag.location.column == 29
@@ -256,7 +258,7 @@ def test_sub_root_path_declared_by_outer_project_wins(
         define_path.DefinePath("p/target.dfn"),
     ]
     assert result.sorted_diagnostics() == [
-        diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
+        config_diagnostics.SubRootPathAlreadyDeclaredDiagnostic(
             location=config_test_helpers.config_field_location(
                 local_deps_config.CONFIG_FILE,
                 ("deps", "local", 0, "path"),
@@ -280,7 +282,9 @@ def test_reference_naming_universe_into_its_declared_sub_root(
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
     path_diag = diags[0]
-    assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
+    assert isinstance(
+        path_diag, structural_diagnostics.PathInsideOtherUniverseDiagnostic
+    )
     assert path_diag.location.file_path == "test.dfn"
     assert path_diag.location.line == 5
     assert path_diag.location.column == 63
@@ -297,13 +301,13 @@ def test_sub_root_is_current_universe(
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
     assert result.sorted_diagnostics() == [
-        diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
+        config_diagnostics.LocalDependencyOnOwnUniverseDiagnostic(
             location=config_test_helpers.config_field_location(
                 local_deps_config.CONFIG_FILE, ("deps", "local", 0, "universe_name")
             ),
             universe="mv:define-lang.org:test_parent",
         ),
-        diagnostics.PathMismatchDiagnostic(
+        structural_diagnostics.PathMismatchDiagnostic(
             location=rendering.SourceLocation(
                 line=1,
                 column=62,
@@ -314,7 +318,7 @@ def test_sub_root_is_current_universe(
             expected_path="/lib/target",
             actual_path="/target",
         ),
-        diagnostics.ReferencedDefinitionNotFoundDiagnostic(
+        structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=3,
                 column=20,
@@ -325,7 +329,7 @@ def test_sub_root_is_current_universe(
             file_path="lib/target.dfn",
             definition_name="position<mv:define-lang.org:test_parent:/lib/target>",
         ),
-        diagnostics.ReferencedFileNotFoundDiagnostic(
+        structural_diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=4,
                 column=29,
@@ -348,7 +352,9 @@ def test_reference_after_path_inside_other_universe_is_still_validated(
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
     path_diag = diags[0]
-    assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
+    assert isinstance(
+        path_diag, structural_diagnostics.PathInsideOtherUniverseDiagnostic
+    )
     assert path_diag.location.file_path == "test.dfn"
     assert path_diag.location.line == 5
     assert path_diag.location.column == 29
@@ -356,7 +362,9 @@ def test_reference_after_path_inside_other_universe_is_still_validated(
     assert path_diag.other_universe == _CHILD_UNIVERSE
     assert path_diag.sub_root_path == "lib"
     not_found_diag = diags[1]
-    assert isinstance(not_found_diag, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        not_found_diag, structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert not_found_diag.location.file_path == "test.dfn"
     assert not_found_diag.location.line == 6
     assert not_found_diag.location.column == 63
@@ -373,7 +381,7 @@ def test_path_inside_other_universe(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.PathInsideOtherUniverseDiagnostic,
+        structural_diagnostics.PathInsideOtherUniverseDiagnostic,
     )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].path == "lib/parent_target.dfn"
@@ -397,7 +405,7 @@ def test_path_inside_other_universe_skips_further_validation(
     assert len(diags) == 2
     wrong_type_diag = diags[0]
     assert isinstance(
-        wrong_type_diag, diagnostics.ReferencedDefinitionNotFoundDiagnostic
+        wrong_type_diag, structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic
     )
     assert wrong_type_diag.location.file_path == "test.dfn"
     assert wrong_type_diag.location.line == 3
@@ -408,7 +416,9 @@ def test_path_inside_other_universe_skips_further_validation(
         == "position<mv:define-lang.org:child_universe:/child_action>"
     )
     path_diag = diags[1]
-    assert isinstance(path_diag, diagnostics.PathInsideOtherUniverseDiagnostic)
+    assert isinstance(
+        path_diag, structural_diagnostics.PathInsideOtherUniverseDiagnostic
+    )
     assert path_diag.location.file_path == "test.dfn"
     assert path_diag.path == "lib/child_action.dfn"
     assert path_diag.location.line == 4
@@ -431,7 +441,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
-    assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.FqunMismatchDiagnostic)
     assert diags[0].location.file_path == "lib/target.dfn"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
@@ -439,7 +449,7 @@ def test_cross_fqun_file_wrong_fqun_in_sub_root(
     assert diags[0].actual == wrong_fqun
     assert isinstance(
         diags[1],
-        diagnostics.ReferencedDefinitionNotFoundDiagnostic,
+        structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
     assert diags[1].location.file_path == "test.dfn"
     assert diags[1].location.line == 3
@@ -461,7 +471,7 @@ def test_cross_fqun_wrong_type_in_sub_root(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.ReferencedDefinitionNotFoundDiagnostic,
+        structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic,
     )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].location.line == 3
@@ -507,7 +517,7 @@ def test_partial_sub_root_failure_still_validates_successful_sub_roots(
         define_path.DefinePath("lib_a/target_a.dfn"),
     ]
     assert result.sorted_diagnostics() == [
-        diagnostics.SubRootNotProjectRootDiagnostic(
+        config_diagnostics.SubRootNotProjectRootDiagnostic(
             location=config_test_helpers.config_field_location(
                 local_deps_config.CONFIG_FILE, ("deps", "local", 1, "path")
             ),
@@ -528,7 +538,7 @@ def test_partial_local_deps_missing_still_validates_configured_sub_roots(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.ExternalUniverseNotConfiguredDiagnostic,
+        config_diagnostics.ExternalUniverseNotConfiguredDiagnostic,
     )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].location.line == 4
@@ -549,7 +559,7 @@ def test_failed_root_discovery_does_not_skip_remaining_files(
         define_path.DefinePath("local.dfn"),
     ]
     assert result.sorted_diagnostics() == [
-        diagnostics.SubRootNotProjectRootDiagnostic(
+        config_diagnostics.SubRootNotProjectRootDiagnostic(
             location=config_test_helpers.config_field_location(
                 local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
@@ -568,14 +578,14 @@ def test_failed_root_edge_does_not_skip_remaining_edge_validation(
         define_path.DefinePath("wrong_type.dfn"),
     ]
     assert result.sorted_diagnostics() == [
-        diagnostics.SubRootNotProjectRootDiagnostic(
+        config_diagnostics.SubRootNotProjectRootDiagnostic(
             location=config_test_helpers.config_field_location(
                 local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
             ),
             sub_root_path="lib",
             sub_root_config_path="lib/.define/project/config.defcl",
         ),
-        diagnostics.ReferencedDefinitionNotFoundDiagnostic(
+        structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=4,
                 column=20,
@@ -598,13 +608,15 @@ def test_invalid_cross_fqun_reference_and_definition_in_one_file(
     assert result.file_results[0].file_path == define_path.DefinePath("test.dfn")
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.FqunMismatchDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.FqunMismatchDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 31
     assert diags[0].expected == _PARENT_UNIVERSE
     assert diags[0].actual == foreign_universe
-    assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert isinstance(
+        diags[1], config_diagnostics.ExternalUniverseNotConfiguredDiagnostic
+    )
     assert diags[1].location.file_path == "test.dfn"
     assert diags[1].location.line == 6
     assert diags[1].location.column == 29
@@ -622,7 +634,7 @@ def test_same_path_in_known_and_unknown_universes_still_walks_into_known(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.ExternalUniverseNotConfiguredDiagnostic,
+        config_diagnostics.ExternalUniverseNotConfiguredDiagnostic,
     )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].universe == "unknown.com:other_lib"
@@ -640,13 +652,17 @@ def test_same_path_in_two_unknown_universes_diagnoses_each(
     assert len(result.file_results) == 1
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert isinstance(
+        diags[0], config_diagnostics.ExternalUniverseNotConfiguredDiagnostic
+    )
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].universe == "unknown.com:lib_a"
     assert diags[0].current_universe_name == _PARENT_UNIVERSE
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
-    assert isinstance(diags[1], diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert isinstance(
+        diags[1], config_diagnostics.ExternalUniverseNotConfiguredDiagnostic
+    )
     assert diags[1].location.file_path == "test.dfn"
     assert diags[1].universe == "unknown.com:lib_b"
     assert diags[1].current_universe_name == _PARENT_UNIVERSE
@@ -697,7 +713,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
     foreign_universe = "mv:define-lang.org:other_lib"
     result = validate_testdata_structural()
     assert result.sorted_diagnostics() == [
-        diagnostics.FqunMismatchDiagnostic(
+        structural_diagnostics.FqunMismatchDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=31,
@@ -708,7 +724,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
             expected=_PARENT_UNIVERSE,
             actual=foreign_universe,
         ),
-        diagnostics.PathMismatchDiagnostic(
+        structural_diagnostics.PathMismatchDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=60,
@@ -719,7 +735,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
             expected_path="/test",
             actual_path="/a",
         ),
-        diagnostics.FqunMismatchDiagnostic(
+        structural_diagnostics.FqunMismatchDiagnostic(
             location=rendering.SourceLocation(
                 line=3,
                 column=31,
@@ -730,7 +746,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
             expected=_PARENT_UNIVERSE,
             actual=foreign_universe,
         ),
-        diagnostics.PathMismatchDiagnostic(
+        structural_diagnostics.PathMismatchDiagnostic(
             location=rendering.SourceLocation(
                 line=3,
                 column=60,
@@ -741,7 +757,7 @@ def test_unknown_universe_reported_once_for_same_file_references(
             expected_path="/test",
             actual_path="/b",
         ),
-        diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+        config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
                 column=29,

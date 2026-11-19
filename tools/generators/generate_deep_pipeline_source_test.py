@@ -7,7 +7,7 @@ import click.testing
 import pytest
 
 from define.compiler import driver
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from tools.generators import generate_deep_pipeline_source as gen
 
 if TYPE_CHECKING:
@@ -223,7 +223,8 @@ def test_violations_have_scalable_propagation_histories(stages: int):
     assert len(all_diagnostics) == 2
     for diagnostic in all_diagnostics:
         assert isinstance(
-            diagnostic, diagnostics.InferredRequirementViolationDiagnostic
+            diagnostic,
+            reference_graph_diagnostics.InferredRequirementViolationDiagnostic,
         )
         assert len(diagnostic.propagation_chain) == stages + 3
     assert len(result.error_strings()) == 2

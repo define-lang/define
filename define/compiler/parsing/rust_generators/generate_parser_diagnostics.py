@@ -1,33 +1,33 @@
-"""Writes the parser's Rust `ParserDiagnostics`, which creates the diagnostics in `define.compiler.errors.diagnostics` that the parser reports.
+"""Writes the parser's Rust `ParserDiagnostics`, which creates the diagnostics in `define.compiler.errors.parser_diagnostics`.
 
-Each class in `_PARSER_DIAGNOSTICS` gets a `ParserDiagnostics` method that
-takes the start and end positions of its location, then the rest of its fields,
-which are integers or text.
+Each diagnostic class in `define.compiler.errors.parser_diagnostics` gets a
+`ParserDiagnostics` method that takes the start and end positions of its
+location, then the rest of its fields, which are integers or text.
 """
 
 from __future__ import annotations
 
 import sys
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import diagnostics, parser_diagnostics
 from define.compiler.parsing.rust_generators import (
     diagnostic_description,
     rust_output,
     rust_renderer,
 )
 
-_PARSER_DIAGNOSTICS: tuple[type[diagnostics.Diagnostic], ...] = (
-    diagnostics.IncorrectIndentationDiagnostic,
-    diagnostics.TrailingWhitespaceDiagnostic,
-    diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic,
-    diagnostics.MissingSpaceBeforeCommentAfterBraceDiagnostic,
-    diagnostics.MissingNewlineAtEndOfFileDiagnostic,
-    diagnostics.SpaceBeforeOpenAngleBracketDiagnostic,
-    diagnostics.ByteOrderMarkInCommentDiagnostic,
-    diagnostics.ControlCharacterInCommentDiagnostic,
-    diagnostics.InvisibleCharacterInCommentDiagnostic,
-    diagnostics.MissingTerminatorAtEndOfLineDiagnostic,
-)
+
+def _parser_diagnostic_classes() -> list[type[diagnostics.Diagnostic]]:
+    namespace: dict[str, object] = dict(vars(parser_diagnostics))
+    classes: list[type[diagnostics.Diagnostic]] = []
+    for value in namespace.values():
+        if (
+            isinstance(value, type)
+            and issubclass(value, diagnostics.Diagnostic)
+            and value.__module__ == parser_diagnostics.__name__
+        ):
+            classes.append(value)
+    return classes
 
 
 def _describe_parser_diagnostic(
@@ -46,8 +46,10 @@ def main():
     """
     output_path, rustfmt = sys.argv[1:]
     description = rust_renderer.ParserDiagnosticsDescription(
-        module_name=diagnostics.__name__,
-        diagnostics=[_describe_parser_diagnostic(cls) for cls in _PARSER_DIAGNOSTICS],
+        module_name=parser_diagnostics.__name__,
+        diagnostics=[
+            _describe_parser_diagnostic(cls) for cls in _parser_diagnostic_classes()
+        ],
     )
     rust_output.write(
         output_path, rust_renderer.render_parser_diagnostics(description), rustfmt

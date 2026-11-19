@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -24,7 +24,7 @@ def test_standard_without_authority_ok(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.ReservedUniverseNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].reserved_name == "standard"
     assert diags[0].location.line == 1
@@ -37,7 +37,9 @@ def test_non_standard_without_authority_error(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UniverseWithoutAuthorityDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.UniverseWithoutAuthorityDiagnostic
+    )
     assert diags[0].universe_name == "my_universe"
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
@@ -59,13 +61,15 @@ def test_case_insensitive_standard(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.UniverseNameInvalidCharDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.UniverseNameInvalidCharDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].universe_name == "STANDARD"
     assert diags[0].chars == ("S", "T", "A", "N", "D", "R")
     assert diags[0].location.line == 1
     assert diags[0].location.column == 31
-    assert isinstance(diags[1], diagnostics.ReservedUniverseNameDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.ReservedUniverseNameDiagnostic)
     assert diags[1].location.file_path is None
     assert diags[1].reserved_name == "STANDARD"
     assert diags[1].location.line == 1

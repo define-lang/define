@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ def test_duplicate_position_error(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].definition_type == "position"
     assert diags[0].path == "/same"
@@ -46,7 +46,7 @@ def test_duplicate_action_error(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].definition_type == "action"
     assert diags[0].path == "/same"
@@ -68,9 +68,9 @@ def test_three_duplicates_two_errors(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.DuplicateDefinitionDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[0].location.file_path is None
-    assert isinstance(diags[1], diagnostics.DuplicateDefinitionDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.DuplicateDefinitionDiagnostic)
     assert diags[1].location.file_path is None
     assert diags[0].definition_type == "position"
     assert diags[0].path == "/same"

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import structural_diagnostics, syntax_errors
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -32,7 +32,9 @@ def test_invalid_name(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert diagnostic.location.line == 2
     assert diagnostic.location.column == 46
     assert diagnostic.location.file_path is None
@@ -46,7 +48,7 @@ def test_duplicate_encoding(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
+    assert isinstance(diagnostic, structural_diagnostics.DuplicateDefinitionDiagnostic)
     assert diagnostic.location.column == 1
     assert diagnostic.location.file_path is None
     assert diagnostic.definition_type == "encoding"
@@ -67,7 +69,7 @@ def test_path_mismatch(validate_testdata_structural: ValidateTestdataStructural)
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.PathMismatchDiagnostic)
+    assert isinstance(diagnostic, structural_diagnostics.PathMismatchDiagnostic)
     assert diagnostic.location.line == 2
     assert diagnostic.location.column == 42
     assert diagnostic.location.file_path == "test.dfn"
@@ -79,7 +81,7 @@ def test_fqun_mismatch(validate_testdata_structural: ValidateTestdataStructural)
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.FqunMismatchDiagnostic)
+    assert isinstance(diagnostic, structural_diagnostics.FqunMismatchDiagnostic)
     assert diagnostic.location.line == 2
     assert diagnostic.location.column == 21
     assert diagnostic.location.file_path == "test.dfn"

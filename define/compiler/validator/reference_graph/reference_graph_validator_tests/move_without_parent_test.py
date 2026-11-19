@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -21,7 +21,9 @@ def test_move_from_child_of_unoccupied_local_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -35,7 +37,9 @@ def test_move_to_child_of_unoccupied_local_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 47
     assert all_diags[0].location.file_path == "test.dfn"
@@ -49,13 +53,17 @@ def test_both_source_and_target_have_unoccupied_parents(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<src_local>::position</x>"
     assert all_diags[0].parent_position_name == "position<src_local>"
-    assert isinstance(all_diags[1], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 67
     assert all_diags[1].location.file_path == "test.dfn"

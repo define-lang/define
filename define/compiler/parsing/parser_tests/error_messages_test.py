@@ -13,7 +13,7 @@ import textwrap
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import parser_diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -158,7 +158,9 @@ def test_control_character_in_comment_diagnostic_message(
     )
     result = parse_with_diagnostics(source)
     [diagnostic] = result.diagnostics
-    assert isinstance(diagnostic, diagnostics.ControlCharacterInCommentDiagnostic)
+    assert isinstance(
+        diagnostic, parser_diagnostics.ControlCharacterInCommentDiagnostic
+    )
     assert diagnostic.format(
         rendering.SourceMap(in_memory_source=source)
     ) == textwrap.dedent("""\
@@ -177,7 +179,9 @@ def test_invisible_character_in_comment_diagnostic_message(
     )
     result = parse_with_diagnostics(source)
     [diagnostic] = result.diagnostics
-    assert isinstance(diagnostic, diagnostics.InvisibleCharacterInCommentDiagnostic)
+    assert isinstance(
+        diagnostic, parser_diagnostics.InvisibleCharacterInCommentDiagnostic
+    )
     assert diagnostic.format(
         rendering.SourceMap(in_memory_source=source)
     ) == textwrap.dedent("""\

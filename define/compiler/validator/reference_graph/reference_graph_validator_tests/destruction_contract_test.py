@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -39,7 +39,9 @@ def test_circular_destructor_contract_is_skipped(
     result = validate_testdata_project_with_reference_graph(max_workers=1)
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert all_diags[0].cycle == [_DESTRUCTOR, _CLOSE_FILE, _DESTRUCTOR]
     assert all_diags[0].location.line == 4
     assert all_diags[0].location.column == 24
@@ -53,7 +55,9 @@ def test_circular_caller_attached_destructor_contract_is_skipped(
     result = validate_testdata_project_with_reference_graph(max_workers=1)
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert all_diags[0].cycle == [_DESTRUCTOR, _CALLER, _DESTRUCTOR]
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 28
@@ -67,7 +71,9 @@ def test_missing_caller_attached_destructor_is_reported_and_skipped(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert all_diags[0].file_path == "missing_destructor.dfn"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 35
@@ -92,7 +98,9 @@ def test_caller_known_child_state_requirement_violated(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
@@ -158,7 +166,9 @@ def test_caller_unknown_child_state_requirement_violated(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
@@ -185,7 +195,9 @@ def test_caller_unknown_child_state_requirement_violated(
             "file_path": "touch.dfn",
         },
     )
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 22
     assert all_diags[1].location.column == 30
@@ -253,7 +265,8 @@ def test_caller_attached_destructor_requiring_empty_position_is_reported_only_on
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
@@ -267,7 +280,9 @@ def test_two_caller_attached_destructors_validated_independently(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
@@ -346,7 +361,9 @@ def test_three_destructors_with_two_violated(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 25
     assert all_diags[1].location.column == 30
@@ -400,7 +417,9 @@ def test_three_destructors_with_two_violated(
             "file_path": "destructor_c.dfn",
         },
     )
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 25
     assert all_diags[0].location.column == 30
@@ -468,7 +487,9 @@ def test_declared_quality_destructor_validated_once(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
@@ -548,7 +569,9 @@ def test_constructor_consumer_caller_known_violated(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 30
@@ -614,7 +637,9 @@ def test_visible_and_caller_attached_destructors_coexist(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 24
     assert all_diags[0].location.column == 30
@@ -660,7 +685,9 @@ def test_visible_and_caller_attached_destructors_coexist(
             "file_path": "delete_file1.dfn",
         },
     )
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[1].required_value is False
     assert all_diags[1].location.line == 24
     assert all_diags[1].location.column == 30
@@ -730,7 +757,8 @@ def test_assignment_in_destructor_requirement_chain_appears_once(
 
     emptied_file = all_diags[0]
     assert isinstance(
-        emptied_file, diagnostics.DestructorProducesEmptyGuaranteeDiagnostic
+        emptied_file,
+        reference_graph_diagnostics.DestructorProducesEmptyGuaranteeDiagnostic,
     )
     assert emptied_file.location.line == 7
     assert emptied_file.location.column == 30
@@ -740,7 +768,7 @@ def test_assignment_in_destructor_requirement_chain_appears_once(
     through_caller_attached_destructor = all_diags[1]
     assert isinstance(
         through_caller_attached_destructor,
-        diagnostics.InferredRequirementViolationDiagnostic,
+        reference_graph_diagnostics.InferredRequirementViolationDiagnostic,
     )
     assert through_caller_attached_destructor.location.line == 21
     assert through_caller_attached_destructor.location.column == 30
@@ -814,7 +842,8 @@ def test_assignment_in_destructor_requirement_chain_appears_once(
 
     directly_known = all_diags[2]
     assert isinstance(
-        directly_known, diagnostics.InferredRequirementViolationDiagnostic
+        directly_known,
+        reference_graph_diagnostics.InferredRequirementViolationDiagnostic,
     )
     assert directly_known.location.line == 21
     assert directly_known.location.column == 30

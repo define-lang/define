@@ -6,12 +6,13 @@ import typing
 
 from define.compiler import literal_parsers
 from define.compiler.association_resolution import concrete_program
-from define.compiler.errors import diagnostics
+from define.compiler.errors import association_resolution_diagnostics
 
 if typing.TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
     from define.compiler import ast
+    from define.compiler.errors import diagnostics
 
 
 class LiteralEncoder:
@@ -52,7 +53,7 @@ class LiteralEncoder:
         )
         if parser is None:
             return None, [
-                diagnostics.LiteralCannotSetValueDiagnostic(
+                association_resolution_diagnostics.LiteralCannotSetValueDiagnostic(
                     location=potential_literal.location,
                     potential_literal=potential_literal.source_form_in_universe(
                         enclosing_fqun
@@ -86,7 +87,7 @@ class LiteralEncoder:
         )
         if parser is None:
             return None, [
-                diagnostics.LiteralCannotBeConvertedDiagnostic(
+                association_resolution_diagnostics.LiteralCannotBeConvertedDiagnostic(
                     location=potential_literal.location,
                     potential_literal=potential_literal.source_form_in_universe(
                         enclosing_fqun
@@ -127,7 +128,7 @@ def _parse(
         ), []
     except literal_parsers.LiteralParseError as e:
         return None, [
-            diagnostics.InvalidLiteralContentDiagnostic(
+            association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
                 location=literal.content_character_location(e.content_index),
                 content=literal.content,
                 potential_literal=literal.potential_literal.source_form_in_universe(

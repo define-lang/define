@@ -14,7 +14,11 @@ import msgspec
 from crates.source_rendering.python import rendering
 from define.compiler.config import config_loader, local_deps_config
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import (
+    config_diagnostics,
+    structural_diagnostics,
+    syntax_errors,
+)
 from define.compiler.parsing import test_helpers as parsing_test_helpers
 from define.compiler.validator.structural import (
     definition_validator,
@@ -25,6 +29,9 @@ from define.compiler.validator.structural import (
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from define.compiler.errors import (
+        diagnostics,
+    )
     from define.compiler.graphs import reference_graph
     from define.compiler.validator.structural import structural_result
 
@@ -203,7 +210,7 @@ class TestLoadFileDiagnostics:
         result = _load_and_validate_every_definition(ctx)
 
         assert [type(d) for d in result.diagnostics] == [
-            diagnostics.PathMismatchDiagnostic,
+            structural_diagnostics.PathMismatchDiagnostic,
         ]
 
     def test_fqun_mismatch(self, tmp_path: Path):
@@ -213,7 +220,7 @@ class TestLoadFileDiagnostics:
         result = _load_and_validate_every_definition(ctx)
 
         assert [type(d) for d in result.diagnostics] == [
-            diagnostics.FqunMismatchDiagnostic,
+            structural_diagnostics.FqunMismatchDiagnostic,
         ]
 
     def test_within_file_duplicate(self, tmp_path: Path):
@@ -226,7 +233,7 @@ class TestLoadFileDiagnostics:
         result = _load_and_validate_every_definition(ctx)
 
         assert [type(d) for d in result.diagnostics] == [
-            diagnostics.DuplicateDefinitionDiagnostic,
+            structural_diagnostics.DuplicateDefinitionDiagnostic,
         ]
         assert [
             definition_result.definition.location.line
@@ -337,7 +344,7 @@ class TestLoadFileReferenceDiscovery:
         result = _load_and_validate_every_definition(ctx)
 
         assert [type(d) for d in result.diagnostics] == [
-            diagnostics.ExternalUniverseNotConfiguredDiagnostic,
+            config_diagnostics.ExternalUniverseNotConfiguredDiagnostic,
         ]
         assert _reference_edges(result) == []
 
@@ -453,7 +460,7 @@ class TestParticleReferenceEdges:
         assert len(result.diagnostics) == 2
         assert isinstance(
             result.diagnostics[0],
-            diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
+            structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         )
         assert result.diagnostics[0].segment == "Bad"
         assert result.diagnostics[0].chars == ("B",)
@@ -461,7 +468,7 @@ class TestParticleReferenceEdges:
         assert result.diagnostics[0].location.column == 34
         assert isinstance(
             result.diagnostics[1],
-            diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
+            structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic,
         )
         assert result.diagnostics[1].segment == "Bad"
         assert result.diagnostics[1].chars == ("B",)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -33,7 +33,8 @@ def test_mismatched_types(
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
-        diagnostic, diagnostics.ValueSettingValueQualityMismatchDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.ValueSettingValueQualityMismatchDiagnostic,
     )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 19
@@ -51,7 +52,8 @@ def test_mismatched_type_target_is_not_reported_unset(
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
-        diagnostic, diagnostics.ValueSettingValueQualityMismatchDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.ValueSettingValueQualityMismatchDiagnostic,
     )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 20
@@ -68,7 +70,10 @@ def test_target_missing_type(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
+    assert isinstance(
+        diagnostic,
+        reference_graph_diagnostics.ValueSettingMissingValueQualityDiagnostic,
+    )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 17
     assert diagnostic.location.column == 26
@@ -82,13 +87,15 @@ def test_target_empty_source_unset(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 2
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.ValueSettingEmptyPositionDiagnostic
+    )
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 13
     assert diagnostic.location.column == 26
     diagnostic = result.sorted_diagnostics()[1]
-    assert isinstance(diagnostic, diagnostics.UnsetValueDiagnostic)
+    assert isinstance(diagnostic, reference_graph_diagnostics.UnsetValueDiagnostic)
     assert diagnostic.position_name == "position<source>"
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 13
@@ -101,7 +108,9 @@ def test_target_empty(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.ValueSettingEmptyPositionDiagnostic
+    )
     assert diagnostic.position_name == "position</target>"
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
@@ -114,7 +123,10 @@ def test_source_missing_type(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
+    assert isinstance(
+        diagnostic,
+        reference_graph_diagnostics.ValueSettingMissingValueQualityDiagnostic,
+    )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 48
@@ -128,7 +140,9 @@ def test_source_empty(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.ValueSettingEmptyPositionDiagnostic
+    )
     assert diagnostic.position_name == "position<source>"
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 17
@@ -141,14 +155,20 @@ def test_both_missing_types(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 2
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
+    assert isinstance(
+        diagnostic,
+        reference_graph_diagnostics.ValueSettingMissingValueQualityDiagnostic,
+    )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.origin_position_name == "position<target>"
     diagnostic = result.sorted_diagnostics()[1]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
+    assert isinstance(
+        diagnostic,
+        reference_graph_diagnostics.ValueSettingMissingValueQualityDiagnostic,
+    )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 48
@@ -162,13 +182,17 @@ def test_both_empty(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 2
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.ValueSettingEmptyPositionDiagnostic
+    )
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 26
     assert diagnostic.location.column == 26
     diagnostic = result.sorted_diagnostics()[1]
-    assert isinstance(diagnostic, diagnostics.ValueSettingEmptyPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.ValueSettingEmptyPositionDiagnostic
+    )
     assert diagnostic.position_name == "position<source>"
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 26
@@ -188,7 +212,9 @@ def test_same_position(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingSamePositionDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ValueSettingSamePositionDiagnostic
+    )
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 7
@@ -201,7 +227,7 @@ def test_undefined_position(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diagnostic, structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diagnostic.local_name == "position<source>"
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 16
@@ -214,7 +240,9 @@ def test_prior_error(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert diagnostic.position_name == "position<empty>"
     assert diagnostic.is_action_interface_position is False
     assert diagnostic.inferred_at is None
@@ -236,7 +264,9 @@ def test_empty_parent(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert diagnostic.position_name == "position<parent>::position</child>"
     assert diagnostic.parent_position_name == "position<parent>"
     assert diagnostic.location.file_path == "test.dfn"
@@ -250,7 +280,9 @@ def test_invalid_child(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ChainElementNotAssignedDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+    )
     assert diagnostic.element_name == "position<my.domain.com:my_lib:/child>"
     assert diagnostic.parent_name == "position<parent>"
     assert diagnostic.location.file_path == "test.dfn"
@@ -271,7 +303,9 @@ def test_callee_requires_target(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diagnostic.required_value is False
     assert_propagation_chain(
         diagnostic,
@@ -309,7 +343,9 @@ def test_callee_requires_source(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diagnostic.required_value is False
     assert_propagation_chain(
         diagnostic,
@@ -347,7 +383,10 @@ def test_callee_target_missing_value_quality(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
+    assert isinstance(
+        diagnostic,
+        reference_graph_diagnostics.ValueSettingMissingValueQualityDiagnostic,
+    )
     assert diagnostic.location.file_path == "assign.dfn"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 26
@@ -361,7 +400,10 @@ def test_callee_source_missing_value_quality(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingMissingValueQualityDiagnostic)
+    assert isinstance(
+        diagnostic,
+        reference_graph_diagnostics.ValueSettingMissingValueQualityDiagnostic,
+    )
     assert diagnostic.location.file_path == "assign.dfn"
     assert diagnostic.location.line == 12
     assert diagnostic.location.column == 48
@@ -375,7 +417,9 @@ def test_same_child_position_keeps_quality_assignment_alive(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ValueSettingSamePositionDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ValueSettingSamePositionDiagnostic
+    )
     assert diagnostic.position_name == "position<parent>::position</child>"
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 12
@@ -388,20 +432,26 @@ def test_same_position_still_validates_both_chained_names(
     result = validate_testdata_project_with_reference_graph().program_validation
     assert len(result.sorted_diagnostics()) == 3
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ChainElementNotAssignedDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+    )
     assert diagnostic.element_name == "position<my.domain.com:my_lib:/child>"
     assert diagnostic.parent_name == "position<parent>"
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 44
     diagnostic = result.sorted_diagnostics()[1]
-    assert isinstance(diagnostic, diagnostics.ValueSettingSamePositionDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ValueSettingSamePositionDiagnostic
+    )
     assert diagnostic.position_name == "position<parent>::position</child>"
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 8
     assert diagnostic.location.column == 66
     diagnostic = result.sorted_diagnostics()[2]
-    assert isinstance(diagnostic, diagnostics.ChainElementNotAssignedDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+    )
     assert diagnostic.element_name == "position<my.domain.com:my_lib:/child>"
     assert diagnostic.parent_name == "position<parent>"
     assert diagnostic.location.file_path == "test.dfn"

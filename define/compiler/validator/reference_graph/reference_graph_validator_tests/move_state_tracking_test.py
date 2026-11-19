@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -22,7 +22,9 @@ def test_move_from_empty_position(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].location.line == 8
     assert diags[0].location.column == 30
@@ -37,7 +39,9 @@ def test_move_to_occupied_position(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        diags[0], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].occupied_at is not None
     assert diags[0].occupied_at.file_path is None
@@ -61,7 +65,9 @@ def test_cannot_create_in_position_that_was_moved_into(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].populated_at.column == 45
     assert diags[0].populated_at.file_path is None
@@ -84,14 +90,18 @@ def test_same_move_twice_in_a_row(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].location.line == 10
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<a>"
     assert diags[0].is_action_interface_position is False
     assert diags[0].inferred_at is None
-    assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        diags[1], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert diags[1].location.file_path is None
     assert diags[1].occupied_at is not None
     assert diags[1].occupied_at.file_path is None
@@ -108,14 +118,18 @@ def test_round_trip_move_fails_second_return(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].location.line == 11
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<b>"
     assert diags[0].is_action_interface_position is False
     assert diags[0].inferred_at is None
-    assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        diags[1], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert diags[1].location.file_path is None
     assert diags[1].occupied_at is not None
     assert diags[1].occupied_at.file_path is None
@@ -132,7 +146,9 @@ def test_two_actions_same_name_one_empty_error_one_clean(
     result = validate_testdata_non_filesystem_with_reference_graph()
     all_diags = result.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.file_path is None
     assert all_diags[0].position_name == "position<from_pos>"
     assert all_diags[0].location.line == 8
@@ -147,7 +163,9 @@ def test_two_actions_same_name_one_occupied_error_one_clean(
     result = validate_testdata_non_filesystem_with_reference_graph()
     all_diags = result.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.file_path is None
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.file_path is None
@@ -171,7 +189,9 @@ def test_move_from_empty_marks_both_positions_error(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].location.line == 8
     assert diags[0].location.column == 30
@@ -186,7 +206,9 @@ def test_move_to_occupied_marks_both_positions_error(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        diags[0], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].occupied_at is not None
     assert diags[0].occupied_at.file_path is None
@@ -203,14 +225,18 @@ def test_both_from_empty_and_to_occupied_marks_error(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].location.line == 9
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<a>"
     assert diags[0].is_action_interface_position is False
     assert diags[0].inferred_at is None
-    assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        diags[1], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert diags[1].location.file_path is None
     assert diags[1].occupied_at is not None
     assert diags[1].occupied_at.file_path is None
@@ -227,14 +253,18 @@ def test_error_state_does_not_affect_other_positions(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].location.line == 11
     assert diags[0].location.column == 30
     assert diags[0].position_name == "position<a>"
     assert diags[0].is_action_interface_position is False
     assert diags[0].inferred_at is None
-    assert isinstance(diags[1], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        diags[1], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert diags[1].location.file_path is None
     assert diags[1].occupied_at is not None
     assert diags[1].occupied_at.file_path is None
@@ -251,7 +281,9 @@ def test_single_error_position_marks_both_error(
     result = validate_testdata_non_filesystem_with_reference_graph()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        diags[0], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].occupied_at is not None
     assert diags[0].occupied_at.file_path is None
@@ -268,7 +300,9 @@ def test_move_from_chained_to_occupied_local_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].occupied_at is not None
     assert all_diags[0].occupied_at.file_path == "test.dfn"
@@ -285,7 +319,9 @@ def test_move_from_empty_local_chained(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -300,7 +336,9 @@ def test_move_to_occupied_local_chained(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 47
     assert all_diags[0].location.file_path == "test.dfn"
@@ -317,7 +355,9 @@ def test_double_move_from_local_chained_fails(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.line == 15
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -353,7 +393,9 @@ def test_error_state_on_child_position_moves_with_particle(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 33
@@ -366,12 +408,16 @@ def test_error_state_on_child_position_does_not_stay_at_move_source(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
     assert all_diags[0].position_name == "position<a>::position</x>"
-    assert isinstance(all_diags[1], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 33
@@ -384,13 +430,17 @@ def test_move_clears_error_state_below_target(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.ParentPositionNotOccupiedDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 33
     assert all_diags[0].position_name == "position<b>::position</x>"
     assert all_diags[0].parent_position_name == "position<b>"
-    assert isinstance(all_diags[1], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert all_diags[1].location.file_path == "test.dfn"
     assert all_diags[1].location.line == 18
     assert all_diags[1].location.column == 33

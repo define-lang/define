@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -59,7 +59,9 @@ def test_occupied_interface_requirement_violated(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 11
     assert all_diags[0].location.column == 33
@@ -115,7 +117,8 @@ def test_destructor_requiring_empty_interface_position_is_reported(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
@@ -130,7 +133,9 @@ def test_intermediate_position_requirement_violated(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 33
@@ -187,7 +192,9 @@ def test_locally_created_interface_particle_fires_destructor_locally(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 33
@@ -243,7 +250,9 @@ def test_locally_created_destructor_parent_propagates_requirement_from_moved_chi
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.location.line == 15
     assert diag.location.column == 30
@@ -300,7 +309,9 @@ def test_destructor_in_constructor_checks_interface_requirement_locally(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 33
@@ -358,7 +369,9 @@ def test_callee_attached_destructor_requirement_validated_at_owning_caller(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[0].required_value is False
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 33
@@ -418,7 +431,10 @@ def test_destructor_requirement_checked_when_another_destructor_changes_contract
     assert len(all_diags) == 3
 
     emptied_p = all_diags[0]
-    assert isinstance(emptied_p, diagnostics.DestructorProducesEmptyGuaranteeDiagnostic)
+    assert isinstance(
+        emptied_p,
+        reference_graph_diagnostics.DestructorProducesEmptyGuaranteeDiagnostic,
+    )
     assert emptied_p.location.line == 7
     assert emptied_p.location.column == 30
     assert emptied_p.location.file_path == "first_destructor.dfn"
@@ -426,7 +442,8 @@ def test_destructor_requirement_checked_when_another_destructor_changes_contract
 
     first_violation = all_diags[1]
     assert isinstance(
-        first_violation, diagnostics.InferredRequirementViolationDiagnostic
+        first_violation,
+        reference_graph_diagnostics.InferredRequirementViolationDiagnostic,
     )
     assert first_violation.location.line == 13
     assert first_violation.location.column == 33
@@ -473,7 +490,8 @@ def test_destructor_requirement_checked_when_another_destructor_changes_contract
 
     second_violation = all_diags[2]
     assert isinstance(
-        second_violation, diagnostics.InferredRequirementViolationDiagnostic
+        second_violation,
+        reference_graph_diagnostics.InferredRequirementViolationDiagnostic,
     )
     assert second_violation.location.line == 13
     assert second_violation.location.column == 33

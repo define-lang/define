@@ -5,7 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import (
+    association_resolution_diagnostics,
+    reference_graph_diagnostics,
+    structural_diagnostics,
+)
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.validation_pipeline import (
@@ -26,7 +30,7 @@ def test_missing_encoding_operation(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.MissingEncodingOperationDiagnostic(
+        association_resolution_diagnostics.MissingEncodingOperationDiagnostic(
             location=rendering.SourceLocation(
                 line=22,
                 column=21,
@@ -37,7 +41,7 @@ def test_missing_encoding_operation(
             logical_operation_name="logical_operation<standard:/number/add>",
             view_encodings=_INTEGER_NATURAL_INTEGER,
             execution_stack=[
-                diagnostics.OperationExecutionStep(
+                association_resolution_diagnostics.OperationExecutionStep(
                     executing_name="action<my.domain.com:my_lib:/test>",
                     executed_name="operation</mixed_sum>",
                     location=rendering.SourceLocation(
@@ -48,7 +52,7 @@ def test_missing_encoding_operation(
                         file_path="test.dfn",
                     ),
                 ),
-                diagnostics.OperationExecutionStep(
+                association_resolution_diagnostics.OperationExecutionStep(
                     executing_name="operation</mixed_sum>",
                     executed_name="logical_operation<standard:/number/add>",
                     location=rendering.SourceLocation(
@@ -69,7 +73,7 @@ def test_missing_encoding_operation_in_executed_value_operation(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.MissingEncodingOperationDiagnostic(
+        association_resolution_diagnostics.MissingEncodingOperationDiagnostic(
             location=rendering.SourceLocation(
                 line=22,
                 column=21,
@@ -80,7 +84,7 @@ def test_missing_encoding_operation_in_executed_value_operation(
             logical_operation_name="logical_operation<standard:/number/add>",
             view_encodings=_INTEGER_NATURAL_INTEGER,
             execution_stack=[
-                diagnostics.OperationExecutionStep(
+                association_resolution_diagnostics.OperationExecutionStep(
                     executing_name="action<my.domain.com:my_lib:/test>",
                     executed_name="operation</outer_sum>",
                     location=rendering.SourceLocation(
@@ -91,7 +95,7 @@ def test_missing_encoding_operation_in_executed_value_operation(
                         file_path="test.dfn",
                     ),
                 ),
-                diagnostics.OperationExecutionStep(
+                association_resolution_diagnostics.OperationExecutionStep(
                     executing_name="operation</outer_sum>",
                     executed_name="operation</mixed_sum>",
                     location=rendering.SourceLocation(
@@ -102,7 +106,7 @@ def test_missing_encoding_operation_in_executed_value_operation(
                         file_path="outer_sum.dfn",
                     ),
                 ),
-                diagnostics.OperationExecutionStep(
+                association_resolution_diagnostics.OperationExecutionStep(
                     executing_name="operation</mixed_sum>",
                     executed_name="logical_operation<standard:/number/add>",
                     location=rendering.SourceLocation(
@@ -123,7 +127,7 @@ def test_executed_value_operation_with_diagnostics(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.LogicalOperationReadNotSupportedDiagnostic(
+        reference_graph_diagnostics.LogicalOperationReadNotSupportedDiagnostic(
             location=rendering.SourceLocation(
                 line=17,
                 column=37,
@@ -143,7 +147,7 @@ def test_executed_value_operation_with_unresolved_execution(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.ReferencedFileNotFoundDiagnostic(
+        structural_diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=22,
                 column=31,
@@ -161,7 +165,7 @@ def test_value_operations_that_execute_each_other(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.CircularGlobalReferenceDiagnostic(
+        structural_diagnostics.CircularGlobalReferenceDiagnostic(
             location=rendering.SourceLocation(
                 line=10,
                 column=21,

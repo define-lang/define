@@ -10,11 +10,12 @@ import msgspec
 
 from define.compiler.config import config_file
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics
 from define.config.deps import local_pb2
 
 if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
+    from define.compiler.errors import diagnostics
 
 CONFIG_FILE = config_file.ConfigFile(
     path=define_path.DefinePathFromPosix(PurePosixPath(".define/deps/local.defcl")),
@@ -76,7 +77,7 @@ class LocalDepsConfigReader(config_file.ConfigFileReader[local_pb2.LocalDepsFile
             first_entry = deps.get(dep.universe_name)
             if first_entry is not None:
                 deps_diagnostics.append(
-                    diagnostics.DuplicateLocalDependencyDiagnostic(
+                    config_diagnostics.DuplicateLocalDependencyDiagnostic(
                         location=universe_location,
                         universe_name=dep.universe_name,
                         first_location=first_entry.universe_location,

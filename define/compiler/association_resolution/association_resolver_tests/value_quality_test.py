@@ -5,7 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import (
+    association_resolution_diagnostics,
+    config_diagnostics,
+    structural_diagnostics,
+    syntax_errors,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -76,7 +81,7 @@ def test_encoding_only_in_unconfigured_universe(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+        config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
             location=rendering.SourceLocation(
                 line=5,
                 column=18,
@@ -95,7 +100,7 @@ def test_value_quality_without_project_root(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.sorted_diagnostics() == [
-        diagnostics.NoProjectRootForAssociationsDiagnostic(
+        association_resolution_diagnostics.NoProjectRootForAssociationsDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=22,
@@ -106,7 +111,7 @@ def test_value_quality_without_project_root(
             value_quality="value<my.domain.com:my_lib:/test>",
             config_path=".define/project/config.defcl",
         ),
-        diagnostics.NoProjectRootForAssociationsDiagnostic(
+        association_resolution_diagnostics.NoProjectRootForAssociationsDiagnostic(
             location=rendering.SourceLocation(
                 line=7,
                 column=22,
@@ -163,7 +168,7 @@ def test_value_quality_after_reference_without_project_root(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.sorted_diagnostics() == [
-        diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
+        structural_diagnostics.NoProjectRootForDefinitionNotInSuppliedSourceDiagnostic(
             location=rendering.SourceLocation(
                 line=3,
                 column=21,
@@ -182,7 +187,7 @@ def test_non_filesystem_source_universe_not_in_project(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.sorted_diagnostics() == [
-        diagnostics.ValueHasNoEncodingDiagnostic(
+        association_resolution_diagnostics.ValueHasNoEncodingDiagnostic(
             location=rendering.SourceLocation(
                 line=2,
                 column=22,

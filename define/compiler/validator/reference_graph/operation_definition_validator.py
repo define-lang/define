@@ -9,7 +9,7 @@ from typing import override
 import msgspec
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator import scope_tracker
 from define.compiler.validator.reference_graph import (
     abstract_program,
@@ -19,6 +19,8 @@ from define.compiler.validator.reference_graph import (
 
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterator, Mapping, Sequence
+
+    from define.compiler.errors import diagnostics
 
 
 class ValueOperationValidatorResult(msgspec.Struct):
@@ -146,7 +148,7 @@ class OperationDefinitionValidator[
         )
         if read_write_view is not None:
             statement_diagnostics.append(
-                diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
+                reference_graph_diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
                     location=statement.operation.location,
                     operation_name=operation_name,
                     view_name=read_write_view.typed_name.source_typed_name,
@@ -285,7 +287,7 @@ class OperationDefinitionValidator[
         support_diagnostics: list[diagnostics.Diagnostic] = []
         if logical_operation_view.is_input and not may_be_read:
             support_diagnostics.append(
-                diagnostics.LogicalOperationReadNotSupportedDiagnostic(
+                reference_graph_diagnostics.LogicalOperationReadNotSupportedDiagnostic(
                     location=looking_at.location,
                     looked_at_name=looking_at.source_typed_name,
                     logical_operation_name=operation_name,
@@ -294,7 +296,7 @@ class OperationDefinitionValidator[
             )
         if logical_operation_view.is_output and not may_be_written:
             support_diagnostics.append(
-                diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
+                reference_graph_diagnostics.LogicalOperationWriteNotSupportedDiagnostic(
                     location=looking_at.location,
                     looked_at_name=looking_at.source_typed_name,
                     logical_operation_name=operation_name,

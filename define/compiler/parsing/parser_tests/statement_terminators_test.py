@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from define.compiler import ast
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import parser_diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -44,7 +44,7 @@ def test_missing_newline_after_terminator(parse_with_diagnostics: ParseWithDiagn
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.MissingNewlineAtEndOfFileDiagnostic(
+        parser_diagnostics.MissingNewlineAtEndOfFileDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=47, end_line=1, end_column=47
             )
@@ -62,7 +62,7 @@ def test_missing_newline_after_last_definition(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.MissingNewlineAtEndOfFileDiagnostic(
+        parser_diagnostics.MissingNewlineAtEndOfFileDiagnostic(
             location=rendering.SourceLocation(
                 line=2, column=66, end_line=2, end_column=66
             )
@@ -103,7 +103,7 @@ def test_comment_directly_after_terminator(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
+        parser_diagnostics.MissingSpaceBeforeCommentAfterTerminatorDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=63, end_line=1, end_column=64
             )
@@ -161,7 +161,7 @@ def test_trailing_space_before_newline(parse_with_diagnostics: ParseWithDiagnost
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=1,
                 column=47,
@@ -181,7 +181,7 @@ def test_several_trailing_spaces_before_newline(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=1,
                 column=64,
@@ -199,12 +199,12 @@ def test_trailing_space_at_end_of_source(parse_with_diagnostics: ParseWithDiagno
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=64, end_line=1, end_column=64
             )
         ),
-        diagnostics.MissingNewlineAtEndOfFileDiagnostic(
+        parser_diagnostics.MissingNewlineAtEndOfFileDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=65, end_line=1, end_column=65
             )
@@ -225,7 +225,7 @@ def test_quality_assignment_without_terminator_gets_a_diagnostic(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=41, end_line=4, end_column=41
             )

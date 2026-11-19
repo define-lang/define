@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ def test_without_output_view(
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(
-        diagnostic, diagnostics.LogicalOperationWithoutOutputViewDiagnostic
+        diagnostic, structural_diagnostics.LogicalOperationWithoutOutputViewDiagnostic
     )
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 2
@@ -45,7 +45,7 @@ def test_duplicate_view(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.LocalNameConflictDiagnostic)
+    assert isinstance(diagnostic, structural_diagnostics.LocalNameConflictDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 6
     assert diagnostic.location.column == 16
@@ -59,7 +59,9 @@ def test_invalid_view_name(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.InvalidLocalNameFormatDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.InvalidLocalNameFormatDiagnostic
+    )
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 3
     assert diagnostic.location.column == 21
@@ -73,7 +75,7 @@ def test_duplicate_logical_operation(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
+    assert isinstance(diagnostic, structural_diagnostics.DuplicateDefinitionDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 1

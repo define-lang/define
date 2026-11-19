@@ -11,7 +11,11 @@ from define.compiler.config import (
     project_config,
 )
 from define.compiler.config_tests import test_helpers
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import (
+    config_diagnostics,
+    structural_diagnostics,
+    syntax_errors,
+)
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -74,7 +78,7 @@ def test_missing_encoding_operations(
             value_encodings={}, encoding_operations=None
         ),
         [
-            diagnostics.EncodingOperationsConfigNotFoundDiagnostic(
+            config_diagnostics.EncodingOperationsConfigNotFoundDiagnostic(
                 location=test_helpers.config_field_location(
                     project_config.CONFIG_FILE,
                     ("project", "associations", "has_encoding_operations"),
@@ -94,7 +98,7 @@ def test_logical_operation_in_another_universe(
 
     table, table_diagnostics = test_helpers.load_association_table()
     (diagnostic,) = table_diagnostics
-    assert diagnostic == diagnostics.AssociationNameInAnotherUniverseDiagnostic(
+    assert diagnostic == config_diagnostics.AssociationNameInAnotherUniverseDiagnostic(
         location=rendering.SourceLocation(
             line=4,
             column=27,
@@ -135,15 +139,18 @@ def test_logical_operation_full_name_in_own_universe(
 
     table, table_diagnostics = test_helpers.load_association_table()
     (diagnostic,) = table_diagnostics
-    assert diagnostic == diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
-        location=rendering.SourceLocation(
-            line=4,
-            column=27,
-            end_line=4,
-            end_column=49,
-            file_path=str(encoding_operations_config.CONFIG_FILE.path),
-        ),
-        fqun="test.example.com:my_lib",
+    assert (
+        diagnostic
+        == structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
+            location=rendering.SourceLocation(
+                line=4,
+                column=27,
+                end_line=4,
+                end_column=49,
+                file_path=str(encoding_operations_config.CONFIG_FILE.path),
+            ),
+            fqun="test.example.com:my_lib",
+        )
     )
     assert table.encoding_operations == {}
 
@@ -193,15 +200,18 @@ def test_encoding_operation_full_name_in_own_universe(
 
     table, table_diagnostics = test_helpers.load_association_table()
     (diagnostic,) = table_diagnostics
-    assert diagnostic == diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
-        location=rendering.SourceLocation(
-            line=6,
-            column=16,
-            end_line=6,
-            end_column=38,
-            file_path=str(encoding_operations_config.CONFIG_FILE.path),
-        ),
-        fqun="test.example.com:my_lib",
+    assert (
+        diagnostic
+        == structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
+            location=rendering.SourceLocation(
+                line=6,
+                column=16,
+                end_line=6,
+                end_column=38,
+                file_path=str(encoding_operations_config.CONFIG_FILE.path),
+            ),
+            fqun="test.example.com:my_lib",
+        )
     )
     assert table.encoding_operations == {}
 
@@ -213,7 +223,7 @@ def test_unsorted_logical_operations(
 
     table, table_diagnostics = test_helpers.load_association_table()
     (diagnostic,) = table_diagnostics
-    assert diagnostic == diagnostics.UnsortedEncodingOperationDiagnostic(
+    assert diagnostic == config_diagnostics.UnsortedEncodingOperationDiagnostic(
         location=test_helpers.config_field_location(
             encoding_operations_config.CONFIG_FILE,
             ("encoding_operations", "operation_encodings", 1, "logical_operation"),
@@ -254,7 +264,7 @@ def test_duplicate_encoding_operation(
 
     table, table_diagnostics = test_helpers.load_association_table()
     (diagnostic,) = table_diagnostics
-    assert diagnostic == diagnostics.DuplicateEncodingOperationDiagnostic(
+    assert diagnostic == config_diagnostics.DuplicateEncodingOperationDiagnostic(
         location=test_helpers.config_field_location(
             encoding_operations_config.CONFIG_FILE,
             ("encoding_operations", "operation_encodings", 1),
@@ -291,7 +301,7 @@ def test_encoding_operation_missing(
             value_encodings={}, encoding_operations=None
         ),
         [
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     encoding_operations_config.CONFIG_FILE,
                     (
@@ -322,7 +332,7 @@ def test_encoding_operation_in_unconfigured_universe(
     # Both Encoding Operations are in the same universe, which is reported
     # once.
     (diagnostic,) = table_diagnostics
-    assert diagnostic == diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+    assert diagnostic == config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
         location=rendering.SourceLocation(
             line=6,
             column=16,

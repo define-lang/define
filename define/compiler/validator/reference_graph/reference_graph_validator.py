@@ -7,7 +7,7 @@ import typing
 import msgspec
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.reference_graph import (
     abstract_program,
     action_definition_validator,
@@ -19,6 +19,7 @@ from define.compiler.validator.reference_graph import (
 if typing.TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from define.compiler.errors import diagnostics
     from define.compiler.validator.reference_graph import (
         action_contract,
     )
@@ -172,7 +173,7 @@ class ReferenceGraphValidator:
                 == position_occupancy.PositionOccupancyState.OCCUPIED
             ):
                 requirement_diagnostics.append(
-                    diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic(
+                    reference_graph_diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic(
                         location=requirement.inferred_at,
                         position_name=requirement.position.source_chained_name,
                     )

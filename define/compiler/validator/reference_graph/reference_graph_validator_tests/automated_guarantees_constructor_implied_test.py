@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -24,7 +24,9 @@ def test_nested_constructor_guarantees(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -32,7 +34,9 @@ def test_nested_constructor_guarantees(
     assert all_diags[0].populated_at.column == 30
     assert all_diags[0].populated_at.file_path == "construct_a.dfn"
     assert all_diags[0].position_name == "position<box>::position</a>"
-    assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[1].location.line == 15
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == "test.dfn"
@@ -64,7 +68,9 @@ def test_inferred_occupied_does_not_apply_constructor_guarantees(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.UntriggeredActionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 24
     assert all_diags[0].location.file_path == "test.dfn"
@@ -78,7 +84,9 @@ def test_caller_sees_constructor_child_guarantees_through_action(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 16
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -97,7 +105,9 @@ def test_nested_quality_guarantees_visible_through_action_chain(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 17
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -120,7 +130,9 @@ def test_cross_universe_quality_assignment_triggers_constructor(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 12
@@ -135,7 +147,9 @@ def test_cross_universe_quality_assignment_triggers_constructor(
     assert all_diags[0].populated_at.end_line == 6
     assert all_diags[0].populated_at.end_column == 41
     assert all_diags[0].populated_at.file_path == "lib/construct_a.dfn"
-    assert isinstance(all_diags[1], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[1].location.line == 13
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.end_line == 13
@@ -155,7 +169,9 @@ def test_constructor_applies_after_non_constructor_action_in_quality_assignments
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 18
@@ -177,7 +193,9 @@ def test_assigned_constructor_assigns_implied_in_parent(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.end_line == 8

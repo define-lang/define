@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from define.compiler import ast, name_types
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import parser_diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -47,7 +47,7 @@ def test_file_starts_with_indented_trigger_conditions(
         line=1, column=5, end_line=1, end_column=21
     )
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=1, end_line=1, end_column=4
             ),
@@ -321,7 +321,7 @@ def test_action_trigger_clause_missing_open_brace(
         line=2, column=16, end_line=2, end_column=16
     )
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=2, column=1, end_line=2, end_column=1
             ),
@@ -381,7 +381,7 @@ def test_action_and_it_does_block_missing_close_brace(
         line=1, column=1, end_line=1, end_column=62
     )
     assert result.diagnostics == [
-        diagnostics.IncorrectIndentationDiagnostic(
+        parser_diagnostics.IncorrectIndentationDiagnostic(
             location=rendering.SourceLocation(
                 line=6, column=1, end_line=6, end_column=1
             ),
@@ -1351,7 +1351,7 @@ def test_file_ending_where_terminator_belongs(
         + "        it has the position</child>"
     )
     assert result.diagnostics == [
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=36, end_line=3, end_column=36
             )

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics, structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -29,7 +29,9 @@ def test_invalid_literal_name(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert diagnostic.location.file_path is None
     assert diagnostic.segment == "bad-name"
     assert diagnostic.chars == ("-",)
@@ -43,7 +45,9 @@ def test_same_universe_requires_short_form(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+    )
     assert diagnostic.location.file_path is None
     assert diagnostic.fqun == "my.domain.com:my_lib"
     assert diagnostic.location.line == 11
@@ -56,7 +60,7 @@ def test_undefined_target(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diagnostic, structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diagnostic.location.file_path is None
     assert diagnostic.local_name == "position<missing>"
     assert diagnostic.location.line == 10
@@ -69,12 +73,14 @@ def test_invalid_target_and_literal(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 2
     target, literal = result.sorted_diagnostics()
-    assert isinstance(target, diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(target, structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert target.location.file_path is None
     assert target.local_name == "position<missing>"
     assert target.location.line == 10
     assert target.location.column == 26
-    assert isinstance(literal, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        literal, structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert literal.location.file_path is None
     assert literal.segment == "bad-name"
     assert literal.chars == ("-",)
@@ -86,7 +92,9 @@ def test_missing_literal_file(validate_testdata_structural: ValidateTestdataStru
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.file_path == "missing.dfn"
     assert diagnostic.location.line == 7
@@ -99,7 +107,9 @@ def test_wrong_definition_type(
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.definition_name == "literal<my.domain.com:my_lib:/test>"
     assert diagnostic.file_path == "test.dfn"
@@ -113,7 +123,9 @@ def test_literal_must_precede_reference(
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.definition_name == "literal<my.domain.com:my_lib:/test>"
     assert diagnostic.file_path == "test.dfn"
@@ -134,7 +146,9 @@ def test_unconfigured_external_literal(
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert isinstance(
+        diagnostic, config_diagnostics.ExternalUniverseNotConfiguredDiagnostic
+    )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.current_universe_name == "my.domain.com:my_lib"
     assert diagnostic.universe == "literals.org:literals"
@@ -155,7 +169,9 @@ def test_undefined_standard_literal(
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.StandardDefinitionNotFoundDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.StandardDefinitionNotFoundDiagnostic
+    )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 7
     assert diagnostic.location.column == 46

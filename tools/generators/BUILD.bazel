@@ -66,7 +66,7 @@ py_test(
     deps = [
         ":generate_deep_pipeline_source",
         "//define/compiler:driver",
-        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:reference_graph_diagnostics",
         "@pypi//click",
         "@pypi//pytest",
     ],
@@ -111,7 +111,8 @@ py_test(
     deps = [
         ":generate_diagnostics_source",
         "//define/compiler:driver",
-        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:parser_diagnostics",
+        "//define/compiler/errors:reference_graph_diagnostics",
         "//define/compiler/parsing:parser",
         "@pypi//click",
         "@pypi//pytest",
@@ -249,7 +250,7 @@ py_test(
     deps = [
         ":generate_reference_graph_project",
         "//define/compiler:driver",
-        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:structural_diagnostics",
         "@pypi//click",
         "@pypi//pytest",
     ],
@@ -272,7 +273,7 @@ py_test(
     deps = [
         ":generate_triggered_children_destruction_source",
         "//define/compiler:driver",
-        "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:reference_graph_diagnostics",
         "@pypi//click",
         "@pypi//pytest",
     ],

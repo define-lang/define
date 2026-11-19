@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.reference_graph.test_helpers import action_graph
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -37,13 +37,14 @@ def test_invalid_destructor_child_guarantee_during_auto_destruction(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(
-        all_diags[0], diagnostics.DestructorProducesEmptyGuaranteeDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorProducesEmptyGuaranteeDiagnostic,
     )
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "cleanup.dfn"
     assert all_diags[0].location.line == 7
     assert all_diags[0].position_name == "position</child>"
-    assert isinstance(all_diags[1], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(all_diags[1], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == "cleanup.dfn"
     assert all_diags[1].location.line == 8
@@ -123,7 +124,9 @@ def test_cascade_skips_error_position_own_destructor(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.MoveIntoDefiningPositionDiagnostic
+    )
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 98
     assert all_diags[0].location.file_path == "test.dfn"
@@ -141,7 +144,9 @@ def test_cascade_does_not_walk_subtree_of_error_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveIntoDefiningPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.MoveIntoDefiningPositionDiagnostic
+    )
     assert all_diags[0].location.line == 14
     assert all_diags[0].location.column == 98
     assert all_diags[0].location.file_path == "test.dfn"
@@ -159,7 +164,9 @@ def test_destroy_parent_does_not_fire_empty_child_destructor(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DeadChildPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == "test.dfn"

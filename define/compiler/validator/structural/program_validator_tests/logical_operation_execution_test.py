@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ def test_looks_at_undefined_view(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.UndefinedLocalNameDiagnostic(
+        structural_diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=21, column=42, end_line=21, end_column=54
             ),
@@ -46,7 +46,7 @@ def test_aliased_views(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.AliasedViewDiagnostic(
+        structural_diagnostics.AliasedViewDiagnostic(
             location=rendering.SourceLocation(
                 line=21, column=42, end_line=21, end_column=53
             ),
@@ -61,7 +61,7 @@ def test_duplicate_argument(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.DuplicateOperationArgumentDiagnostic(
+        structural_diagnostics.DuplicateOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=27, column=18, end_line=27, end_column=28
             ),
@@ -76,7 +76,7 @@ def test_invalid_argument_view_name(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLocalNameFormatDiagnostic(
+        structural_diagnostics.InvalidLocalNameFormatDiagnostic(
             location=rendering.SourceLocation(
                 line=26, column=23, end_line=26, end_column=23
             ),
@@ -91,7 +91,7 @@ def test_invalid_logical_operation_name(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
+        structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=43, end_line=25, end_column=43
             ),
@@ -106,7 +106,7 @@ def test_requires_short_logical_operation_name(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
+        structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
             location=rendering.SourceLocation(
                 line=25, column=39, end_line=25, end_column=58
             ),
@@ -127,7 +127,7 @@ def test_missing_logical_operation_file(
 ):
     result = validate_testdata_structural()
     assert result.sorted_diagnostics() == [
-        diagnostics.ReferencedFileNotFoundDiagnostic(
+        structural_diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=17,
                 column=39,
@@ -145,7 +145,7 @@ def test_wrong_logical_operation_definition_type(
 ):
     result = validate_testdata_structural()
     assert result.sorted_diagnostics() == [
-        diagnostics.ReferencedDefinitionNotFoundDiagnostic(
+        structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=17,
                 column=21,

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.structural_validation import (
@@ -19,7 +19,7 @@ def test_undefined_local_position_in_create(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.UndefinedLocalNameDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.UndefinedLocalNameDiagnostic)
     assert diags[0].location.file_path is None
     assert diags[0].local_name == "position<undefined>"
     assert diags[0].location.line == 5
@@ -32,7 +32,9 @@ def test_empty_action_statements_block(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.EmptyActionStatementsBlockDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.EmptyActionStatementsBlockDiagnostic
+    )
     assert diags[0].location.line == 4
     assert diags[0].location.column == 7
     assert diags[0].location.file_path is None

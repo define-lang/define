@@ -1,6 +1,50 @@
 load("@rules_py//py:defs.bzl", "py_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
+
+py_library(
+    name = "association_resolution_diagnostics",
+    srcs = ["association_resolution_diagnostics.py"],
+    visibility = [
+        "//define/compiler:__subpackages__",
+        "//define/testdata:__pkg__",
+    ],
+    deps = [
+        ":diagnostics",
+        "//crates/source_rendering/python:rendering",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
+    name = "config_diagnostics",
+    srcs = ["config_diagnostics.py"],
+    visibility = [
+        "//define/compiler:__subpackages__",
+        "//define/testdata:__pkg__",
+    ],
+    deps = [
+        ":diagnostics",
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler:constants",
+    ],
+)
+
+py_test(
+    name = "diagnostic_order_test",
+    size = "small",
+    srcs = ["diagnostic_order_test.py"],
+    deps = [
+        ":association_resolution_diagnostics",
+        ":config_diagnostics",
+        ":diagnostics",
+        ":parser_diagnostics",
+        ":reference_graph_diagnostics",
+        ":structural_diagnostics",
+        "@pypi//pytest",
+    ],
+)
 
 py_library(
     name = "diagnostics",
@@ -8,14 +52,9 @@ py_library(
     visibility = [
         "//define/compiler:__subpackages__",
         "//define/testdata:__pkg__",
-        "//tools:__pkg__",
-        "//tools/generators:__pkg__",
     ],
     deps = [
-        ":invisible_characters",
         "//crates/source_rendering/python:rendering",
-        "//define/compiler:constants",
-        "//define/compiler/validator/reference_graph:propagation_step",
         "@pypi//msgspec",
     ],
 )
@@ -29,6 +68,50 @@ py_library(
     name = "invisible_characters",
     srcs = ["invisible_characters.py"],
     visibility = ["//define/compiler:__subpackages__"],
+)
+
+py_library(
+    name = "parser_diagnostics",
+    srcs = ["parser_diagnostics.py"],
+    visibility = [
+        "//define/compiler:__subpackages__",
+        "//define/testdata:__pkg__",
+        "//tools/generators:__pkg__",
+    ],
+    deps = [
+        ":diagnostics",
+        ":invisible_characters",
+    ],
+)
+
+py_library(
+    name = "reference_graph_diagnostics",
+    srcs = ["reference_graph_diagnostics.py"],
+    visibility = [
+        "//define/compiler:__subpackages__",
+        "//define/testdata:__pkg__",
+        "//tools/generators:__pkg__",
+    ],
+    deps = [
+        ":diagnostics",
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler/validator/reference_graph:propagation_step",
+    ],
+)
+
+py_library(
+    name = "structural_diagnostics",
+    srcs = ["structural_diagnostics.py"],
+    visibility = [
+        "//define/compiler:__subpackages__",
+        "//define/testdata:__pkg__",
+        "//tools/generators:__pkg__",
+    ],
+    deps = [
+        ":diagnostics",
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler:constants",
+    ],
 )
 
 py_library(
@@ -50,9 +133,15 @@ py_library(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":association_resolution_diagnostics",
+        ":config_diagnostics",
+        ":diagnostic_order_test",
         ":diagnostics",
         ":errors",
         ":invisible_characters",
+        ":parser_diagnostics",
+        ":reference_graph_diagnostics",
+        ":structural_diagnostics",
         ":syntax_errors",
     ],
 )

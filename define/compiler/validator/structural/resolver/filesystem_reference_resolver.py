@@ -7,7 +7,7 @@ import typing
 
 from define.compiler import constants
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.structural import (
     file_loader,
     file_validation_context,
@@ -17,6 +17,7 @@ from define.compiler.validator.structural.resolver import reference_resolver
 if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from define.compiler.config import project_roots
+    from define.compiler.errors import diagnostics
 
 
 @typing.final
@@ -42,7 +43,9 @@ class FilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         file could not be read, since no reference leads into it.
         """
         path_in_project = _path_in_project(pathlib.Path(path))
-        if isinstance(path_in_project, diagnostics.PathOutsideProjectRootDiagnostic):
+        if isinstance(
+            path_in_project, structural_diagnostics.PathOutsideProjectRootDiagnostic
+        ):
             return None, [path_in_project]
         root_config = self._project_roots.load_entry_file_project_config()
         if root_config is None:
@@ -67,7 +70,7 @@ class FilesystemReferenceResolver(reference_resolver.ReferenceResolver):
 
 def _path_in_project(
     path: pathlib.Path,
-) -> pathlib.PurePosixPath | diagnostics.PathOutsideProjectRootDiagnostic:
+) -> pathlib.PurePosixPath | structural_diagnostics.PathOutsideProjectRootDiagnostic:
     """Return path relative to the project root, which is the current directory, or the diagnostic for why it is not under the project root."""
     if ".." in path.parts:
         # A ".." can leave the project root and come back (or the
@@ -81,9 +84,9 @@ def _path_in_project(
         relative = resolved.relative_to(project_root)
     except ValueError:
         diagnostic_class = (
-            diagnostics.AbsolutePathOutsideProjectRootDiagnostic
+            structural_diagnostics.AbsolutePathOutsideProjectRootDiagnostic
             if path.is_absolute()
-            else diagnostics.RelativePathOutsideProjectRootDiagnostic
+            else structural_diagnostics.RelativePathOutsideProjectRootDiagnostic
         )
         return diagnostic_class(
             input_path=path.as_posix(),

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from define.compiler import ast
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -33,7 +33,9 @@ def test_invalid_name(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert diagnostic.location.line == 2
     assert diagnostic.location.column == 53
     assert diagnostic.location.file_path is None
@@ -47,7 +49,7 @@ def test_duplicate_value(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
+    assert isinstance(diagnostic, structural_diagnostics.DuplicateDefinitionDiagnostic)
     assert diagnostic.location.column == 1
     assert diagnostic.location.file_path is None
     assert diagnostic.definition_type == "value"
@@ -68,7 +70,7 @@ def test_path_mismatch(validate_testdata_structural: ValidateTestdataStructural)
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.PathMismatchDiagnostic)
+    assert isinstance(diagnostic, structural_diagnostics.PathMismatchDiagnostic)
     assert diagnostic.location.line == 2
     assert diagnostic.location.column == 49
     assert diagnostic.location.file_path == "test.dfn"
@@ -80,7 +82,7 @@ def test_fqun_mismatch(validate_testdata_structural: ValidateTestdataStructural)
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.FqunMismatchDiagnostic)
+    assert isinstance(diagnostic, structural_diagnostics.FqunMismatchDiagnostic)
     assert diagnostic.location.line == 2
     assert diagnostic.location.column == 28
     assert diagnostic.location.file_path == "test.dfn"
@@ -100,7 +102,7 @@ def test_duplicate_logical_operation_support(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.DuplicateLogicalOperationSupportDiagnostic(
+        structural_diagnostics.DuplicateLogicalOperationSupportDiagnostic(
             location=rendering.SourceLocation(
                 line=6, column=21, end_line=6, end_column=59
             ),
@@ -115,7 +117,7 @@ def test_logical_operation_support_out_of_order(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.LogicalOperationSupportOrderDiagnostic(
+        structural_diagnostics.LogicalOperationSupportOrderDiagnostic(
             location=rendering.SourceLocation(
                 line=6, column=21, end_line=6, end_column=60
             ),
@@ -124,7 +126,7 @@ def test_logical_operation_support_out_of_order(
                 "logical_operation<standard:/text/less_than>"
             ),
         ),
-        diagnostics.LogicalOperationSupportOrderDiagnostic(
+        structural_diagnostics.LogicalOperationSupportOrderDiagnostic(
             location=rendering.SourceLocation(
                 line=9, column=21, end_line=9, end_column=59
             ),
@@ -148,7 +150,7 @@ def test_logical_operation_support_requires_short_form(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
+        structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
             location=rendering.SourceLocation(
                 line=8, column=39, end_line=8, end_column=58
             ),
@@ -162,7 +164,7 @@ def test_wrong_logical_operation_definition_type(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.StandardDefinitionNotFoundDiagnostic(
+        structural_diagnostics.StandardDefinitionNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=21, end_line=3, end_column=68
             ),
@@ -176,7 +178,7 @@ def test_missing_logical_operation_file(
 ):
     result = validate_testdata_structural()
     assert result.sorted_diagnostics() == [
-        diagnostics.ReferencedFileNotFoundDiagnostic(
+        structural_diagnostics.ReferencedFileNotFoundDiagnostic(
             location=rendering.SourceLocation(
                 line=3,
                 column=39,

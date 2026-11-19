@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
@@ -39,7 +39,9 @@ def test_triggered_action_interface_particle_must_depart_before_caller_ends(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic
+    )
     assert diagnostic.action_name == "action</worker>"
     assert (
         diagnostic.position_name == "position<box>::action</worker>::position<result>"
@@ -59,7 +61,10 @@ def test_same_action_on_two_particles_requires_both_interfaces_consumed(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     first_diagnostic = all_diags[0]
-    assert isinstance(first_diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        first_diagnostic,
+        reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic,
+    )
     assert first_diagnostic.action_name == "action</worker>"
     assert (
         first_diagnostic.position_name
@@ -70,7 +75,8 @@ def test_same_action_on_two_particles_requires_both_interfaces_consumed(
     assert first_diagnostic.location.file_path == "test.dfn"
     second_diagnostic = all_diags[1]
     assert isinstance(
-        second_diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic
+        second_diagnostic,
+        reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic,
     )
     assert second_diagnostic.action_name == "action</worker>"
     assert (
@@ -95,7 +101,9 @@ def test_consuming_one_of_two_instances_of_same_action_leaves_other_unconsumed(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic
+    )
     assert diagnostic.action_name == "action</worker>"
     assert (
         diagnostic.position_name == "position<box_b>::action</worker>::position<result>"
@@ -118,7 +126,9 @@ def test_destroyed_action_parent_does_not_duplicate_replacement_diagnostic(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic
+    )
     assert diagnostic.action_name == "action</worker>"
     assert (
         diagnostic.position_name == "position<box>::action</worker>::position<result>"
@@ -152,7 +162,9 @@ def test_retriggered_action_interface_particle_must_depart_before_caller_ends(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic
+    )
     assert diagnostic.action_name == "action</worker>"
     assert diagnostic.position_name == "position<box>::action</worker>::position<input>"
     assert diagnostic.location.line == 13
@@ -173,7 +185,9 @@ def test_caller_move_between_callee_interfaces_does_not_consume_particle(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic
+    )
     assert diagnostic.action_name == "action</worker>"
     assert (
         diagnostic.position_name == "position<box>::action</worker>::position<result>"
@@ -196,7 +210,9 @@ def test_callee_move_between_its_interfaces_requires_caller_consumption(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic
+    )
     assert diagnostic.action_name == "action</worker>"
     assert (
         diagnostic.position_name == "position<box>::action</worker>::position<result>"
@@ -216,7 +232,9 @@ def test_constructor_interface_particle_must_depart_before_caller_ends(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic
+    )
     assert diagnostic.action_name == "action</construct>"
     assert (
         diagnostic.position_name
@@ -245,7 +263,9 @@ def test_moved_particle_callee_interface_must_be_consumed_in_interface_position(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic
+    )
     assert diagnostic.action_name == "action</worker>"
     assert (
         diagnostic.position_name
@@ -264,7 +284,9 @@ def test_moved_particle_callee_interface_must_be_consumed_in_implied_position(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic
+    )
     assert diagnostic.action_name == "action</worker>"
     assert (
         diagnostic.position_name
@@ -283,7 +305,9 @@ def test_implied_action_interface_must_be_consumed_by_implying_action(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
-    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic
+    )
     assert diagnostic.action_name == "action</foo>"
     assert diagnostic.position_name == "action</foo>::position<result>"
     assert diagnostic.location.line == 7
@@ -338,7 +362,7 @@ def test_child_guarantee_must_be_consumed_before_parent_triggers(
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</parent>"
     assert (
@@ -367,7 +391,7 @@ def test_particle_with_child_guarantee_must_be_clean_before_moving_to_parent_int
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</parent>"
     assert (
@@ -396,7 +420,7 @@ def test_one_move_of_multiple_occupied_child_action_interfaces_reports_each_posi
     first_diagnostic = all_diagnostics[0]
     assert isinstance(
         first_diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert first_diagnostic.action_name == "action</parent>"
     assert (
@@ -412,7 +436,7 @@ def test_one_move_of_multiple_occupied_child_action_interfaces_reports_each_posi
     second_diagnostic = all_diagnostics[1]
     assert isinstance(
         second_diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert second_diagnostic.action_name == "action</parent>"
     assert (
@@ -441,7 +465,7 @@ def test_child_guarantee_after_parent_move_is_diagnostic_source(
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</parent>"
     assert (
@@ -470,7 +494,7 @@ def test_action_on_position_child_must_be_clean_before_parent_triggers(
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</parent>"
     assert (
@@ -501,7 +525,7 @@ def test_child_guarantee_on_callers_interface_particle_must_be_consumed_before_p
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</parent>"
     assert (
@@ -530,7 +554,7 @@ def test_existing_particle_guarantee_must_be_consumed_before_parent_triggers(
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</parent>"
     assert (
@@ -559,7 +583,7 @@ def test_unchanged_guarantee_preserves_caller_move_as_diagnostic_source(
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</parent>"
     assert (
@@ -586,7 +610,9 @@ def test_unconsumed_interface_inside_callee_is_reported_only_in_that_callee(
     all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic
+    )
     assert diagnostic.action_name == "action</worker>"
     assert (
         diagnostic.position_name == "position</slot>::action</worker>::position<result>"
@@ -603,7 +629,9 @@ def test_unconsumed_interface_inside_callee_is_reported_only_in_that_callee_when
     all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.UnconsumedActionInterfaceDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic
+    )
     assert diagnostic.action_name == "action</worker>"
     assert (
         diagnostic.position_name == "position</slot>::action</worker>::position<result>"
@@ -620,7 +648,9 @@ def test_error_on_action_interface_suppresses_unconsumed_diagnostic(
     all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert (
         diagnostic.position_name == "position<box>::action</worker>::position<result>"
     )
@@ -641,7 +671,9 @@ def test_error_on_action_parent_suppresses_unconsumed_diagnostic(
     all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert diagnostic.position_name == "position<occupied>"
     assert diagnostic.location.line == 14
     assert diagnostic.location.column == 47
@@ -660,7 +692,9 @@ def test_error_on_occupied_child_action_interface_suppresses_parent_trigger_diag
     all_diagnostics = result.program_validation.sorted_diagnostics()
     assert len(all_diagnostics) == 1
     diagnostic = all_diagnostics[0]
-    assert isinstance(diagnostic, diagnostics.MoveToOccupiedPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
     assert (
         diagnostic.position_name
         == "position<box>::action</parent>::position<iface>::action</child>::position<result>"
@@ -688,7 +722,7 @@ def test_implied_parent_action_must_receive_clean_interface_particle(
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</parent>"
     assert (
@@ -717,7 +751,7 @@ def test_action_on_deeper_position_descendant_must_be_clean_before_parent_trigge
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</parent>"
     assert (
@@ -746,7 +780,7 @@ def test_action_interface_two_actions_below_callee_interface_occupied_when_calle
     first_diagnostic = all_diagnostics[0]
     assert isinstance(
         first_diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert first_diagnostic.action_name == "action</parent>"
     assert (
@@ -777,7 +811,7 @@ def test_each_parent_instance_receiving_dirty_particle_is_diagnosed(
     first_diagnostic = all_diagnostics[0]
     assert isinstance(
         first_diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert first_diagnostic.action_name == "action</parent>"
     assert (
@@ -793,7 +827,7 @@ def test_each_parent_instance_receiving_dirty_particle_is_diagnosed(
     second_diagnostic = all_diagnostics[1]
     assert isinstance(
         second_diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert second_diagnostic.action_name == "action</parent>"
     assert (
@@ -824,7 +858,7 @@ def test_action_interface_entry_rule_is_checked_at_each_parent_trigger(
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</parent>"
     assert (
@@ -853,7 +887,7 @@ def test_each_invalid_trigger_of_same_parent_instance_is_diagnosed(
     first_diagnostic = all_diagnostics[0]
     assert isinstance(
         first_diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert first_diagnostic.action_name == "action</parent>"
     assert (
@@ -869,7 +903,7 @@ def test_each_invalid_trigger_of_same_parent_instance_is_diagnosed(
     second_diagnostic = all_diagnostics[1]
     assert isinstance(
         second_diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert second_diagnostic.action_name == "action</parent>"
     assert (
@@ -899,7 +933,7 @@ def test_one_child_interface_create_before_two_parent_triggers_is_diagnosed_once
     diagnostic = all_diagnostics[0]
     assert isinstance(
         diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</parent>"
     assert (
@@ -928,7 +962,7 @@ def test_each_occupied_child_action_interface_position_is_diagnosed(
     first_diagnostic = all_diagnostics[0]
     assert isinstance(
         first_diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert first_diagnostic.action_name == "action</parent>"
     assert (
@@ -944,7 +978,7 @@ def test_each_occupied_child_action_interface_position_is_diagnosed(
     second_diagnostic = all_diagnostics[1]
     assert isinstance(
         second_diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert second_diagnostic.action_name == "action</parent>"
     assert (
@@ -1008,7 +1042,8 @@ def test_implied_position_action_interface_occupied_when_callee_triggers(
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(
-        diagnostic, diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</outer>"
     assert (
@@ -1036,7 +1071,8 @@ def test_transitively_implied_position_action_interface_occupied_when_callee_tri
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(
-        diagnostic, diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</outer>"
     assert (
@@ -1065,7 +1101,8 @@ def test_implied_action_interface_occupied_when_callee_triggers(
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(
-        diagnostic, diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</outer>"
     assert diagnostic.position_name == "position<box>::action</inner>::position<item>"
@@ -1090,7 +1127,8 @@ def test_transitively_implied_action_interface_occupied_when_callee_triggers(
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(
-        diagnostic, diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</outer>"
     assert diagnostic.position_name == "position<box>::action</inner>::position<item>"
@@ -1116,7 +1154,8 @@ def test_action_interface_under_implied_position_child_occupied_when_callee_trig
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(
-        diagnostic, diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</outer>"
     assert (
@@ -1144,7 +1183,8 @@ def test_current_particle_implied_action_interface_occupied_when_implied_callee_
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(
-        diagnostic, diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</outer>"
     assert diagnostic.position_name == "action</inner>::position<item>"
@@ -1178,17 +1218,23 @@ def test_circular_implied_action_does_not_count_as_implying_itself(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
-    assert isinstance(all_diags[0], diagnostics.CircularGlobalReferenceDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
     assert all_diags[0].cycle == [_OUTER, _INNER, _OUTER]
     assert all_diags[0].location.line == 2
     assert all_diags[0].location.column == 25
     assert all_diags[0].location.file_path == "inner.dfn"
-    assert isinstance(all_diags[1], diagnostics.UntriggeredImpliedActionDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
     assert all_diags[1].implied_action_name == "action</outer>"
     assert all_diags[1].location.line == 2
     assert all_diags[1].location.column == 25
     assert all_diags[1].location.file_path == "inner.dfn"
-    assert isinstance(all_diags[2], diagnostics.UntriggeredActionInterfaceDiagnostic)
+    assert isinstance(
+        all_diags[2], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
     assert all_diags[2].action_name == "action</outer>"
     assert all_diags[2].position_name == "action</outer>::position<run>"
     assert all_diags[2].location.line == 7
@@ -1220,7 +1266,8 @@ def test_implied_position_action_interface_is_reported_once_for_two_implying_cal
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(
-        diagnostic, diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</outer_a>"
     assert (
@@ -1249,7 +1296,7 @@ def test_each_implied_position_action_interface_is_reported(
     first_diagnostic = all_diags[0]
     assert isinstance(
         first_diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert first_diagnostic.action_name == "action</outer>"
     assert (
@@ -1265,7 +1312,7 @@ def test_each_implied_position_action_interface_is_reported(
     second_diagnostic = all_diags[1]
     assert isinstance(
         second_diagnostic,
-        diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert second_diagnostic.action_name == "action</outer>"
     assert (
@@ -1295,7 +1342,8 @@ def test_implied_position_action_interface_is_checked_only_for_callees_implying_
     assert len(all_diags) == 1
     diagnostic = all_diags[0]
     assert isinstance(
-        diagnostic, diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic
+        diagnostic,
+        reference_graph_diagnostics.OccupiedActionInterfaceWhenActionTriggersDiagnostic,
     )
     assert diagnostic.action_name == "action</outer_b>"
     assert (

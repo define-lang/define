@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import association_resolution_diagnostics
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.validation_pipeline import (
@@ -21,7 +21,7 @@ def test_invalid_literal_content(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLiteralContentDiagnostic(
+        association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
                 line=34, column=68, end_line=34, end_column=68, file_path=None
             ),
@@ -38,7 +38,7 @@ def test_literal_value_has_no_encoding(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ValueHasNoEncodingDiagnostic(
+        association_resolution_diagnostics.ValueHasNoEncodingDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=22, end_line=1, end_column=55, file_path="count.dfn"
             ),
@@ -52,7 +52,7 @@ def test_interface_view_value_has_no_encoding(
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
     assert result.sorted_diagnostics() == [
-        diagnostics.ValueHasNoEncodingDiagnostic(
+        association_resolution_diagnostics.ValueHasNoEncodingDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=22, end_line=1, end_column=59, file_path="unencoded.dfn"
             ),
@@ -66,7 +66,7 @@ def test_invalid_literal_content_in_action(
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLiteralContentDiagnostic(
+        association_resolution_diagnostics.InvalidLiteralContentDiagnostic(
             location=rendering.SourceLocation(
                 line=36, column=68, end_line=36, end_column=68, file_path=None
             ),

@@ -13,7 +13,7 @@ from define.compiler.config import (
 )
 from define.compiler.config_tests import test_helpers
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -90,7 +90,7 @@ def test_not_a_project_root(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.NotRunFromProjectRootDiagnostic(
+            config_diagnostics.NotRunFromProjectRootDiagnostic(
                 config_path=str(project_config.CONFIG_FILE.path),
             )
         ],
@@ -126,7 +126,7 @@ def test_declaring_entry_universe_mismatch(
     ) == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.SubRootFqunMismatchDiagnostic(
+            config_diagnostics.SubRootFqunMismatchDiagnostic(
                 location=test_helpers.universe_name_location("test.example.com:my_lib"),
                 expected_fqun="other.example.com:other_lib",
                 actual_fqun="test.example.com:my_lib",

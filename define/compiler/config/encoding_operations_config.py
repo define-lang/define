@@ -11,7 +11,7 @@ import msgspec
 from define.compiler import name_types
 from define.compiler.config import config_file, global_names
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics
 from define.config.encodings import encoding_operations_pb2
 
 if typing.TYPE_CHECKING:
@@ -21,6 +21,7 @@ if typing.TYPE_CHECKING:
     from defcl.python import validator as defcl_validator
     from define.compiler import ast
     from define.compiler.config import config_loader, local_deps_config
+    from define.compiler.errors import diagnostics
 
 CONFIG_FILE = config_file.ConfigFile(
     path=define_path.DefinePathFromPosix(
@@ -85,7 +86,7 @@ class EncodingOperationsConfigReader(
         # The project config says the file exists, so only then is it checked.
         if not self.exists():
             return None, [
-                diagnostics.EncodingOperationsConfigNotFoundDiagnostic(
+                config_diagnostics.EncodingOperationsConfigNotFoundDiagnostic(
                     location=config.has_encoding_operations_location,
                     encoding_operations_config_path=str(self.path()),
                 )
@@ -108,7 +109,7 @@ class EncodingOperationsConfigReader(
 
 def _encoding_operation(
     file: defcl_validator.ValidatedFile,
-    field_path: diagnostics.FieldPath,
+    field_path: config_diagnostics.FieldPath,
     association: encoding_operations_pb2.OperationEncoding,
     fqun: ast.Fqun,
 ) -> tuple[
@@ -216,7 +217,7 @@ def _encoding_operations(
         association_diagnostics.extend(name_diagnostics)
         if association.logical_operation < previous_logical_operation:
             association_diagnostics.append(
-                diagnostics.UnsortedEncodingOperationDiagnostic(
+                config_diagnostics.UnsortedEncodingOperationDiagnostic(
                     location=file.location_of((*field_path, "logical_operation")),
                     logical_operation=association.logical_operation,
                     previous_logical_operation=previous_logical_operation,
@@ -227,7 +228,7 @@ def _encoding_operations(
         first_index = first_indexes.get(pair)
         if first_index is not None:
             association_diagnostics.append(
-                diagnostics.DuplicateEncodingOperationDiagnostic(
+                config_diagnostics.DuplicateEncodingOperationDiagnostic(
                     location=file.location_of(field_path),
                     logical_operation=association.logical_operation,
                     encoding_operation=association.encoding_operation.name,

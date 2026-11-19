@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from crates.source_rendering.python import rendering
 from define.compiler import constants
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import structural_diagnostics, syntax_errors
 from define.compiler.test_fixtures import testdata
 
 if TYPE_CHECKING:
@@ -42,7 +42,7 @@ def test_referenced_file_not_found(
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
     diag = diags[0]
-    assert isinstance(diag, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(diag, structural_diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag.location.file_path == "test.dfn"
     assert diag.file_path == "missing.dfn"
     assert diag.location.line == 3
@@ -55,7 +55,9 @@ def test_referenced_file_unreadable(
     result = validate_testdata_structural()
     (diagnostic,) = result.sorted_diagnostics()
     # The reason is the operating system's, whose words differ by platform.
-    assert isinstance(diagnostic, diagnostics.ReferencedFileUnreadableDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ReferencedFileUnreadableDiagnostic
+    )
     assert diagnostic.reason
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 5
@@ -79,10 +81,12 @@ def test_referenced_standard_file_unreadable(
     )
     result = validate_testdata_structural()
     (diagnostic,) = result.sorted_diagnostics()
-    assert isinstance(diagnostic, diagnostics.ReferencedFileUnreadableDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ReferencedFileUnreadableDiagnostic
+    )
     # The reason is the operating system's, whose words differ by platform.
     assert diagnostic.reason
-    assert diagnostic == diagnostics.ReferencedFileUnreadableDiagnostic(
+    assert diagnostic == structural_diagnostics.ReferencedFileUnreadableDiagnostic(
         location=rendering.SourceLocation(
             line=5, column=38, end_line=5, end_column=44, file_path="test.dfn"
         ),
@@ -101,7 +105,7 @@ def test_referenced_file_not_found_via_already_completed_target(
     assert len(diags) == 2
     assert isinstance(
         diags[0],
-        diagnostics.ReferencedFileNotFoundDiagnostic,
+        structural_diagnostics.ReferencedFileNotFoundDiagnostic,
     )
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
@@ -110,7 +114,7 @@ def test_referenced_file_not_found_via_already_completed_target(
     assert result.file_results[1].file_path == define_path.DefinePath("target.dfn")
     assert isinstance(
         diags[1],
-        diagnostics.ReferencedFileNotFoundDiagnostic,
+        structural_diagnostics.ReferencedFileNotFoundDiagnostic,
     )
     assert diags[1].location.line == 3
     assert diags[1].location.column == 29
@@ -123,9 +127,9 @@ def test_referenced_file_not_found_for_two_definitions_in_same_file(
 ):
     diags = validate_testdata_structural().sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
-    assert isinstance(diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[1].location.file_path == "test.dfn"
     assert diags[0].file_path == "missing.dfn"
     assert diags[0].location.line == 3
@@ -140,12 +144,12 @@ def test_same_missing_file_referenced_as_two_types_in_one_definition(
 ):
     diags = validate_testdata_structural().sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[0].location.file_path == "test.dfn"
     assert diags[0].file_path == "missing.dfn"
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
-    assert isinstance(diags[1], diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(diags[1], structural_diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diags[1].location.file_path == "test.dfn"
     assert diags[1].file_path == "missing.dfn"
     assert diags[1].location.line == 4

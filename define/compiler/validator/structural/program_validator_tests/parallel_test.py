@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -51,7 +51,9 @@ def test_wrong_type_detected_without_deferral(
     assert result.file_results[2].file_path == define_path.DefinePath("target.dfn")
     assert result.file_results[3].file_path == define_path.DefinePath("checker.dfn")
     diag = result.sorted_diagnostics()[0]
-    assert isinstance(diag, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert isinstance(
+        diag, structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
     assert diag.location.file_path == "checker.dfn"
     assert diag.location.line == 3
     assert diag.location.column == 20
@@ -67,14 +69,16 @@ def test_reference_edges_resolve_by_file_completion_order(
     assert len(result.sorted_diagnostics()) == 3
     assert result.file_results[1].file_path == define_path.DefinePath("lib/target.dfn")
     diag0 = result.sorted_diagnostics()[0]
-    assert isinstance(diag0, diagnostics.PathMismatchDiagnostic)
+    assert isinstance(diag0, structural_diagnostics.PathMismatchDiagnostic)
     assert diag0.location.file_path == "lib/target.dfn"
     assert diag0.location.line == 1
     assert diag0.location.column == 62
     assert diag0.expected_path == "/lib/target"
     assert diag0.actual_path == "/target"
     diag1 = result.sorted_diagnostics()[1]
-    assert isinstance(diag1, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert isinstance(
+        diag1, structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
     assert diag1.location.file_path == "test.dfn"
     assert diag1.location.line == 3
     assert diag1.location.column == 20
@@ -83,7 +87,7 @@ def test_reference_edges_resolve_by_file_completion_order(
         diag1.definition_name == "position<mv:define-lang.org:test_parent:/lib/target>"
     )
     diag2 = result.sorted_diagnostics()[2]
-    assert isinstance(diag2, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(diag2, structural_diagnostics.ReferencedFileNotFoundDiagnostic)
     assert diag2.location.file_path == "test.dfn"
     assert diag2.location.line == 4
     assert diag2.location.column == 29

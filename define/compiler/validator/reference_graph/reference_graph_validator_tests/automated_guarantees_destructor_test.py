@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -20,7 +20,9 @@ def test_body_error_does_not_add_a_destructor_guarantee_error(
 ):
     result = validate_testdata_project_with_reference_graph()
     (diagnostic,) = result.program_validation.sorted_diagnostics()
-    assert isinstance(diagnostic, diagnostics.MoveFromEmptyPositionDiagnostic)
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
     assert diagnostic.location.column == 30
     assert diagnostic.is_action_interface_position is False
     assert diagnostic.inferred_at is None
@@ -38,14 +40,16 @@ def test_create_in_interface_produces_occupied_guarantee(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<item>"
     assert isinstance(
-        all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+        all_diags[1],
+        reference_graph_diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic,
     )
     assert all_diags[1].location.line == 6
     assert all_diags[1].location.column == 30
@@ -62,7 +66,8 @@ def test_destroy_in_interface_produces_empty_guarantee(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.DestructorProducesEmptyGuaranteeDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorProducesEmptyGuaranteeDiagnostic,
     )
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 33
@@ -79,14 +84,16 @@ def test_move_between_interfaces_produces_empty_and_moved_guarantees(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 3
     assert isinstance(
-        all_diags[0], diagnostics.DestructorProducesEmptyGuaranteeDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorProducesEmptyGuaranteeDiagnostic,
     )
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<source>"
     assert isinstance(
-        all_diags[1], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[1],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[1].location.line == 7
     assert all_diags[1].location.column == 50
@@ -94,7 +101,7 @@ def test_move_between_interfaces_produces_empty_and_moved_guarantees(
     assert all_diags[1].position_name == "position<dest>"
     assert isinstance(
         all_diags[2],
-        diagnostics.DestructorProducesOccupiedByExistingGuaranteeDiagnostic,
+        reference_graph_diagnostics.DestructorProducesOccupiedByExistingGuaranteeDiagnostic,
     )
     assert all_diags[2].location.line == 7
     assert all_diags[2].location.column == 50
@@ -110,7 +117,8 @@ def test_destroy_implied_quality_produces_empty_guarantee(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     assert isinstance(
-        all_diags[0], diagnostics.DestructorProducesEmptyGuaranteeDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorProducesEmptyGuaranteeDiagnostic,
     )
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 33
@@ -143,14 +151,16 @@ def test_destructor_triggering_action_that_fills_a_contracted_position_is_forbid
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 79
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position</item>"
     assert isinstance(
-        all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+        all_diags[1],
+        reference_graph_diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic,
     )
     assert all_diags[1].location.line == 12
     assert all_diags[1].location.column == 79
@@ -165,14 +175,16 @@ def test_destructor_triggering_implied_action_that_fills_an_implied_position_is_
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position</marker>"
     assert isinstance(
-        all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+        all_diags[1],
+        reference_graph_diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic,
     )
     assert all_diags[1].location.line == 7
     assert all_diags[1].location.column == 30
@@ -203,14 +215,16 @@ def test_destructor_reports_new_particle_it_leaves_but_not_particles_below_it(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[0].location.line == 10
     assert all_diags[0].location.column == 59
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position</saved>"
     assert isinstance(
-        all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+        all_diags[1],
+        reference_graph_diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic,
     )
     assert all_diags[1].location.line == 10
     assert all_diags[1].location.column == 59
@@ -225,14 +239,16 @@ def test_destructor_creating_particle_and_particle_below_it_reports_only_the_upp
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(
-        all_diags[0], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[0].location.line == 6
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position</saved>"
     assert isinstance(
-        all_diags[1], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+        all_diags[1],
+        reference_graph_diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic,
     )
     assert all_diags[1].location.line == 6
     assert all_diags[1].location.column == 30
@@ -247,14 +263,16 @@ def test_destructor_triggering_action_whose_callee_fills_an_implied_position_is_
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
     assert isinstance(
-        all_diags[0], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic,
     )
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "b.dfn"
     assert all_diags[0].position_name == "position</out>"
     assert isinstance(
-        all_diags[1], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[1],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[1].location.line == 8
     assert all_diags[1].location.column == 30
@@ -271,14 +289,16 @@ def test_destructor_moving_received_particle_back_below_new_particle_does_not_re
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 4
     assert isinstance(
-        all_diags[0], diagnostics.DestructorProducesEmptyGuaranteeDiagnostic
+        all_diags[0],
+        reference_graph_diagnostics.DestructorProducesEmptyGuaranteeDiagnostic,
     )
     assert all_diags[0].location.line == 18
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
     assert all_diags[0].position_name == "position<moved>::position</part>"
     assert isinstance(
-        all_diags[1], diagnostics.DestructorRequiresEmptyPositionDiagnostic
+        all_diags[1],
+        reference_graph_diagnostics.DestructorRequiresEmptyPositionDiagnostic,
     )
     assert all_diags[1].location.line == 19
     assert all_diags[1].location.column == 47
@@ -286,7 +306,7 @@ def test_destructor_moving_received_particle_back_below_new_particle_does_not_re
     assert all_diags[1].position_name == "position<moved>"
     assert isinstance(
         all_diags[2],
-        diagnostics.DestructorProducesOccupiedByExistingGuaranteeDiagnostic,
+        reference_graph_diagnostics.DestructorProducesOccupiedByExistingGuaranteeDiagnostic,
     )
     assert all_diags[2].location.line == 19
     assert all_diags[2].location.column == 47
@@ -294,7 +314,8 @@ def test_destructor_moving_received_particle_back_below_new_particle_does_not_re
     assert all_diags[2].position_name == "position<moved>"
     assert all_diags[2].origin_name == "position<box>"
     assert isinstance(
-        all_diags[3], diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic
+        all_diags[3],
+        reference_graph_diagnostics.DestructorProducesOccupiedGuaranteeDiagnostic,
     )
     assert all_diags[3].location.line == 20
     assert all_diags[3].location.column == 30

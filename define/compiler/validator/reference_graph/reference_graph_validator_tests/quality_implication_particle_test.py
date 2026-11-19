@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
     assert_propagation_chain,
@@ -39,13 +39,17 @@ def test_duplicate_direct_quality_assignment_triggers_action_once(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 2
-    assert isinstance(all_diags[0], diagnostics.DuplicateQualityAssignmentDiagnostic)
+    assert isinstance(
+        all_diags[0], structural_diagnostics.DuplicateQualityAssignmentDiagnostic
+    )
     assert all_diags[0].quality_name == "action</requirer>"
     assert all_diags[0].first_assignment_line == 7
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 28
     assert all_diags[0].location.file_path == "test.dfn"
-    assert isinstance(all_diags[1], diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert all_diags[1].required_value is False
     assert all_diags[1].required_empty is False
     assert all_diags[1].action_name == "action<my.domain.com:my_lib:/requirer>"
@@ -102,7 +106,9 @@ def test_child_of_locally_created_implied_particle_is_known_empty(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert diag.location.line == 7
     assert diag.location.column == 33
     assert diag.location.end_line == 7
@@ -124,7 +130,9 @@ def test_move_into_implied_position_missing_quality(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 8
     assert all_diags[0].location.column == 50
     assert all_diags[0].location.file_path == "test.dfn"
@@ -141,7 +149,9 @@ def test_create_in_occupied_implied_position(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.CreateInOccupiedPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
     assert all_diags[0].location.line == 7
     assert all_diags[0].location.column == 30
     assert all_diags[0].location.file_path == "test.dfn"
@@ -189,7 +199,9 @@ def test_move_from_local_to_implied_marks_local_empty(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.line == 9
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == "test.dfn"
@@ -202,7 +214,9 @@ def test_move_from_implied_to_local_marks_implied_empty(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert all_diags[0].location.line == 9
     assert all_diags[0].location.column == 33
     assert all_diags[0].location.file_path == "test.dfn"
@@ -230,7 +244,9 @@ def test_two_different_implier_constructors_conflict(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.required_empty is True
     assert diag.action_name == "action<my.domain.com:my_lib:/second_implier>"
@@ -291,7 +307,9 @@ def test_sibling_constructor_empty_guarantee_violates_later_occupied_requirement
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.InferredRequirementViolationDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
     assert diag.required_value is False
     assert diag.required_empty is False
     assert diag.action_name == "action<my.domain.com:my_lib:/requirer>"
@@ -337,7 +355,9 @@ def test_destroy_in_emptied_interface_child_after_constructor_fills_it(
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
     diag = all_diags[0]
-    assert isinstance(diag, diagnostics.DestroyInEmptyPositionDiagnostic)
+    assert isinstance(
+        diag, reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
     assert diag.location.line == 13
     assert diag.location.column == 33
     assert diag.location.end_line == 13

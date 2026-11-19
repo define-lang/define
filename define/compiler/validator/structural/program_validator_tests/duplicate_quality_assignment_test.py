@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -32,7 +32,9 @@ def test_duplicate_quality_assignment_in_global_position_error(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.DuplicateQualityAssignmentDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.DuplicateQualityAssignmentDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].quality_name == "position</foo>"
     assert diags[0].first_assignment_line == 4
@@ -46,7 +48,9 @@ def test_duplicate_quality_assignment_in_local_position_error(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.DuplicateQualityAssignmentDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.DuplicateQualityAssignmentDiagnostic
+    )
     assert diags[0].location.file_path is None
     assert diags[0].quality_name == "position</foo>"
     assert diags[0].first_assignment_line == 5
@@ -60,9 +64,13 @@ def test_three_duplicates_two_errors(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
-    assert isinstance(diags[0], diagnostics.DuplicateQualityAssignmentDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.DuplicateQualityAssignmentDiagnostic
+    )
     assert diags[0].location.file_path is None
-    assert isinstance(diags[1], diagnostics.DuplicateQualityAssignmentDiagnostic)
+    assert isinstance(
+        diags[1], structural_diagnostics.DuplicateQualityAssignmentDiagnostic
+    )
     assert diags[1].location.file_path is None
     assert diags[0].quality_name == "position</foo>"
     assert diags[0].first_assignment_line == 4
@@ -80,7 +88,9 @@ def test_duplicate_via_full_form_and_short_form(
     result = validate_testdata_structural_non_filesystem()
     diags = result.sorted_diagnostics()
     assert len(diags) == 1
-    assert isinstance(diags[0], diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert isinstance(
+        diags[0], structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+    )
     assert diags[0].location.column == 29
     assert diags[0].location.file_path is None
     assert diags[0].fqun == "my.domain.com:my_lib"
@@ -94,14 +104,16 @@ def test_duplicate_full_fqun_cross_universe_error(
     diags = result.sorted_diagnostics()
     assert len(diags) == 2
     assert isinstance(
-        diags[0], diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
+        diags[0], structural_diagnostics.NoProjectRootInNonFilesystemContextDiagnostic
     )
     assert diags[0].location.line == 3
     assert diags[0].location.column == 29
     assert diags[0].location.file_path is None
     assert diags[0].config_path == ".define/project/config.defcl"
     assert diags[0].universe == "other.example.com:other_lib"
-    assert isinstance(diags[1], diagnostics.DuplicateQualityAssignmentDiagnostic)
+    assert isinstance(
+        diags[1], structural_diagnostics.DuplicateQualityAssignmentDiagnostic
+    )
     assert diags[1].location.file_path is None
     assert diags[1].quality_name == "position<other.example.com:other_lib:/foo>"
     assert diags[1].first_assignment_line == 3

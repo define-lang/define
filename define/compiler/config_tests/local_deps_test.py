@@ -10,7 +10,7 @@ from defcl.python import error_types, errors
 from define.compiler.config import config_loader, local_deps_config
 from define.compiler.config_tests import test_helpers
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics
+from define.compiler.errors import config_diagnostics
 
 if typing.TYPE_CHECKING:
     from pathlib import Path
@@ -28,7 +28,7 @@ def test_missing_universe_name(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 0, "universe_name")
                 ),
@@ -47,7 +47,7 @@ def test_empty_universe_name(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 0, "universe_name")
                 ),
@@ -66,7 +66,7 @@ def test_missing_path(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
                 ),
@@ -85,7 +85,7 @@ def test_absolute_path(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
                 ),
@@ -104,7 +104,7 @@ def test_dotdot_part_in_path(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
                 ),
@@ -123,7 +123,7 @@ def test_leading_dotdot_part_in_path(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
                 ),
@@ -142,7 +142,7 @@ def test_dot_part_in_path(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
                 ),
@@ -159,7 +159,7 @@ def test_dot_path(testdata_project_directory: Path, monkeypatch: pytest.MonkeyPa
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
                 ),
@@ -178,7 +178,7 @@ def test_empty_part_in_path(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
                 ),
@@ -197,7 +197,7 @@ def test_backslash_in_path(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
                 ),
@@ -248,7 +248,7 @@ def test_trailing_slash_in_path(
     assert test_helpers.load_config() == config_loader.ConfigLoadResult(
         config=None,
         diagnostics=[
-            diagnostics.ConfigViolationDiagnostic(
+            config_diagnostics.ConfigViolationDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
                 ),
@@ -286,7 +286,7 @@ def test_duplicate_universe_name_uses_the_first_entry(
             has_encoding_operations_location=None,
         ),
         diagnostics=[
-            diagnostics.DuplicateLocalDependencyDiagnostic(
+            config_diagnostics.DuplicateLocalDependencyDiagnostic(
                 location=test_helpers.config_field_location(
                     local_deps_config.CONFIG_FILE, ("deps", "local", 1, "universe_name")
                 ),

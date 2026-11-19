@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -22,7 +22,9 @@ def test_move_to_chained_dest_missing_qualities(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 52
     assert all_diags[0].location.file_path == "test.dfn"
@@ -53,7 +55,9 @@ def test_move_from_chained_to_local_missing_qualities(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 59
     assert all_diags[0].location.file_path == "test.dfn"
@@ -77,7 +81,9 @@ def test_move_from_local_without_qualities_to_chained_position_with_qualities(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 13
     assert all_diags[0].location.column == 52
     assert all_diags[0].location.file_path == "test.dfn"
@@ -96,7 +102,9 @@ def test_definition_local_to_chained_violates(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 12
     assert all_diags[0].location.column == 52
     assert all_diags[0].location.file_path == "test.dfn"
@@ -124,7 +132,9 @@ def test_chained_to_definition_local_violates(
     )
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 23
     assert all_diags[0].location.column == 59
     assert all_diags[0].location.file_path == "test.dfn"
@@ -171,7 +181,9 @@ def test_move_three_element_chain_to_three_element_chain_violates(
     result = validate_testdata_project_with_reference_graph()
     all_diags = result.program_validation.sorted_diagnostics()
     assert len(all_diags) == 1
-    assert isinstance(all_diags[0], diagnostics.MoveMissingQualitiesDiagnostic)
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveMissingQualitiesDiagnostic
+    )
     assert all_diags[0].location.line == 20
     assert all_diags[0].location.column == 73
     assert all_diags[0].location.file_path == "test.dfn"
@@ -190,7 +202,7 @@ def test_move_from_local_local_chain(
     assert len(diags) == 1
     assert isinstance(
         diags[0],
-        diagnostics.ChainedLocalNameRequiresActionDiagnostic,
+        structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
     assert diags[0].location.line == 9
     assert diags[0].location.column == 43
@@ -207,7 +219,7 @@ def test_move_from_local_local_local_chain(
     assert len(diags) == 2
     assert isinstance(
         diags[0],
-        diagnostics.ChainedLocalNameRequiresActionDiagnostic,
+        structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
     assert diags[0].location.line == 11
     assert diags[0].location.column == 43
@@ -216,7 +228,7 @@ def test_move_from_local_local_local_chain(
     assert diags[0].preceding_name == "position<a>"
     assert isinstance(
         diags[1],
-        diagnostics.ChainedLocalNameRequiresActionDiagnostic,
+        structural_diagnostics.ChainedLocalNameRequiresActionDiagnostic,
     )
     assert diags[1].location.line == 11
     assert diags[1].location.column == 56

@@ -5,13 +5,14 @@ from __future__ import annotations
 import typing
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics
+from define.compiler.errors import association_resolution_diagnostics
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
     from crates.source_rendering.python import rendering
     from define.compiler.config import encoding_operations_config
+    from define.compiler.errors import diagnostics
 
 
 def _direction(view: ast.ViewDefinition) -> str:
@@ -62,7 +63,7 @@ def _direction_diagnostics(
             continue
         if _direction(encoding_view) != _direction(logical_view):
             direction_diagnostics.append(
-                diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
+                association_resolution_diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
                     location=encoding_view.typed_name.location,
                     view_name=view_name,
                     direction=_direction(encoding_view),
@@ -86,7 +87,7 @@ def _association_diagnostics(
     # counts differ.
     if len(association.views) != len(encoding_views):
         return [
-            diagnostics.AssociationViewCountDiagnostic(
+            association_resolution_diagnostics.AssociationViewCountDiagnostic(
                 location=association.reference.location,
                 encoding_operation_name=encoding_operation_name,
                 view_count=len(association.views),
@@ -106,7 +107,7 @@ def _association_diagnostics(
         view_name = encoding_view.typed_name.source_typed_name
         if associated_view.name != encoding_view.typed_name.name_content.name:
             association_diagnostics.append(
-                diagnostics.AssociationViewNameDiagnostic(
+                association_resolution_diagnostics.AssociationViewNameDiagnostic(
                     location=associated_view.name_location,
                     view_number=number,
                     view_name=associated_view.name,
@@ -124,7 +125,7 @@ def _association_diagnostics(
         associated_encoding = associated_view.encoding
         if associated_encoding.full_typed_name != encoding.full_typed_name:
             association_diagnostics.append(
-                diagnostics.AssociationViewEncodingDiagnostic(
+                association_resolution_diagnostics.AssociationViewEncodingDiagnostic(
                     location=associated_encoding.location,
                     view_name=view_name,
                     encoding_name=associated_encoding.full_typed_name,

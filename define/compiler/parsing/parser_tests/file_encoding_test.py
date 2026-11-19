@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import parser_diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -177,7 +177,7 @@ def test_variation_selector_after_space_in_comment_gets_a_diagnostic(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.InvisibleCharacterInCommentDiagnostic(
+        parser_diagnostics.InvisibleCharacterInCommentDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=3, end_line=1, end_column=3
             ),
@@ -276,13 +276,13 @@ def test_comment_with_bidi_isolates_gets_a_diagnostic_for_each(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.InvisibleCharacterInCommentDiagnostic(
+        parser_diagnostics.InvisibleCharacterInCommentDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=29, end_line=1, end_column=29
             ),
             character="\u2067",
         ),
-        diagnostics.InvisibleCharacterInCommentDiagnostic(
+        parser_diagnostics.InvisibleCharacterInCommentDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=34, end_line=1, end_column=34
             ),
@@ -301,7 +301,7 @@ def test_zero_width_space_in_comment_gets_a_diagnostic(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.InvisibleCharacterInCommentDiagnostic(
+        parser_diagnostics.InvisibleCharacterInCommentDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=4, end_line=1, end_column=4
             ),
@@ -341,7 +341,7 @@ def test_byte_order_mark_inside_comment_gets_a_diagnostic(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.ByteOrderMarkInCommentDiagnostic(
+        parser_diagnostics.ByteOrderMarkInCommentDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=4, end_line=1, end_column=4
             )
@@ -359,7 +359,7 @@ def test_c1_control_character_in_comment_gets_a_diagnostic(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.ControlCharacterInCommentDiagnostic(
+        parser_diagnostics.ControlCharacterInCommentDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=4, end_line=1, end_column=4
             ),
@@ -378,7 +378,7 @@ def test_zero_width_joiner_before_space_in_comment_gets_a_diagnostic(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.InvisibleCharacterInCommentDiagnostic(
+        parser_diagnostics.InvisibleCharacterInCommentDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=4, end_line=1, end_column=4
             ),
@@ -397,7 +397,7 @@ def test_tag_character_after_letter_in_comment_gets_a_diagnostic(
     assert result.load_failure is None
     assert result.program is not None
     assert result.diagnostics == [
-        diagnostics.InvisibleCharacterInCommentDiagnostic(
+        parser_diagnostics.InvisibleCharacterInCommentDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=4, end_line=1, end_column=4
             ),

@@ -12,7 +12,7 @@ from define.compiler import (
     chained_name,
     name_types,
 )
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics
 from define.compiler.validator import scope_tracker
 from define.compiler.validator.reference_graph import (
     abstract_program,
@@ -46,6 +46,7 @@ if typing.TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from define.compiler.data_structures import interned_set
+    from define.compiler.errors import diagnostics
     from define.compiler.validator.reference_graph import (
         quality_assignment,
         reference_graph_validation_state,
@@ -629,7 +630,7 @@ class ActionDefinitionValidator:
         if position.typed_names[0].full_typed_name != self._trigger_position_name:
             return
         self._diagnostics.append(
-            diagnostics.ActionSelfTriggerDiagnostic(
+            reference_graph_diagnostics.ActionSelfTriggerDiagnostic(
                 location=position.location,
                 action_name=self._definition.typed_name.source_typed_name,
                 position_name=position.source_chained_name,
@@ -703,7 +704,7 @@ class ActionDefinitionValidator:
         """Diagnose occupied interface positions of actions triggered by this action."""
         for triggered_at, position in self._tracker.unconsumed_action_interfaces():
             self._diagnostics.append(
-                diagnostics.UnconsumedActionInterfaceDiagnostic(
+                reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic(
                     location=triggered_at,
                     # The action whose interface position this is comes just
                     # before it in the chained name.

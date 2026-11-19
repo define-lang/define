@@ -5,7 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from define.compiler import ast
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import (
+    config_diagnostics,
+    structural_diagnostics,
+    syntax_errors,
+)
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -66,7 +70,7 @@ def test_duplicate_literal(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.DuplicateDefinitionDiagnostic)
+    assert isinstance(diagnostic, structural_diagnostics.DuplicateDefinitionDiagnostic)
     assert diagnostic.location.column == 1
     assert diagnostic.location.file_path is None
     assert diagnostic.definition_type == "literal"
@@ -81,7 +85,9 @@ def test_invalid_name(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert diagnostic.location.line == 3
     assert diagnostic.location.column == 55
     assert diagnostic.location.file_path is None
@@ -95,7 +101,9 @@ def test_invalid_encoding_name(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.InvalidGlobalNamePathCharacterDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic
+    )
     assert diagnostic.location.column == 29
     assert diagnostic.location.file_path is None
     assert diagnostic.segment == "bad-name"
@@ -109,7 +117,9 @@ def test_requires_short_encoding_name(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.GlobalReferenceMustUseShortFormDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic
+    )
     assert diagnostic.location.line == 4
     assert diagnostic.location.column == 25
     assert diagnostic.location.file_path is None
@@ -134,7 +144,7 @@ def test_path_mismatch(validate_testdata_structural: ValidateTestdataStructural)
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.PathMismatchDiagnostic)
+    assert isinstance(diagnostic, structural_diagnostics.PathMismatchDiagnostic)
     assert diagnostic.location.line == 2
     assert diagnostic.location.column == 51
     assert diagnostic.location.file_path == "test.dfn"
@@ -148,7 +158,9 @@ def test_missing_encoding_file(
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert diagnostic.location.line == 3
     assert diagnostic.location.column == 25
     assert diagnostic.location.file_path == "test.dfn"
@@ -161,7 +173,9 @@ def test_wrong_encoding_definition_type(
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
     assert diagnostic.location.line == 3
     assert diagnostic.location.column == 16
     assert diagnostic.location.file_path == "test.dfn"
@@ -182,7 +196,9 @@ def test_same_file_encoding_must_precede_reference(
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ReferencedDefinitionNotFoundDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ReferencedDefinitionNotFoundDiagnostic
+    )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.definition_name == "encoding<my.domain.com:my_lib:/test>"
     assert diagnostic.file_path == "test.dfn"
@@ -205,7 +221,9 @@ def test_unconfigured_external_encoding(
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ExternalUniverseNotConfiguredDiagnostic)
+    assert isinstance(
+        diagnostic, config_diagnostics.ExternalUniverseNotConfiguredDiagnostic
+    )
     assert diagnostic.location.line == 3
     assert diagnostic.location.column == 25
     assert diagnostic.location.file_path == "test.dfn"
@@ -219,7 +237,9 @@ def test_non_filesystem_encoding_must_precede_reference(
     result = validate_testdata_structural_non_filesystem()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.ReferencedFileNotFoundDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
     assert diagnostic.location.line == 3
     assert diagnostic.location.column == 25
     assert diagnostic.location.file_path is None
@@ -239,7 +259,9 @@ def test_built_in_name_with_wrong_type(
     result = validate_testdata_structural()
     assert len(result.sorted_diagnostics()) == 1
     diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(diagnostic, diagnostics.StandardDefinitionNotFoundDiagnostic)
+    assert isinstance(
+        diagnostic, structural_diagnostics.StandardDefinitionNotFoundDiagnostic
+    )
     assert diagnostic.location.file_path == "test.dfn"
     assert diagnostic.location.line == 3
     assert diagnostic.location.column == 16

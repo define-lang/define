@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from define.compiler.errors import diagnostics
+from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -35,7 +35,9 @@ class TestCreateParticle:
         )
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
+        assert isinstance(
+            all_diags[0], reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+        )
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/pos_b>"
         assert all_diags[0].location.line == 10
@@ -51,7 +53,9 @@ class TestCreateParticle:
         )
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
+        assert isinstance(
+            all_diags[0], reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+        )
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/pos_c>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/pos_b>"
         assert all_diags[0].location.line == 10
@@ -77,7 +81,8 @@ class TestCreateParticle:
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
-            all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
+            all_diags[0],
+            reference_graph_diagnostics.ChainElementNotInterfacePositionDiagnostic,
         )
         assert all_diags[0].element_name == "position<no_such>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
@@ -97,7 +102,8 @@ class TestCreateParticle:
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
-            all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
+            all_diags[0],
+            reference_graph_diagnostics.ChainElementNotInterfacePositionDiagnostic,
         )
         assert all_diags[0].element_name == "position<no_such>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
@@ -115,7 +121,8 @@ class TestCreateParticle:
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
-            all_diags[0], diagnostics.ChainElementNotInterfacePositionDiagnostic
+            all_diags[0],
+            reference_graph_diagnostics.ChainElementNotInterfacePositionDiagnostic,
         )
         assert all_diags[0].element_name == "position<pos_c>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/act_b>"
@@ -151,7 +158,8 @@ class TestCreateParticle:
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
-            all_diags[0], diagnostics.ChainGlobalNameAfterActionDiagnostic
+            all_diags[0],
+            reference_graph_diagnostics.ChainGlobalNameAfterActionDiagnostic,
         )
         assert all_diags[0].element_name == "action<my.domain.com:my_lib:/bar>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/foo>"
@@ -169,7 +177,8 @@ class TestCreateParticle:
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
         assert isinstance(
-            all_diags[0], diagnostics.ChainGlobalNameAfterActionDiagnostic
+            all_diags[0],
+            reference_graph_diagnostics.ChainGlobalNameAfterActionDiagnostic,
         )
         assert all_diags[0].element_name == "action<my.domain.com:my_lib:/b>"
         assert all_diags[0].parent_name == "action<my.domain.com:my_lib:/a>"
@@ -186,7 +195,9 @@ class TestCreateParticle:
         )
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert isinstance(
+            all_diags[0], structural_diagnostics.PositionReferenceChainEndDiagnostic
+        )
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 55
         assert all_diags[0].location.file_path == "test.dfn"
@@ -202,12 +213,16 @@ class TestChainActionValidation:
         )
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 2
-        assert isinstance(all_diags[0], diagnostics.LocalActionNameDiagnostic)
+        assert isinstance(
+            all_diags[0], structural_diagnostics.LocalActionNameDiagnostic
+        )
         assert all_diags[0].local_name == "bad"
         assert all_diags[0].location.line == 10
         assert all_diags[0].location.column == 55
         assert all_diags[0].location.file_path == "test.dfn"
-        assert isinstance(all_diags[1], diagnostics.PositionReferenceChainEndDiagnostic)
+        assert isinstance(
+            all_diags[1], structural_diagnostics.PositionReferenceChainEndDiagnostic
+        )
         assert all_diags[1].location.line == 10
         assert all_diags[1].location.column == 55
         assert all_diags[1].location.file_path == "test.dfn"
@@ -221,7 +236,9 @@ class TestChainActionValidation:
         )
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
+        assert isinstance(
+            all_diags[0], reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+        )
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/wrong>"
         assert all_diags[0].parent_name == "position<inner>"
         assert all_diags[0].location.line == 10
@@ -246,7 +263,9 @@ class TestChainActionValidation:
         )
         all_diags = result.program_validation.sorted_diagnostics()
         assert len(all_diags) == 1
-        assert isinstance(all_diags[0], diagnostics.ChainElementNotAssignedDiagnostic)
+        assert isinstance(
+            all_diags[0], reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+        )
         assert all_diags[0].element_name == "position<my.domain.com:my_lib:/leaf>"
         assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/target>"
         assert all_diags[0].location.line == 10

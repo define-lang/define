@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
 from define.compiler import ast
-from define.compiler.errors import diagnostics, syntax_errors
+from define.compiler.errors import parser_diagnostics, syntax_errors
 
 if TYPE_CHECKING:
     from define.compiler.parsing.parser_tests.conftest import (
@@ -30,7 +30,7 @@ def test_missing_terminator_does_not_stop_the_next_statement(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=36, end_line=3, end_column=36
             )
@@ -60,12 +60,12 @@ def test_each_missing_terminator_gets_its_own_diagnostic(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=36, end_line=3, end_column=36
             )
         ),
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=4, column=37, end_line=4, end_column=37
             )
@@ -94,12 +94,12 @@ def test_missing_terminator_before_trailing_spaces_gets_both_diagnostics(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.TrailingWhitespaceDiagnostic(
+        parser_diagnostics.TrailingWhitespaceDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=36, end_line=3, end_column=37
             )
         ),
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=36, end_line=3, end_column=36
             )
@@ -127,7 +127,7 @@ def test_missing_terminator_before_comment(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=36, end_line=3, end_column=36
             )
@@ -155,7 +155,7 @@ def test_missing_terminator_before_comment_without_space(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=36, end_line=3, end_column=36
             )
@@ -183,7 +183,7 @@ def test_missing_terminator_before_comment_that_is_not_ascii(
     )
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=3, column=36, end_line=3, end_column=36
             )
@@ -205,12 +205,12 @@ def test_missing_terminator_at_end_of_file(
     result = parse_with_diagnostics("define the encoding<standard:/number/natural>")
     assert result.load_failure is None
     assert result.diagnostics == [
-        diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
+        parser_diagnostics.MissingTerminatorAtEndOfLineDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=46, end_line=1, end_column=46
             )
         ),
-        diagnostics.MissingNewlineAtEndOfFileDiagnostic(
+        parser_diagnostics.MissingNewlineAtEndOfFileDiagnostic(
             location=rendering.SourceLocation(
                 line=1, column=46, end_line=1, end_column=46
             )

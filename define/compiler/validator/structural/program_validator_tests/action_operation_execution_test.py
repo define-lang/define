@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from crates.source_rendering.python import rendering
-from define.compiler.errors import diagnostics
+from define.compiler.errors import structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ def test_aliased_positions(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.AliasedViewDiagnostic(
+        structural_diagnostics.AliasedViewDiagnostic(
             location=rendering.SourceLocation(
                 line=31, column=42, end_line=31, end_column=57, file_path=None
             ),
@@ -46,7 +46,7 @@ def test_aliased_chained_positions(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.AliasedViewDiagnostic(
+        structural_diagnostics.AliasedViewDiagnostic(
             location=rendering.SourceLocation(
                 line=32, column=42, end_line=32, end_column=75, file_path=None
             ),
@@ -75,13 +75,13 @@ def test_undefined_positions(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.UndefinedLocalNameDiagnostic(
+        structural_diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=29, column=42, end_line=29, end_column=58, file_path=None
             ),
             local_name="position<missing>",
         ),
-        diagnostics.UndefinedLocalNameDiagnostic(
+        structural_diagnostics.UndefinedLocalNameDiagnostic(
             location=rendering.SourceLocation(
                 line=30, column=42, end_line=30, end_column=58, file_path=None
             ),
@@ -95,7 +95,7 @@ def test_invalid_argument_view_name(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidLocalNameFormatDiagnostic(
+        structural_diagnostics.InvalidLocalNameFormatDiagnostic(
             location=rendering.SourceLocation(
                 line=31, column=23, end_line=31, end_column=23, file_path=None
             ),
@@ -110,7 +110,7 @@ def test_duplicate_argument(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.DuplicateOperationArgumentDiagnostic(
+        structural_diagnostics.DuplicateOperationArgumentDiagnostic(
             location=rendering.SourceLocation(
                 line=32, column=18, end_line=32, end_column=29, file_path=None
             ),
@@ -125,7 +125,7 @@ def test_invalid_literal_name(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
+        structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
             location=rendering.SourceLocation(
                 line=31, column=63, end_line=31, end_column=63, file_path=None
             ),
@@ -140,7 +140,7 @@ def test_invalid_operation_name(
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
-        diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
+        structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
             location=rendering.SourceLocation(
                 line=30, column=35, end_line=30, end_column=35, file_path=None
             ),
