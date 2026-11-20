@@ -327,6 +327,13 @@ class Worker:
             # Most mutants are killed, so stopping at the first failure
             # ends most runs early.
             "--notest_keep_going",
+            # Bazel 9 with Skymeld leaks a pool of 200 threads from each build
+            # that fails before its analysis finishes, which many builds of a
+            # new worker do. A worker's Bazel server then reaches tens of
+            # thousands of threads.
+            # TODO: Remove this flag once the repository uses a Bazel that
+            # includes https://github.com/bazelbuild/bazel/pull/28657.
+            "--noexperimental_merged_skyframe_analysis_execution",
             f"--test_timeout={self._run.test_timeout}",
             f"--build_event_json_file={self._build_event_file}",
             *self._run.lint_flags,
