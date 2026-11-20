@@ -80,11 +80,6 @@ def parent(chain: ChainedNameTuple) -> ChainedNameTuple:
     return ChainedNameTuple(chain[:-1])
 
 
-def last_name(chain: ChainedNameTuple) -> ChainedNameTuple:
-    """Return the last name of ``chain`` as a chain of one name."""
-    return ChainedNameTuple(chain[-1:])
-
-
 def replace_prefix[T: ChainedNameTuple](
     chain: T, old_prefix: ChainedNameTuple, new_prefix: ChainedNameTuple
 ) -> T:

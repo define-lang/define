@@ -104,8 +104,3 @@ def test_with_suffix_appends_child_names():
 def test_parent_drops_last_name_even_when_it_leaves_an_action():
     chain = _chain("position<a>", "action<b>", "position<c>")
     assert chained_name.parent(chain) == ("position<a>", "action<b>")
-
-
-def test_last_name_is_a_one_name_chain():
-    chain = _chain("position<a>", "position<b>")
-    assert chained_name.last_name(chain) == ("position<b>",)

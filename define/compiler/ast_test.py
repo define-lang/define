@@ -117,6 +117,15 @@ class TestSourceFormTypedNameParts:
             is_global=True,
         )
 
+    def test_local_name_with_open_angle_bracket(self):
+        assert ast.source_form_typed_name_parts("position<<>", _FQUN) == (
+            ast.SourceFormTypedNameParts(
+                name_type=name_types.NameType.POSITION,
+                source_name="<",
+                is_global=False,
+            )
+        )
+
 
 class TestFqunCanonical:
     def test_universe_only(self):
