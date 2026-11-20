@@ -3,11 +3,21 @@
 from __future__ import annotations
 
 import ast
-from typing import TYPE_CHECKING, final
+from typing import TYPE_CHECKING, NamedTuple, final
 
 if TYPE_CHECKING:
     import pathlib
     from collections.abc import Mapping
+
+
+class Selection(NamedTuple):
+    """The tests that a mutant runs."""
+
+    skipped: frozenset[str]
+    """The tests that record coverage but never run the mutant's lines."""
+    covering_tests: int | None
+    """How many tests that record coverage run the mutant's lines, or None when
+    no coverage records them, so that every test runs."""
 
 
 @final
@@ -33,8 +43,8 @@ class Coverage:
         self._lines = lines
         self._statement_starts = statement_starts
 
-    def tests_to_skip(self, path: str, lines: tuple[int, int]) -> frozenset[str]:
-        """Return the tests that run none of `lines`, the first and last lines of `path`.
+    def select(self, path: str, lines: tuple[int, int]) -> Selection:
+        """Return the tests that a mutant of `lines`, the first and last lines of `path`, runs.
 
         Lines that coverage recorded for no test, such as a Rust constant that
         the compiler evaluates, can still change what tests do, so no test
@@ -49,8 +59,8 @@ class Coverage:
             if tests is not None:
                 running = set(tests) if running is None else running | tests
         if running is None:
-            return frozenset()
-        return self._tests - running
+            return Selection(skipped=frozenset(), covering_tests=None)
+        return Selection(skipped=self._tests - running, covering_tests=len(running))
 
 
 def from_reports(reports: Mapping[str, list[str]], workspace: pathlib.Path) -> Coverage:

@@ -57,6 +57,8 @@ def render(
             result = outcomes[listed.name]
             fence = _fence(listed.patch)
             lines.extend(["", f"### {listed.name}", ""])
+            if result.covering_tests == 0:
+                lines.extend(["No test runs this code.", ""])
             if result.outcome == results.Outcome.TIMED_OUT:
                 lines.extend([f"Timed out: {result.culprit}", ""])
             elif result.outcome == results.Outcome.OUT_OF_MEMORY:

@@ -39,6 +39,10 @@ class Result(msgspec.Struct, frozen=True):
     culprit: str | None
     """The test or action that failed first."""
     seconds: float
+    covering_tests: int | None = None
+    """How many of the tests that record coverage run the mutant's lines, or
+    None when no coverage records them. Results from runs before the tester
+    counted them have None too."""
 
 
 class MismatchedRunError(Exception):

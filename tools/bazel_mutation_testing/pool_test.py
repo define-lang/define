@@ -6,7 +6,7 @@ from typing import final
 
 import pytest
 
-from tools.bazel_mutation_testing import mutant, pool, results
+from tools.bazel_mutation_testing import coverage, mutant, pool, results
 
 
 class _TesterFailedError(Exception):
@@ -26,12 +26,13 @@ def _killed(mutated: mutant.Mutant) -> results.Result:
     )
 
 
-def _no_skipped_tests(_mutated: mutant.Mutant) -> frozenset[str]:
-    return frozenset()
+def _no_skipped_tests(_mutated: mutant.Mutant) -> coverage.Selection:
+    return coverage.Selection(skipped=frozenset(), covering_tests=None)
 
 
-def _skipped_tests(mutated: mutant.Mutant) -> frozenset[str]:
-    return frozenset({f"//skipped:{mutated.name.replace(' ', '_')}"})
+def _skipped_tests(mutated: mutant.Mutant) -> coverage.Selection:
+    skipped = f"//skipped:{mutated.name.replace(' ', '_')}"
+    return coverage.Selection(skipped=frozenset({skipped}), covering_tests=1)
 
 
 @final
@@ -40,11 +41,13 @@ class _Tester:
 
     def __init__(self, all_testing: threading.Barrier):
         self.tested: list[str] = []
-        self.skipped: list[frozenset[str]] = []
+        self.skipped: list[coverage.Selection] = []
         self.interrupted = False
         self._all_testing = all_testing
 
-    def test(self, mutated: mutant.Mutant, skipped: frozenset[str]) -> results.Result:
+    def test(
+        self, mutated: mutant.Mutant, skipped: coverage.Selection
+    ) -> results.Result:
         _ = self._all_testing.wait(timeout=10)
         self.tested.append(mutated.name)
         self.skipped.append(skipped)
@@ -62,7 +65,9 @@ class _BlockedTester:
         self.interrupted = threading.Event()
         self._testing = testing
 
-    def test(self, mutated: mutant.Mutant, _skipped: frozenset[str]) -> results.Result:
+    def test(
+        self, mutated: mutant.Mutant, _skipped: coverage.Selection
+    ) -> results.Result:
         self._testing.set()
         _ = self.interrupted.wait(timeout=10)
         raise _TesterFailedError(mutated.name)
@@ -76,7 +81,9 @@ class _FailingTester:
     def __init__(self, testing: threading.Event):
         self._testing = testing
 
-    def test(self, mutated: mutant.Mutant, _skipped: frozenset[str]) -> results.Result:
+    def test(
+        self, mutated: mutant.Mutant, _skipped: coverage.Selection
+    ) -> results.Result:
         _ = self._testing.wait(timeout=10)
         raise _TesterFailedError(mutated.name)
 
@@ -93,7 +100,9 @@ class _RevertingTester:
         self._interrupted = threading.Event()
         self._testing = testing
 
-    def test(self, mutated: mutant.Mutant, _skipped: frozenset[str]) -> results.Result:
+    def test(
+        self, mutated: mutant.Mutant, _skipped: coverage.Selection
+    ) -> results.Result:
         self._testing.set()
         _ = self._interrupted.wait(timeout=10)
         self.reverted.set()

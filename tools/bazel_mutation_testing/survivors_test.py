@@ -86,6 +86,7 @@ _OUTCOMES = {
         outcome=results.Outcome.SURVIVED,
         culprit=None,
         seconds=3.0,
+        covering_tests=0,
     ),
     "crates/example/lib.rs:5:7: replace > with ==": results.Result(
         name="crates/example/lib.rs:5:7: replace > with ==",
@@ -110,6 +111,8 @@ _EXPECTED = f"""\
 ## crates/example/lib.rs
 
 ### crates/example/lib.rs:5:7: replace > with >=
+
+No test runs this code.
 
 ```diff
 {_LIB_PATCH}```

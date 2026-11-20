@@ -12,16 +12,16 @@ from typing import TYPE_CHECKING, Protocol, final
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from tools.bazel_mutation_testing import mutant, results
+    from tools.bazel_mutation_testing import coverage, mutant, results
 
 
 class Tester(Protocol):
     """A worker that tests one mutant at a time."""
 
     def test(
-        self, mutated: mutant.Mutant, skipped: frozenset[str], /
+        self, mutated: mutant.Mutant, selection: coverage.Selection, /
     ) -> results.Result:
-        """Test `mutated` with the tests other than `skipped`, and revert it."""
+        """Test `mutated` with the tests that `selection` chooses, and revert it."""
         ...
 
     def interrupt(self):
@@ -32,12 +32,12 @@ class Tester(Protocol):
 def test_all(
     testers: Sequence[Tester],
     mutants: Sequence[mutant.Mutant],
-    skipped_tests: Callable[[mutant.Mutant], frozenset[str]],
+    select: Callable[[mutant.Mutant], coverage.Selection],
     record: Callable[[results.Result], None],
 ):
     """Test each of `mutants` on a free tester, and record each result as it finishes.
 
-    Each mutant skips the tests that `skipped_tests` returns for it.
+    Each mutant runs the tests that `select` chooses for it.
 
     When a tester fails or the run is interrupted, every tester stops its
     mutant without a result and reverts it, and the error is raised. A resumed
@@ -51,7 +51,7 @@ def test_all(
         try:
             while (mutated := schedule.take(path)) is not None:
                 path = mutated.path
-                finished.put(tester.test(mutated, skipped_tests(mutated)))
+                finished.put(tester.test(mutated, select(mutated)))
         except BaseException as error:
             finished.put(_Stopped(error))
             raise

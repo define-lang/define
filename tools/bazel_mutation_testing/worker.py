@@ -10,6 +10,8 @@ import threading
 import time
 from typing import TYPE_CHECKING, final
 
+import msgspec
+
 from tools.bazel_mutation_testing import (
     bazel,
     build_events,
@@ -264,8 +266,10 @@ class Worker:
                 # server to finish it.
                 self._tests.send_signal(signal.SIGINT)
 
-    def test(self, mutated: mutant.Mutant, skipped: frozenset[str]) -> results.Result:
-        """Test `mutated` with the area's tests other than `skipped`, and revert it.
+    def test(
+        self, mutated: mutant.Mutant, selection: coverage.Selection
+    ) -> results.Result:
+        """Test `mutated` with the tests that `selection` chooses, and revert it.
 
         Raises:
             WorkerInterruptedError: The run interrupted the worker.
@@ -274,6 +278,14 @@ class Worker:
             UnchangedMutantError: Formatting the mutated file undid the mutant.
             DirtyWorktreeError: Reverting the mutant left the worktree changed.
         """
+        return msgspec.structs.replace(
+            self._test_selected(mutated, selection.skipped),
+            covering_tests=selection.covering_tests,
+        )
+
+    def _test_selected(
+        self, mutated: mutant.Mutant, skipped: frozenset[str]
+    ) -> results.Result:
         try:
             with self._applied(mutated):
                 completed, failure, seconds = self._test_applied(mutated, skipped)

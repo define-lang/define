@@ -20,6 +20,7 @@ import click
 from tools import runfiles
 from tools.bazel_mutation_testing import (
     canary,
+    coverage,
     lint_flags,
     pool,
     results,
@@ -226,7 +227,7 @@ def _test_on_workers(
     pool.test_all(
         workers,
         pending,
-        lambda mutated: area_coverage.tests_to_skip(mutated.path, mutated.lines),
+        lambda mutated: area_coverage.select(mutated.path, mutated.lines),
         record,
     )
     return mutants
@@ -246,7 +247,9 @@ def _list_and_check(
     run_canary = canary.make(area_crates, python_sources.tests, work.worktree)
     # The canary skips no test, so that it checks every test that a mutant
     # could run.
-    canary_result = work.test(run_canary.mutant, frozenset())
+    canary_result = work.test(
+        run_canary.mutant, coverage.Selection(skipped=frozenset(), covering_tests=None)
+    )
     # Any failure kills a mutant, but only a failed test shows that the run's
     # tests detect a change. A timeout or running out of memory would not show
     # it either.

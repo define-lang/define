@@ -46,29 +46,29 @@ def _coverage(tmp_path: pathlib.Path) -> coverage.Coverage:
 
 
 def test_skips_the_tests_that_never_run_a_line(tmp_path: pathlib.Path):
-    assert _coverage(tmp_path).tests_to_skip("pkg/choose.py", (7, 7)) == {
+    assert _coverage(tmp_path).select("pkg/choose.py", (7, 7)).skipped == {
         "//pkg:first_test"
     }
 
 
 def test_a_line_of_a_statement_counts_as_its_first_line(tmp_path: pathlib.Path):
-    assert _coverage(tmp_path).tests_to_skip("pkg/choose.py", (4, 4)) == frozenset()
+    assert _coverage(tmp_path).select("pkg/choose.py", (4, 4)).skipped == frozenset()
 
 
 def test_a_body_line_is_its_own_statement(tmp_path: pathlib.Path):
-    assert _coverage(tmp_path).tests_to_skip("pkg/choose.py", (6, 6)) == {
+    assert _coverage(tmp_path).select("pkg/choose.py", (6, 6)).skipped == {
         "//pkg:second_test"
     }
 
 
 def test_a_test_whose_reports_cover_different_files_runs_each(tmp_path: pathlib.Path):
-    assert _coverage(tmp_path).tests_to_skip("pkg/lib.rs", (3, 3)) == {
+    assert _coverage(tmp_path).select("pkg/lib.rs", (3, 3)).skipped == {
         "//pkg:second_test"
     }
 
 
 def test_an_unrecorded_line_skips_no_test(tmp_path: pathlib.Path):
-    assert _coverage(tmp_path).tests_to_skip("pkg/lib.rs", (9, 9)) == frozenset()
+    assert _coverage(tmp_path).select("pkg/lib.rs", (9, 9)).skipped == frozenset()
 
 
 def test_a_line_that_no_test_runs_skips_every_reporting_test(tmp_path: pathlib.Path):
@@ -81,12 +81,23 @@ def test_a_line_that_no_test_runs_skips_every_reporting_test(tmp_path: pathlib.P
         tmp_path,
     )
 
-    assert covered.tests_to_skip("pkg/choose.py", (7, 7)) == {"//pkg:first_test"}
+    assert covered.select("pkg/choose.py", (7, 7)).skipped == {"//pkg:first_test"}
 
 
 def test_a_range_runs_the_tests_that_run_any_of_its_lines(tmp_path: pathlib.Path):
-    assert _coverage(tmp_path).tests_to_skip("pkg/choose.py", (6, 7)) == frozenset()
+    assert _coverage(tmp_path).select("pkg/choose.py", (6, 7)).skipped == frozenset()
 
 
 def test_a_range_that_coverage_never_recorded_skips_no_test(tmp_path: pathlib.Path):
-    assert _coverage(tmp_path).tests_to_skip("pkg/lib.rs", (8, 9)) == frozenset()
+    assert _coverage(tmp_path).select("pkg/lib.rs", (8, 9)).skipped == frozenset()
+
+
+def test_a_selection_counts_the_tests_that_run_its_lines(tmp_path: pathlib.Path):
+    covered = _coverage(tmp_path)
+
+    assert covered.select("pkg/choose.py", (7, 7)) == coverage.Selection(
+        skipped=frozenset({"//pkg:first_test"}), covering_tests=1
+    )
+    assert covered.select("pkg/lib.rs", (9, 9)) == coverage.Selection(
+        skipped=frozenset(), covering_tests=None
+    )

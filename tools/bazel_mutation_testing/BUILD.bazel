@@ -185,6 +185,7 @@ py_library(
     name = "pool",
     srcs = ["pool.py"],
     deps = [
+        ":coverage",
         ":mutant",
         ":results",
     ],
@@ -195,6 +196,7 @@ py_test(
     size = "small",
     srcs = ["pool_test.py"],
     deps = [
+        ":coverage",
         ":mutant",
         ":pool",
         ":results",
@@ -288,6 +290,7 @@ py_binary(
     },
     deps = [
         ":canary",
+        ":coverage",
         ":lint_flags",
         ":mutant",
         ":pool",
@@ -313,6 +316,7 @@ py_library(
         ":diagnostics",
         ":mutant",
         ":results",
+        "@pypi//msgspec",
     ],
 )
 

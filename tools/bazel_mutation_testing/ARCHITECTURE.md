@@ -124,7 +124,8 @@ The problems this mutation tester solves, and the intentions behind its design.
   with changes left in it is kept, to show what went wrong.
 - **Report each run's survivors with the changes they make,** so that finding
   the missing tests needs no second run. The report also lists the mutants that
-  ran out of time or memory.
+  ran out of time or memory, and marks each survivor that no test runs, which
+  needs no reasoning about whether it is equivalent.
 
 ## Rejected
 
