@@ -462,7 +462,7 @@ class _ProgramValidationRun:
 def _select_entry_action(
     entry_file_result: structural_result.FileValidationResult,
     *,
-    select_last_constructor: bool = False,
+    select_last_constructor: bool,
 ) -> structural_result.StructuralDefinitionResult | None:
     definitions = entry_file_result.definition_results
     candidates = reversed(definitions) if select_last_constructor else definitions

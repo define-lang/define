@@ -412,7 +412,7 @@ class PythonLiteralCodeGenerator:
         entry_point: ast.ActionDefinition,
         output_dir: Path,
         *,
-        trace_operations: bool = False,
+        trace_operations: bool,
         max_workers: int | None = None,
     ):
         """Generate Python files for the entry-point constructor and its references."""

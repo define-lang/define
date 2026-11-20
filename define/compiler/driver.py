@@ -136,7 +136,7 @@ class Driver:
         compiler_validation: validation_pipeline.CompilerValidationResult,
         output_dir: Path,
         *,
-        trace_operations: bool = False,
+        trace_operations: bool,
         max_threads: int | None = None,
     ) -> CompilationResult:
         """Run code generation on an already-validated result."""
