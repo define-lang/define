@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import sys
 from typing import TYPE_CHECKING
 
 import pytest
 
+from tools import runfiles
 from tools.bazel_mutation_testing import (
     bazel,
     build_events,
@@ -151,44 +153,6 @@ def test_failed_result_tells_which_limit_killed_the_mutant(
     assert worker.failed_result("mutant", failure, 1.0).outcome == outcome
 
 
-# Stands in for bazelisk. Each `test` command runs the next of the numbered
-# behaviors in the `tests` directory: "fail" exits as a crashed server does,
-# "hang" waits until it is killed, and any other passes.
-_FAKE_BAZELISK = """\
-#!/bin/sh
-fake=$(dirname "$0")
-for argument; do
-  case $argument in
-    --build_event_json_file=*) : > "${argument#*=}" ;;
-  esac
-done
-for argument; do
-  case $argument in
-    -*) ;;
-    *) command=$argument; break ;;
-  esac
-done
-case $command in
-  info) echo "$fake/output_base" ;;
-  build)
-    mkdir -p bazel-bin/tools/format/format_
-    printf '#!/bin/sh\\n' > bazel-bin/tools/format/format_/format
-    chmod +x bazel-bin/tools/format/format_/format ;;
-  test)
-    count=$(($(cat "$fake/count" 2>/dev/null || echo 0) + 1))
-    echo "$count" > "$fake/count"
-    behavior=$(cat "$fake/tests/$count" 2>/dev/null)
-    case $behavior in
-      fail) echo "bazel crashed" >&2; exit 37 ;;
-      hang)
-        mkdir -p "$fake/output_base/server"
-        echo $$ > "$fake/output_base/server/server.pid.txt"
-        mkfifo "$fake/never_written"
-        exec cat "$fake/never_written" ;;
-    esac ;;
-esac
-"""
-
 _ALL_TESTS = coverage.Selection(skipped=frozenset(), covering_tests=None)
 
 _MUTANT = mutant.Mutant(
@@ -213,7 +177,7 @@ def _prepared_worker(
             behavior, encoding="utf-8", newline="\n"
         )
     bazelisk = fake / "bazelisk"
-    _ = bazelisk.write_text(_FAKE_BAZELISK, encoding="utf-8", newline="\n")
+    _ = shutil.copyfile(runfiles.resolve_from_env("FAKE_BAZELISK"), bazelisk)
     bazelisk.chmod(0o755)
     monkeypatch.setenv("PATH", f"{fake}{os.pathsep}{os.environ['PATH']}")
     repository = tmp_path / "repository"
