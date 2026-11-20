@@ -1,0 +1,20 @@
+# /inner creates a particle in position</mark> and leaves a particle below it
+# in position</note>.
+#
+# /middle triggers /inner. /test triggers /middle and then creates a particle
+# in the position</note> that /inner filled. The create fails because the
+# Guarantee of /inner for position</note> passes through /middle to /test.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</middle>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</middle>::position<trigger_pos>.
+        create a particle in position<box>::action</middle>::position<iface>::position</mark>::position</note>.
+    }
+}

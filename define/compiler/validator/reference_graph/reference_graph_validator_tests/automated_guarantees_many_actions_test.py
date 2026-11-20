@@ -243,6 +243,31 @@ def test_caller_guarantee_below_particle_its_callee_created_applies(
     ]
 
 
+def test_callee_particle_below_particle_it_created_propagates_through_caller(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.CreateInOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].populated_at.line == 8
+    assert all_diags[0].populated_at.column == 30
+    assert all_diags[0].populated_at.file_path == "inner.dfn"
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</middle>::position<iface>::position</mark>::position</note>"
+    )
+    assert all_diags[0].location.line == 18
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == "test.dfn"
+    assert action_graph(result.concrete_program) == [
+        (_MIDDLE, _INNER),
+        (_TEST, _MIDDLE),
+    ]
+
+
 def test_earlier_callee_move_applies_before_later_callee_refills_its_origin(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

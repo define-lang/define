@@ -14,7 +14,6 @@ import pytest
 from define.compiler import definition_pipeline, work_pool
 from define.compiler.association_resolution import association_resolver
 from define.compiler.validator.reference_graph import (
-    action_contract,
     action_definition_validator,
     reference_graph_validator,
 )
@@ -205,83 +204,6 @@ def test_shared_referenced_definition_is_validated_once():
         _CALLER_NAME: 1,
         _OTHER_CALLER_NAME: 1,
     }
-
-
-def test_callers_share_the_completed_callee_contract():
-    source = _CALLEE_AND_CALLER_SOURCE + _caller_source("other_caller")
-    source = source.replace(
-        "        create a particle in position<gateway>.\n",
-        (
-            "        create a particle in position<gateway>.\n"
-            "        create a particle in position<gateway>::position</gateway>.\n"
-            "        destroy the particle in position<gateway>::position</gateway>::action</callee>::position<made>.\n"
-        ),
-    )
-    # A caller's contract refers to the callee's contract only for what the
-    # callee left below a particle it created.
-    source = source.replace(
-        "    define the position<made>.\n",
-        "    it also assigns the position</mark>.\n    define the position<made>.\n",
-    )
-    source = source.replace(
-        "        create a particle in position<made>.\n",
-        "        create a particle in position<made>.\n        create a particle in position</mark>.\n        create a particle in position</mark>::position</note>.\n",
-    )
-    source = (
-        "define the potential position<my.domain.com:my_lib:/note>.\n"
-        "define the potential position<my.domain.com:my_lib:/mark> {\n"
-        "    it may only contain particles where {\n"
-        "        it has the position</note>.\n"
-        "    }\n"
-        "}\n"
-    ) + source
-    program = _structural_program(source)
-    contracts: dict[str, action_contract.ActionContract] = {}
-    original_analyze = action_definition_validator.ActionDefinitionValidator.analyze
-
-    def collect_contract(
-        validator: action_definition_validator.ActionDefinitionValidator,
-    ) -> action_definition_validator.ActionValidatorResult:
-        result = original_analyze(validator)
-        contracts[result.action.definition.typed_name.full_typed_name] = result.contract
-        return result
-
-    with mock.patch.object(
-        action_definition_validator.ActionDefinitionValidator,
-        "analyze",
-        autospec=True,
-        side_effect=collect_contract,
-    ):
-        found_diagnostics, _ = _run_pipeline(program, max_workers=1)
-
-    assert found_diagnostics == []
-    (callee_mark,) = [
-        guaranteed.guarantee
-        for guaranteed in contracts[_CALLEE_NAME].guarantees
-        if guaranteed.position == ("position<my.domain.com:my_lib:/mark>",)
-    ]
-    assert isinstance(callee_mark, action_contract.OccupiedByNewGuarantee)
-    assert callee_mark.left_in_child_positions is not None
-    for caller_name in (_CALLER_NAME, _OTHER_CALLER_NAME):
-        (caller_gateway,) = [
-            guaranteed.guarantee
-            for guaranteed in contracts[caller_name].guarantees
-            if guaranteed.position == (caller_name, "position<gateway>")
-        ]
-        assert isinstance(caller_gateway, action_contract.OccupiedByNewGuarantee)
-        assert caller_gateway.left_in_child_positions is not None
-        left_in_gateway = caller_gateway.left_in_child_positions.particles[
-            "position<my.domain.com:my_lib:/gateway>"
-        ].guarantee
-        assert isinstance(left_in_gateway, action_contract.OccupiedByNewGuarantee)
-        assert left_in_gateway.left_in_child_positions is not None
-        left_in_mark = left_in_gateway.left_in_child_positions.particles[
-            "position<my.domain.com:my_lib:/mark>"
-        ].guarantee
-        assert isinstance(left_in_mark, action_contract.OccupiedByNewGuarantee)
-        assert (
-            left_in_mark.left_in_child_positions is callee_mark.left_in_child_positions
-        )
 
 
 def test_reference_failure_prevents_referencing_action_validation():

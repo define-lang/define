@@ -89,7 +89,6 @@ py_test(
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/reference_graph:abstract_program",
-        "//define/compiler/validator/reference_graph:action_contract",
         "//define/compiler/validator/reference_graph:action_definition_validator",
         "//define/compiler/validator/reference_graph:reference_graph_validator",
         "//define/compiler/validator/structural:program_validator",
