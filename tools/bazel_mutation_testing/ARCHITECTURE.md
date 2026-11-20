@@ -1,268 +1,138 @@
 # Bazel Mutation Testing
 
-Decisions about the intent of this mutation tester, newest last within each
-section. Started 2026-11-16.
+The problems this mutation tester solves, and the intentions behind its design.
 
 ## Goal
 
 - Mutation-test both Rust and Python with one tool, driven by Bazel, so that a
   test in any language can kill a mutant in any language. Much of our Rust is
   tested only by Python tests through PyO3 extensions.
-- Replace mutmut if this proves faster, since mutmut is too slow for regular
-  use. Reusing mutmut only to generate Python mutants is acceptable.
+- Be fast enough for regular use.
 
-## Decisions
+## Mutants
 
-- **Generate mutants per language as patches**, which a worker applies to its
-  worktree.
 - **Use existing mutant generators; do not write our own.** Choosing realistic
-  mutations is most of a generator's value and a lot of upkeep. Our code only
-  converts each generator's output into patches.
-- **Generate Python mutants with mutmut's generator**, through its internal API
-  with mutmut pinned.
-- **Mutate one area at a time.** A run names an area as one or more target
-  patterns, such as `//define/compiler/... //crates/...`. It mutates only the
-  files in the area and runs only the tests in it. A mutant that only a test
-  outside the area would kill is reported as a survivor. The area can be the
-  whole repository. A later mode will mutate only the lines a change touches, by
-  filtering the mutant list to the diff.
-- **Run by hand only.** There is no viable way to run it in CI yet.
-- **Run every test in the area for every mutant, and let the test cache
-  choose.** `bazelisk test <area> --notest_keep_going` reruns only tests whose
-  inputs the patch changed, and stops at the first failure. Most mutants are
-  killed, so most runs end early. No `rdeps` query or `--test_filter` is needed.
-  A mutant tested before costs about 2 seconds, since every action it needs is
-  cached.
-- **Build everything in the area, not only what the tests need.** A mutant that
-  breaks any build action in the area is killed. The ruff and ast-grep lint
-  aspects apply only to the targets a command names, so `--build_tests_only`
-  would skip them on every library. On a sample of `crates/source_scanning`
-  mutants, building everything added about 0.1 seconds per mutant.
-- **Skip the tests tagged `no-coverage`.** They are the tests that find cases
-  the other tests must then cover, and the resource tests, which measure what
-  compiling costs rather than what it does. They were also the slowest tests,
-  and running them with the others overloaded the machine. A separate
-  `no-mutation` tag is not needed.
-- **Flaky tests may count as kills.** The repository has no known flaky tests.
-- **Any failure kills a mutant**, whether a test, a build action, the compiler
-  or a lint fails. Exit 0 is a survivor. Otherwise record the test or action
-  that failed first, from the build events. Timeouts count as kills but are
-  reported separately.
-- **Rejected: a separate outcome for mutants that the compiler or a lint
-  rejects.** Since the run stops at the first failure, a mutant that both a lint
-  and a test reject got whichever outcome failed first, which varied from run to
-  run. A lint that rejects mutants only for their shape is a lint setting to
-  change, below.
-- **Use a 60-second test timeout** for every test size. Without the
-  `no-coverage` tests, the slowest test takes under 8 seconds even when every
-  test runs at once.
-- **Format each mutant before testing it**, since formatting never makes a
-  change impossible to commit. Build the formatter once per run and run its
-  binary on the one mutated file, not through `bazelisk run`. A mutant that the
-  formatter rejects no longer parses, such as `||` in a `let` chain, so it is
-  killed, with the formatter as its culprit. The formatter's errors have no
-  structured form, so when it fails, it formats the unchanged file too: if that
-  fails as well, the formatter itself is broken, and the run stops rather than
-  record a kill that a broken tool caused.
+  mutations is most of a generator's value and a lot of upkeep. The tester only
+  turns each generator's output into patches that a worker applies.
+- **Generate Rust mutants with cargo-mutants and Python mutants with mutmut.**
+  Both list mutants from source alone, without building anything. Each Python
+  mutant keeps mutmut's name for it, so that its result is comparable with
+  mutmut's.
+- **Mutate one area at a time.** An area is a set of target patterns. A run
+  mutates only the area's sources and runs only the area's tests, so a mutant
+  that only a test outside the area would kill is a survivor.
+- **Mutate only code that the tests are meant to check.** The tester leaves out
+  test helpers, files that builds generate, and code generators. A generator's
+  mutant changes only the code it generates, so a surviving one does not show
+  which test is missing.
+- **Test a commit, not the working tree,** so that a run's results describe code
+  that someone can check out. A run resumes only from results of the same
+  commit, area and settings.
+
+## Testing a Mutant
+
+- **Run every test in the area for every mutant, and let Bazel's cache choose.**
+  Only the tests that a mutant's change reaches run again, so the tester needs
+  no query of its own to choose tests.
+- **Stop at the first failure.** Most mutants are killed, so most runs end
+  early.
+- **Any failure kills a mutant,** whether a test, a build action, the compiler
+  or a lint fails, and the result names what failed first. Running out of time
+  or memory is a kill, reported separately, since the mutant may only have made
+  a test slower or larger. A test that fails only sometimes also counts as a
+  kill.
+- **Build everything in the area, not only what the tests need,** so that the
+  lints run on every library, and a mutant that breaks any build action is
+  killed.
+- **Do not build Define programs that no test runs.** Bazel gives a build action
+  no time limit, unlike a test, so a mutant that makes the compiler loop forever
+  while it compiles such a program would stop its worker.
+- **Give every generator a time limit, in every build.** A generator imports
+  compiler code that the tester mutates, so a mutant could make a generator loop
+  forever.
+- **Skip the tests that look for new cases or measure cost.** They find cases
+  that the other tests must then cover, or measure what compiling costs rather
+  than what it does, and they are the slowest tests.
+- **Give every test one generous time limit,** so that a mutant that loops
+  forever is caught without failing a slow but correct test.
+- **Give every action one generous memory limit,** so that a mutant that makes a
+  test use memory without bound is killed alone. Otherwise the machine runs out
+  of memory and kills other programs, such as the workers.
+- **Format each mutant before testing it,** since formatting never makes a
+  change impossible to commit. A mutant that the formatter rejects no longer
+  parses, so it is killed. When the formatter fails, the tester checks that it
+  still formats the unchanged file, so that a broken formatter stops the run
+  rather than kill mutants.
+- **Check every run with a canary,** a test that is certain to fail, added in
+  the area. The run requires that test to be what fails, so that the run shows
+  its tests can detect a change.
+
+## Lints
+
 - **Turn off only the lints that reject mutants for their shape.** Some lints,
   such as unused-variable lints, reject a mutant because of how the mutation is
-  written, not because of the bug it stands for. Mutation runs turn those lints
-  off. Choose them by counting which lints kill mutants and checking examples of
-  each. `bzl/lint_settings.bzl` lists the lints turned off.
+  written, not because of the bug it stands for.
   - The test for each lint: could a developer write the same wrong behavior in a
     form the lint accepts? If so, its kill would claim our checks catch a bug
-    they do not, and mutation runs turn it off. If not, the lint is what would
+    they do not, so mutation runs turn it off. If not, the lint is what would
     catch that bug, and its kill is valid.
-  - Turned off: lints about what deleted code leaves behind, such as unused
-    variables, imports and helpers, or a function that could now be `const`.
-    Also lints about how code is spelled, and the repository's ban on `/`, which
-    `checked_div` gets around.
-  - So far, no lint passes the test, so every reviewed lint is turned off. Even
-    a lint that finds a comparison that always holds rejects only one spelling:
-    `value >= 0` on an unsigned value is rejected, but `true`, which behaves the
-    same, is not. Compile errors and unparseable mutants are always valid kills.
+  - Lints about what deleted code leaves behind, or about how code is spelled,
+    fail the test. So do lints that a turned-off lint leaves unsatisfied, such
+    as unused suppression comments.
+  - Compile errors, type errors and unparseable mutants are always valid kills.
+    No type-correct code has the value or call that a type error reports.
   - The choice is per lint, so turning one off loses the rare real bug it would
-    catch. It holds for the mutants that cargo-mutants makes, whose
-    unused-variable kills all come from replacing a body. Review the lints again
-    for a new generator, such as mutmut's.
-- **Name the lints that kill each mutant in its culprit,** read from the failed
-  action's own standard error. With
-  `--experimental_build_event_upload_strategy=local`, the action's build event
-  names it as a local file, rather than a blob in the remote cache, so nothing
-  reads Bazel's console. Mutation runs set rules_rust's `error_format` and
-  `clippy_error_format` to `json`, and `//tools/bzl:lint_json`, which makes the
-  ast-grep and Ruff aspects report JSON lines. Each tool then names each error's
-  lint, rule or code in a field, rather than in text meant for people. A culprit
-  says `unidentified error` when it cannot name what failed, so that no
-  unreviewed failure looks like a reviewed one. A lint matters only when it
-  fails first: if a test fails first, the lint changed nothing. A run whose
-  culprits name only reviewed lints shows the lint settings are complete.
-- **Rejected: a separate tally that builds every mutant with `--keep_going`** to
-  find every lint that rejects it. It answers more than the review needs, for a
-  second pass over every mutant. One partial tally, over 1,435 mutants, chose
-  the lint settings.
-- **Turn lints off through every Rust target's lint config.** `lint_config()`
-  names a lint config in `//tools/bzl` that wraps the one from `Cargo.toml`, and
-  appends an `--allow` flag for each lint that
-  `--//tools/bzl:allowed_rust_lints` names. The flags then come after every
-  other lint flag, for rustc and clippy alike. A run passes its turned-off
-  lints, sorted, as that flag, and the results store records them. The flag is
-  generic, so that mutation testing's lists stay in this package, and nothing
-  outside it depends on this package. Without the flag the lint config is
-  unchanged, so ordinary builds keep their cache.
-- **Rejected: building the lint config only from rules_rust's public rules,**
-  with `extract_cargo_lints` on a copy of `Cargo.toml` that allows the
-  turned-off lints. It replaces rules_rs's generated lint config, rebuilds every
-  Rust action once, and needs a TOML rewriter, to avoid loading `LintsInfo` from
-  rules_rust's private providers, which rules_rs loads too.
-- **Rejected: rules_rust's `extra_rustc_flag` setting** to turn lints off. It
-  comes before a target's lint config, so it cannot turn off a lint that
-  `Cargo.toml` names, such as `unused_crate_dependencies`.
-- **Test which mutants the lints let through.** A test holds example mutants,
-  each expected to pass or fail them, and runs only the lints and type checks on
-  them with mutation runs' settings. It fails when a lint change rejects a
-  realistic mutant, or lets through one that could never be committed. It runs
-  the toolchain's rustc and clippy-driver directly, with the lint config's flags
-  in the order rules_rust passes them, so that it runs in ordinary test runs.
-- **Run mutants in parallel with a fixed pool of worktrees, one Bazel server
-  each,** created once per run and reused across mutants. All workers execute on
-  the local RBE service, which also shares cached results between them.
-- **Remove each worktree and its Bazel output base when a run ends,** whether
-  the run finished, failed or was interrupted. A fresh worktree's first build
-  takes about 12 seconds, all from the cache, while a kept worktree and its
-  output base take up to 1.4 GB of disk. A worktree with changes is kept, to
-  show what went wrong.
-- **Rely on the RBE service to reuse action directories between mutants.**
-  Staging each test's inputs from scratch, and deleting them afterwards, was a
-  quarter of a test run's time. The service reuses the directory of an earlier
-  action that ran the same command, which is what each mutant's reruns are. Its
-  limit on idle directories must cover the commands one mutant reruns, once for
-  each worker.
-- **Rejected: one Bazel invocation running many mutants**, each with its own
-  copies of the test targets. It multiplies the build graph by the number of
-  mutants and is much harder to build than a worker pool.
-- **Rejected: rules_rust_mutants**, which only runs a `rust_library`'s inline
-  Rust tests, and **extending mutmut**, which cannot mutate Rust.
-- **Generate Rust mutants with cargo-mutants**, through
-  `cargo mutants --list --json --diff` on a scratch Cargo manifest for each
-  Bazel crate. The manifest needs only the crate root, not the crate's
-  dependencies, since listing reads syntax alone. Every patch it listed for our
-  crates applied. It lists mutants without a Cargo build, and picks replacement
-  values from each function's declared return type. It comes from multitool,
-  like the repository's other tools, and runs the Rust toolchain's cargo, which
-  `CARGO` names.
-- **Rejected for Rust: mutest-rs**, which needs nightly and Cargo and cannot
-  emit patches, and **mewt**, which is syntax-only and has no documented patch
-  export.
-- **Mutate only files Git tracks.** Builds write some generated Rust files, such
-  as the parser's `ast.rs`, into the source tree, where a crate's module tree
-  reaches them.
-- **Test a commit, by default `HEAD`**, checked out in each worker's worktree,
-  rather than the working tree. The results store records the commit, the area
-  and the test timeout, and a run resumes only from a store with the same ones.
-- **Check every run with a canary**: a failing test appended to a crate root
-  that a `rust_test` the run tests with compiles. The canary passes the
-  repository's lints, and the run requires that test to be what fails, since a
-  lint or compile failure would not show that the tests detect a change.
-- **Find an area's crates with `bazel query`, including targets tagged
-  `manual`.** Each PyO3 extension's crate is compiled only by a manual
-  `rust_cdylib_library`. Tests still follow `bazel test`'s patterns, which skip
-  manual tests unless named.
-- **Allow one run at a time per repository.** Runs share the workers' worktrees,
-  so a second run would revert the first run's mutants mid-test. Each run holds
-  a lock in `.mutation_testing` until it ends.
-- **Generate Python mutants with mutmut's mutation visitor**, through its
-  internal API, rather than `mutmut run`. The visitor gives each mutation as a
-  replaced syntax node. The tester renders the mutated function, or for a
-  method, a copy of its class that holds only that method, and turns the changed
-  lines into a patch. Rendering a whole class for each of its methods' mutants
-  took four times as long as listing the mutants. The tester mutates what mutmut
-  mutates: the functions and methods at the top of a module, minus the lines
-  that a `# pragma: no mutate` comment excludes. The repository has no mutmut
-  configuration, so the tester reads only the pragmas.
-- **Name each Python mutant with mutmut's own name for it**, such as
-  `define.compiler.ast.xǁNodeǁname__mutmut_3`, after its location and change. A
-  result can then be compared with mutmut's result for the same mutant.
-- **Mutate the Python sources of the area's `py_library` and `py_binary` targets
-  that are not `testonly`.** Test helpers are `testonly`, and mutating them
-  would not test the code they help test.
-- **Put the canary in Python when no crate in the area has tests:** a failing
-  test appended to the first source of the area's first pytest test.
-- **Read a failed test's log for the rules that pyright names.** With
-  `//tools/bzl:lint_json`, `pyright_test` prints each error and warning as a
-  JSON line, and the culprit names it as `pyright:<rule>`. The build event of a
-  failed test names its log as a local file.
-- **Read a failed action's standard output as well as its standard error.** Ruff
-  and ast-grep report on standard output.
-- **Turn Ruff, ast-grep and pyright rules off through generic flags**, as Rust
-  lints are: `--//tools/bzl:turned_off_ruff_rules`,
-  `--//tools/bzl:turned_off_ast_grep_rules` and
-  `--//tools/bzl:turned_off_pyright_rules`. Without them, every lint command and
-  pyright config is unchanged. The results store records the run's lint flags as
-  it passes them.
-- **Review Ruff, ast-grep and pyright rules for mutmut's mutants as Rust lints
-  are reviewed,** with the same test. A partial tally of 1,144 Python mutants,
-  with every lint on, chose most of the settings. A run over 3,367 mutants with
-  those rules off then found the rest, which the first failure had hidden. Every
-  Ruff rule that fired passes the test except `F821` and `F722`, as do pyright's
-  rules about unused, unnecessary and unreachable code and one ast-grep rule
-  about annotations, so mutation runs turn them off. Most come from replacing a
-  value with None, which leaves the code that computed the value unused. `F821`
-  and `F722` stay on, as rustc's undefined names and syntax errors do: they fire
-  when mutmut changes the quoted type in a `cast`, which pyright then also
-  rejects, with an error that names no rule.
-- **Pyright's type errors are valid kills, as compile errors are.** Rules such
-  as `reportArgumentType` and `reportCallIssue` report a value or a call that
-  the code's types forbid, and no type-correct code has that value or call
-  there. The `reportUnknown...Type` rules fired only together with such an
-  error, for the values that the error leaves untyped.
-- **Run four workers by default.** On a fresh area of 772 Python mutants, two
-  workers took 533 seconds, four took 429, and six took 363, with the test cache
-  favoring the later runs. Each added worker gains less, because the workers
-  wait on each other for the RBE service: the median killed mutant took 1.3, 1.8
-  and 2.4 seconds. On `//define/... //crates/...`, six workers' Bazel servers
-  held 17 GB, between 1.9 and 4.1 GB each despite their capped heaps, and the
-  machine ran out of memory alongside its other programs. `--workers` chooses
-  another number.
-- **Limit each worker's Bazel server to a 3 GB heap and 300 idle seconds.**
-  Without a limit, the JVM lets a server's heap grow to a quarter of the
-  machine's memory before collecting it: three uncapped servers reached 20 GB,
-  though none kept more than 600 MB live. A server also stays running for three
-  hours after a run unless it exits when idle.
-- **A failed or interrupted worker stops the run.** Every other worker
-  interrupts its mutant's tests and reverts the mutant, and no stopped mutant
-  gets a result, so a resumed run tests each one again. Retrying a mutant on
-  another worker would hide a broken worker.
-- **Keep 2048 idle action directories in the RBE service.** Up to six workers
-  each rerun up to a few hundred commands for one mutant, and each worker
-  running the same command at once needs its own directory. A directory's input
-  files are hardlinks to the store's files, so one idle directory adds only
-  about 450 inodes and 0.4 MB. 2048 idle directories add about a million inodes,
-  of the store's 150 million, and under 1 GB.
-- **Do not mutate code generators.** A generator's mutant changes only the code
-  it generates, so a surviving generator mutant does not show which test is
-  missing. The tester skips the sources of targets tagged `no-mutation`, which
-  the generators are. Mutating the generated code instead would need its own way
-  to patch a generator's output.
-- **Do not build `define_binary` targets.** They compile Define programs that no
-  test runs. Bazel gives a build action no timeout, unlike a test, so a mutant
-  that makes the compiler loop forever stopped its worker while it compiled an
-  example program. The RBE service would kill the action only after its default
-  timeout of 15 minutes.
-- **Run every generator with a time limit, in every build.** A generator imports
-  compiler modules that the tester mutates, so a mutant could make it loop
-  forever. Bazel drops a `timeout` execution requirement from a rule's actions
-  and from tags, so `run_generator` runs each generator, with no shell, through
-  `//tools/run_with_timeout`, which kills the generator and every process it
-  started. `check_build_file()` rejects a genrule. A PyO3 extension's stub
-  generation still has no limit, but it only runs the extension's setup code.
-- **Write a survivors report when a run ends,** next to the results store as
-  `<store>.survivors.md`. It lists each mutant that survived or timed out,
-  grouped by file, with its patch, which the results store does not hold. A
-  resumed run lists the mutants again, so the report is complete whenever a run
-  finishes.
-- **Turn off Ruff's `RUF100`, unused `noqa` comments,** as Rust's
-  `unfulfilled_lint_expectations` is turned off. Turning a rule off leaves each
-  `noqa` comment for that rule unused, which failed the baseline of
-  `//define/...`, and a mutant that removes a rule's violation leaves its `noqa`
-  comment unused.
+    catch. Each new mutant generator needs the lints reviewed again.
+- **Name the lint that killed each mutant,** from each tool's structured report
+  rather than text meant for people. A result says when it cannot name what
+  failed, so that no unreviewed failure looks like a reviewed one. A run whose
+  results name only reviewed lints shows that the lint settings are complete.
+- **Leave ordinary builds unchanged.** Mutation runs turn lints off through
+  settings that ordinary builds do not set, so ordinary builds keep their cache,
+  and nothing outside the tester depends on its lists of lints.
+- **Test which mutants the lints let through,** with example mutants that each
+  expect to pass or fail, so that a lint change cannot silently reject realistic
+  mutants or accept ones that could never be committed.
+
+## Running
+
+- **Run by hand only.** There is no viable way to run it in CI.
+- **Run mutants in parallel on a pool of workers,** each a worktree with its own
+  Bazel server, all executing on the local remote execution service, which
+  shares cached results between them.
+- **Run as many workers as keep the CPUs busy without running out of memory.**
+  Each worker's Bazel server takes memory, and a machine that runs out of memory
+  kills other programs. Each added worker also gains less than the one before,
+  because the workers share one execution service. Bazel servers stay small and
+  exit when idle.
+- **Rely on the execution service to stop and reuse work.** It stops the tests
+  that a stopped build no longer waits for, so that a killed mutant costs no
+  more than its first failure. It reuses the directories of earlier actions that
+  ran the same command, which is what each mutant's reruns are.
+- **Allow one run at a time per repository,** since runs share the workers.
+- **A failed or interrupted worker stops the run.** Every worker reverts its
+  mutant, and a stopped mutant gets no result, so a resumed run tests it again.
+  Retrying a mutant on another worker would hide a broken worker.
+- **Remove the workers when a run ends,** however it ends, since a fresh worker
+  sets up quickly from the cache while a kept one takes a lot of disk. A worker
+  with changes left in it is kept, to show what went wrong.
+- **Report each run's survivors with the changes they make,** so that finding
+  the missing tests needs no second run. The report also lists the mutants that
+  ran out of time or memory.
+
+## Rejected
+
+- **A separate outcome for mutants that the compiler or a lint rejects.** A
+  mutant that both a lint and a test reject would get whichever fails first,
+  which varies from run to run.
+- **Finding every lint that rejects each mutant** by building every mutant to
+  the end. It answers more than choosing lint settings needs, at the cost of a
+  second pass over every mutant.
+- **One Bazel invocation that tests many mutants,** each with its own copy of
+  the tests. It multiplies the build graph by the number of mutants, and is much
+  harder to build than a worker pool.
+- **Running mutmut itself, or extending it,** since it cannot mutate Rust, and
+  Rust tools that run only a crate's own tests, since Python tests check much of
+  our Rust.
+- **Rust mutant generators that cannot produce patches** or that need a nightly
+  toolchain.

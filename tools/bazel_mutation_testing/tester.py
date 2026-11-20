@@ -128,12 +128,12 @@ def _exclusive(repository: pathlib.Path) -> Generator[None]:
     help="The timeout of every test, in seconds.",
 )
 # Six workers' Bazel servers held 17 GB of memory, which ran the machine out of
-# memory alongside its other programs. More workers would mostly wait on each
-# other for the RBE service.
+# memory alongside its other programs. Four workers left a sixth of the CPU
+# idle.
 @click.option(
     "--workers",
     type=click.IntRange(min=1),
-    default=4,
+    default=5,
     help="The number of worktrees that test mutants at once, each with its own Bazel server.",
 )
 def main(
