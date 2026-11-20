@@ -1,21 +1,14 @@
 """The lints that mutation runs turn off.
 
-A mutation run turns off the lints that reject a mutant for how the mutation is
-written rather than for the bug it stands for. For example, replacing a
-function's body with a constant leaves its parameters unused, though the bug,
-returning a wrong value, could be written with every parameter used. The worker
-passes RUST_LINTS as //tools/bzl:allowed_rust_lints, and each other list as
-the tool's //tools/bzl:turned_off_<tool>_rules.
+A mutation run turns off a lint when a developer could write the same wrong
+behavior in a form the lint accepts, such as a parameter left unused after a
+function's body became a constant. The worker passes RUST_LINTS as
+//tools/bzl:allowed_rust_lints, and each other list as the tool's
+//tools/bzl:turned_off_<tool>_rules.
 
-Every lint that has rejected a mutant so far fails that test, so mutation runs
-turn off every reviewed lint. Compile errors and unparseable mutants are still
-kills. So are the pyright rules that report a value of the wrong type, such as
-reportArgumentType: no type-correct code passes the value that the mutant
-passes. Each Rust lint here has an example in
-//tools/bazel_mutation_testing:lint_examples, which lint_examples_test checks.
-Each Ruff, ast-grep and pyright rule has an example in
-//tools/bazel_mutation_testing:python_lint_examples, which
-python_lint_examples_test checks.
+Each lint here, and each lint whose kills were reviewed and kept, has an example
+in //tools/bazel_mutation_testing:lint_examples or :python_lint_examples, which
+their tests check.
 """
 
 RUST_LINTS = [
@@ -25,8 +18,10 @@ RUST_LINTS = [
     "clippy::default_trait_access",
     "clippy::identity_op",
     "clippy::if_not_else",
+    "clippy::int_plus_one",
     "clippy::integer_division",
     "clippy::integer_division_remainder_used",
+    "clippy::manual_let_else",
     "clippy::match_same_arms",
     "clippy::match_single_binding",
     "clippy::missing_const_for_fn",
@@ -52,15 +47,18 @@ RUST_LINTS = [
 RUFF_RULES = [
     "ARG001",
     "ARG002",
+    "ARG004",
     "ARG005",
     "B007",
     "B905",
     "F401",
     "F841",
+    "FURB148",
     "PERF102",
     "PIE808",
     "PLR6301",
     "PLW0120",
+    "PLW1510",
     "RET502",
     "RUF021",
     "RUF059",
@@ -68,6 +66,7 @@ RUFF_RULES = [
     "SIM108",
     "SIM222",
     "SIM223",
+    "SIM910",
     "TC001",
     "TC003",
     "TC006",
