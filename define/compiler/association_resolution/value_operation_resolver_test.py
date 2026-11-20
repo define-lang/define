@@ -62,21 +62,15 @@ def test_concurrent_resolutions_work_out_each_key_once(
     composite = concrete_program.CompositeValueOperation(
         definition=value_operation, view_encodings=view_encodings, steps=[]
     )
-    resolved = concrete_program.OperationExecution(
-        runtime_operation=composite, arguments=[]
-    )
 
     def resolve_slowly(
         operation: ast.ValueOperationDefinition,
         _view_encodings: dict[str, ast.GlobalTypedNameReference],
-    ) -> tuple[
-        value_operation_resolver.ResolvedValueOperation,
-        concrete_program.CompositeValueOperation | None,
-    ]:
+    ) -> value_operation_resolver.ResolvedValueOperation:
         resolutions.append(operation)
         first_is_resolving.set()
         _ = finish_first.wait()
-        return resolved, composite
+        return composite
 
     monkeypatch.setattr(resolver, "_resolve_uncached_value_operation", resolve_slowly)
     second_found_no_resolution = threading.Event()
@@ -110,4 +104,4 @@ def test_concurrent_resolutions_work_out_each_key_once(
     second.join()
 
     assert resolutions == [value_operation]
-    assert results == [resolved, resolved]
+    assert results == [composite, composite]

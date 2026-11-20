@@ -34,7 +34,7 @@ def test_resolves_encoding_operations(
     () = table_diagnostics
     assert test_helpers.associated_names(table.value_encodings) == {}
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
-        "/number/add": [
+        "logical_operation</number/add>": [
             (
                 "/number/integer/add",
                 test_helpers.encoding_operation_name_location("/number/integer/add", 6),
@@ -56,7 +56,7 @@ def test_resolves_encoding_operations(
                 ],
             ),
         ],
-        "/number/negate": [
+        "logical_operation</number/negate>": [
             (
                 "/number/integer/negate",
                 test_helpers.encoding_operation_name_location(
@@ -110,7 +110,7 @@ def test_logical_operation_in_another_universe(
         name="other.com:lib:/number/add",
         fqun="test.example.com:my_lib",
     )
-    assert table.encoding_operations == {}
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {}
 
 
 def test_logical_operation_that_is_not_a_global_name(
@@ -129,7 +129,7 @@ def test_logical_operation_that_is_not_a_global_name(
             file_path=str(encoding_operations_config.CONFIG_FILE.path),
         )
     )
-    assert table.encoding_operations == {}
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {}
 
 
 def test_logical_operation_full_name_in_own_universe(
@@ -152,7 +152,7 @@ def test_logical_operation_full_name_in_own_universe(
             fqun="test.example.com:my_lib",
         )
     )
-    assert table.encoding_operations == {}
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {}
 
 
 def test_view_encoding_that_is_not_a_global_name(
@@ -171,7 +171,7 @@ def test_view_encoding_that_is_not_a_global_name(
             file_path=str(encoding_operations_config.CONFIG_FILE.path),
         )
     )
-    assert table.encoding_operations == {}
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {}
 
 
 def test_encoding_operation_that_is_not_a_global_name(
@@ -191,7 +191,7 @@ def test_encoding_operation_that_is_not_a_global_name(
         )
     )
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
-        "/number/multiply": [
+        "logical_operation</number/multiply>": [
             (
                 "/number/integer/multiply",
                 test_helpers.encoding_operation_name_location(
@@ -227,7 +227,7 @@ def test_encoding_operation_full_name_in_own_universe(
             fqun="test.example.com:my_lib",
         )
     )
-    assert table.encoding_operations == {}
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {}
 
 
 def test_unsorted_logical_operations(
@@ -242,11 +242,11 @@ def test_unsorted_logical_operations(
             encoding_operations_config.CONFIG_FILE,
             ("encoding_operations", "operation_encodings", 1, "logical_operation"),
         ),
-        logical_operation="/number/add",
-        previous_logical_operation="/number/negate",
+        abstract_operation="logical_operation</number/add>",
+        previous_abstract_operation="logical_operation</number/negate>",
     )
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
-        "/number/negate": [
+        "logical_operation</number/negate>": [
             (
                 "/number/integer/negate",
                 test_helpers.encoding_operation_name_location(
@@ -255,7 +255,7 @@ def test_unsorted_logical_operations(
                 [("a", "/number/integer/ascii"), ("result", "/number/integer/ascii")],
             ),
         ],
-        "/number/add": [
+        "logical_operation</number/add>": [
             (
                 "/number/integer/add",
                 test_helpers.encoding_operation_name_location(
@@ -283,7 +283,7 @@ def test_duplicate_encoding_operation(
             encoding_operations_config.CONFIG_FILE,
             ("encoding_operations", "operation_encodings", 1),
         ),
-        logical_operation="/number/add",
+        abstract_operation="logical_operation</number/add>",
         encoding_operation="/number/integer/add",
         first_location=test_helpers.config_field_location(
             encoding_operations_config.CONFIG_FILE,
@@ -291,7 +291,7 @@ def test_duplicate_encoding_operation(
         ),
     )
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
-        "/number/add": [
+        "logical_operation</number/add>": [
             (
                 "/number/integer/add",
                 test_helpers.encoding_operation_name_location("/number/integer/add", 6),
@@ -368,4 +368,167 @@ def test_encoding_operation_in_unconfigured_universe(
         universe="other.com:lib",
         current_universe_name="test.example.com:my_lib",
     )
-    assert table.encoding_operations == {}
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {}
+
+
+def test_abstract_operation_missing(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    assert test_helpers.load_association_table() == (
+        association_config.AssociationTable(
+            value_encodings={}, encoding_operations=None
+        ),
+        [
+            config_diagnostics.ConfigViolationDiagnostic(
+                location=test_helpers.config_field_location(
+                    encoding_operations_config.CONFIG_FILE,
+                    ("encoding_operations", "operation_encodings", 0),
+                ),
+                field_path=(
+                    "encoding_operations",
+                    "operation_encodings",
+                    0,
+                    "abstract_operation",
+                ),
+                violation_message="exactly one field is required in oneof",
+            )
+        ],
+    )
+
+
+def test_resolves_value_operation_encoding_operations(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    table, table_diagnostics = test_helpers.load_association_table()
+    # A logical operation and a Value Operation with the same name are
+    # different Abstract Operations, so associating both with the same
+    # Encoding Operation is not a duplicate.
+    () = table_diagnostics
+    negate_views = [("a", "/number/integer/ascii"), ("result", "/number/integer/ascii")]
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
+        "logical_operation</number/negate>": [
+            (
+                "/number/integer/negate",
+                test_helpers.encoding_operation_name_location(
+                    "/number/integer/negate", 6
+                ),
+                negate_views,
+            ),
+        ],
+        "operation</number/negate>": [
+            (
+                "/number/integer/negate",
+                test_helpers.encoding_operation_name_location(
+                    "/number/integer/negate", 22
+                ),
+                negate_views,
+            ),
+        ],
+        "operation</number/negate_twice>": [
+            (
+                "/number/integer/negate_twice",
+                test_helpers.encoding_operation_name_location(
+                    "/number/integer/negate_twice", 38
+                ),
+                negate_views,
+            ),
+        ],
+    }
+
+
+def test_unsorted_abstract_operations(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    table, table_diagnostics = test_helpers.load_association_table()
+    # "/number/add" sorts before "/number/negate", but the typed names
+    # sort the other way.
+    (diagnostic,) = table_diagnostics
+    assert diagnostic == config_diagnostics.UnsortedEncodingOperationDiagnostic(
+        location=test_helpers.config_field_location(
+            encoding_operations_config.CONFIG_FILE,
+            ("encoding_operations", "operation_encodings", 1, "logical_operation"),
+        ),
+        abstract_operation="logical_operation</number/negate>",
+        previous_abstract_operation="operation</number/add>",
+    )
+    negate_views = [("a", "/number/integer/ascii"), ("result", "/number/integer/ascii")]
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
+        "logical_operation</number/negate>": [
+            (
+                "/number/integer/negate",
+                test_helpers.encoding_operation_name_location(
+                    "/number/integer/negate", 22
+                ),
+                negate_views,
+            ),
+        ],
+        "operation</number/add>": [
+            (
+                "/number/integer/negate",
+                test_helpers.encoding_operation_name_location(
+                    "/number/integer/negate", 6
+                ),
+                negate_views,
+            ),
+        ],
+    }
+
+
+def test_value_operation_in_another_universe(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
+    assert diagnostic == config_diagnostics.AssociationNameInAnotherUniverseDiagnostic(
+        location=rendering.SourceLocation(
+            line=4,
+            column=19,
+            end_line=4,
+            end_column=46,
+            file_path=str(encoding_operations_config.CONFIG_FILE.path),
+        ),
+        field_name="operation",
+        name="other.com:lib:/number/negate",
+        fqun="test.example.com:my_lib",
+    )
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {}
+
+
+def test_associations_with_same_encodings(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    table, table_diagnostics = test_helpers.load_association_table()
+    (diagnostic,) = table_diagnostics
+    assert diagnostic == config_diagnostics.DuplicateAssociationEncodingsDiagnostic(
+        location=test_helpers.encoding_operation_name_location(
+            "/number/integer/negate_twice", 22
+        ),
+        abstract_operation="logical_operation</number/negate>",
+        encoding_operation="/number/integer/negate_twice",
+        first_encoding_operation="/number/integer/negate",
+        first_location=test_helpers.encoding_operation_name_location(
+            "/number/integer/negate", 6
+        ),
+    )
+    negate_views = [("a", "/number/integer/ascii"), ("result", "/number/integer/ascii")]
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
+        "logical_operation</number/negate>": [
+            (
+                "/number/integer/negate",
+                test_helpers.encoding_operation_name_location(
+                    "/number/integer/negate", 6
+                ),
+                negate_views,
+            ),
+        ],
+    }

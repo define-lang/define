@@ -1,0 +1,13 @@
+load("//tools/bzl:build_file_checks.bzl", "check_build_file")
+
+filegroup(
+    name = "full_value_operation_association",
+    testonly = True,
+    srcs = glob(["**"]),
+    visibility = [
+        "//define/compiler/association_resolution/association_resolver_tests:__pkg__",
+        "//define/testdata:__pkg__",
+    ],
+)
+
+check_build_file()

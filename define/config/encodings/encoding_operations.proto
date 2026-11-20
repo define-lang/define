@@ -12,21 +12,32 @@ message EncodingOperationsFile {
 
 // Wrapper for the repeated operation encoding field.
 message EncodingOperations {
-  // The associations between the project's logical operations and Encoding
-  // Operations, sorted by logical operation. Each pair must be unique
-  // (enforced at load time, not by proto validation).
+  // The associations between the project's Abstract Operations and Encoding
+  // Operations. Every logical_operation comes before any operation, and each
+  // group is sorted by name. Each pair must be unique (enforced at load time,
+  // not by proto validation).
   repeated OperationEncoding operation_encodings = 1;
 }
 
-// Declares that an Encoding Operation potentially performs a logical
-// operation.
+// Declares that an Encoding Operation potentially performs an Abstract
+// Operation: a logical operation or a Value Operation.
 message OperationEncoding {
-  // The short global name of a logical operation in the same universe as the
-  // project. The compiler parses it as Define parses a global name.
-  string logical_operation = 1 [(buf.validate.field).required = true];
+  // The Abstract Operation. Each field's name is the name type of the
+  // Abstract Operation that it names.
+  oneof abstract_operation {
+    option (buf.validate.oneof).required = true;
 
-  // The Encoding Operation that potentially performs the logical operation.
-  EncodingOperation encoding_operation = 2 [(buf.validate.field).required = true];
+    // The short global name of a logical operation in the same universe as
+    // the project. The compiler parses it as Define parses a global name.
+    string logical_operation = 1;
+
+    // The short global name of a Value Operation in the same universe as the
+    // project. The compiler parses it as Define parses a global name.
+    string operation = 2;
+  }
+
+  // The Encoding Operation that potentially performs the Abstract Operation.
+  EncodingOperation encoding_operation = 3 [(buf.validate.field).required = true];
 }
 
 // Which Encoding Operation an association names: its name and the encodings of

@@ -8,7 +8,11 @@ import typing
 import msgspec
 
 from define.compiler import constants
-from define.compiler.config import association_config, config_loader
+from define.compiler.config import (
+    association_config,
+    config_loader,
+    encoding_operations_config,
+)
 from define.compiler.data_structures import define_path
 from define.compiler.errors import config_diagnostics
 
@@ -20,7 +24,7 @@ if typing.TYPE_CHECKING:
 
 _NO_ASSOCIATIONS = association_config.AssociationTable(
     value_encodings=types.MappingProxyType({}),
-    encoding_operations=types.MappingProxyType({}),
+    encoding_operations=encoding_operations_config.NO_ASSOCIATIONS,
 )
 # The associations of a universe whose project config failed to load, which
 # is already reported.

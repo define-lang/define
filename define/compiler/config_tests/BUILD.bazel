@@ -37,6 +37,7 @@ py_test(
         ":test_helpers",
         "//crates/source_rendering/python:rendering",
         "//define/compiler/config:association_config",
+        "//define/compiler/config:encoding_operations_config",
         "//define/compiler/config:encodings_config",
         "//define/compiler/config:project_config",
         "//define/compiler/errors:config_diagnostics",

@@ -29,7 +29,7 @@ def test_encoding_operation_with_fewer_views(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        association_resolution_diagnostics.AssociationLogicalOperationViewCountDiagnostic(
+        association_resolution_diagnostics.AssociationAbstractOperationViewCountDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
                 column=16,
@@ -39,8 +39,8 @@ def test_encoding_operation_with_fewer_views(
             ),
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/add>",
             view_count=3,
-            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
-            logical_operation_view_count=2,
+            abstract_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+            abstract_operation_view_count=2,
             definition_location=rendering.SourceLocation(
                 line=1, column=12, end_line=1, end_column=58, file_path="negate.dfn"
             ),
@@ -53,7 +53,7 @@ def test_encoding_operation_with_different_view_name(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+        association_resolution_diagnostics.AssociationAbstractOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=9,
                 column=19,
@@ -64,8 +64,8 @@ def test_encoding_operation_with_different_view_name(
             view_number=1,
             view_name="a",
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/negate>",
-            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
-            logical_operation_view_name="value",
+            abstract_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+            abstract_operation_view_name="value",
             definition_location=rendering.SourceLocation(
                 line=2, column=16, end_line=2, end_column=26, file_path="negate.dfn"
             ),
@@ -89,8 +89,8 @@ def test_encoding_operation_with_different_view_direction(
             view_name="view<a>",
             direction="read",
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/negate>",
-            logical_operation_direction="written",
-            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+            abstract_operation_direction="written",
+            abstract_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
             association_location=rendering.SourceLocation(
                 line=6,
                 column=16,
@@ -138,8 +138,8 @@ def test_encoding_operation_view_unknown_to_logical_operation_before_view_with_d
             view_name="view<result>",
             direction="read",
             encoding_operation_name="encoding_operation<my.domain.com:my_lib:/negate/integer>",
-            logical_operation_direction="written",
-            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+            abstract_operation_direction="written",
+            abstract_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
             association_location=rendering.SourceLocation(
                 line=6,
                 column=16,
@@ -156,7 +156,7 @@ def test_encoding_operation_with_views_in_different_order(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+        association_resolution_diagnostics.AssociationAbstractOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=9,
                 column=19,
@@ -167,13 +167,13 @@ def test_encoding_operation_with_views_in_different_order(
             view_number=1,
             view_name="a",
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/negate>",
-            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
-            logical_operation_view_name="result",
+            abstract_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+            abstract_operation_view_name="result",
             definition_location=rendering.SourceLocation(
                 line=2, column=16, end_line=2, end_column=27, file_path="negate.dfn"
             ),
         ),
-        association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+        association_resolution_diagnostics.AssociationAbstractOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=13,
                 column=19,
@@ -184,8 +184,8 @@ def test_encoding_operation_with_views_in_different_order(
             view_number=2,
             view_name="result",
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/negate>",
-            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
-            logical_operation_view_name="a",
+            abstract_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+            abstract_operation_view_name="a",
             definition_location=rendering.SourceLocation(
                 line=5, column=16, end_line=5, end_column=22, file_path="negate.dfn"
             ),
@@ -198,7 +198,7 @@ def test_encoding_operations_with_same_encodings(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        association_resolution_diagnostics.DuplicateAssociatedEncodingOperationDiagnostic(
+        config_diagnostics.DuplicateAssociationEncodingsDiagnostic(
             location=rendering.SourceLocation(
                 line=26,
                 column=16,
@@ -206,10 +206,10 @@ def test_encoding_operations_with_same_encodings(
                 end_column=54,
                 file_path=".define/encodings/encoding_operations.defcl",
             ),
-            encoding_operation_name="encoding_operation<standard:/number/integer/ascii/multiply>",
-            first_encoding_operation_name="encoding_operation<standard:/number/integer/ascii/add>",
-            logical_operation_name="logical_operation<my.domain.com:my_lib:/combine>",
-            first_association_location=rendering.SourceLocation(
+            abstract_operation="logical_operation</combine>",
+            encoding_operation="standard:/number/integer/ascii/multiply",
+            first_encoding_operation="standard:/number/integer/ascii/add",
+            first_location=rendering.SourceLocation(
                 line=6,
                 column=16,
                 end_line=6,
@@ -236,8 +236,8 @@ def test_encoding_operation_with_read_write_view(
             view_name="view<a>",
             direction="read/write",
             encoding_operation_name="encoding_operation<my.domain.com:my_lib:/negate/integer>",
-            logical_operation_direction="read",
-            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+            abstract_operation_direction="read",
+            abstract_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
             association_location=rendering.SourceLocation(
                 line=6,
                 column=16,
@@ -374,7 +374,7 @@ def test_association_with_fewer_views(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        association_resolution_diagnostics.AssociationLogicalOperationViewCountDiagnostic(
+        association_resolution_diagnostics.AssociationAbstractOperationViewCountDiagnostic(
             location=rendering.SourceLocation(
                 line=6,
                 column=16,
@@ -384,8 +384,8 @@ def test_association_with_fewer_views(
             ),
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/add>",
             view_count=2,
-            logical_operation_name="logical_operation<my.domain.com:my_lib:/combine>",
-            logical_operation_view_count=3,
+            abstract_operation_name="logical_operation<my.domain.com:my_lib:/combine>",
+            abstract_operation_view_count=3,
             definition_location=rendering.SourceLocation(
                 line=1, column=12, end_line=1, end_column=59, file_path="combine.dfn"
             ),
@@ -398,7 +398,7 @@ def test_association_with_different_view_name(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+        association_resolution_diagnostics.AssociationAbstractOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=13,
                 column=19,
@@ -409,8 +409,8 @@ def test_association_with_different_view_name(
             view_number=2,
             view_name="c",
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/add>",
-            logical_operation_name="logical_operation<my.domain.com:my_lib:/combine>",
-            logical_operation_view_name="b",
+            abstract_operation_name="logical_operation<my.domain.com:my_lib:/combine>",
+            abstract_operation_view_name="b",
             definition_location=rendering.SourceLocation(
                 line=5, column=16, end_line=5, end_column=22, file_path="combine.dfn"
             ),
@@ -423,7 +423,7 @@ def test_two_associations_with_different_view_names(
 ):
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
-        association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+        association_resolution_diagnostics.AssociationAbstractOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=13,
                 column=19,
@@ -434,13 +434,13 @@ def test_two_associations_with_different_view_names(
             view_number=2,
             view_name="c",
             encoding_operation_name="encoding_operation<standard:/number/integer/ascii/add>",
-            logical_operation_name="logical_operation<my.domain.com:my_lib:/combine>",
-            logical_operation_view_name="b",
+            abstract_operation_name="logical_operation<my.domain.com:my_lib:/combine>",
+            abstract_operation_view_name="b",
             definition_location=rendering.SourceLocation(
                 line=5, column=16, end_line=5, end_column=22, file_path="combine.dfn"
             ),
         ),
-        association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+        association_resolution_diagnostics.AssociationAbstractOperationViewNameDiagnostic(
             location=rendering.SourceLocation(
                 line=37,
                 column=19,
@@ -451,8 +451,8 @@ def test_two_associations_with_different_view_names(
             view_number=3,
             view_name="x",
             encoding_operation_name="encoding_operation<standard:/number/natural/ascii/add>",
-            logical_operation_name="logical_operation<my.domain.com:my_lib:/combine>",
-            logical_operation_view_name="result",
+            abstract_operation_name="logical_operation<my.domain.com:my_lib:/combine>",
+            abstract_operation_view_name="result",
             definition_location=rendering.SourceLocation(
                 line=8, column=16, end_line=8, end_column=27, file_path="combine.dfn"
             ),

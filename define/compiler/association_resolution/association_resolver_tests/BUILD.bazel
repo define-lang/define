@@ -13,6 +13,7 @@ py_test(
         "composite_value_operation_test.py",
         "encoding_operation_test.py",
         "error_messages_test.py",
+        "full_value_operation_association_test.py",
         "local_view_test.py",
         "logical_operation_definition_test.py",
         "operation_view_requirements_test.py",
@@ -22,6 +23,7 @@ py_test(
     data = [
         "//define/testdata/association_resolution/composite_value_operation",
         "//define/testdata/association_resolution/encoding_operation",
+        "//define/testdata/association_resolution/full_value_operation_association",
         "//define/testdata/association_resolution/local_view",
         "//define/testdata/association_resolution/logical_operation_definition",
         "//define/testdata/association_resolution/operation_view_requirements",
@@ -30,7 +32,9 @@ py_test(
     ],
     deps = [
         "//crates/source_rendering/python:rendering",
+        "//define/compiler:ast",
         "//define/compiler:literal_parsers",
+        "//define/compiler/association_resolution:concrete_program",
         "//define/compiler/errors:association_resolution_diagnostics",
         "//define/compiler/errors:config_diagnostics",
         "//define/compiler/errors:reference_graph_diagnostics",

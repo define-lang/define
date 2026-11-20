@@ -1,0 +1,5 @@
+test.create(source)
+test.set_value(source, 1)
+test.create(/final_result)
+test.execute(operation<my.domain.com:my_lib:/flip>, source, /final_result)
+test.destroy(source)

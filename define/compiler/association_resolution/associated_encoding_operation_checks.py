@@ -1,4 +1,4 @@
-"""Checks of the loaded Encoding Operations that a logical operation's associations name, against those associations and against the logical operation."""
+"""Checks of the loaded Encoding Operations that an Abstract Operation's associations name, against those associations and against the Abstract Operation."""
 
 from __future__ import annotations
 
@@ -24,11 +24,11 @@ def _direction(view: ast.ViewDefinition) -> str:
 
 
 def check(
-    definition: ast.LogicalOperationDefinition,
+    definition: ast.AbstractOperationDefinition,
     definitions: Mapping[str, ast.GlobalDefinition],
     associations: Iterable[encoding_operations_config.AssociatedEncodingOperation],
 ) -> list[diagnostics.Diagnostic]:
-    """Return a diagnostic for each way a loaded Encoding Operation that one of the logical operation's associations names differs from that association, or from the logical operation in the direction of a view."""
+    """Return a diagnostic for each way a loaded Encoding Operation that one of the Abstract Operation's associations names differs from that association, or from the Abstract Operation in the direction of a view."""
     check_diagnostics: list[diagnostics.Diagnostic] = []
     for association, encoding_operation in _loaded_encoding_operations(
         definitions, associations
@@ -47,29 +47,29 @@ def check(
 
 
 def _direction_diagnostics(
-    definition: ast.LogicalOperationDefinition,
+    definition: ast.AbstractOperationDefinition,
     encoding_operation: ast.EncodingOperationDefinition,
     association_location: rendering.SourceLocation,
 ) -> list[diagnostics.Diagnostic]:
-    """Return a diagnostic for each view of the Encoding Operation whose direction differs from the logical operation's view of the same name."""
+    """Return a diagnostic for each view of the Encoding Operation whose direction differs from the Abstract Operation's view of the same name."""
     direction_diagnostics: list[diagnostics.Diagnostic] = []
     for encoding_view in encoding_operation.views:
         view_name = encoding_view.typed_name.source_typed_name
-        logical_view = definition.get_view(view_name)
-        # A view that the logical operation does not have is reported
+        abstract_operation_view = definition.get_view(view_name)
+        # A view that the Abstract Operation does not have is reported
         # where the association lists it, or where it differs from the
         # Encoding Operation.
-        if logical_view is None:
+        if abstract_operation_view is None:
             continue
-        if _direction(encoding_view) != _direction(logical_view):
+        if _direction(encoding_view) != _direction(abstract_operation_view):
             direction_diagnostics.append(
                 association_resolution_diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
                     location=encoding_view.typed_name.location,
                     view_name=view_name,
                     direction=_direction(encoding_view),
                     encoding_operation_name=encoding_operation.typed_name.source_typed_name,
-                    logical_operation_direction=_direction(logical_view),
-                    logical_operation_name=definition.typed_name.source_typed_name,
+                    abstract_operation_direction=_direction(abstract_operation_view),
+                    abstract_operation_name=definition.typed_name.source_typed_name,
                     association_location=association_location,
                 )
             )
@@ -148,8 +148,8 @@ def _loaded_encoding_operations(
 ]:
     """Yield the Encoding Operation of each of the associations that the program loaded, with its association.
 
-    A program loads the Encoding Operations of a logical operation only if
-    it executes the logical operation.
+    A program loads an Encoding Operation only if association resolution
+    chooses it.
     """
     for association in associations:
         reference = association.reference

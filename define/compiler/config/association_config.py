@@ -27,13 +27,10 @@ class AssociationTable(msgspec.Struct, frozen=True):
     # quality whose associated encodings are all in universes that the project
     # does not configure has an empty list.
     value_encodings: Mapping[str, list[ast.GlobalTypedNameReference]] | None
-    # The Encoding Operations associated with each of the project's logical
-    # operations, by the logical operation's short global name, or None if a
-    # diagnostic in the encoding operations config keeps them from being used.
-    encoding_operations: (
-        Mapping[str, list[encoding_operations_config.AssociatedEncodingOperation]]
-        | None
-    )
+    # The Encoding Operations associated with the project's Abstract
+    # Operations, or None if a diagnostic in the encoding operations config
+    # keeps them from being used.
+    encoding_operations: encoding_operations_config.EncodingOperationAssociations | None
 
 
 def load_association_table(

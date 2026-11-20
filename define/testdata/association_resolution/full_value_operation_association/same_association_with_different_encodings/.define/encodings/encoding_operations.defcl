@@ -1,0 +1,36 @@
+encoding_operations: {
+  operation_encodings: [
+    {
+      operation: "/flip"
+      encoding_operation: {
+        name: "/flip/ascii"
+        views: [
+          {
+            view: "a"
+            encoding: "standard:/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "standard:/number/integer/ascii"
+          }
+        ]
+      }
+    },
+    {
+      operation: "/flip"
+      encoding_operation: {
+        name: "/flip/ascii"
+        views: [
+          {
+            view: "a"
+            encoding: "standard:/number/natural/ascii"
+          },
+          {
+            view: "result"
+            encoding: "standard:/number/integer/ascii"
+          }
+        ]
+      }
+    }
+  ]
+}

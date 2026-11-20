@@ -26,13 +26,13 @@ class OperationExecutionStep(msgspec.Struct, frozen=True):
 
 
 class AssociatedEncodingOperationViewDirectionDiagnostic(diagnostics.Diagnostic):
-    """Diagnostic for a view of an associated Encoding Operation whose direction differs from the logical operation's view of the same name."""
+    """Diagnostic for a view of an associated Encoding Operation whose direction differs from the Abstract Operation's view of the same name."""
 
     view_name: str
     direction: str
     encoding_operation_name: str
-    logical_operation_direction: str
-    logical_operation_name: str
+    abstract_operation_direction: str
+    abstract_operation_name: str
     # Where the association is written.
     association_location: rendering.SourceLocation
 
@@ -41,20 +41,20 @@ class AssociatedEncodingOperationViewDirectionDiagnostic(diagnostics.Diagnostic)
         return (
             f"'{self.view_name}' is {self.direction} in"
             + f" '{self.encoding_operation_name}', but"
-            + f" {self.logical_operation_direction} in"
-            + f" '{self.logical_operation_name}', and they are associated"
+            + f" {self.abstract_operation_direction} in"
+            + f" '{self.abstract_operation_name}', and they are associated"
             + f" here:\n{sources.render_location(self.association_location)}"
         )
 
 
-class AssociationLogicalOperationViewCountDiagnostic(diagnostics.Diagnostic):
-    """Diagnostic for an association that lists a different number of Interface Views than its logical operation has."""
+class AssociationAbstractOperationViewCountDiagnostic(diagnostics.Diagnostic):
+    """Diagnostic for an association that lists a different number of Interface Views than its Abstract Operation has."""
 
     encoding_operation_name: str
     view_count: int
-    logical_operation_name: str
-    logical_operation_view_count: int
-    # Where the logical operation is defined.
+    abstract_operation_name: str
+    abstract_operation_view_count: int
+    # Where the Abstract Operation is defined.
     definition_location: rendering.SourceLocation
 
     @typing.override
@@ -62,21 +62,21 @@ class AssociationLogicalOperationViewCountDiagnostic(diagnostics.Diagnostic):
         return (
             f"this association lists {self.view_count} views for"
             + f" '{self.encoding_operation_name}', but"
-            + f" '{self.logical_operation_name}' has"
-            + f" {self.logical_operation_view_count}, defined"
+            + f" '{self.abstract_operation_name}' has"
+            + f" {self.abstract_operation_view_count}, defined"
             + f" here:\n{sources.render_location(self.definition_location)}"
         )
 
 
-class AssociationLogicalOperationViewNameDiagnostic(diagnostics.Diagnostic):
-    """Diagnostic for a view that an association lists under a different name than its logical operation's view at the same place."""
+class AssociationAbstractOperationViewNameDiagnostic(diagnostics.Diagnostic):
+    """Diagnostic for a view that an association lists under a different name than its Abstract Operation's view at the same place."""
 
     view_number: int
     view_name: str
     encoding_operation_name: str
-    logical_operation_name: str
-    logical_operation_view_name: str
-    # Where the logical operation's view is defined.
+    abstract_operation_name: str
+    abstract_operation_view_name: str
+    # Where the Abstract Operation's view is defined.
     definition_location: rendering.SourceLocation
 
     @typing.override
@@ -84,8 +84,8 @@ class AssociationLogicalOperationViewNameDiagnostic(diagnostics.Diagnostic):
         return (
             f"this association lists '{self.view_name}' as view"
             + f" {self.view_number} of '{self.encoding_operation_name}', but view"
-            + f" {self.view_number} of '{self.logical_operation_name}' is"
-            + f" '{self.logical_operation_view_name}', defined"
+            + f" {self.view_number} of '{self.abstract_operation_name}' is"
+            + f" '{self.abstract_operation_view_name}', defined"
             + f" here:\n{sources.render_location(self.definition_location)}"
         )
 
@@ -146,26 +146,6 @@ class AssociationViewNameDiagnostic(diagnostics.Diagnostic):
             + f" {self.view_number} of '{self.encoding_operation_name}', but its"
             + f" view {self.view_number} is '{self.encoding_operation_view_name}',"
             + f" defined here:\n{sources.render_location(self.definition_location)}"
-        )
-
-
-class DuplicateAssociatedEncodingOperationDiagnostic(diagnostics.Diagnostic):
-    """Diagnostic for an association that lists the same encodings as an earlier association of the same logical operation."""
-
-    encoding_operation_name: str
-    first_encoding_operation_name: str
-    logical_operation_name: str
-    # Where the earlier association is written.
-    first_association_location: rendering.SourceLocation
-
-    @typing.override
-    def render_message(self, sources: rendering.SourceMap, /) -> str:
-        return (
-            f"this association of '{self.encoding_operation_name}' with"
-            + f" '{self.logical_operation_name}' lists the same encodings as the"
-            + f" association of '{self.first_encoding_operation_name}', so the"
-            + " compiler cannot choose between them. That association is written"
-            + f" here:\n{sources.render_location(self.first_association_location)}"
         )
 
 

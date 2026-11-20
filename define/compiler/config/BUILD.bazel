@@ -154,6 +154,7 @@ py_library(
     deps = [
         ":association_config",
         ":config_loader",
+        ":encoding_operations_config",
         ":local_deps_config",
         "//crates/source_rendering/python:rendering",
         "//define/compiler:constants",

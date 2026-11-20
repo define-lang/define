@@ -7,6 +7,7 @@ import typing
 from crates.source_rendering.python import rendering
 from define.compiler.config import (
     association_config,
+    encoding_operations_config,
     encodings_config,
     project_config,
 )
@@ -49,7 +50,10 @@ def test_has_encodings_false_does_not_read_encodings(
     monkeypatch.chdir(testdata_project_directory)
 
     assert test_helpers.load_association_table() == (
-        association_config.AssociationTable(value_encodings={}, encoding_operations={}),
+        association_config.AssociationTable(
+            value_encodings={},
+            encoding_operations=encoding_operations_config.NO_ASSOCIATIONS,
+        ),
         [],
     )
 
@@ -61,7 +65,8 @@ def test_missing_encodings(
 
     assert test_helpers.load_association_table() == (
         association_config.AssociationTable(
-            value_encodings=None, encoding_operations={}
+            value_encodings=None,
+            encoding_operations=encoding_operations_config.NO_ASSOCIATIONS,
         ),
         [
             config_diagnostics.EncodingsConfigNotFoundDiagnostic(
@@ -305,7 +310,8 @@ def test_encoding_missing(
 
     assert test_helpers.load_association_table() == (
         association_config.AssociationTable(
-            value_encodings=None, encoding_operations={}
+            value_encodings=None,
+            encoding_operations=encoding_operations_config.NO_ASSOCIATIONS,
         ),
         [
             config_diagnostics.ConfigViolationDiagnostic(

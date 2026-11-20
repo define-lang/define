@@ -162,23 +162,21 @@ def encoding_name(name: str, line: int) -> tuple[str, rendering.SourceLocation]:
 
 
 def associated_encoding_operations(
-    associations: Mapping[
-        str, list[encoding_operations_config.AssociatedEncodingOperation]
-    ]
-    | None,
+    associations: encoding_operations_config.EncodingOperationAssociations | None,
 ) -> dict[str, list[tuple[str, rendering.SourceLocation, list[tuple[str, str]]]]]:
-    """Return the Encoding Operations associated with each logical operation, as their names' text and locations, and their views' names and encodings' text, from associations that can be used."""
+    """Return the Encoding Operations associated with each Abstract Operation, by the Abstract Operation's short typed name, as their names' text and locations, and their views' names and encodings' text, from associations that can be used."""
     assert associations is not None
     result: dict[
         str, list[tuple[str, rendering.SourceLocation, list[tuple[str, str]]]]
     ] = {}
-    for logical_operation, encoding_operations in associations.items():
-        result[logical_operation] = []
-        for encoding_operation in encoding_operations:
+    for (name_type, short_name), encoding_operations in associations.items():
+        typed_name = f"{name_type.value}<{short_name}>"
+        result[typed_name] = []
+        for encoding_operation in encoding_operations.values():
             views: list[tuple[str, str]] = []
             for view in encoding_operation.views:
                 views.append((view.name, view.encoding.name_content.source_name))
-            result[logical_operation].append(
+            result[typed_name].append(
                 (
                     encoding_operation.reference.name_content.source_name,
                     encoding_operation.reference.location,

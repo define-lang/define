@@ -155,6 +155,11 @@ class LogicalOperationDefinition(ExecutableDefinition[LogicalOperationViewDefini
     """Represents a logical operation definition."""
 
 
+# The definition of an Abstract Operation, which an association can associate
+# with Encoding Operations.
+type AbstractOperationDefinition = LogicalOperationDefinition | ValueOperationDefinition
+
+
 class ValueDefinition(QualityDefinition):
     """Represents a value quality definition."""
 

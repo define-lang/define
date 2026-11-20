@@ -76,13 +76,40 @@ class ConfigViolationDiagnostic(diagnostics.Diagnostic):
         return f"{field_path_text}: {self.violation_message}"
 
 
+class DuplicateAssociationEncodingsDiagnostic(diagnostics.Diagnostic):
+    """Diagnostic for an Encoding Operation association that lists the same encodings as an earlier association of the same Abstract Operation.
+
+    Its location is the later association's Encoding Operation.
+    """
+
+    # The Abstract Operation's typed name, as the associations write it.
+    abstract_operation: str
+    # The later association's Encoding Operation, as it writes it.
+    encoding_operation: str
+    # The earlier association's Encoding Operation, as it writes it.
+    first_encoding_operation: str
+    # The earlier association's Encoding Operation.
+    first_location: rendering.SourceLocation
+
+    @typing.override
+    def render_message(self, sources: rendering.SourceMap, /) -> str:
+        return (
+            f"This association of Encoding Operation '{self.encoding_operation}'"
+            + f" with '{self.abstract_operation}' lists the same encodings as the"
+            + f" association of Encoding Operation '{self.first_encoding_operation}',"
+            + " so the compiler cannot choose between them. That association is"
+            + f" here:\n{sources.render_location(self.first_location)}"
+        )
+
+
 class DuplicateEncodingOperationDiagnostic(diagnostics.Diagnostic):
     """Diagnostic for an Encoding Operation association that an earlier association already makes.
 
     Its location is the later association.
     """
 
-    logical_operation: str
+    # The Abstract Operation's typed name, as the association writes it.
+    abstract_operation: str
     encoding_operation: str
     # The earlier association.
     first_location: rendering.SourceLocation
@@ -90,7 +117,7 @@ class DuplicateEncodingOperationDiagnostic(diagnostics.Diagnostic):
     @typing.override
     def render_message(self, sources: rendering.SourceMap, /) -> str:
         return (
-            f"Logical operation '{self.logical_operation}' is already associated"
+            f"'{self.abstract_operation}' is already associated"
             + f" with Encoding Operation '{self.encoding_operation}' here:\n"
             + sources.render_location(self.first_location)
         )
@@ -290,20 +317,25 @@ class SubRootPathAlreadyDeclaredDiagnostic(diagnostics.Diagnostic):
 
 
 class UnsortedEncodingOperationDiagnostic(diagnostics.Diagnostic):
-    """Diagnostic for an Encoding Operation association whose logical operation sorts before the association before it.
+    """Diagnostic for an Encoding Operation association whose Abstract Operation sorts before the Abstract Operation of the association before it.
 
-    Its location is the association's logical operation.
+    Its location is the association's Abstract Operation.
     """
 
-    logical_operation: str
-    previous_logical_operation: str
+    # The typed name of the association's Abstract Operation, as the
+    # association writes it.
+    abstract_operation: str
+    # The typed name of the Abstract Operation of the association before it,
+    # as that association writes it.
+    previous_abstract_operation: str
 
     @typing.override
     def render_message(self, _sources: rendering.SourceMap, /) -> str:
         return (
-            "Encoding Operation associations must be sorted by logical operation,"
-            + f" but '{self.logical_operation}' comes after"
-            + f" '{self.previous_logical_operation}'."
+            "Encoding Operation associations must list every 'logical_operation'"
+            + " before any 'operation', and must be sorted by name within each"
+            + f" of those two groups, but '{self.abstract_operation}' comes"
+            + f" after '{self.previous_abstract_operation}'."
         )
 
 

@@ -1,0 +1,36 @@
+encoding_operations: {
+  operation_encodings: [
+    {
+      operation: "/number/add"
+      encoding_operation: {
+        name: "/number/integer/negate"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
+    },
+    {
+      logical_operation: "/number/negate"
+      encoding_operation: {
+        name: "/number/integer/negate"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
+    }
+  ]
+}

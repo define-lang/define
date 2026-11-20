@@ -111,14 +111,14 @@ class AssociationResolver:
     def resolve_encoding_operations(
         self, encoding_operations: Iterable[ast.EncodingOperationDefinition]
     ) -> list[diagnostics.Diagnostic]:
-        """Validate each loaded Encoding Operation and check each chosen association against the Encoding Operation it names, once the chosen ones are loaded, and return the diagnostics."""
-        found: list[diagnostics.Diagnostic] = []
+        """Validate each loaded Encoding Operation and check each chosen association against the Encoding Operation it names, once the chosen ones are loaded, and return the diagnostics, with the diagnostics about the associations of each executed Value Operation."""
+        found = self._associations.value_operation_diagnostics()
         for definition in encoding_operations:
             found.extend(self._resolve_encoding_operation(definition))
         for chosen in self._associations.chosen_encoding_operations():
             found.extend(
                 associated_encoding_operation_checks.check(
-                    chosen.logical_operation,
+                    chosen.abstract_operation,
                     self._definitions,
                     [chosen.encoding_operation_association],
                 )
@@ -216,11 +216,18 @@ class AssociationResolver:
             ]
         if result is None:
             return None, argument_diagnostics
+        if isinstance(result, concrete_program.OperationExecution):
+            return concrete_program.ActionOperationExecution(
+                operation=execution.operation,
+                operation_arguments=arguments,
+                runtime_operation=result.runtime_operation,
+                arguments=result.arguments_for(arguments),
+            ), argument_diagnostics
         return concrete_program.ActionOperationExecution(
             operation=execution.operation,
             operation_arguments=arguments,
-            runtime_operation=result.runtime_operation,
-            arguments=result.arguments_for(arguments),
+            runtime_operation=result,
+            arguments=arguments,
         ), argument_diagnostics
 
 

@@ -1,0 +1,19 @@
+encoding_operations: {
+  operation_encodings: [
+    {
+      encoding_operation: {
+        name: "/number/integer/negate"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
+    }
+  ]
+}
