@@ -8,7 +8,8 @@ function's body became a constant. The worker passes RUST_LINTS as
 
 Each lint here, and each lint whose kills were reviewed and kept, has an example
 in //tools/bazel_mutation_testing:lint_examples or :python_lint_examples, which
-their tests check.
+their tests check. The lints that the repository turns off for every file under
+tools, such as T201, have no example.
 """
 
 RUST_LINTS = [
@@ -47,8 +48,10 @@ RUST_LINTS = [
 RUFF_RULES = [
     "ARG001",
     "ARG002",
+    "ARG003",
     "ARG004",
     "ARG005",
+    "B005",
     "B007",
     "B905",
     "F401",
@@ -57,19 +60,25 @@ RUFF_RULES = [
     "PERF102",
     "PIE808",
     "PLR6301",
+    "PLW0108",
     "PLW0120",
     "PLW1510",
     "RET502",
     "RUF021",
+    "RUF034",
+    "RUF046",
     "RUF059",
     "RUF100",
     "SIM108",
+    "SIM112",
     "SIM222",
     "SIM223",
     "SIM910",
+    "T201",
     "TC001",
     "TC003",
     "TC006",
+    "UP018",
 ]
 
 AST_GREP_RULES = [

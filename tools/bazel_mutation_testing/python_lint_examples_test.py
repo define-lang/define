@@ -28,6 +28,9 @@ _EXAMPLES = sorted(
 )
 _EXAMPLE_PARAMETERS = [pytest.param(example, id=example.stem) for example in _EXAMPLES]
 _TURNED_OFF = lint_flags.load().turned_off
+# The repository turns these rules off for every file under tools, so no
+# example can show what they reject.
+_WITHOUT_EXAMPLES = frozenset({"ruff:T201"})
 _PYPROJECT = runfiles.resolve_from_env("PYPROJECT")
 # The directory that the repository's configurations name paths from.
 _WORKSPACE = _PYPROJECT.parent
@@ -224,8 +227,12 @@ def test_examples_cover_the_turned_off_rules():
         turned_off.update(
             _expected(header[0], _REPOSITORY) - _expected(header[1], _MUTATION_RUN)
         )
-    assert turned_off == (
-        {f"ruff:{rule}" for rule in _TURNED_OFF.ruff}
-        | {f"ast-grep:{rule}" for rule in _TURNED_OFF.ast_grep}
-        | {f"pyright:{rule}" for rule in _TURNED_OFF.pyright}
+    assert (
+        turned_off
+        == (
+            {f"ruff:{rule}" for rule in _TURNED_OFF.ruff}
+            | {f"ast-grep:{rule}" for rule in _TURNED_OFF.ast_grep}
+            | {f"pyright:{rule}" for rule in _TURNED_OFF.pyright}
+        )
+        - _WITHOUT_EXAMPLES
     )
