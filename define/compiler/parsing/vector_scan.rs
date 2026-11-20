@@ -1092,6 +1092,38 @@ mod tests {
     }
 
     #[gtest]
+    fn name_content_with_space_only_after_first_vector_is_not_local() -> Result<()> {
+        let source = [&[b'a'; 34][..], b" b>.\n"].concat();
+        verify_that!(
+            name_content(&source),
+            eq(NameContent {
+                length: 36,
+                character_count: 36,
+                is_printable_ascii: true,
+                is_global_name: false,
+                fqun_separators: None,
+                is_local_name: false,
+            })
+        )
+    }
+
+    #[gtest]
+    fn name_content_with_slash_only_after_first_vector_is_not_local() -> Result<()> {
+        let source = [&[b'a'; 34][..], b"/b>.\n"].concat();
+        verify_that!(
+            name_content(&source),
+            eq(NameContent {
+                length: 36,
+                character_count: 36,
+                is_printable_ascii: true,
+                is_global_name: false,
+                fqun_separators: None,
+                is_local_name: false,
+            })
+        )
+    }
+
+    #[gtest]
     fn global_name_content_with_full_fqun() -> Result<()> {
         verify_that!(
             global_name_content(b"mv:define-lang.org:parser:/my_action>.\n"),

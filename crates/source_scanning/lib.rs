@@ -409,6 +409,44 @@ mod tests {
     }
 
     #[gtest]
+    fn quoted_content_with_non_ascii_characters_filling_first_vector() {
+        let source = ["é".repeat(20).as_bytes(), b"\".\n"].concat();
+        expect_that!(
+            quoted_content(&source),
+            eq(QuotedContent {
+                length: 40,
+                character_count: 20,
+                is_printable_ascii: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn quoted_content_with_unprintable_character_in_first_vector() {
+        let source = [b"a\t", &[b'a'; 38][..], b"\".\n"].concat();
+        expect_that!(
+            quoted_content(&source),
+            eq(QuotedContent {
+                length: 40,
+                character_count: 40,
+                is_printable_ascii: false,
+            })
+        );
+    }
+
+    #[gtest]
+    fn quoted_content_of_exactly_one_vector_at_end_of_source() -> Result<()> {
+        verify_that!(
+            quoted_content(&[b'a'; 32]),
+            eq(QuotedContent {
+                length: 32,
+                character_count: 32,
+                is_printable_ascii: true,
+            })
+        )
+    }
+
+    #[gtest]
     fn character_count_of_empty_text() -> Result<()> {
         verify_that!(character_count(b""), eq(0))
     }
@@ -528,6 +566,17 @@ mod tests {
             eq(RestOfLine {
                 length: 56,
                 is_printable_ascii: false,
+            })
+        )
+    }
+
+    #[gtest]
+    fn rest_of_line_of_exactly_one_vector_at_end_of_source() -> Result<()> {
+        verify_that!(
+            rest_of_line(&[b'#'; 32]),
+            eq(RestOfLine {
+                length: 32,
+                is_printable_ascii: true,
             })
         )
     }
