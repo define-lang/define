@@ -7,6 +7,10 @@ encodings: {
     {
       value: "/number"
       encoding: "/number/ascii"
+    },
+    {
+      value: "/text"
+      encoding: "/text/ascii"
     }
   ]
 }

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
+
+import pytest
 
 from crates.source_rendering.python import rendering
 from define.compiler.errors import (
@@ -34,6 +37,20 @@ def test_project_value_encoding(
     } == {
         "value<my.domain.com:my_lib:/test>": "encoding<my.domain.com:my_lib:/test/digits>"
     }
+
+
+def test_value_quality_with_two_encodings(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    with pytest.raises(
+        NotImplementedError,
+        match=re.escape(
+            "value<my.domain.com:my_lib:/test> has more than one encoding:"
+            + " ['encoding<my.domain.com:my_lib:/test/digits>',"
+            + " 'encoding<my.domain.com:my_lib:/test/letters>']"
+        ),
+    ):
+        _ = validate_testdata_project_with_reference_graph()
 
 
 def test_encoding_from_another_universe(

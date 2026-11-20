@@ -7,6 +7,10 @@ deps: {
     {
       universe_name: "mv:define-lang.org:lib"
       path: "other/lib"
+    },
+    {
+      universe_name: "mv:define-lang.org:other"
+      path: "vendor/other"
     }
   ]
 }

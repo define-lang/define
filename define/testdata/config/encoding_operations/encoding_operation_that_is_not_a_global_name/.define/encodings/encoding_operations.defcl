@@ -19,6 +19,26 @@ encoding_operations: {
           }
         ]
       }
+    },
+    {
+      logical_operation: "/number/multiply"
+      encoding_operation: {
+        name: "/number/integer/multiply"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
     }
   ]
 }

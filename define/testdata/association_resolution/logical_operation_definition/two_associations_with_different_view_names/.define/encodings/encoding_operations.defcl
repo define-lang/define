@@ -1,0 +1,44 @@
+encoding_operations: {
+  operation_encodings: [
+    {
+      logical_operation: "/combine"
+      encoding_operation: {
+        name: "standard:/number/integer/ascii/add"
+        views: [
+          {
+            view: "a"
+            encoding: "standard:/number/integer/ascii"
+          },
+          {
+            view: "c"
+            encoding: "standard:/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "standard:/number/integer/ascii"
+          }
+        ]
+      }
+    },
+    {
+      logical_operation: "/combine"
+      encoding_operation: {
+        name: "standard:/number/natural/ascii/add"
+        views: [
+          {
+            view: "a"
+            encoding: "standard:/number/natural/ascii"
+          },
+          {
+            view: "b"
+            encoding: "standard:/number/natural/ascii"
+          },
+          {
+            view: "x"
+            encoding: "standard:/number/natural/ascii"
+          }
+        ]
+      }
+    }
+  ]
+}

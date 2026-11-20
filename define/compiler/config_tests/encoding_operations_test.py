@@ -190,7 +190,21 @@ def test_encoding_operation_that_is_not_a_global_name(
             file_path=str(encoding_operations_config.CONFIG_FILE.path),
         )
     )
-    assert table.encoding_operations == {}
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
+        "/number/multiply": [
+            (
+                "/number/integer/multiply",
+                test_helpers.encoding_operation_name_location(
+                    "/number/integer/multiply", 26
+                ),
+                [
+                    ("a", "/number/integer/ascii"),
+                    ("b", "/number/integer/ascii"),
+                    ("result", "/number/integer/ascii"),
+                ],
+            ),
+        ],
+    }
 
 
 def test_encoding_operation_full_name_in_own_universe(
@@ -285,6 +299,17 @@ def test_duplicate_encoding_operation(
                     ("a", "/number/integer/ascii"),
                     ("b", "/number/integer/ascii"),
                     ("result", "/number/integer/ascii"),
+                ],
+            ),
+            (
+                "/number/natural/add",
+                test_helpers.encoding_operation_name_location(
+                    "/number/natural/add", 46
+                ),
+                [
+                    ("a", "/number/natural/ascii"),
+                    ("b", "/number/natural/ascii"),
+                    ("result", "/number/natural/ascii"),
                 ],
             ),
         ],

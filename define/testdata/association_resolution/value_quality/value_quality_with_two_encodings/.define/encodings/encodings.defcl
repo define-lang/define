@@ -1,0 +1,12 @@
+encodings: {
+  value_encodings: [
+    {
+      value: "/test"
+      encoding: "/test/digits"
+    },
+    {
+      value: "/test"
+      encoding: "/test/letters"
+    }
+  ]
+}

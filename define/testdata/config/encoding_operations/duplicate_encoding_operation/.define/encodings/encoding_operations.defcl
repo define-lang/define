@@ -39,6 +39,26 @@ encoding_operations: {
           }
         ]
       }
+    },
+    {
+      logical_operation: "/number/add"
+      encoding_operation: {
+        name: "/number/natural/add"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/natural/ascii"
+          }
+        ]
+      }
     }
   ]
 }

@@ -102,6 +102,55 @@ def test_encoding_operation_with_different_view_direction(
     ]
 
 
+def test_encoding_operation_view_unknown_to_logical_operation_before_view_with_different_direction(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        association_resolution_diagnostics.AssociationViewNameDiagnostic(
+            location=rendering.SourceLocation(
+                line=9,
+                column=19,
+                end_line=9,
+                end_column=21,
+                file_path=".define/encodings/encoding_operations.defcl",
+            ),
+            view_number=1,
+            view_name="a",
+            encoding_operation_name="encoding_operation<my.domain.com:my_lib:/negate/integer>",
+            encoding_operation_view_name="b",
+            definition_location=rendering.SourceLocation(
+                line=2,
+                column=16,
+                end_line=2,
+                end_column=22,
+                file_path="negate/integer.dfn",
+            ),
+        ),
+        association_resolution_diagnostics.AssociatedEncodingOperationViewDirectionDiagnostic(
+            location=rendering.SourceLocation(
+                line=8,
+                column=16,
+                end_line=8,
+                end_column=27,
+                file_path="negate/integer.dfn",
+            ),
+            view_name="view<result>",
+            direction="read",
+            encoding_operation_name="encoding_operation<my.domain.com:my_lib:/negate/integer>",
+            logical_operation_direction="written",
+            logical_operation_name="logical_operation<my.domain.com:my_lib:/negate>",
+            association_location=rendering.SourceLocation(
+                line=6,
+                column=16,
+                end_line=6,
+                end_column=30,
+                file_path=".define/encodings/encoding_operations.defcl",
+            ),
+        ),
+    ]
+
+
 def test_encoding_operation_with_views_in_different_order(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -228,6 +277,54 @@ def test_encoding_operation_view_without_encoding(
     ]
 
 
+def test_encoding_operation_view_without_encoding_before_view_with_different_encoding(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        association_resolution_diagnostics.AssociationViewEncodingDiagnostic(
+            location=rendering.SourceLocation(
+                line=14,
+                column=24,
+                end_line=14,
+                end_column=53,
+                file_path=".define/encodings/encoding_operations.defcl",
+            ),
+            view_name="view<result>",
+            encoding_name="encoding<standard:/number/integer/ascii>",
+            encoding_operation_name="encoding_operation<my.domain.com:my_lib:/negate/integer>",
+            encoding_operation_encoding_name="encoding<standard:/number/natural/ascii>",
+            definition_location=rendering.SourceLocation(
+                line=11,
+                column=24,
+                end_line=11,
+                end_column=63,
+                file_path="negate/integer.dfn",
+            ),
+        ),
+        structural_diagnostics.ViewMissingEncodingDiagnostic(
+            location=rendering.SourceLocation(
+                line=2,
+                column=16,
+                end_line=2,
+                end_column=22,
+                file_path="negate/integer.dfn",
+            ),
+            view_name="view<a>",
+        ),
+        structural_diagnostics.EncodingOperationViewValueQualityDiagnostic(
+            location=rendering.SourceLocation(
+                line=5,
+                column=24,
+                end_line=5,
+                end_column=37,
+                file_path="negate/integer.dfn",
+            ),
+            quality_name="value</number>",
+        ),
+    ]
+
+
 def test_associated_encoding_operation_not_defined(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -318,6 +415,48 @@ def test_association_with_different_view_name(
                 line=5, column=16, end_line=5, end_column=22, file_path="combine.dfn"
             ),
         )
+    ]
+
+
+def test_two_associations_with_different_view_names(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+            location=rendering.SourceLocation(
+                line=13,
+                column=19,
+                end_line=13,
+                end_column=21,
+                file_path=".define/encodings/encoding_operations.defcl",
+            ),
+            view_number=2,
+            view_name="c",
+            encoding_operation_name="encoding_operation<standard:/number/integer/ascii/add>",
+            logical_operation_name="logical_operation<my.domain.com:my_lib:/combine>",
+            logical_operation_view_name="b",
+            definition_location=rendering.SourceLocation(
+                line=5, column=16, end_line=5, end_column=22, file_path="combine.dfn"
+            ),
+        ),
+        association_resolution_diagnostics.AssociationLogicalOperationViewNameDiagnostic(
+            location=rendering.SourceLocation(
+                line=37,
+                column=19,
+                end_line=37,
+                end_column=21,
+                file_path=".define/encodings/encoding_operations.defcl",
+            ),
+            view_number=3,
+            view_name="x",
+            encoding_operation_name="encoding_operation<standard:/number/natural/ascii/add>",
+            logical_operation_name="logical_operation<my.domain.com:my_lib:/combine>",
+            logical_operation_view_name="result",
+            definition_location=rendering.SourceLocation(
+                line=8, column=16, end_line=8, end_column=27, file_path="combine.dfn"
+            ),
+        ),
     ]
 
 

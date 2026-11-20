@@ -231,7 +231,8 @@ def test_duplicate_value_encoding(
         ),
     )
     assert test_helpers.associated_names(table.value_encodings) == {
-        "/number": [test_helpers.encoding_name("/number/ascii", 5)]
+        "/number": [test_helpers.encoding_name("/number/ascii", 5)],
+        "/text": [test_helpers.encoding_name("/text/ascii", 13)],
     }
 
 

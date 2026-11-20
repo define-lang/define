@@ -1,0 +1,42 @@
+# The direction of each view of an Encoding Operation must match the direction of the logical operation's view of the same name. The action's execution of /test chooses /negate/integer. Its view<b> is not a view of /negate, and its view<result> is read where /negate's view<result> is written.
+define the operation<my.domain.com:my_lib:/test> {
+    define the view<amount> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<negated> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        execute the logical_operation</negate> {
+            with view<a> looking at view<amount>.
+            with view<result> looking at view<negated>.
+        }
+    }
+}
+
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</negated>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<amount> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<amount>.
+        set the value of position<amount> from literal<standard:/number>"1".
+        create a particle in position</negated>.
+        execute the operation</test> {
+            with view<amount> looking at position<amount>.
+            with view<negated> looking at position</negated>.
+        }
+    }
+}

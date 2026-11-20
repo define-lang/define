@@ -280,7 +280,18 @@ def test_duplicate_universe_name_uses_the_first_entry(
                     path_location=test_helpers.config_field_location(
                         local_deps_config.CONFIG_FILE, ("deps", "local", 0, "path")
                     ),
-                )
+                ),
+                "mv:define-lang.org:other": local_deps_config.LocalDependencyEntry(
+                    universe="mv:define-lang.org:other",
+                    path=define_path.DefinePathFromPosix(PurePosixPath("vendor/other")),
+                    universe_location=test_helpers.config_field_location(
+                        local_deps_config.CONFIG_FILE,
+                        ("deps", "local", 2, "universe_name"),
+                    ),
+                    path_location=test_helpers.config_field_location(
+                        local_deps_config.CONFIG_FILE, ("deps", "local", 2, "path")
+                    ),
+                ),
             },
             has_encodings_location=None,
             has_encoding_operations_location=None,
