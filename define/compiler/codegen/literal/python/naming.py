@@ -66,6 +66,10 @@ _NAME_PART_SEPARATOR = "_"
 # position, to tell it apart from a local position with the same name.
 _GLOBAL_POSITION_TYPE = "global_position"
 _PATH_SEPARATOR = "/"
+# A global's canonical name puts this between its FQUN and its path. An
+# authority can have a path of its own, so a canonical name can contain "/"
+# before this separator.
+_FQUN_PATH_SEPARATOR = ":/"
 
 # Filesystems commonly limit each path component to 255 bytes. Python
 # identifiers have no such limit, but a module's dotted name is also written
@@ -138,8 +142,7 @@ def _tuple_chained_name_part(chain: chained_name.ChainedNameTuple) -> str:
     for index, typed_name in enumerate(chain):
         typed_name_parts = ast.source_form_typed_name_parts(typed_name, "")
         if typed_name_parts.is_global:
-            # A global's canonical name is its universe, then its path.
-            path = typed_name_parts.source_name.split(_PATH_SEPARATOR, 1)[1]
+            path = typed_name_parts.source_name.split(_FQUN_PATH_SEPARATOR, 1)[1]
             parts.append(
                 _global_name_part(
                     index, typed_name_parts.name_type, path.split(_PATH_SEPARATOR)

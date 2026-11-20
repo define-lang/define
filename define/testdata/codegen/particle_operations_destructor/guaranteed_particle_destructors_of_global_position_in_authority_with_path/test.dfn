@@ -1,0 +1,23 @@
+# action</make> leaves particles with Destructors below the particle it creates in
+# position</box>. action</test> passes that particle to action</destroyer>,
+# which destroys it, so action</test> runs those Destructors through
+# action</make>. The authority my.domain.com/org has a path, and the method names
+# of action</make> that run the Destructors must not contain any part of the
+# authority.
+define the potential action<my.domain.com/org:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</make>.
+                it has the position</box>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</make>::position<run>.
+        move the particle in position<holder>::position</box> to action</destroyer>::position<target>.
+        create a particle in action</destroyer>::position<run>.
+    }
+}
