@@ -255,6 +255,17 @@ def test_text_where_position_definition_terminator_belongs(
     assert error.location.end_column == 63
 
 
+def test_text_after_two_spaces_where_position_definition_terminator_belongs(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error("define the potential position<standard:/path>  x\n")
+    assert isinstance(error, syntax_errors.MissingTerminatorOrBrace)
+    assert error.location.line == 1
+    assert error.location.column == 46
+    assert error.location.end_line == 1
+    assert error.location.end_column == 46
+
+
 def test_text_after_encoding_quality_assignment_terminator(
     parse_syntax_error: ParseSyntaxError,
 ):

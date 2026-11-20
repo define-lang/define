@@ -38,6 +38,14 @@ def test_short_name():
     assert name.path.name == "/a/b"
 
 
+def test_empty_universe_is_located_at_the_separator_before_the_path():
+    name = parser.parse_global_name(b"define-lang.org::/a", "c.defcl", 3, 7)
+    assert isinstance(name, ast.ReferenceGlobalNameContent)
+    assert name.fqun is not None
+    assert name.fqun.universe.name == ""
+    assert name.fqun.universe.location == _location(23, 23)
+
+
 def test_empty_name():
     assert parser.parse_global_name(b"", "c.defcl", 3, 7) == syntax_errors.EmptyName(
         location=_location(7, 7)

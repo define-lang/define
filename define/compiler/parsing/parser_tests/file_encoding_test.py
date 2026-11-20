@@ -894,6 +894,61 @@ def test_invisible_character_after_escape_in_literal(
     assert error.location.end_column == 64
 
 
+def test_invisible_character_before_escape_in_literal(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + '        set the value of position<dest> from literal</text>"\u202e\\"a".\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.InvisibleCharacterError)
+    assert error.char == "\u202e"
+    assert error.location.line == 5
+    assert error.location.column == 61
+    assert error.location.end_line == 5
+    assert error.location.end_column == 61
+
+
+def test_control_character_before_escape_in_literal(
+    parse_syntax_error: ParseSyntaxError,
+):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + '        set the value of position<dest> from literal</text>"\x01\\"a".\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.ControlCharacterError)
+    assert error.escaped_char == "\\u{1}"
+    assert error.location.line == 5
+    assert error.location.column == 61
+    assert error.location.end_line == 5
+    assert error.location.end_column == 61
+
+
+def test_invalid_utf8_before_escape_in_literal(parse_syntax_error: ParseSyntaxError):
+    error = parse_syntax_error(
+        "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
+        + "    it happens when {\n"
+        + "        this particle is created.\n"
+        + "    } and it does {\n"
+        + '        set the value of position<dest> from literal</text>"\udcff\\"a".\n'
+        + "    }\n}\n"
+    )
+    assert isinstance(error, syntax_errors.InvalidEncodingError)
+    assert error.escaped_char == "\\xed"
+    assert error.location.line == 5
+    assert error.location.column == 61
+    assert error.location.end_line == 5
+    assert error.location.end_column == 61
+
+
 def test_invisible_character_escaped_in_literal(parse_syntax_error: ParseSyntaxError):
     error = parse_syntax_error(
         "define the potential action<mv:define-lang.org:parser:/set_value> {\n"
