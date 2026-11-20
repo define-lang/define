@@ -25,6 +25,9 @@ bazelisk run --noshow_progress --ui_event_filters=-info //tools/bazel_mutation_t
   uncommitted changes, pass `--commit` a snapshot commit (see Verify).
 - A run resumes from its store, if the store was made with the same commit,
   area, test timeout and lint settings. Choose a new store name otherwise.
+- To pause a run, interrupt it once with Ctrl-C (SIGINT) and let it stop. To
+  resume it, rerun the same command. The mutants that were being tested lose
+  their results and run again.
 - Only one run at a time can use a checkout. Do not start a run while another is
   running.
 - `//define/... //crates/...` has about 15,000 mutants and takes hours. Prefer a
