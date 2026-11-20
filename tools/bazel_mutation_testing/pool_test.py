@@ -37,12 +37,14 @@ def _errored(name: str) -> results.Result:
 
 
 def _no_skipped_tests(_mutated: mutant.Mutant) -> coverage.Selection:
-    return coverage.Selection(skipped=frozenset(), covering_tests=None)
+    return coverage.Selection(skipped=frozenset(), covering_tests=None, first_test=None)
 
 
 def _skipped_tests(mutated: mutant.Mutant) -> coverage.Selection:
     skipped = f"//skipped:{mutated.name.replace(' ', '_')}"
-    return coverage.Selection(skipped=frozenset({skipped}), covering_tests=1)
+    return coverage.Selection(
+        skipped=frozenset({skipped}), covering_tests=1, first_test="//:first_test"
+    )
 
 
 def _by_name(recorded: list[results.Result]) -> list[results.Result]:

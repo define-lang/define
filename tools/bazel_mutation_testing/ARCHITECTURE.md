@@ -42,6 +42,13 @@ The problems this mutation tester solves, and the intentions behind its design.
   type checks, always run, so that skipping a test never hides a kill.
 - **Stop at the first failure.** Most mutants are killed, so most runs end
   early.
+- **Run one test before the rest.** A mutant first runs the test that runs its
+  lines and is closest to its file in the dependency graph, and runs its other
+  tests only when that test passes. A mutant in shared code runs in dozens of
+  tests. When such a mutant makes the code use memory without bound, all of
+  those tests reach their memory limits at once, which together is more memory
+  than the machine has. The closest test is also the one most likely to kill the
+  mutant.
 - **Any failure kills a mutant,** whether a test, a build action, the compiler
   or a lint fails, and the result names what failed first. Running out of time
   or memory is a kill, reported separately, since the mutant may only have made

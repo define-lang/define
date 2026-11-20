@@ -165,7 +165,13 @@ def test_failed_result_tells_which_limit_killed_the_mutant(
     assert worker.failed_result("mutant", failure, 1.0).outcome == outcome
 
 
-_ALL_TESTS = coverage.Selection(skipped=frozenset(), covering_tests=None)
+_ALL_TESTS = coverage.Selection(
+    skipped=frozenset(), covering_tests=None, first_test=None
+)
+
+_FIRST_TEST_FIRST = coverage.Selection(
+    skipped=frozenset(), covering_tests=2, first_test="//:first_test"
+)
 
 _MUTANT = mutant.Mutant(
     name="lib.rs:1:1: mutate",
@@ -290,14 +296,44 @@ def test_a_worker_restarts_its_server_after_a_number_of_commands(
     for _ in range(3):
         _ = work.test(_MUTANT, _ALL_TESTS)
 
-    commands = (tmp_path / "fake/commands").read_text(encoding="utf-8").split()
-    assert commands == [
+    assert _commands(tmp_path) == [
         "info",
         "build",
         "query",
-        "test",
-        "test",
+        "test //...",
+        "test //...",
         "shutdown",
-        "test",
-        "test",
+        "test //...",
+        "test //...",
     ]
+
+
+def _commands(tmp_path: pathlib.Path) -> list[str]:
+    return (tmp_path / "fake/commands").read_text(encoding="utf-8").splitlines()
+
+
+@_POSIX_ONLY
+def test_a_mutant_runs_its_other_tests_once_its_first_test_passes(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+):
+    work = _prepared_worker(tmp_path, monkeypatch, [], [])
+
+    result = work.test(_MUTANT, _FIRST_TEST_FIRST)
+
+    assert result.outcome == results.Outcome.SURVIVED
+    assert _commands(tmp_path)[3:] == ["test //:first_test", "test //..."]
+
+
+@_POSIX_ONLY
+def test_a_mutant_that_its_first_test_kills_runs_no_other_test(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+):
+    work = _prepared_worker(tmp_path, monkeypatch, ["killed"], [])
+
+    result = work.test(_MUTANT, _FIRST_TEST_FIRST)
+
+    assert (result.outcome, result.culprit) == (
+        results.Outcome.KILLED,
+        "//:first_test",
+    )
+    assert _commands(tmp_path)[3:] == ["test //:first_test"]

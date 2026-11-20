@@ -218,6 +218,7 @@ def _test_on_workers(
     with concurrent.futures.ThreadPoolExecutor(len(workers)) as executor:
         preparing = [executor.submit(_prepare, work) for work in workers[1:]]
         area_coverage = first.collect_coverage()
+        graph = first.dependency_graph()
         mutants = _list_and_check(first, run, results_store)
         for prepared in preparing:
             prepared.result()
@@ -235,7 +236,7 @@ def _test_on_workers(
     pool.test_all(
         workers,
         pending,
-        lambda mutated: area_coverage.select(mutated.path, mutated.lines),
+        lambda mutated: area_coverage.select(mutated.path, mutated.lines, graph),
         record,
         click.echo,
     )
@@ -263,7 +264,8 @@ def _list_and_check(
     # The canary skips no test, so that it checks every test that a mutant
     # could run.
     canary_result = work.test(
-        run_canary.mutant, coverage.Selection(skipped=frozenset(), covering_tests=None)
+        run_canary.mutant,
+        coverage.Selection(skipped=frozenset(), covering_tests=None, first_test=None),
     )
     # Any failure kills a mutant, but only a failed test shows that the run's
     # tests detect a change. A timeout or running out of memory would not show

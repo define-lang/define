@@ -9,6 +9,8 @@ if TYPE_CHECKING:
     import pathlib
     from collections.abc import Mapping
 
+    from tools.bazel_mutation_testing import dependency_graph
+
 
 class Selection(NamedTuple):
     """The tests that a mutant runs."""
@@ -18,6 +20,9 @@ class Selection(NamedTuple):
     covering_tests: int | None
     """How many tests that record coverage run the mutant's lines, or None when
     no coverage records them, so that every test runs."""
+    first_test: str | None
+    """The test that runs the mutant's lines and is closest to its file, which
+    runs alone before the other tests, or None when every test runs at once."""
 
 
 @final
@@ -43,8 +48,16 @@ class Coverage:
         self._lines = lines
         self._statement_starts = statement_starts
 
-    def select(self, path: str, lines: tuple[int, int]) -> Selection:
+    def select(
+        self,
+        path: str,
+        lines: tuple[int, int],
+        graph: dependency_graph.DependencyGraph,
+    ) -> Selection:
         """Return the tests that a mutant of `lines`, the first and last lines of `path`, runs.
+
+        `graph` holds the dependencies of the tests, from which the test that
+        runs first is the closest one.
 
         Lines that coverage recorded for no test, such as a Rust constant that
         the compiler evaluates, can still change what tests do, so no test
@@ -59,8 +72,15 @@ class Coverage:
             if tests is not None:
                 running = set(tests) if running is None else running | tests
         if running is None:
-            return Selection(skipped=frozenset(), covering_tests=None)
-        return Selection(skipped=self._tests - running, covering_tests=len(running))
+            return Selection(skipped=frozenset(), covering_tests=None, first_test=None)
+        if not running:
+            # Only the tests that record no coverage run the mutant.
+            return Selection(skipped=self._tests, covering_tests=0, first_test=None)
+        return Selection(
+            skipped=self._tests - running,
+            covering_tests=len(running),
+            first_test=graph.closest_test(path, frozenset(running)),
+        )
 
 
 def from_reports(reports: Mapping[str, list[str]], workspace: pathlib.Path) -> Coverage:

@@ -16,6 +16,7 @@ from tools.bazel_mutation_testing import (
     bazel,
     build_events,
     coverage,
+    dependency_graph,
     diagnostics,
     results,
 )
@@ -156,8 +157,8 @@ class Worker:
     ):
         """Test `run`'s mutants in the worktree of `repository` numbered `index`.
 
-        The worker calls `testing` with each mutant once the mutant's tests
-        have started. The worker calls `server_failed` when its Bazel server
+        The worker calls `testing` with each mutant as it starts to test the
+        mutant. The worker calls `server_failed` when its Bazel server
         fails during a command, before the worker runs the command again on a
         new server.
         """
@@ -271,15 +272,29 @@ class Worker:
             build_events.coverage_reports(self._build_event_file), self.worktree
         )
 
+    def dependency_graph(self) -> dependency_graph.DependencyGraph:
+        """Return the dependencies of the area's tests."""
+        tests = f"tests({bazel.query_expression(self._test_patterns)})"
+        return dependency_graph.from_dot(
+            bazel.run_checked(
+                self.worktree,
+                [
+                    "query",
+                    "--output=graph",
+                    "--nograph:factored",
+                    "--",
+                    f"deps({tests})",
+                ],
+            )
+        )
+
     def _run_passing(self, arguments: list[str]):
         """Run Bazel with `arguments`, which must pass.
 
         Raises:
             BaselineFailedError: A test or an action failed.
         """
-        completed, failure = self._finish_on_working_server(
-            self._start(arguments), arguments
-        )
+        completed, failure = self._run_tests(arguments)
         if completed.returncode == 0:
             return
         if failure is None:
@@ -324,16 +339,16 @@ class Worker:
             DirtyWorktreeError: Reverting the mutant left the worktree changed.
         """
         return msgspec.structs.replace(
-            self._test_selected(mutated, selection.skipped),
+            self._test_selected(mutated, selection),
             covering_tests=selection.covering_tests,
         )
 
     def _test_selected(
-        self, mutated: mutant.Mutant, skipped: frozenset[str]
+        self, mutated: mutant.Mutant, selection: coverage.Selection
     ) -> results.Result:
         try:
             with self._applied(mutated):
-                completed, failure, seconds = self._test_applied(mutated, skipped)
+                completed, failure, seconds = self._test_applied(mutated, selection)
         except UnformattableMutantError:
             # Such a mutant could never be committed, as any failure shows.
             return results.Result(
@@ -354,18 +369,45 @@ class Worker:
         return failed_result(mutated.name, failure, seconds)
 
     def _test_applied(
-        self, mutated: mutant.Mutant, skipped: frozenset[str]
+        self, mutated: mutant.Mutant, selection: coverage.Selection
     ) -> tuple[
         subprocess.CompletedProcess[str],
         build_events.ActionFailure | build_events.TestFailure | None,
         float,
     ]:
         start = time.monotonic()
-        arguments = self._test_arguments(skipped)
-        tests = self._start(arguments)
         self._testing(mutated)
-        completed, failure = self._finish_on_working_server(tests, arguments)
+        if selection.first_test is not None:
+            # A mutant in shared code runs in dozens of tests. A mutant that
+            # makes a loop use memory forever would make each of those tests
+            # use its whole memory limit at once, which together is more
+            # memory than the machine has.
+            completed, failure = self._run_tests(
+                [
+                    "test",
+                    f"--test_timeout={self._run.test_timeout}",
+                    *self._shared_arguments(),
+                    selection.first_test,
+                ]
+            )
+            if completed.returncode != 0:
+                return completed, failure, time.monotonic() - start
+        completed, failure = self._run_tests(self._test_arguments(selection.skipped))
         return completed, failure, time.monotonic() - start
+
+    def _run_tests(
+        self, arguments: list[str]
+    ) -> tuple[
+        subprocess.CompletedProcess[str],
+        build_events.ActionFailure | build_events.TestFailure | None,
+    ]:
+        """Run Bazel with `arguments`, and return Bazel's output and the first failure.
+
+        Raises:
+            WorkerInterruptedError: The run interrupted the worker.
+            ServerFailedError: The Bazel server failed twice.
+        """
+        return self._finish_on_working_server(self._start(arguments), arguments)
 
     @contextlib.contextmanager
     def _applied(self, mutated: mutant.Mutant) -> Generator[None]:

@@ -2,11 +2,16 @@
 # Stands in for bazelisk in worker_test.py. The directory that holds this
 # script also holds its state. Each `test` command runs the next of the
 # numbered behaviors in the `tests` directory: "fail" exits as a crashed server
-# does, "hang" waits until it is killed, and any other passes.
+# does, "hang" waits until it is killed, "killed" fails its last target's test,
+# and any other passes.
 fake=$(dirname "$0")
+events=
 for argument; do
 	case $argument in
-	--build_event_json_file=*) : >"${argument#*=}" ;;
+	--build_event_json_file=*)
+		events=${argument#*=}
+		: >"$events"
+		;;
 	esac
 done
 for argument; do
@@ -18,7 +23,21 @@ for argument; do
 		;;
 	esac
 done
-echo "$command" >>"$fake/commands"
+targets=
+target=
+patterns=no
+for argument; do
+	if [ $patterns = yes ]; then
+		targets="$targets $argument"
+		target=$argument
+	elif [ "$argument" = -- ]; then
+		patterns=yes
+	fi
+done
+case $command in
+test) echo "test$targets" >>"$fake/commands" ;;
+*) echo "$command" >>"$fake/commands" ;;
+esac
 case $command in
 info) echo "$fake/output_base" ;;
 build)
@@ -40,6 +59,10 @@ test)
 		echo $$ >"$fake/output_base/server/server.pid.txt"
 		mkfifo "$fake/never_written"
 		exec cat "$fake/never_written"
+		;;
+	killed)
+		printf '{"id":{"testResult":{"label":"%s","run":1,"shard":1,"attempt":1}},"testResult":{"status":"FAILED"}}\n' "$target" >"$events"
+		exit 3
 		;;
 	esac
 	;;

@@ -59,6 +59,7 @@ py_test(
 py_library(
     name = "coverage",
     srcs = ["coverage.py"],
+    deps = [":dependency_graph"],
 )
 
 py_test(
@@ -67,6 +68,22 @@ py_test(
     srcs = ["coverage_test.py"],
     deps = [
         ":coverage",
+        ":dependency_graph",
+    ],
+)
+
+py_library(
+    name = "dependency_graph",
+    srcs = ["dependency_graph.py"],
+)
+
+py_test(
+    name = "dependency_graph_test",
+    size = "small",
+    srcs = ["dependency_graph_test.py"],
+    deps = [
+        ":dependency_graph",
+        "@pypi//pytest",
     ],
 )
 
@@ -313,6 +330,7 @@ py_library(
         ":bazel",
         ":build_events",
         ":coverage",
+        ":dependency_graph",
         ":diagnostics",
         ":mutant",
         ":results",
@@ -351,6 +369,8 @@ pyright_test(
         ":canary_test",
         ":coverage",
         ":coverage_test",
+        ":dependency_graph",
+        ":dependency_graph_test",
         ":diagnostics",
         ":diagnostics_test",
         ":fixtures_test",
