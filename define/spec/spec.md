@@ -2243,6 +2243,8 @@ the association must also define at least one of:
 - An encoding that is assigned to one of the named Encoding Operation's
   Interface Views.
 
+Any association that violates these rules is an error.
+
 #### Code Generation for Value Operations
 
 There are two different ways code can be generated for a Value Operation: an
@@ -2265,9 +2267,9 @@ Statements Block.
 
 ##### Statement-by-Statement Compilation
 
-If there is no valid Full Value Operation Association for an executed Value
-Operation, the compiler then compiles each of the Value Operation's statements
-in its Operation Statements Block.
+If there is no Full Value Operation Association for an executed Value Operation,
+the compiler then compiles each of the Value Operation's statements in its
+Operation Statements Block.
 
 When encountering a Logical Operation Execution Statement, the compiler
 determines the encodings of the views that logical operation is looking at, and

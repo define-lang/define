@@ -641,8 +641,8 @@ longer a statement that says "execute the Encoding Operation for this value
 operation," the config from
 [DLP 48 (Encoding Operation Associations)](00048-encoding-operation-associations.md)
 now also associates Encoding Operations with logical operations. An entry now
-has either `logical_operation` or `value_operation` as the key. Here's what it
-looks like for a logical operation:
+has either `logical_operation` or `operation` as the key. Here's what it looks
+like for a logical operation:
 
 ```protocol-buffer-text-format
 encoding_operations: {
@@ -661,7 +661,7 @@ And here's a Value Operation:
 encoding_operations: {
     operation_encodings: [
         {
-            value_operation: "standard:/number/multiply_add"
+            operation: "standard:/number/multiply_add"
             encoding_operation: "/number/integer/64bit/fmadd"
         },
     ]
@@ -669,7 +669,7 @@ encoding_operations: {
 ```
 
 Note that one entry in `operation_encodings` may not specify both
-`logical_operation` and `value_operation`.
+`logical_operation` and `operation`.
 
 An Encoding Operation associated with a logical operation must have the same
 views as the logical operation, with the same names and directions, in the same
