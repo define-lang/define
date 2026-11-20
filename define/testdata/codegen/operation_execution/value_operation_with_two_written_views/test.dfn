@@ -1,0 +1,38 @@
+# An action executes a Value Operation with two written views. Before that execution, the action executes a Value Operation whose one written view has the same name as one of them.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</least>.
+    it also assigns the position</smallest>.
+    it also assigns the position</largest>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        define the position<second> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<first>.
+        set the value of position<first> from literal<standard:/number>"7".
+        create a particle in position<second>.
+        set the value of position<second> from literal<standard:/number>"3".
+        create a particle in position</least>.
+        execute the operation</smaller> {
+            with view<a> looking at position<first>.
+            with view<b> looking at position<second>.
+            with view<smaller> looking at position</least>.
+        }
+        create a particle in position</smallest>.
+        create a particle in position</largest>.
+        execute the operation</order> {
+            with view<a> looking at position<first>.
+            with view<b> looking at position<second>.
+            with view<smaller> looking at position</smallest>.
+            with view<larger> looking at position</largest>.
+        }
+    }
+}

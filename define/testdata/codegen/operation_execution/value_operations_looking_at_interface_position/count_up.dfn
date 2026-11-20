@@ -1,0 +1,26 @@
+define the potential action<my.domain.com:my_lib:/count_up> {
+    define the position<trigger>.
+    define the position<count> {
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the position<sum> {
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        execute the operation<standard:/number/integer/increment> {
+            with view<value> looking at position<count>.
+        }
+        execute the operation<standard:/number/integer/add> {
+            with view<a> looking at position<count>.
+            with view<b> looking at literal<standard:/number>"10".
+            with view<result> looking at position<sum>.
+        }
+        destroy the particle in position<trigger>.
+    }
+}

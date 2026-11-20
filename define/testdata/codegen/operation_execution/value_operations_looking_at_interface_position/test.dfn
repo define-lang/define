@@ -1,0 +1,17 @@
+# An action executes one Value Operation that reads and writes its interface position, and another Value Operation that only reads it.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</count_up>.
+            }
+        }
+        create a particle in position<worker>.
+        create a particle in position<worker>::action</count_up>::position<count>.
+        set the value of position<worker>::action</count_up>::position<count> from literal<standard:/number>"4".
+        create a particle in position<worker>::action</count_up>::position<sum>.
+        create a particle in position<worker>::action</count_up>::position<trigger>.
+    }
+}
