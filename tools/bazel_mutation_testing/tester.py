@@ -222,7 +222,7 @@ def _test_on_workers(
         for prepared in preparing:
             prepared.result()
 
-    pending = [listed for listed in mutants if listed.name not in results_store.results]
+    pending = [listed for listed in mutants if _untested(listed, results_store)]
 
     def record(result: results.Result):
         results_store.add(result)
@@ -237,8 +237,15 @@ def _test_on_workers(
         pending,
         lambda mutated: area_coverage.select(mutated.path, mutated.lines),
         record,
+        click.echo,
     )
     return mutants
+
+
+def _untested(listed: mutant.Mutant, results_store: results.Store) -> bool:
+    """Return whether `listed` has no result, or an error result, which a resumed run tests again."""
+    result = results_store.results.get(listed.name)
+    return result is None or result.outcome == results.Outcome.ERROR
 
 
 def _list_and_check(

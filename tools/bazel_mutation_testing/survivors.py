@@ -14,12 +14,14 @@ if TYPE_CHECKING:
     from tools.bazel_mutation_testing import mutant
 
 # A mutant that a time or memory limit killed may only have made a test slower
-# or larger, so the report lists it with the survivors.
+# or larger, so the report lists it with the survivors. A mutant with an error
+# has no outcome yet.
 REPORTED = frozenset(
     {
         results.Outcome.SURVIVED,
         results.Outcome.TIMED_OUT,
         results.Outcome.OUT_OF_MEMORY,
+        results.Outcome.ERROR,
     }
 )
 
@@ -63,6 +65,8 @@ def render(
                 lines.extend([f"Timed out: {result.culprit}", ""])
             elif result.outcome == results.Outcome.OUT_OF_MEMORY:
                 lines.extend([f"Ran out of memory: {result.culprit}", ""])
+            elif result.outcome == results.Outcome.ERROR:
+                lines.extend([f"Error: {result.culprit}", ""])
             lines.extend([f"{fence}diff", listed.patch.rstrip("\n"), fence])
     return "\n".join(lines) + "\n"
 

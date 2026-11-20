@@ -35,7 +35,10 @@ bazelisk run --noshow_progress --ui_event_filters=-info //tools/bazel_mutation_t
   background and wait for them to finish.
 
 When the run ends, it writes `.mutation_testing/<name>.survivors.md`, which
-lists each survived and timed-out mutant, grouped by file, with its patch.
+lists each survived and timed-out mutant, grouped by file, with its patch. It
+also lists each mutant with an error: testing it failed on two workers, so it
+has no outcome. Read the run's log for the cause. Rerunning the same command
+tests those mutants again.
 
 ## Triage the Survivors
 

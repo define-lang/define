@@ -121,11 +121,22 @@ The problems this mutation tester solves, and the intentions behind its design.
   crashes or stops responding says nothing about the mutant, so the worker tests
   the same mutant again on a new server. A server that does not respond is
   killed, so that it cannot hold up the run.
-- **A failed or interrupted worker stops the run.** A worker has failed when its
-  new server fails too. Every worker reverts its mutant, and a stopped mutant
-  gets no result, so a resumed run tests it again. Retrying a mutant on another
-  worker would hide a broken worker. A worker that does not stop in time is
-  killed, so that one stuck worker cannot keep the run from ending.
+- **Decide what a failure belongs to from a second attempt.** One failure cannot
+  tell a broken mutant from a broken worker. A worker that fails on a mutant
+  goes on to other mutants, and another worker tests the mutant again. A mutant
+  that fails on two workers gets an error result. A worker whose failed mutants
+  pass on other workers is broken, and is retired, as is a worker that a failure
+  leaves unusable. The log shows every failure and every retired worker, so that
+  retrying hides nothing.
+- **Stop the run when failures are shared.** When every worker is retired, or
+  several mutants in a row fail on two workers each, the failures have a cause
+  that every worker shares, and testing more mutants would only repeat it.
+- **Test errors again on resume.** An error says nothing about the tests, and
+  the next run often follows a fix for the error's cause.
+- **An interrupted run stops every worker.** Every worker reverts its mutant,
+  and a stopped mutant gets no result, so a resumed run tests it again. A worker
+  that does not stop in time is killed, so that one stuck worker cannot keep the
+  run from ending.
 - **Remove the workers when a run ends,** however it ends, since a fresh worker
   sets up quickly from the cache while a kept one takes a lot of disk. A worker
   with changes left in it is kept, to show what went wrong.

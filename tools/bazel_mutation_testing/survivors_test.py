@@ -62,6 +62,12 @@ _MUTANTS = [
         lines=(5, 5),
     ),
     mutant.Mutant(
+        name="define/example.py:2:12: replace 1 with 3",
+        path="define/example.py",
+        patch=_PY_PATCH,
+        lines=(2, 2),
+    ),
+    mutant.Mutant(
         name="crates/example/lib.rs:3:5: replace doc fence",
         path="crates/example/lib.rs",
         patch=_DOC_PATCH,
@@ -80,6 +86,12 @@ _OUTCOMES = {
         outcome=results.Outcome.TIMED_OUT,
         culprit="//define:example_test",
         seconds=60.5,
+    ),
+    "define/example.py:2:12: replace 1 with 3": results.Result(
+        name="define/example.py:2:12: replace 1 with 3",
+        outcome=results.Outcome.ERROR,
+        culprit="Bazel exited with 37",
+        seconds=0.0,
     ),
     "crates/example/lib.rs:5:7: replace > with >=": results.Result(
         name="crates/example/lib.rs:5:7: replace > with >=",
@@ -106,7 +118,7 @@ _EXPECTED = f"""\
 
 - Commit: `0123abcd`
 - Area: `//crates/... //define/...`
-- Mutants: 5: 1 killed, 2 survived, 1 timed out, 1 ran out of memory
+- Mutants: 6: 1 killed, 2 survived, 1 timed out, 1 ran out of memory, 1 error
 
 ## crates/example/lib.rs
 
@@ -137,10 +149,17 @@ Ran out of memory: //define:example_test
 
 ```diff
 {_PY_PATCH}```
+
+### define/example.py:2:12: replace 1 with 3
+
+Error: Bazel exited with 37
+
+```diff
+{_PY_PATCH}```
 """
 
 
-def test_render_lists_survivors_and_limit_kills_by_file():
+def test_render_lists_survivors_limit_kills_and_errors_by_file():
     assert survivors.render(_RUN, _MUTANTS, _OUTCOMES) == _EXPECTED
 
 

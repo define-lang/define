@@ -18,6 +18,9 @@ class Outcome(enum.StrEnum):
     SURVIVED = "survived"
     TIMED_OUT = "timed out"
     OUT_OF_MEMORY = "ran out of memory"
+    ERROR = "error"
+    """Testing the mutant failed on two workers, so the mutant has no outcome.
+    A resumed run tests it again."""
 
 
 class Run(msgspec.Struct, frozen=True):
@@ -37,7 +40,7 @@ class Result(msgspec.Struct, frozen=True):
     name: str
     outcome: Outcome
     culprit: str | None
-    """The test or action that failed first."""
+    """The test or action that failed first, or for an error, what failed."""
     seconds: float
     covering_tests: int | None = None
     """How many of the tests that record coverage run the mutant's lines, or
@@ -94,7 +97,9 @@ class Store:
             if not line.endswith(b"\n"):
                 break
             result = msgspec.json.decode(line, type=Result)
-            if result.name in self.results:
+            earlier = self.results.get(result.name)
+            # A resumed run tests a mutant with an error result again.
+            if earlier is not None and earlier.outcome != Outcome.ERROR:
                 raise DuplicateResultError(f"{path} has two results for {result.name}")
             self.results[result.name] = result
             complete_length += len(line)

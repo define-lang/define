@@ -161,7 +161,8 @@ class Worker:
         fails during a command, before the worker runs the command again on a
         new server.
         """
-        worktree = repository / f".mutation_testing/worker-{index}"
+        self.name = f"worker-{index}"
+        worktree = repository / f".mutation_testing/{self.name}"
         self.worktree = worktree
         self._testing = testing
         self._server_failed = server_failed
@@ -295,6 +296,13 @@ class Worker:
                 # On SIGINT, Bazel cancels the build rather than leaving its
                 # server to finish it.
                 self._tests.send_signal(signal.SIGINT)
+
+    def usable(self) -> bool:
+        """Return whether the worker can test another mutant: it is not interrupted, and its worktree has no changes."""
+        with self._lock:
+            if self._interrupted:
+                return False
+        return not _git(self.worktree, "status", "--porcelain")
 
     def kill(self):
         """Kill the worker's Bazel server, which ends its current Bazel command."""

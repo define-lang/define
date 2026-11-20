@@ -102,6 +102,18 @@ def test_worktree_with_changes_is_kept(tmp_path: pathlib.Path):
     assert changed.read_text(encoding="utf-8") == "mutated\n"
 
 
+def test_a_worker_with_changes_in_its_worktree_is_unusable(tmp_path: pathlib.Path):
+    _ = _repository(tmp_path)
+    worktree = tmp_path / ".mutation_testing/worker-0"
+    _git(tmp_path, "worktree", "add", "--detach", str(worktree), "HEAD")
+    work = _worker(tmp_path)
+    assert work.usable()
+
+    _ = (worktree / "lib.rs").write_text("mutated\n", encoding="utf-8", newline="\n")
+
+    assert not work.usable()
+
+
 def test_removing_a_missing_worktree_deletes_its_build_events(tmp_path: pathlib.Path):
     _ = _repository(tmp_path)
     build_events = tmp_path / ".mutation_testing/worker-0.build_events.json"

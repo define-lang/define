@@ -79,6 +79,22 @@ def test_duplicate_results_are_refused(tmp_path: pathlib.Path):
         _ = results.Store(path, _RUN)
 
 
+def test_a_later_result_replaces_an_error(tmp_path: pathlib.Path):
+    path = tmp_path / "results.jsonl"
+    errored = results.Result(
+        name=_KILLED.name,
+        outcome=results.Outcome.ERROR,
+        culprit="Bazel exited with 37",
+        seconds=0.0,
+    )
+    with results.Store(path, _RUN) as store:
+        store.add(errored)
+        store.add(_KILLED)
+
+    with results.Store(path, _RUN) as reopened:
+        assert reopened.results == {_KILLED.name: _KILLED}
+
+
 def test_store_of_an_older_tester_is_refused(tmp_path: pathlib.Path):
     path = tmp_path / "results.jsonl"
     _ = path.write_text(
