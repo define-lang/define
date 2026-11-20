@@ -16,8 +16,10 @@ if TYPE_CHECKING:
 class Tester(Protocol):
     """A worker that tests one mutant at a time."""
 
-    def test(self, mutated: mutant.Mutant) -> results.Result:
-        """Test `mutated`, and revert it."""
+    def test(
+        self, mutated: mutant.Mutant, skipped: frozenset[str], /
+    ) -> results.Result:
+        """Test `mutated` with the tests other than `skipped`, and revert it."""
         ...
 
     def interrupt(self):
@@ -28,9 +30,12 @@ class Tester(Protocol):
 def test_all(
     testers: Sequence[Tester],
     mutants: Sequence[mutant.Mutant],
+    skipped_tests: Callable[[mutant.Mutant], frozenset[str]],
     record: Callable[[results.Result], None],
 ):
     """Test each of `mutants` on a free tester, and record each result as it finishes.
+
+    Each mutant skips the tests that `skipped_tests` returns for it.
 
     When a tester fails or the run is interrupted, every tester stops its
     mutant without a result and reverts it, and the error is raised. A resumed
@@ -45,7 +50,7 @@ def test_all(
         # tester is always idle here.
         tester = idle.get_nowait()
         try:
-            return tester.test(mutated)
+            return tester.test(mutated, skipped_tests(mutated))
         finally:
             idle.put(tester)
 

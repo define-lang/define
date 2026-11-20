@@ -41,10 +41,35 @@ class ListingError(Exception):
     """cargo-mutants failed to list a crate's mutants."""
 
 
+class _Position(msgspec.Struct, frozen=True):
+    line: int
+
+
+class _Span(msgspec.Struct, frozen=True):
+    start: _Position
+    end: _Position
+
+
+class _Function(msgspec.Struct, frozen=True):
+    span: _Span
+
+
 class _Mutant(msgspec.Struct, frozen=True):
     name: str
     file: str
     diff: str
+    span: _Span
+    function: _Function | None
+    """The function that holds the mutant, which a mutant of a constant
+    outside a function lacks."""
+
+    def lines(self) -> tuple[int, int]:
+        # A change to one line of an expression can change what an earlier
+        # line of it does, such as an operator before a part that never
+        # runs, and Rust coverage records only the lines that ran. Every test
+        # that runs the function runs the change.
+        span = self.span if self.function is None else self.function.span
+        return (span.start.line, span.end.line)
 
 
 def _repository_patch(diff: str, path: str) -> str:
@@ -101,6 +126,7 @@ def list_mutants(
                 name=path + listed.name.removeprefix(listed.file),
                 path=path,
                 patch=_repository_patch(listed.diff, path),
+                lines=listed.lines(),
             )
         )
     return mutants

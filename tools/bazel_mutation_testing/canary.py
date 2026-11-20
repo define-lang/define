@@ -66,7 +66,12 @@ def _appended(
         ]
     )
     return Canary(
-        mutant=mutant.Mutant(name=f"{path}: canary test", path=path, patch=patch),
+        mutant=mutant.Mutant(
+            name=f"{path}: canary test",
+            path=path,
+            patch=patch,
+            lines=(len(lines) + 1, len(lines) + len(added)),
+        ),
         tests=tests,
     )
 

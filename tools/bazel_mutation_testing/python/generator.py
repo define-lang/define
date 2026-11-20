@@ -237,6 +237,8 @@ def _file_mutants(path: str, code: str) -> list[mutant.Mutant]:
                 + f"{_replacement(module, mutation)} "
                 + f"({_mutmut_name(path, function, located.owner, number)})",
                 path=path,
+                # Coverage records the statement that holds the line.
+                lines=(position.line, position.line),
                 patch=_patch(
                     path,
                     lines,

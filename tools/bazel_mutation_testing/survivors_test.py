@@ -41,26 +41,31 @@ _MUTANTS = [
         name="define/example.py:2:12: replace 1 with 2",
         path="define/example.py",
         patch=_PY_PATCH,
+        lines=(2, 2),
     ),
     mutant.Mutant(
         name="define/example.py:2:12: replace 1 with 0",
         path="define/example.py",
         patch=_PY_PATCH,
+        lines=(2, 2),
     ),
     mutant.Mutant(
         name="crates/example/lib.rs:5:7: replace > with >=",
         path="crates/example/lib.rs",
         patch=_LIB_PATCH,
+        lines=(5, 5),
     ),
     mutant.Mutant(
         name="crates/example/lib.rs:5:7: replace > with ==",
         path="crates/example/lib.rs",
         patch=_LIB_PATCH,
+        lines=(5, 5),
     ),
     mutant.Mutant(
         name="crates/example/lib.rs:3:5: replace doc fence",
         path="crates/example/lib.rs",
         patch=_DOC_PATCH,
+        lines=(3, 3),
     ),
 ]
 _OUTCOMES = {

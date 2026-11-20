@@ -23,6 +23,9 @@ class Mutant(msgspec.Struct, frozen=True):
     """The workspace-relative path of the changed file."""
     patch: str
     """A patch that `git apply` applies at the workspace's top."""
+    lines: tuple[int, int]
+    """The first and last lines of the file that a test must run one of, to run
+    the change."""
 
     def apply(self, workspace: pathlib.Path):
         """Change the file in `workspace`, a checkout of the repository."""

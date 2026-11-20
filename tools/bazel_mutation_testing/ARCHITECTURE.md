@@ -31,9 +31,15 @@ The problems this mutation tester solves, and the intentions behind its design.
 
 ## Testing a Mutant
 
-- **Run every test in the area for every mutant, and let Bazel's cache choose.**
-  Only the tests that a mutant's change reaches run again, so the tester needs
-  no query of its own to choose tests.
+- **Run only the tests that run the mutated line.** Each run first records which
+  lines each of the area's tests runs, at the run's commit. A test that never
+  runs a line cannot detect a change to it, though it may depend on the changed
+  file. Bazel's cache then reruns only the chosen tests that the change reaches.
+- **Choose tests only by coverage that records every run of a line.** Coverage
+  builds leave code unoptimized, since an optimized crate lets other crates copy
+  its small functions, and coverage never counts those copies. A line that no
+  coverage records runs every test. The tests that record no coverage, such as
+  type checks, always run, so that skipping a test never hides a kill.
 - **Stop at the first failure.** Most mutants are killed, so most runs end
   early.
 - **Any failure kills a mutant,** whether a test, a build action, the compiler

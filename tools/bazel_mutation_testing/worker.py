@@ -10,7 +10,13 @@ import threading
 import time
 from typing import TYPE_CHECKING, final
 
-from tools.bazel_mutation_testing import bazel, build_events, diagnostics, results
+from tools.bazel_mutation_testing import (
+    bazel,
+    build_events,
+    coverage,
+    diagnostics,
+    results,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -211,11 +217,40 @@ class Worker:
         Raises:
             BaselineFailedError: A test or an action failed.
         """
-        completed, failure = self._finish_tests(self._start_tests())
+        self._run_passing(self._test_arguments(frozenset()))
+
+    def collect_coverage(self) -> coverage.Coverage:
+        """Run the area's tests without any mutant, and return which tests run each line.
+
+        Raises:
+            BaselineFailedError: A test or an action failed.
+        """
+        arguments = [
+            "coverage",
+            # So that each test's build event names its coverage file, which
+            # Bazel downloads from the remote execution service.
+            f"--build_event_json_file={self._build_event_file}",
+            "--experimental_build_event_upload_strategy=local",
+            "--remote_download_regex=.*/coverage\\.dat$",
+            "--",
+            *self._test_patterns,
+        ]
+        self._run_passing(arguments)
+        return coverage.from_reports(
+            build_events.coverage_reports(self._build_event_file), self.worktree
+        )
+
+    def _run_passing(self, arguments: list[str]):
+        """Run Bazel with `arguments`, which must pass.
+
+        Raises:
+            BaselineFailedError: A test or an action failed.
+        """
+        completed, failure = self._finish_tests(self._start(arguments))
         if completed.returncode == 0:
             return
         if failure is None:
-            raise bazel.BazelError(["test", *self._run.area], completed)
+            raise bazel.BazelError(arguments, completed)
         raise BaselineFailedError(
             f"The area's tests fail without any mutant: {failure.describe()}"
         )
@@ -229,8 +264,8 @@ class Worker:
                 # server to finish it.
                 self._tests.send_signal(signal.SIGINT)
 
-    def test(self, mutated: mutant.Mutant) -> results.Result:
-        """Test `mutated`, and revert it.
+    def test(self, mutated: mutant.Mutant, skipped: frozenset[str]) -> results.Result:
+        """Test `mutated` with the area's tests other than `skipped`, and revert it.
 
         Raises:
             WorkerInterruptedError: The run interrupted the worker.
@@ -241,7 +276,7 @@ class Worker:
         """
         try:
             with self._applied(mutated):
-                completed, failure, seconds = self._test_applied(mutated)
+                completed, failure, seconds = self._test_applied(mutated, skipped)
         except UnformattableMutantError:
             # Such a mutant could never be committed, as any failure shows.
             return results.Result(
@@ -262,14 +297,14 @@ class Worker:
         return failed_result(mutated.name, failure, seconds)
 
     def _test_applied(
-        self, mutated: mutant.Mutant
+        self, mutated: mutant.Mutant, skipped: frozenset[str]
     ) -> tuple[
         subprocess.CompletedProcess[str],
         build_events.ActionFailure | build_events.TestFailure | None,
         float,
     ]:
         start = time.monotonic()
-        tests = self._start_tests()
+        tests = self._start(self._test_arguments(skipped))
         self._testing(mutated)
         completed, failure = self._finish_tests(tests)
         return completed, failure, time.monotonic() - start
@@ -313,14 +348,19 @@ class Worker:
             check=False,
         )
 
-    def _start_tests(self) -> subprocess.Popen[str]:
-        """Start the area's tests.
-
-        Raises:
-            WorkerInterruptedError: The run interrupted the worker.
-        """
-        arguments = [
+    def _test_arguments(self, skipped: frozenset[str]) -> list[str]:
+        """Return the arguments that run the area's tests other than `skipped`."""
+        return [
             "test",
+            f"--test_timeout={self._run.test_timeout}",
+            *self._shared_arguments(),
+            *self._test_patterns,
+            *(f"-{test}" for test in sorted(skipped)),
+        ]
+
+    def _shared_arguments(self) -> list[str]:
+        """Return the options of every test run, followed by "--"."""
+        return [
             # These tests find the cases other tests must cover, or measure
             # what compiling costs rather than what it does.
             "--test_tag_filters=-no-coverage",
@@ -334,7 +374,6 @@ class Worker:
             # TODO: Remove this flag once the repository uses a Bazel that
             # includes https://github.com/bazelbuild/bazel/pull/28657.
             "--noexperimental_merged_skyframe_analysis_execution",
-            f"--test_timeout={self._run.test_timeout}",
             f"--build_event_json_file={self._build_event_file}",
             *self._run.lint_flags,
             # So that a failed action or pyright_test names what rejected
@@ -343,11 +382,17 @@ class Worker:
             "--@rules_rust//rust/settings:clippy_error_format=json",
             "--//tools/bzl:lint_json",
             # So that each failed action's build event names a file that
-            # holds its standard error.
+            # holds its standard error, and each test's names its coverage.
             "--experimental_build_event_upload_strategy=local",
             "--",
-            *self._test_patterns,
         ]
+
+    def _start(self, arguments: list[str]) -> subprocess.Popen[str]:
+        """Start Bazel with `arguments`.
+
+        Raises:
+            WorkerInterruptedError: The run interrupted the worker.
+        """
         with self._lock:
             if self._interrupted:
                 raise WorkerInterruptedError(self.worktree)

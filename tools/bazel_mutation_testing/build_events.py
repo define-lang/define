@@ -1,4 +1,4 @@
-"""Read what failed in a `bazel test` run from its build events."""
+"""Read what failed in a test run, or the coverage of each test, from build events."""
 
 from __future__ import annotations
 
@@ -97,8 +97,14 @@ class _TestResult(msgspec.Struct, frozen=True, rename="camel"):
     test_action_output: list[_File] = msgspec.field(default_factory=list)
 
     def log(self) -> _File | None:
+        return self._output("test.log")
+
+    def coverage(self) -> _File | None:
+        return self._output("test.lcov")
+
+    def _output(self, name: str) -> _File | None:
         for output in self.test_action_output:
-            if output.name == "test.log":
+            if output.name == name:
                 return output
         return None
 
@@ -144,3 +150,17 @@ def first_failure(
                     log=_read(event.test_result.log()),
                 )
     return None
+
+
+def coverage_reports(build_event_file: pathlib.Path) -> dict[str, list[str]]:
+    """Return the lcov coverage reports of each test, one for each of its shards."""
+    decoder = msgspec.json.Decoder(_Event)
+    reports: dict[str, list[str]] = {}
+    with build_event_file.open("rb") as events:
+        for line in events:
+            event = decoder.decode(line)
+            if event.test_result is not None and event.id.test_result is not None:
+                reports.setdefault(event.id.test_result.label, []).append(
+                    _read(event.test_result.coverage())
+                )
+    return reports

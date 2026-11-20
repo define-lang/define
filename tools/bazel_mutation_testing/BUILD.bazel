@@ -57,6 +57,20 @@ py_test(
 )
 
 py_library(
+    name = "coverage",
+    srcs = ["coverage.py"],
+)
+
+py_test(
+    name = "coverage_test",
+    size = "small",
+    srcs = ["coverage_test.py"],
+    deps = [
+        ":coverage",
+    ],
+)
+
+py_library(
     name = "diagnostics",
     srcs = ["diagnostics.py"],
     deps = ["@pypi//msgspec"],
@@ -295,6 +309,7 @@ py_library(
     deps = [
         ":bazel",
         ":build_events",
+        ":coverage",
         ":diagnostics",
         ":mutant",
         ":results",
@@ -325,6 +340,8 @@ pyright_test(
         ":build_events_test",
         ":canary",
         ":canary_test",
+        ":coverage",
+        ":coverage_test",
         ":diagnostics",
         ":diagnostics_test",
         ":fixtures_test",

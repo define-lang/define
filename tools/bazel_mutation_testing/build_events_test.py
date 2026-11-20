@@ -186,3 +186,33 @@ def test_remote_stderr_is_refused(tmp_path: pathlib.Path):
     events = _write(tmp_path / "events.json", [event])
     with pytest.raises(ValueError, match="not local"):
         _ = build_events.first_failure(events)
+
+
+def _coverage_result(label: str, shard: int, report: pathlib.Path) -> dict[str, object]:
+    return {
+        "id": {"testResult": {"label": label, "run": 1, "shard": shard, "attempt": 1}},
+        "testResult": {
+            "status": "PASSED",
+            "testActionOutput": [
+                {"name": "test.log", "uri": report.with_name("test.log").as_uri()},
+                {"name": "test.lcov", "uri": report.as_uri()},
+            ],
+        },
+    }
+
+
+def test_coverage_reports_hold_each_shards_report(tmp_path: pathlib.Path):
+    first = tmp_path / "first.lcov"
+    _ = first.write_text("SF:a.py\n", encoding="utf-8", newline="\n")
+    second = tmp_path / "second.lcov"
+    _ = second.write_text("SF:b.py\n", encoding="utf-8", newline="\n")
+    events = _write(
+        tmp_path / "events.json",
+        [
+            _action(_LIBRARY, "Rustc", success=True),
+            _coverage_result(_TEST, 1, first),
+            _coverage_result(_TEST, 2, second),
+        ],
+    )
+
+    assert build_events.coverage_reports(events) == {_TEST: ["SF:a.py\n", "SF:b.py\n"]}
