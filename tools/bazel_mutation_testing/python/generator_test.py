@@ -112,3 +112,21 @@ def test_names_of_long_replacements_show_the_change(tmp_path: pathlib.Path):
         + '...lue, separator="a long separator") with ...lue, separator=None) '
         + "(pkg.lib.x_describe__mutmut_3)",
     ]
+
+
+def test_mutants_that_no_test_could_tell_apart_are_skipped(tmp_path: pathlib.Path):
+    source = """\
+def check(value: int) -> int:
+    found = False
+    if value < 0:
+        raise ValueError("negative")
+    return value
+"""
+    mutants = _list_mutants(_workspace(tmp_path, source))
+    # mutmut's first mutant sets `found` to None, and its mutants after the
+    # fourth change the raised exception.
+    assert [listed.name for listed in mutants] == [
+        "pkg/lib.py:2:13: replace False with True (pkg.lib.x_check__mutmut_2)",
+        "pkg/lib.py:3:13: replace < 0 with <= 0 (pkg.lib.x_check__mutmut_3)",
+        "pkg/lib.py:3:16: replace 0 with 1 (pkg.lib.x_check__mutmut_4)",
+    ]

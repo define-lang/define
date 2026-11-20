@@ -6,6 +6,7 @@ import pathlib
 from typing import TYPE_CHECKING, NamedTuple, cast
 
 import libcst
+import libcst.matchers
 from libcst import metadata
 from mutmut.mutation import (
     file_mutation,
@@ -198,6 +199,35 @@ def _ignored_code(
     )
 
 
+def _never_matters(
+    mutation: file_mutation.Mutation, wrapper: metadata.MetadataWrapper
+) -> bool:
+    """Return whether no test could ever tell `mutation` apart from the original code.
+
+    Exceptions report only states that cannot happen, since errors in a
+    user's program are diagnostics, so no test raises one to check it. A
+    variable set to `False` acts the same as `None` wherever only its truth
+    is read, and pyright rejects `None` where a `bool` is needed.
+    """
+    original = mutation.original_node
+    mutated = mutation.mutated_node
+    if (
+        isinstance(original, libcst.Assign)
+        and isinstance(mutated, libcst.Assign)
+        and libcst.matchers.matches(original.value, libcst.matchers.Name("False"))
+        and libcst.matchers.matches(mutated.value, libcst.matchers.Name("None"))
+    ):
+        return True
+    # The wrapper resolves the parents once and keeps them.
+    parents = wrapper.resolve(metadata.ParentNodeProvider)
+    node: libcst.CSTNode | None = original
+    while node is not None:
+        if isinstance(node, libcst.Raise):
+            return True
+        node = parents.get(node)
+    return False
+
+
 def _file_mutants(path: str, code: str) -> list[mutant.Mutant]:
     wrapper = metadata.MetadataWrapper(libcst.parse_module(code))
     module = wrapper.module
@@ -223,6 +253,10 @@ def _file_mutants(path: str, code: str) -> list[mutant.Mutant]:
         # visitor finds them.
         number = mutant_counts.get(function, 0) + 1
         mutant_counts[function] = number
+        # The skipped mutant still takes its number, so that every other
+        # mutant keeps mutmut's name.
+        if _never_matters(mutation, wrapper):
+            continue
         # Replacing a node inside a function gives a function.
         mutated_function = cast(
             "libcst.FunctionDef",

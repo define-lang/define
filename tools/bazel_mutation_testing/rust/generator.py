@@ -102,7 +102,17 @@ def list_mutants(
         )
         scratch_path.joinpath("src").symlink_to(workspace / crate_directory)
         completed = subprocess.run(
-            [cargo_mutants, "mutants", "--list", "--json", "--diff"],
+            [
+                cargo_mutants,
+                "mutants",
+                "--list",
+                "--json",
+                "--diff",
+                # Bit masks that the code combines with `|` mark different
+                # bytes and never share a bit, so `^` gives the same result.
+                "--exclude-re",
+                r"replace \| with \^",
+            ],
             cwd=scratch_path,
             env=bazel.child_environment(CARGO=str(cargo)),
             capture_output=True,
