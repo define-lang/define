@@ -15,6 +15,11 @@ var (
 	procIsProcessInJob  = windows.NewLazySystemDLL("kernel32.dll").NewProc("IsProcessInJob")
 )
 
+// jobMemoryLimitMessage is JOB_OBJECT_MSG_JOB_MEMORY_LIMIT, which a job posts
+// to its completion port when a process in the job fails to commit memory
+// beyond the job's limit. golang.org/x/sys/windows doesn't define it.
+const jobMemoryLimitMessage = 10
+
 // maxListedProcesses is how many process IDs one query of a job lists. End
 // queries the job again until it has no processes left.
 const maxListedProcesses = 256
@@ -23,10 +28,27 @@ const maxListedProcesses = 256
 // starts.
 type Tree struct {
 	job windows.Handle
+	// port receives the job's messages when the job has a memory limit, and
+	// is zero otherwise.
+	port windows.Handle
+}
+
+// associateCompletionPort is JOBOBJECT_ASSOCIATE_COMPLETION_PORT, which
+// golang.org/x/sys/windows doesn't define.
+type associateCompletionPort struct {
+	CompletionKey  uintptr
+	CompletionPort windows.Handle
 }
 
 // Start starts process in a Job Object of its own.
 func Start(process *exec.Cmd) (*Tree, error) {
+	return StartWithMemoryLimit(process, 0)
+}
+
+// StartWithMemoryLimit starts process in a Job Object of its own that can
+// commit at most memoryLimit bytes in all, or any amount when memoryLimit is
+// zero. A process that commits more gets an allocation failure.
+func StartWithMemoryLimit(process *exec.Cmd, memoryLimit uint64) (*Tree, error) {
 	job, err := windows.CreateJobObject(nil, nil)
 	if err != nil {
 		return nil, err
@@ -36,6 +58,14 @@ func Start(process *exec.Cmd) (*Tree, error) {
 		BasicLimitInformation: windows.JOBOBJECT_BASIC_LIMIT_INFORMATION{
 			LimitFlags: windows.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
 		},
+	}
+	if memoryLimit > 0 {
+		if err := tree.reportMemoryLimit(); err != nil {
+			tree.End()
+			return nil, err
+		}
+		limits.BasicLimitInformation.LimitFlags |= windows.JOB_OBJECT_LIMIT_JOB_MEMORY
+		limits.JobMemoryLimit = uintptr(memoryLimit)
 	}
 	if _, err := windows.SetInformationJobObject(job, windows.JobObjectExtendedLimitInformation,
 		uintptr(unsafe.Pointer(&limits)), uint32(unsafe.Sizeof(limits))); err != nil {
@@ -75,6 +105,41 @@ func (tree *Tree) adopt(pid int) error {
 	return nil
 }
 
+// reportMemoryLimit gives the job a completion port, where the job posts a
+// message when a process in it reaches the job's memory limit.
+func (tree *Tree) reportMemoryLimit() error {
+	port, err := windows.CreateIoCompletionPort(windows.InvalidHandle, 0, 0, 1)
+	if err != nil {
+		return err
+	}
+	tree.port = port
+	association := associateCompletionPort{CompletionPort: port}
+	_, err = windows.SetInformationJobObject(tree.job, windows.JobObjectAssociateCompletionPortInformation,
+		uintptr(unsafe.Pointer(&association)), uint32(unsafe.Sizeof(association)))
+	return err
+}
+
+// RanOutOfMemory reports whether a process in the job has failed to commit
+// memory beyond the job's memory limit. The job posts that message when the
+// commit fails, so the message is there once the process has exited.
+func (tree *Tree) RanOutOfMemory() bool {
+	if tree.port == 0 {
+		return false
+	}
+	ranOut := false
+	for {
+		var message uint32
+		var key uintptr
+		var overlapped *windows.Overlapped
+		if err := windows.GetQueuedCompletionStatus(tree.port, &message, &key, &overlapped, 0); err != nil {
+			return ranOut
+		}
+		if message == jobMemoryLimitMessage {
+			ranOut = true
+		}
+	}
+}
+
 // Kill kills every process in the job.
 func (tree *Tree) Kill() {
 	_ = windows.TerminateJobObject(tree.job, 1)
@@ -96,6 +161,9 @@ func (tree *Tree) End() {
 	for tree.waitForListedProcesses() {
 	}
 	_ = windows.CloseHandle(tree.job)
+	if tree.port != 0 {
+		_ = windows.CloseHandle(tree.port)
+	}
 }
 
 // waitForListedProcesses waits for each process that the job lists to exit,

@@ -240,7 +240,8 @@ def _list_and_check(
     run_canary = canary.make(area_crates, python_sources.tests, work.worktree)
     canary_result = work.test(run_canary.mutant)
     # Any failure kills a mutant, but only a failed test shows that the run's
-    # tests detect a change. A timeout would not show it either.
+    # tests detect a change. A timeout or running out of memory would not show
+    # it either.
     if (
         canary_result.outcome != results.Outcome.KILLED
         or canary_result.culprit not in run_canary.tests
@@ -260,7 +261,7 @@ def _report(results_store: results.Store):
         + ", ".join(f"{outcomes[outcome]} {outcome}" for outcome in results.Outcome)
     )
     for result in results_store.results.values():
-        if result.outcome in {results.Outcome.SURVIVED, results.Outcome.TIMED_OUT}:
+        if result.outcome in survivors.REPORTED:
             click.echo(f"{result.outcome}: {result.name}")
 
 

@@ -13,7 +13,15 @@ if TYPE_CHECKING:
 
     from tools.bazel_mutation_testing import mutant
 
-_REPORTED = (results.Outcome.SURVIVED, results.Outcome.TIMED_OUT)
+# A mutant that a time or memory limit killed may only have made a test slower
+# or larger, so the report lists it with the survivors.
+REPORTED = frozenset(
+    {
+        results.Outcome.SURVIVED,
+        results.Outcome.TIMED_OUT,
+        results.Outcome.OUT_OF_MEMORY,
+    }
+)
 
 
 def _fence(patch: str) -> str:
@@ -41,7 +49,7 @@ def render(
     ]
     by_path: dict[str, list[mutant.Mutant]] = {}
     for listed in mutants:
-        if outcomes[listed.name].outcome in _REPORTED:
+        if outcomes[listed.name].outcome in REPORTED:
             by_path.setdefault(listed.path, []).append(listed)
     for path in sorted(by_path):
         lines.extend(["", f"## {path}"])
@@ -51,6 +59,8 @@ def render(
             lines.extend(["", f"### {listed.name}", ""])
             if result.outcome == results.Outcome.TIMED_OUT:
                 lines.extend([f"Timed out: {result.culprit}", ""])
+            elif result.outcome == results.Outcome.OUT_OF_MEMORY:
+                lines.extend([f"Ran out of memory: {result.culprit}", ""])
             lines.extend([f"{fence}diff", listed.patch.rstrip("\n"), fence])
     return "\n".join(lines) + "\n"
 

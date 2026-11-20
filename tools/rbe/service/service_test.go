@@ -44,7 +44,7 @@ func startServer(t *testing.T) *client {
 	if err != nil {
 		t.Fatal(err)
 	}
-	executor, err := execution.New(store, filepath.Join(root, "work"), 4, 1, 0)
+	executor, err := execution.New(store, filepath.Join(root, "work"), 4, 1, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

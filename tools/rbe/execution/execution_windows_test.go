@@ -109,7 +109,7 @@ func TestActionStagesANewDirectoryWhenTheIdleOneIsInUse(t *testing.T) {
 		t.Fatal(err)
 	}
 	// With no deleters, the test receives each deletion itself.
-	executor, err := New(store, filepath.Join(root, "work"), 4, 0, 4)
+	executor, err := New(store, filepath.Join(root, "work"), 4, 0, 4, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func TestDeletingLeftoversKeepsBlobsReadOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	workRoot := filepath.Join(root, "work")
-	executor, err := New(store, workRoot, 4, 0, 4)
+	executor, err := New(store, workRoot, 4, 0, 4, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,7 +158,7 @@ func TestDeletingLeftoversKeepsBlobsReadOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	restarted, err := New(store, workRoot, 4, 0, 0)
+	restarted, err := New(store, workRoot, 4, 0, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

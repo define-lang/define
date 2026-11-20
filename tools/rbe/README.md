@@ -54,7 +54,9 @@ build --remote_executor=unix:///run/rbe/rbe.sock
 build --nobuild_runfile_links
 ```
 
-Actions run as the `rbe` user, so they can't change your files.
+Actions run as the `rbe` user, so they can't change your files. The processes of
+each action can use 3 GiB of memory in all. The kernel kills an action that uses
+more, and the action's standard error then ends with a line that says so.
 
 ## Deploying changes
 

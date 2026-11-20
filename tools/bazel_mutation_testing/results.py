@@ -17,6 +17,7 @@ class Outcome(enum.StrEnum):
     KILLED = "killed"
     SURVIVED = "survived"
     TIMED_OUT = "timed out"
+    OUT_OF_MEMORY = "ran out of memory"
 
 
 class Run(msgspec.Struct, frozen=True):

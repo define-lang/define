@@ -307,6 +307,7 @@ py_test(
     srcs = ["worker_test.py"],
     deps = [
         ":bazel",
+        ":build_events",
         ":results",
         ":worker",
         "@pypi//pytest",

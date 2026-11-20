@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+
+	"github.com/define-lang/define/tools/processtree"
 )
 
 const pathSeparators = "/"
@@ -39,4 +41,13 @@ func programCandidates(path string) []string {
 
 func isExecutable(_ string, info fs.FileInfo) bool {
 	return info.Mode()&0o111 != 0
+}
+
+// unlimitedTree is an action's process group, which has no memory limit.
+type unlimitedTree struct {
+	*processtree.Tree
+}
+
+func (unlimitedTree) RanOutOfMemory() bool {
+	return false
 }

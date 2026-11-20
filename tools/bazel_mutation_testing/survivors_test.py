@@ -43,6 +43,11 @@ _MUTANTS = [
         patch=_PY_PATCH,
     ),
     mutant.Mutant(
+        name="define/example.py:2:12: replace 1 with 0",
+        path="define/example.py",
+        patch=_PY_PATCH,
+    ),
+    mutant.Mutant(
         name="crates/example/lib.rs:5:7: replace > with >=",
         path="crates/example/lib.rs",
         patch=_LIB_PATCH,
@@ -59,6 +64,12 @@ _MUTANTS = [
     ),
 ]
 _OUTCOMES = {
+    "define/example.py:2:12: replace 1 with 0": results.Result(
+        name="define/example.py:2:12: replace 1 with 0",
+        outcome=results.Outcome.OUT_OF_MEMORY,
+        culprit="//define:example_test",
+        seconds=12.5,
+    ),
     "define/example.py:2:12: replace 1 with 2": results.Result(
         name="define/example.py:2:12: replace 1 with 2",
         outcome=results.Outcome.TIMED_OUT,
@@ -89,7 +100,7 @@ _EXPECTED = f"""\
 
 - Commit: `0123abcd`
 - Area: `//crates/... //define/...`
-- Mutants: 4: 1 killed, 2 survived, 1 timed out
+- Mutants: 5: 1 killed, 2 survived, 1 timed out, 1 ran out of memory
 
 ## crates/example/lib.rs
 
@@ -111,10 +122,17 @@ Timed out: //define:example_test
 
 ```diff
 {_PY_PATCH}```
+
+### define/example.py:2:12: replace 1 with 0
+
+Ran out of memory: //define:example_test
+
+```diff
+{_PY_PATCH}```
 """
 
 
-def test_render_lists_survivors_and_timeouts_by_file():
+def test_render_lists_survivors_and_limit_kills_by_file():
     assert survivors.render(_RUN, _MUTANTS, _OUTCOMES) == _EXPECTED
 
 

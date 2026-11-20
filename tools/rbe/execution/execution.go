@@ -17,7 +17,6 @@ import (
 	repb "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/define-lang/define/tools/processtree"
 	"github.com/define-lang/define/tools/rbe/cas"
 )
 
@@ -34,6 +33,22 @@ func (err *TimeoutError) Error() string {
 	return fmt.Sprintf("action exceeded its timeout of %s", err.Timeout)
 }
 
+// OutOfMemoryMessage starts the line that an action's standard error ends
+// with when the action used more memory than its limit. Tools that read the
+// action's output look for this text.
+const OutOfMemoryMessage = "The remote execution service stopped this action because it ran out of its memory limit"
+
+// actionTree holds an action's process and every process it starts.
+type actionTree interface {
+	// Kill kills every process in the tree.
+	Kill()
+	// End kills what is left of the tree and frees what the tree holds.
+	End()
+	// RanOutOfMemory reports whether the tree's processes used more memory
+	// than the tree's limit.
+	RanOutOfMemory() bool
+}
+
 // Executor runs actions. At most `slots` actions are staged or running at
 // once.
 type Executor struct {
@@ -43,13 +58,21 @@ type Executor struct {
 	slots       chan struct{}
 	deletions   chan string
 	directories directoryPool
+	trees       *actionTrees
+	memoryLimit int64
 }
 
 // New creates an executor that builds action directories under workRoot,
 // which must be on the same filesystem as the store. The deleters delete what
 // an earlier run left there. It keeps up to idleDirectories finished action
-// directories for later actions to reuse.
-func New(store *cas.Store, workRoot string, slots int, deleters int, idleDirectories int) (*Executor, error) {
+// directories for later actions to reuse. The processes of each action can
+// use at most memoryLimit bytes in all, or any amount when memoryLimit is
+// zero.
+func New(store *cas.Store, workRoot string, slots int, deleters int, idleDirectories int, memoryLimit int64) (*Executor, error) {
+	trees, err := newActionTrees(memoryLimit)
+	if err != nil {
+		return nil, err
+	}
 	leftovers, err := setAsideLeftovers(workRoot)
 	if err != nil {
 		return nil, err
@@ -68,6 +91,8 @@ func New(store *cas.Store, workRoot string, slots int, deleters int, idleDirecto
 		slots:       make(chan struct{}, slots),
 		deletions:   make(chan string, 4096),
 		directories: directoryPool{maxIdle: idleDirectories},
+		trees:       trees,
+		memoryLimit: memoryLimit,
 	}
 	for range deleters {
 		go executor.delete()
@@ -223,11 +248,17 @@ func (executor *Executor) Execute(ctx context.Context, action *repb.Action, comm
 		timeout = action.Timeout.AsDuration()
 	}
 	metadata.ExecutionStartTimestamp = timestamppb.Now()
-	exitCode, runErr := run(ctx, command, workingDirectory, actionDirectory, tempDirectory, timeout)
+	exitCode, ranOutOfMemory, runErr := executor.run(ctx, command, workingDirectory, actionDirectory, tempDirectory, timeout)
 	metadata.ExecutionCompletedTimestamp = timestamppb.Now()
 	var timeoutErr *TimeoutError
 	if runErr != nil && !errors.As(runErr, &timeoutErr) {
 		return nil, runErr
+	}
+
+	if ranOutOfMemory {
+		if err := executor.reportOutOfMemory(actionDirectory); err != nil {
+			return nil, err
+		}
 	}
 
 	metadata.OutputUploadStartTimestamp = timestamppb.Now()
@@ -250,6 +281,18 @@ func (executor *Executor) Execute(ctx context.Context, action *repb.Action, comm
 	metadata.WorkerCompletedTimestamp = timestamppb.Now()
 	result.ExecutionMetadata = metadata
 	return result, runErr
+}
+
+// reportOutOfMemory ends an action's standard error with a line that says the
+// action ran out of memory, since the action's own output often doesn't say
+// why it was killed.
+func (executor *Executor) reportOutOfMemory(actionDirectory string) error {
+	stderr, err := os.OpenFile(filepath.Join(actionDirectory, "stderr"), os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(stderr, "\n%s of %d MiB.\n", OutOfMemoryMessage, executor.memoryLimit>>20)
+	return errors.Join(err, stderr.Close())
 }
 
 // resolveRelative joins a path from an action to a directory, refusing paths
@@ -337,10 +380,11 @@ func (executor *Executor) stageEntries(directory *repb.Directory, path string, m
 }
 
 // run runs a command and kills every process it started when the command
-// ends, so that none outlives the action.
-func run(ctx context.Context, command *repb.Command, workingDirectory string, actionDirectory string, tempDirectory string, timeout time.Duration) (int32, error) {
+// ends, so that none outlives the action. It reports whether the command ran
+// out of memory.
+func (executor *Executor) run(ctx context.Context, command *repb.Command, workingDirectory string, actionDirectory string, tempDirectory string, timeout time.Duration) (int32, bool, error) {
 	if len(command.Arguments) == 0 {
-		return 0, errors.New("command has no arguments")
+		return 0, false, errors.New("command has no arguments")
 	}
 	environment := make([]string, 0, len(command.EnvironmentVariables)+len(tempVariables))
 	searchPath := ""
@@ -361,16 +405,16 @@ func run(ctx context.Context, command *repb.Command, workingDirectory string, ac
 	}
 	program, err := findProgram(command.Arguments[0], workingDirectory, searchPath)
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 	stdout, err := os.Create(filepath.Join(actionDirectory, "stdout"))
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 	defer stdout.Close()
 	stderr, err := os.Create(filepath.Join(actionDirectory, "stderr"))
 	if err != nil {
-		return 0, err
+		return 0, false, err
 	}
 	defer stderr.Close()
 
@@ -382,9 +426,9 @@ func run(ctx context.Context, command *repb.Command, workingDirectory string, ac
 		Stdout: stdout,
 		Stderr: stderr,
 	}
-	tree, err := processtree.Start(process)
+	tree, err := executor.trees.start(process)
 	if err != nil {
-		return 0, fmt.Errorf("starting %s: %w", command.Arguments[0], err)
+		return 0, false, fmt.Errorf("starting %s: %w", command.Arguments[0], err)
 	}
 	defer tree.End()
 	waited := make(chan error, 1)
@@ -402,13 +446,14 @@ func run(ctx context.Context, command *repb.Command, workingDirectory string, ac
 	case <-ctx.Done():
 		tree.Kill()
 		<-waited
-		return 0, ctx.Err()
+		return 0, false, ctx.Err()
 	}
+	ranOutOfMemory := tree.RanOutOfMemory()
 	var exitErr *exec.ExitError
 	if errors.As(waitErr, &exitErr) {
-		return exitCode(exitErr), runErr
+		return exitCode(exitErr), ranOutOfMemory, runErr
 	}
-	return 0, errors.Join(waitErr, runErr)
+	return 0, ranOutOfMemory, errors.Join(waitErr, runErr)
 }
 
 // findProgram resolves a command's program the way REAPI specifies: a path

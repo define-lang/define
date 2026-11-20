@@ -17,6 +17,13 @@ if TYPE_CHECKING:
 
     from tools.bazel_mutation_testing import mutant
 
+# The remote execution service ends the standard error of an action that ran
+# out of its memory limit with this text.
+_OUT_OF_MEMORY = (
+    "The remote execution service stopped this action"
+    " because it ran out of its memory limit"
+)
+
 _BAZEL_EXIT_BUILD_FAILED = 1
 _BAZEL_EXIT_TESTS_FAILED = 3
 _BAZEL_EXIT_REMOTE_ERROR = 34
@@ -63,6 +70,32 @@ def _git(directory: pathlib.Path, *arguments: str) -> str:
 def commit_id(repository: pathlib.Path, commit: str) -> str:
     """Return the full ID of the commit that `commit` names."""
     return _git(repository, "rev-parse", "--verify", f"{commit}^{{commit}}").strip()
+
+
+def failed_result(
+    name: str,
+    failure: build_events.ActionFailure | build_events.TestFailure,
+    seconds: float,
+) -> results.Result:
+    """Return the result of the mutant `name`, which `failure` killed."""
+    culprit = failure.describe()
+    if isinstance(failure, build_events.ActionFailure):
+        output = failure.output
+        found = diagnostics.action_rejections(failure.mnemonic, output)
+        timed_out = False
+    else:
+        output = failure.log
+        found = diagnostics.test_rejections(output)
+        timed_out = failure.timed_out
+    if _OUT_OF_MEMORY in output:
+        outcome = results.Outcome.OUT_OF_MEMORY
+    elif timed_out:
+        outcome = results.Outcome.TIMED_OUT
+    else:
+        outcome = results.Outcome.KILLED
+    if found:
+        culprit += f" ({', '.join(sorted(found))})"
+    return results.Result(name=name, outcome=outcome, culprit=culprit, seconds=seconds)
 
 
 def _is_failed_build(
@@ -226,25 +259,7 @@ class Worker:
             )
         if failure is None or not _is_failed_build(completed.returncode, failure):
             raise bazel.BazelError(["test", *self._run.area], completed)
-        culprit = failure.describe()
-        if isinstance(failure, build_events.ActionFailure):
-            found = diagnostics.action_rejections(failure.mnemonic, failure.output)
-            outcome = results.Outcome.KILLED
-        else:
-            found = diagnostics.test_rejections(failure.log)
-            outcome = (
-                results.Outcome.TIMED_OUT
-                if failure.timed_out
-                else results.Outcome.KILLED
-            )
-        if found:
-            culprit += f" ({', '.join(sorted(found))})"
-        return results.Result(
-            name=mutated.name,
-            outcome=outcome,
-            culprit=culprit,
-            seconds=seconds,
-        )
+        return failed_result(mutated.name, failure, seconds)
 
     def _test_applied(
         self, mutated: mutant.Mutant

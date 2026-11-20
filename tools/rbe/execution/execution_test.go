@@ -5,11 +5,13 @@ import (
 	"crypto/sha256"
 	"errors"
 	"io"
+	"io/fs"
 	"net"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -302,7 +304,7 @@ func newReusingExecutor(t *testing.T, idleDirectories int) (*Executor, *cas.Stor
 	if err != nil {
 		t.Fatal(err)
 	}
-	executor, err := New(store, filepath.Join(root, "work"), 4, 1, idleDirectories)
+	executor, err := New(store, filepath.Join(root, "work"), 4, 1, idleDirectories, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -393,7 +395,7 @@ func TestDeletesTheOldestIdleDirectoryBeyondTheLimit(t *testing.T) {
 		t.Fatal(err)
 	}
 	// With no deleters, the test receives each deletion itself.
-	executor, err := New(store, filepath.Join(root, "work"), 4, 0, 1)
+	executor, err := New(store, filepath.Join(root, "work"), 4, 0, 1, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -688,7 +690,7 @@ func TestSetsAsideWhatEarlierRunsLeft(t *testing.T) {
 	}
 
 	// With no deleters, the test receives each deletion itself.
-	executor, err := New(store, workRoot, 4, 0, 0)
+	executor, err := New(store, workRoot, 4, 0, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -715,5 +717,61 @@ func TestSetsAsideWhatEarlierRunsLeft(t *testing.T) {
 	}
 	if !slices.Equal(names, []string{"cas", "work"}) {
 		t.Fatalf("left %v", names)
+	}
+}
+
+// newLimitedExecutor returns an executor whose actions can use at most
+// memoryLimit bytes. On Linux, it skips the test where this process can't
+// make cgroups, which only a cgroup that systemd delegates allows.
+func newLimitedExecutor(t *testing.T, memoryLimit int64) (*Executor, *cas.Store) {
+	t.Helper()
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+		t.Skip("only Linux and Windows limit an action's memory")
+	}
+	root := t.TempDir()
+	store, err := cas.Open(filepath.Join(root, "cas"), 1<<30, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	executor, err := New(store, filepath.Join(root, "work"), 4, 1, 0, memoryLimit)
+	if errors.Is(err, fs.ErrPermission) {
+		t.Skipf("this process can't make cgroups: %v", err)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	return executor, store
+}
+
+func TestReportsActionThatRunsOutOfMemory(t *testing.T) {
+	executor, store := newLimitedExecutor(t, 256<<20)
+	root := putDirectory(t, store, &repb.Directory{})
+	command := testprogram.Command(t, "allocate", strconv.Itoa(1<<30))
+	result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, command)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ExitCode == 0 {
+		t.Error("exited with 0")
+	}
+	stderr := readBlob(t, store, result.StderrDigest)
+	if !strings.HasSuffix(stderr, "\n"+OutOfMemoryMessage+" of 256 MiB.\n") {
+		t.Errorf("standard error is %q", stderr)
+	}
+}
+
+func TestActionWithinItsMemoryLimitRunsNormally(t *testing.T) {
+	executor, store := newLimitedExecutor(t, 256<<20)
+	root := putDirectory(t, store, &repb.Directory{})
+	command := testprogram.Command(t, "allocate", strconv.Itoa(16<<20))
+	result, err := executor.Execute(context.Background(), &repb.Action{InputRootDigest: root}, command)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.ExitCode != 0 {
+		t.Errorf("exited with %d", result.ExitCode)
+	}
+	if stderr := readBlob(t, store, result.StderrDigest); stderr != "" {
+		t.Errorf("standard error is %q", stderr)
 	}
 }

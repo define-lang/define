@@ -53,6 +53,9 @@ func Main(m *testing.M) {
 //	                   the connection
 //	spawn ADDRESS      starts a process that connects to ADDRESS, and waits
 //	                   until that process has connected
+//	allocate BYTES     allocates BYTES bytes of memory and writes to all of
+//	                   them, so that the system must give the process that
+//	                   memory
 //	exit CODE          exits with CODE
 //	terminate          sends itself SIGTERM
 func Command(t *testing.T, steps ...string) *repb.Command {
@@ -145,6 +148,12 @@ func run(arguments []string) error {
 		case "spawn":
 			err = spawn(arguments[1])
 			arguments = arguments[2:]
+		case "allocate":
+			var size int
+			if size, err = strconv.Atoi(arguments[1]); err == nil {
+				allocate(size)
+			}
+			arguments = arguments[2:]
 		case "exit":
 			var code int
 			if code, err = strconv.Atoi(arguments[1]); err == nil {
@@ -167,6 +176,18 @@ func run(arguments []string) error {
 		}
 	}
 	return nil
+}
+
+// allocated holds the memory that the allocate step allocates, so that the
+// compiler can't remove the allocation.
+var allocated []byte
+
+func allocate(size int) {
+	allocated = make([]byte, size)
+	const pageSize = 4096
+	for index := 0; index < size; index += pageSize {
+		allocated[index] = 1
+	}
 }
 
 // writeTree writes a line for each entry under root: a directory's path with

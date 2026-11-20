@@ -10,3 +10,9 @@ Group=rbe
 ExecStart=/usr/local/libexec/rbe/rbe --root=/var/lib/rbe/store --max_cas_bytes=${MAX_CAS_BYTES}
 Restart=on-failure
 LimitNOFILE=65536
+# The service limits each action's memory with a cgroup of its own under the
+# service's cgroup.
+Delegate=yes
+# The kernel kills an action that runs out of its memory limit, and the service
+# reports it as the action's failure.
+OOMPolicy=continue

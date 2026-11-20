@@ -33,6 +33,10 @@ func main() {
 	// A directory's input files are hardlinks to the store's files, so one idle
 	// directory adds only about 450 inodes and 0.4 MB.
 	idleDirectories := flag.Int("idle_action_directories", 2048, "finished action directories to keep for reuse by actions that run the same command")
+	// A mutant can make a test use memory without bound, and the machine would
+	// then kill other programs rather than the test. The largest action in
+	// this repository peaks under 1 GiB.
+	actionMemory := flag.Int64("action_memory_bytes", 3<<30, "bytes of memory that each action's processes can use in all, or 0 for no limit")
 	flag.Parse()
 	if err := setUpLogging(); err != nil {
 		log.Fatalf("setting up logging: %v", err)
@@ -45,7 +49,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("opening the store: %v", err)
 	}
-	executor, err := execution.New(store, filepath.Join(*root, "work"), *slots, *deleters, *idleDirectories)
+	executor, err := execution.New(store, filepath.Join(*root, "work"), *slots, *deleters, *idleDirectories, *actionMemory)
 	if err != nil {
 		log.Fatalf("creating the executor: %v", err)
 	}

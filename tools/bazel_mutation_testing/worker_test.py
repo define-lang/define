@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from tools.bazel_mutation_testing import bazel, results, worker
+from tools.bazel_mutation_testing import bazel, build_events, results, worker
 
 if TYPE_CHECKING:
     import pathlib
@@ -97,3 +97,45 @@ def test_removing_a_missing_worktree_deletes_its_build_events(tmp_path: pathlib.
     _ = build_events.write_text("{}\n", encoding="utf-8", newline="\n")
     _worker(tmp_path).remove()
     assert not build_events.exists()
+
+
+_OUT_OF_MEMORY_LOG = (
+    "Running tests\n"
+    "The remote execution service stopped this action because it ran out of"
+    " its memory limit of 100 MiB.\n"
+)
+
+
+@pytest.mark.parametrize(
+    ("failure", "outcome"),
+    [
+        (
+            build_events.TestFailure(label="//a:a_test", timed_out=False, log=""),
+            results.Outcome.KILLED,
+        ),
+        (
+            build_events.TestFailure(label="//a:a_test", timed_out=True, log=""),
+            results.Outcome.TIMED_OUT,
+        ),
+        (
+            build_events.TestFailure(
+                label="//a:a_test", timed_out=False, log=_OUT_OF_MEMORY_LOG
+            ),
+            results.Outcome.OUT_OF_MEMORY,
+        ),
+        (
+            build_events.ActionFailure(
+                label="//a:a",
+                mnemonic="Rustc",
+                outputs_missing=False,
+                output=_OUT_OF_MEMORY_LOG,
+            ),
+            results.Outcome.OUT_OF_MEMORY,
+        ),
+    ],
+)
+def test_failed_result_tells_which_limit_killed_the_mutant(
+    failure: build_events.ActionFailure | build_events.TestFailure,
+    outcome: results.Outcome,
+):
+    assert worker.failed_result("mutant", failure, 1.0).outcome == outcome
