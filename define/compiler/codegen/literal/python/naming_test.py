@@ -248,6 +248,12 @@ def test_name_allocator_numbers_imported_module_names():
     assert allocator.allocate("package") == "package_3"
 
 
+def test_name_allocator_numbers_first_component_of_long_imported_module_names():
+    allocator = naming.LocalNameAllocator()
+    allocator.reserve_module_first_names(["a.b.c"])
+    assert allocator.allocate("a") == "a_2"
+
+
 def test_name_allocator_skips_conflicting_source_suffixes():
     allocator = naming.LocalNameAllocator()
     assert allocator.allocate("name") == "name"
