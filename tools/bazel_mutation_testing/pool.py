@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import collections
 import concurrent.futures
 import contextlib
 import queue
-from typing import TYPE_CHECKING, Protocol
+import threading
+from typing import TYPE_CHECKING, Protocol, final
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -41,34 +43,105 @@ def test_all(
     mutant without a result and reverts it, and the error is raised. A resumed
     run then tests each stopped mutant again.
     """
-    idle: queue.SimpleQueue[Tester] = queue.SimpleQueue()
-    for tester in testers:
-        idle.put(tester)
+    schedule = _Schedule(mutants)
+    finished: queue.SimpleQueue[results.Result | _Stopped] = queue.SimpleQueue()
 
-    def test_on_idle_tester(mutated: mutant.Mutant) -> results.Result:
-        # The pool runs as many mutants at once as there are testers, so a
-        # tester is always idle here.
-        tester = idle.get_nowait()
+    def test_until_done(tester: Tester):
+        path = None
         try:
-            return tester.test(mutated, skipped_tests(mutated))
-        finally:
-            idle.put(tester)
+            while (mutated := schedule.take(path)) is not None:
+                path = mutated.path
+                finished.put(tester.test(mutated, skipped_tests(mutated)))
+        except BaseException as error:
+            finished.put(_Stopped(error))
+            raise
+        finished.put(_Stopped(None))
 
     with concurrent.futures.ThreadPoolExecutor(len(testers)) as executor:
-        futures = [executor.submit(test_on_idle_tester, mutated) for mutated in mutants]
+        futures = [executor.submit(test_until_done, tester) for tester in testers]
         try:
-            for future in concurrent.futures.as_completed(futures):
-                record(future.result())
+            _record_until_stopped(finished, len(testers), record)
         except BaseException:
-            for future in futures:
-                _ = future.cancel()
+            schedule.stop()
             for tester in testers:
                 tester.interrupt()
             _wait_for_testers(futures)
             raise
 
 
-def _wait_for_testers(futures: Sequence[concurrent.futures.Future[results.Result]]):
+def _record_until_stopped(
+    finished: queue.SimpleQueue[results.Result | _Stopped],
+    testers: int,
+    record: Callable[[results.Result], None],
+):
+    """Record each result in `finished` until all `testers` have stopped.
+
+    Raises the error of the first tester that fails.
+    """
+    running = testers
+    while running:
+        result = finished.get()
+        if not isinstance(result, _Stopped):
+            record(result)
+            continue
+        if result.error is not None:
+            raise result.error
+        running -= 1
+
+
+@final
+class _Stopped:
+    """A tester has stopped taking mutants, because none are left or because it failed."""
+
+    def __init__(self, error: BaseException | None):
+        self.error = error
+
+
+@final
+class _Schedule:
+    """Hands each tester the mutants of one file at a time.
+
+    A tester that tests a file's mutants one after another rebuilds and
+    rechecks only that file's dependents, rather than also those of the file
+    it tested last. Testers spread across files, so that they don't all rebuild
+    one file's dependents at once.
+    """
+
+    def __init__(self, mutants: Sequence[mutant.Mutant]):
+        self._lock = threading.Lock()
+        self._by_path: dict[str, collections.deque[mutant.Mutant]] = {}
+        for listed in mutants:
+            self._by_path.setdefault(listed.path, collections.deque()).append(listed)
+        self._testers_on: collections.Counter[str] = collections.Counter()
+        self._stopped = False
+
+    def take(self, path: str | None) -> mutant.Mutant | None:
+        """Return the next mutant for a tester that last tested a mutant of `path`.
+
+        Returns None when no mutants are left, or the schedule is stopped.
+        """
+        with self._lock:
+            if self._stopped:
+                return None
+            if path is not None and self._by_path.get(path):
+                return self._by_path[path].popleft()
+            if path is not None:
+                self._testers_on[path] -= 1
+            remaining = [listed for listed, queued in self._by_path.items() if queued]
+            if not remaining:
+                return None
+            # min keeps the listing order among files with as many testers.
+            chosen = min(remaining, key=lambda listed: self._testers_on[listed])
+            self._testers_on[chosen] += 1
+            return self._by_path[chosen].popleft()
+
+    def stop(self):
+        """Hand out no more mutants."""
+        with self._lock:
+            self._stopped = True
+
+
+def _wait_for_testers(futures: Sequence[concurrent.futures.Future[None]]):
     """Wait until every tester has stopped and reverted its mutant."""
     # The run removes each worktree next. A second interrupt must not end the
     # wait, since a worktree whose tester is still reverting has changes.

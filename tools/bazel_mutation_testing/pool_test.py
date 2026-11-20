@@ -167,3 +167,20 @@ def test_second_interrupt_waits_for_testers_to_revert(monkeypatch: pytest.Monkey
 
     assert reverting.reverted.is_set()
     assert waits == [2, 2]
+
+
+def test_each_tester_keeps_to_one_file_while_it_has_mutants():
+    all_testing = threading.Barrier(2)
+    testers = [_Tester(all_testing), _Tester(all_testing)]
+    mutants = [
+        mutant.Mutant(name=f"{path} {index}", path=path, patch="", lines=(1, 1))
+        for path in ("a.rs", "b.rs")
+        for index in range(3)
+    ]
+
+    pool.test_all(testers, mutants, _no_skipped_tests, lambda _result: None)
+
+    assert sorted(tester.tested for tester in testers) == [
+        ["a.rs 0", "a.rs 1", "a.rs 2"],
+        ["b.rs 0", "b.rs 1", "b.rs 2"],
+    ]
