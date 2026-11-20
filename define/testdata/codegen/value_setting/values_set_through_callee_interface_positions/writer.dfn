@@ -1,0 +1,25 @@
+define the potential action<my.domain.com:my_lib:/writer> {
+    define the position<trigger>.
+    define the position<target> {
+        it may only contain particles where {
+            it has the action</inner>.
+        }
+    }
+    define the position<result> {
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    it happens when {
+        the position<trigger> has a particle.
+    } and it does {
+        create a particle in position<target>::action</inner>::position<value>.
+        set the value of position<target>::action</inner>::position<value> from literal<standard:/number>"4".
+        create a particle in position<target>::action</inner>::position<copy>.
+        create a particle in position<target>::action</inner>::position<trigger>.
+        set the value of position<result> from position<target>::action</inner>::position<copy>.
+        destroy the particle in position<target>::action</inner>::position<value>.
+        destroy the particle in position<target>::action</inner>::position<copy>.
+        destroy the particle in position<trigger>.
+    }
+}

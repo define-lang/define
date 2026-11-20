@@ -1,0 +1,16 @@
+# action</writer> sets a value through a chain that starts at its interface position, and reads a value through another chain that starts there.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<writing> {
+            it may only contain particles where {
+                it has the action</writer>.
+            }
+        }
+        create a particle in position<writing>.
+        create a particle in position<writing>::action</writer>::position<target>.
+        create a particle in position<writing>::action</writer>::position<result>.
+        create a particle in position<writing>::action</writer>::position<trigger>.
+    }
+}
