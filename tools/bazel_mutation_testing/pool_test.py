@@ -56,6 +56,9 @@ class _Tester:
     def interrupt(self):
         self.interrupted = True
 
+    def kill(self):
+        pass
+
 
 @final
 class _BlockedTester:
@@ -75,6 +78,9 @@ class _BlockedTester:
     def interrupt(self):
         self.interrupted.set()
 
+    def kill(self):
+        pass
+
 
 @final
 class _FailingTester:
@@ -88,6 +94,9 @@ class _FailingTester:
         raise _TesterFailedError(mutated.name)
 
     def interrupt(self):
+        pass
+
+    def kill(self):
         pass
 
 
@@ -110,6 +119,31 @@ class _RevertingTester:
 
     def interrupt(self):
         self._interrupted.set()
+
+    def kill(self):
+        pass
+
+
+@final
+class _StuckTester:
+    """Tests one mutant until it is killed, since an interrupt does not stop it."""
+
+    def __init__(self, testing: threading.Event):
+        self.killed = threading.Event()
+        self._testing = testing
+
+    def test(
+        self, mutated: mutant.Mutant, _skipped: coverage.Selection
+    ) -> results.Result:
+        self._testing.set()
+        _ = self.killed.wait(timeout=10)
+        raise _TesterFailedError(mutated.name)
+
+    def interrupt(self):
+        pass
+
+    def kill(self):
+        self.killed.set()
 
 
 def test_testers_test_every_mutant_once_at_the_same_time():
@@ -154,12 +188,14 @@ def test_second_interrupt_waits_for_testers_to_revert(monkeypatch: pytest.Monkey
     wait = concurrent.futures.wait
 
     def interrupted_once(
-        futures: list[concurrent.futures.Future[results.Result]],
-    ) -> object:
+        futures: list[concurrent.futures.Future[None]], timeout: float | None
+    ) -> tuple[
+        set[concurrent.futures.Future[None]], set[concurrent.futures.Future[None]]
+    ]:
         waits.append(len(futures))
         if len(waits) == 1:
             raise KeyboardInterrupt
-        return wait(futures)
+        return wait(futures, timeout=timeout)
 
     def interrupt_after_testing(result: results.Result):
         _ = testing.wait(timeout=10)
@@ -193,3 +229,19 @@ def test_each_tester_keeps_to_one_file_while_it_has_mutants():
         ["a.rs 0", "a.rs 1", "a.rs 2"],
         ["b.rs 0", "b.rs 1", "b.rs 2"],
     ]
+
+
+def test_a_tester_that_does_not_stop_in_time_is_killed(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(pool, "_STOP_SECONDS", 0)
+    testing = threading.Event()
+    stuck = _StuckTester(testing)
+
+    with pytest.raises(_TesterFailedError):
+        pool.test_all(
+            [stuck, _FailingTester(testing)],
+            [_mutant("stuck"), _mutant("failing")],
+            _no_skipped_tests,
+            lambda _result: None,
+        )
+
+    assert stuck.killed.is_set()

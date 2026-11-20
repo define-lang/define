@@ -116,9 +116,15 @@ The problems this mutation tester solves, and the intentions behind its design.
   more than its first failure. It reuses the directories of earlier actions that
   ran the same command, which is what each mutant's reruns are.
 - **Allow one run at a time per repository,** since runs share the workers.
-- **A failed or interrupted worker stops the run.** Every worker reverts its
-  mutant, and a stopped mutant gets no result, so a resumed run tests it again.
-  Retrying a mutant on another worker would hide a broken worker.
+- **Give a worker a new Bazel server when its server fails.** A server that
+  crashes or stops responding says nothing about the mutant, so the worker tests
+  the same mutant again on a new server. A server that does not respond is
+  killed, so that it cannot hold up the run.
+- **A failed or interrupted worker stops the run.** A worker has failed when its
+  new server fails too. Every worker reverts its mutant, and a stopped mutant
+  gets no result, so a resumed run tests it again. Retrying a mutant on another
+  worker would hide a broken worker. A worker that does not stop in time is
+  killed, so that one stuck worker cannot keep the run from ending.
 - **Remove the workers when a run ends,** however it ends, since a fresh worker
   sets up quickly from the cache while a kept one takes a lot of disk. A worker
   with changes left in it is kept, to show what went wrong.

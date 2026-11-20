@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
+import pathlib
 import shutil
+import signal
 import subprocess
-from typing import TYPE_CHECKING
+import sys
+from typing import TYPE_CHECKING, final
 
 import msgspec
 
 if TYPE_CHECKING:
-    import pathlib
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
 
 # The tester runs under `bazel run`, which sets these for its own runfiles and
 # workspace. Programs it starts must find their own runfiles, and Bazel runs in
@@ -98,6 +101,70 @@ def run(
         text=True,
         check=False,
     )
+
+
+# Bazel exits with these codes when its server runs out of memory or fails in
+# another way that has nothing to do with what it builds.
+SERVER_FAILURE_EXIT_CODES = frozenset({33, 37})
+
+# A server that no longer responds may not respond to a request to exit either.
+_KILL = signal.SIGTERM if sys.platform == "win32" else signal.SIGKILL
+
+
+def output_base(workspace: pathlib.Path) -> pathlib.Path:
+    """Return the output base of `workspace`'s Bazel server."""
+    return pathlib.Path(run_checked(workspace, ["info", "output_base"]).strip())
+
+
+def kill_server(base: pathlib.Path):
+    """Kill the Bazel server of the output base `base`, also when the server no longer responds.
+
+    A Bazel client whose server exits fails, and the next command starts a new
+    server.
+    """
+    process = int((base / "server/server.pid.txt").read_text(encoding="utf-8"))
+    # The server can exit by itself before it is killed.
+    with contextlib.suppress(ProcessLookupError):
+        os.kill(process, _KILL)
+
+
+@final
+class Progress:
+    """Tells when a Bazel command has written no build events for too long."""
+
+    def __init__(
+        self,
+        build_event_file: pathlib.Path,
+        silent_seconds: float,
+        clock: Callable[[], float],
+    ):
+        """Watch `build_event_file`, which a command that started now writes.
+
+        The command has stopped responding once the file has not changed for
+        `silent_seconds`, as `clock` measures them.
+        """
+        self._build_event_file = build_event_file
+        self._silent_seconds = silent_seconds
+        self._clock = clock
+        self._size = self._current_size()
+        self._changed = clock()
+
+    def stalled(self) -> bool:
+        """Return whether the command has written no build event for too long."""
+        size = self._current_size()
+        now = self._clock()
+        if size != self._size:
+            self._size = size
+            self._changed = now
+            return False
+        return now - self._changed >= self._silent_seconds
+
+    def _current_size(self) -> int:
+        try:
+            return self._build_event_file.stat().st_size
+        except FileNotFoundError:
+            # Bazel creates the file once the command starts.
+            return 0
 
 
 class BazelError(Exception):

@@ -327,6 +327,8 @@ py_test(
     deps = [
         ":bazel",
         ":build_events",
+        ":coverage",
+        ":mutant",
         ":results",
         ":worker",
         "@pypi//pytest",

@@ -171,6 +171,13 @@ def _testing(index: int, mutated: mutant.Mutant):
     click.echo(f"worker-{index}: testing {mutated.name}")
 
 
+def _server_failed(index: int, error: worker.ServerFailedError):
+    reason = str(error).splitlines()[0]
+    click.echo(
+        f"worker-{index}: {reason}; running the command again on a new Bazel server"
+    )
+
+
 def _prepare(work: worker.Worker):
     work.prepare()
     # A worker's baseline reuses the first worker's cached results. It loads
@@ -194,6 +201,7 @@ def _test_area(
                 run=run,
                 index=index,
                 testing=functools.partial(_testing, index),
+                server_failed=functools.partial(_server_failed, index),
             )
             workers.append(work)
             _ = removals.callback(work.remove)

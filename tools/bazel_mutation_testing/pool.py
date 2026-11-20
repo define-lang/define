@@ -7,10 +7,11 @@ import concurrent.futures
 import contextlib
 import queue
 import threading
+import time
 from typing import TYPE_CHECKING, Protocol, final
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Mapping, Sequence
 
     from tools.bazel_mutation_testing import coverage, mutant, results
 
@@ -28,6 +29,15 @@ class Tester(Protocol):
         """Stop the current mutant's tests, and refuse to test any more."""
         ...
 
+    def kill(self):
+        """Kill what runs the current mutant's tests, which an interrupt did not stop."""
+        ...
+
+
+# An interrupted tester's tests normally stop within seconds. Tests that are
+# still running after this long are stuck.
+_STOP_SECONDS = 60
+
 
 def test_all(
     testers: Sequence[Tester],
@@ -41,7 +51,8 @@ def test_all(
 
     When a tester fails or the run is interrupted, every tester stops its
     mutant without a result and reverts it, and the error is raised. A resumed
-    run then tests each stopped mutant again.
+    run then tests each stopped mutant again. A tester whose tests do not stop
+    in time is killed.
     """
     schedule = _Schedule(mutants)
     finished: queue.SimpleQueue[results.Result | _Stopped] = queue.SimpleQueue()
@@ -58,7 +69,9 @@ def test_all(
         finished.put(_Stopped(None))
 
     with concurrent.futures.ThreadPoolExecutor(len(testers)) as executor:
-        futures = [executor.submit(test_until_done, tester) for tester in testers]
+        futures = {
+            executor.submit(test_until_done, tester): tester for tester in testers
+        }
         try:
             _record_until_stopped(finished, len(testers), record)
         except BaseException:
@@ -141,11 +154,21 @@ class _Schedule:
             self._stopped = True
 
 
-def _wait_for_testers(futures: Sequence[concurrent.futures.Future[None]]):
-    """Wait until every tester has stopped and reverted its mutant."""
+def _wait_for_testers(futures: Mapping[concurrent.futures.Future[None], Tester]):
+    """Wait until every interrupted tester, by its future, has stopped and reverted its mutant.
+
+    Kills each tester that has not stopped in time.
+    """
+    deadline = time.monotonic() + _STOP_SECONDS
+    killed = False
     # The run removes each worktree next. A second interrupt must not end the
     # wait, since a worktree whose tester is still reverting has changes.
     while True:
         with contextlib.suppress(KeyboardInterrupt):
-            _ = concurrent.futures.wait(futures)
-            return
+            timeout = None if killed else max(0.0, deadline - time.monotonic())
+            _, running = concurrent.futures.wait(futures, timeout=timeout)
+            if not running:
+                return
+            for future in running:
+                futures[future].kill()
+            killed = True

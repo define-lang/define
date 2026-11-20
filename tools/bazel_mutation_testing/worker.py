@@ -36,6 +36,16 @@ _BAZEL_EXIT_BUILD_FAILED = 1
 _BAZEL_EXIT_TESTS_FAILED = 3
 _BAZEL_EXIT_REMOTE_ERROR = 34
 
+# A working Bazel server writes a build event each time a target finishes. A
+# test runs for at most the run's test timeout, and the slowest action takes a
+# few minutes. A server that writes no build event for longer than both has
+# stopped responding.
+_SLOWEST_ACTION_SECONDS = 4 * 60
+
+# How often a worker checks whether its Bazel command still writes build
+# events.
+_PROGRESS_CHECK_SECONDS = 10
+
 
 class BaselineFailedError(Exception):
     """The area's tests fail without any mutant."""
@@ -63,6 +73,10 @@ class DirtyWorktreeError(Exception):
 
 class WorkerInterruptedError(Exception):
     """The run stopped the worker's mutant before its tests finished."""
+
+
+class ServerFailedError(Exception):
+    """A worker's Bazel server crashed or stopped responding."""
 
 
 def _git(directory: pathlib.Path, *arguments: str) -> str:
@@ -131,15 +145,19 @@ class Worker:
         run: results.Run,
         index: int,
         testing: Callable[[mutant.Mutant], None],
+        server_failed: Callable[[ServerFailedError], None],
     ):
         """Test `run`'s mutants in the worktree of `repository` numbered `index`.
 
         The worker calls `testing` with each mutant once the mutant's tests
-        have started.
+        have started. The worker calls `server_failed` when its Bazel server
+        fails during a command, before the worker runs the command again on a
+        new server.
         """
         worktree = repository / f".mutation_testing/worker-{index}"
         self.worktree = worktree
         self._testing = testing
+        self._server_failed = server_failed
         self._repository = repository
         self._run = run
         self._build_event_file = worktree.parent / f"{worktree.name}.build_events.json"
@@ -148,6 +166,7 @@ class Worker:
         self._lock = threading.Lock()
         self._interrupted = False
         self._tests: subprocess.Popen[str] | None = None
+        self._output_base: pathlib.Path | None = None
         self._test_patterns: list[str] = []
 
     def prepare(self):
@@ -172,6 +191,7 @@ class Worker:
                 self._run.commit,
             )
         self._require_clean()
+        self._output_base = bazel.output_base(self.worktree)
         _ = bazel.run_checked(
             self.worktree, ["build", "--build_runfile_links", "//tools/format"]
         )
@@ -248,7 +268,9 @@ class Worker:
         Raises:
             BaselineFailedError: A test or an action failed.
         """
-        completed, failure = self._finish_tests(self._start(arguments))
+        completed, failure = self._finish_on_working_server(
+            self._start(arguments), arguments
+        )
         if completed.returncode == 0:
             return
         if failure is None:
@@ -265,6 +287,13 @@ class Worker:
                 # On SIGINT, Bazel cancels the build rather than leaving its
                 # server to finish it.
                 self._tests.send_signal(signal.SIGINT)
+
+    def kill(self):
+        """Kill the worker's Bazel server, which ends its current Bazel command."""
+        if self._output_base is None:
+            # The worker has not started a Bazel server.
+            return
+        bazel.kill_server(self._output_base)
 
     def test(
         self, mutated: mutant.Mutant, selection: coverage.Selection
@@ -316,9 +345,10 @@ class Worker:
         float,
     ]:
         start = time.monotonic()
-        tests = self._start(self._test_arguments(skipped))
+        arguments = self._test_arguments(skipped)
+        tests = self._start(arguments)
         self._testing(mutated)
-        completed, failure = self._finish_tests(tests)
+        completed, failure = self._finish_on_working_server(tests, arguments)
         return completed, failure, time.monotonic() - start
 
     @contextlib.contextmanager
@@ -412,6 +442,27 @@ class Worker:
             self._tests = tests
         return tests
 
+    def _finish_on_working_server(
+        self, tests: subprocess.Popen[str], arguments: list[str]
+    ) -> tuple[
+        subprocess.CompletedProcess[str],
+        build_events.ActionFailure | build_events.TestFailure | None,
+    ]:
+        """Wait for `tests`, which Bazel runs with `arguments`, and return Bazel's output and the first failure.
+
+        A server's failure says nothing about what the server builds, so when
+        the server fails, the worker runs `arguments` again on a new server.
+
+        Raises:
+            WorkerInterruptedError: The run interrupted the worker.
+            ServerFailedError: The new server failed too.
+        """
+        try:
+            return self._finish_tests(tests)
+        except ServerFailedError as error:
+            self._server_failed(error)
+        return self._finish_tests(self._start(arguments))
+
     def _finish_tests(
         self, tests: subprocess.Popen[str]
     ) -> tuple[
@@ -422,9 +473,26 @@ class Worker:
 
         Raises:
             WorkerInterruptedError: The run interrupted the worker.
+            ServerFailedError: The Bazel server crashed or stopped responding.
         """
+        silent_seconds = self._run.test_timeout + _SLOWEST_ACTION_SECONDS
+        progress = bazel.Progress(
+            self._build_event_file, silent_seconds, time.monotonic
+        )
+        responded = True
         with tests:
-            stdout, stderr = tests.communicate()
+            while True:
+                try:
+                    stdout, stderr = tests.communicate(timeout=_PROGRESS_CHECK_SECONDS)
+                    break
+                except subprocess.TimeoutExpired:
+                    if not progress.stalled():
+                        continue
+                # A Bazel client exits once its server is gone.
+                self.kill()
+                stdout, stderr = tests.communicate()
+                responded = False
+                break
         completed = subprocess.CompletedProcess(
             tests.args, tests.returncode, stdout, stderr
         )
@@ -432,6 +500,14 @@ class Worker:
             self._tests = None
             if self._interrupted:
                 raise WorkerInterruptedError(self.worktree)
+        if not responded:
+            raise ServerFailedError(
+                f"Bazel wrote no build events for {silent_seconds} seconds"
+            )
+        if completed.returncode in bazel.SERVER_FAILURE_EXIT_CODES:
+            raise ServerFailedError(
+                f"Bazel exited with {completed.returncode}\n{completed.stderr}"
+            )
         return completed, build_events.first_failure(self._build_event_file)
 
     def _require_worktree(self):
