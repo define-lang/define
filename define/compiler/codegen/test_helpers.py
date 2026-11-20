@@ -14,7 +14,7 @@ _CODEGEN_TESTDATA_ROOT = Path("define/testdata/codegen")
 
 def _all_files(directory: Path) -> dict[str, str]:
     return {
-        str(path.relative_to(directory)): path.read_text(encoding="utf-8")
+        str(path.relative_to(directory)): path.read_text(encoding="utf-8", newline="")
         for path in sorted(directory.rglob("*"))
         if path.is_file()
     }
@@ -33,10 +33,12 @@ def assert_generated_directory_matches(
 def assert_generated_files_match(expected: Path, generated: Path, files: set[Path]):
     """Assert that the selected generated files match their expected contents."""
     expected_files = {
-        str(path): (expected / path).read_text(encoding="utf-8") for path in files
+        str(path): (expected / path).read_text(encoding="utf-8", newline="")
+        for path in files
     }
     generated_files = {
-        str(path): (generated / path).read_text(encoding="utf-8") for path in files
+        str(path): (generated / path).read_text(encoding="utf-8", newline="")
+        for path in files
     }
     _assert_file_contents_match(expected_files, generated_files, expected.name)
 
