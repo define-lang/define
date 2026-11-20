@@ -13,8 +13,6 @@ import io
 import typing
 from pathlib import Path
 
-import pytest
-
 from defcl.python import error_types, errors
 from define.compiler import driver
 from define.compiler.codegen import test_helpers, testdata_cases
@@ -33,14 +31,6 @@ _MODULES_IMPORTED_ON_FIRST_DEFCL_FILE = (error_types, errors)
 # The parser imports this module when it creates the first syntax error, so
 # it is imported here for the same reason.
 _MODULES_IMPORTED_ON_FIRST_SYNTAX_ERROR = (syntax_errors,)
-
-
-# Thread pools and futures are a common source of cycles, so compiles run both
-# on one thread and on several.
-_BOTH_THREAD_COUNTS = pytest.mark.parametrize("max_threads", [1, 4])
-# One and several threads run the same pool code, so the large codegen corpus
-# compiles only once, with several.
-_CODEGEN_CORPUS_THREADS = 4
 
 
 def _collected_garbage() -> collections.Counter[str]:
@@ -94,16 +84,12 @@ def _compile_all(
     return exit_codes, garbage_by_case
 
 
-def _compile_codegen_case(
-    case_dir: Path, output_dir: Path, max_threads: int
-) -> driver.ExitCode:
-    result = testdata_cases.compile_case(case_dir, output_dir, max_threads=max_threads)
+def _compile_codegen_case(case_dir: Path, output_dir: Path) -> driver.ExitCode:
+    result = testdata_cases.compile_case(case_dir, output_dir)
     return driver.ExitCode.ERROR if result.has_errors() else driver.ExitCode.SUCCESS
 
 
-def _compile_source_file(
-    source_path: Path, output_dir: Path, max_threads: int
-) -> driver.ExitCode:
+def _compile_source_file(source_path: Path, output_dir: Path) -> driver.ExitCode:
     source = source_path.read_text(encoding="utf-8")
     with contextlib.chdir(source_path.parent):
         return driver.Driver().run(
@@ -111,20 +97,16 @@ def _compile_source_file(
             error_stream=io.StringIO(),
             output_dir=output_dir,
             source=source,
-            max_threads=max_threads,
         )
 
 
-def _compile_project(
-    entry_path: Path, output_dir: Path, max_threads: int
-) -> driver.ExitCode:
+def _compile_project(entry_path: Path, output_dir: Path) -> driver.ExitCode:
     with contextlib.chdir(entry_path.parent):
         return driver.Driver().run(
             Path(entry_path.name),
             mode=driver.DriverMode.COMPILE,
             error_stream=io.StringIO(),
             output_dir=output_dir,
-            max_threads=max_threads,
         )
 
 
@@ -136,7 +118,6 @@ def test_codegen_cases_create_no_cyclic_garbage(tmp_path: Path):
             _compile_codegen_case,
             case_dir,
             tmp_path / case_name,
-            _CODEGEN_CORPUS_THREADS,
         )
 
     exit_codes, garbage_by_case = _compile_all(compiles)
@@ -146,10 +127,7 @@ def test_codegen_cases_create_no_cyclic_garbage(tmp_path: Path):
     assert garbage_by_case == {}
 
 
-@_BOTH_THREAD_COUNTS
-def test_resource_control_programs_create_no_cyclic_garbage(
-    max_threads: int, tmp_path: Path
-):
+def test_resource_control_programs_create_no_cyclic_garbage(tmp_path: Path):
     compiles: dict[str, Callable[[], driver.ExitCode]] = {}
     expected_exit_codes: dict[str, driver.ExitCode] = {}
     for case in resource_cases.CPU_GROWTH_CASES:
@@ -158,7 +136,7 @@ def test_resource_control_programs_create_no_cyclic_garbage(
             continue
         source_path = Path(resource_cases.COMPILER_RESOURCES_DIRECTORY / case.control)
         compiles[case.name] = functools.partial(
-            _compile_source_file, source_path, tmp_path / case.name, max_threads
+            _compile_source_file, source_path, tmp_path / case.name
         )
         expected_exit_codes[case.name] = (
             driver.ExitCode.ERROR
@@ -172,16 +150,13 @@ def test_resource_control_programs_create_no_cyclic_garbage(
     assert garbage_by_case == {}
 
 
-@_BOTH_THREAD_COUNTS
-def test_retained_memory_programs_create_no_cyclic_garbage(
-    max_threads: int, tmp_path: Path
-):
+def test_retained_memory_programs_create_no_cyclic_garbage(tmp_path: Path):
     compiles: dict[str, Callable[[], driver.ExitCode]] = {}
     for case in resource_cases.RETAINED_MEMORY_CASES:
         source_path = Path(resource_cases.COMPILER_RESOURCES_DIRECTORY / case.source)
         compile_file = _compile_project if case.filesystem else _compile_source_file
         compiles[case.name] = functools.partial(
-            compile_file, source_path, tmp_path / case.name, max_threads
+            compile_file, source_path, tmp_path / case.name
         )
 
     exit_codes, garbage_by_case = _compile_all(compiles)
@@ -191,84 +166,78 @@ def test_retained_memory_programs_create_no_cyclic_garbage(
 
 
 def _compile_failing_project(
-    project_directory: Path, tmp_path: Path, max_threads: int
+    project_directory: Path, tmp_path: Path
 ) -> tuple[dict[str, driver.ExitCode], dict[str, collections.Counter[str]]]:
     entry_path = project_directory / "test.dfn"
     return _compile_all(
         {
             "compile": functools.partial(
-                _compile_project, entry_path, tmp_path / "generated", max_threads
+                _compile_project, entry_path, tmp_path / "generated"
             )
         }
     )
 
 
-@_BOTH_THREAD_COUNTS
 def test_invalid_config_creates_no_cyclic_garbage(
-    testdata_project_directory: Path, max_threads: int, tmp_path: Path
+    testdata_project_directory: Path, tmp_path: Path
 ):
     exit_codes, garbage_by_case = _compile_failing_project(
-        testdata_project_directory, tmp_path, max_threads
+        testdata_project_directory, tmp_path
     )
 
     assert exit_codes == {"compile": driver.ExitCode.ERROR}
     assert garbage_by_case == {}
 
 
-@_BOTH_THREAD_COUNTS
 def test_missing_entry_file_creates_no_cyclic_garbage(
-    testdata_project_directory: Path, max_threads: int, tmp_path: Path
+    testdata_project_directory: Path, tmp_path: Path
 ):
     exit_codes, garbage_by_case = _compile_failing_project(
-        testdata_project_directory, tmp_path, max_threads
+        testdata_project_directory, tmp_path
     )
 
     assert exit_codes == {"compile": driver.ExitCode.ERROR}
     assert garbage_by_case == {}
 
 
-@_BOTH_THREAD_COUNTS
 def test_syntax_error_creates_no_cyclic_garbage(
-    testdata_project_directory: Path, max_threads: int, tmp_path: Path
+    testdata_project_directory: Path, tmp_path: Path
 ):
     exit_codes, garbage_by_case = _compile_failing_project(
-        testdata_project_directory, tmp_path, max_threads
+        testdata_project_directory, tmp_path
     )
 
     assert exit_codes == {"compile": driver.ExitCode.ERROR}
     assert garbage_by_case == {}
 
 
-@_BOTH_THREAD_COUNTS
 def test_structural_diagnostic_creates_no_cyclic_garbage(
-    testdata_project_directory: Path, max_threads: int, tmp_path: Path
+    testdata_project_directory: Path, tmp_path: Path
 ):
     exit_codes, garbage_by_case = _compile_failing_project(
-        testdata_project_directory, tmp_path, max_threads
+        testdata_project_directory, tmp_path
     )
 
     assert exit_codes == {"compile": driver.ExitCode.ERROR}
     assert garbage_by_case == {}
 
 
-@_BOTH_THREAD_COUNTS
 def test_reference_graph_diagnostic_creates_no_cyclic_garbage(
-    testdata_project_directory: Path, max_threads: int, tmp_path: Path
+    testdata_project_directory: Path, tmp_path: Path
 ):
     exit_codes, garbage_by_case = _compile_failing_project(
-        testdata_project_directory, tmp_path, max_threads
+        testdata_project_directory, tmp_path
     )
 
     assert exit_codes == {"compile": driver.ExitCode.ERROR}
     assert garbage_by_case == {}
 
 
-@_BOTH_THREAD_COUNTS
 def test_entry_point_diagnostic_creates_no_cyclic_garbage(
-    testdata_project_directory: Path, max_threads: int, tmp_path: Path
+    testdata_project_directory: Path, tmp_path: Path
 ):
     exit_codes, garbage_by_case = _compile_failing_project(
-        testdata_project_directory, tmp_path, max_threads
+        testdata_project_directory, tmp_path
     )
 
     assert exit_codes == {"compile": driver.ExitCode.ERROR}

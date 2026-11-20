@@ -23,6 +23,7 @@ py_test(
         "//define/testdata/compiler_resources:wide_destruction",
         "//define/testdata/resource_tests/cyclic_garbage",
     ],
+    shard_count = 3,
     tags = ["no-coverage"],
     deps = [
         ":resource_cases",
@@ -33,7 +34,6 @@ py_test(
         "//define/compiler/codegen:testdata_cases",
         "//define/compiler/errors:syntax_errors",
         "//define/compiler/test_fixtures:testdata",
-        "@pypi//pytest",
     ],
 )
 
