@@ -18,6 +18,7 @@ for argument; do
 		;;
 	esac
 done
+echo "$command" >>"$fake/commands"
 case $command in
 info) echo "$fake/output_base" ;;
 build)

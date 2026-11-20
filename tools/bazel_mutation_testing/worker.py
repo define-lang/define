@@ -46,6 +46,13 @@ _SLOWEST_ACTION_SECONDS = 4 * 60
 # events.
 _PROGRESS_CHECK_SECONDS = 10
 
+# A Bazel 9.3 server keeps every command's remote output checker, with the
+# paths of every output that the command built, until its heap is full. A
+# worker restarts its server after this many commands, long before then.
+# TODO: Remove the restarts once the repository uses Bazel 9.4.0 or later,
+# which include https://github.com/bazelbuild/bazel/pull/31731.
+_COMMANDS_PER_SERVER = 200
+
 
 class BaselineFailedError(Exception):
     """The area's tests fail without any mutant."""
@@ -167,6 +174,7 @@ class Worker:
         self._interrupted = False
         self._tests: subprocess.Popen[str] | None = None
         self._output_base: pathlib.Path | None = None
+        self._server_commands = 0
         self._test_patterns: list[str] = []
 
     def prepare(self):
@@ -435,11 +443,15 @@ class Worker:
         Raises:
             WorkerInterruptedError: The run interrupted the worker.
         """
+        if self._server_commands == _COMMANDS_PER_SERVER:
+            _ = bazel.run_checked(self.worktree, ["shutdown"])
+            self._server_commands = 0
         with self._lock:
             if self._interrupted:
                 raise WorkerInterruptedError(self.worktree)
             tests = bazel.start(self.worktree, arguments)
             self._tests = tests
+        self._server_commands += 1
         return tests
 
     def _finish_on_working_server(
@@ -461,6 +473,7 @@ class Worker:
             return self._finish_tests(tests)
         except ServerFailedError as error:
             self._server_failed(error)
+        self._server_commands = 0
         return self._finish_tests(self._start(arguments))
 
     def _finish_tests(

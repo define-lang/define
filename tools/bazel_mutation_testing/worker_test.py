@@ -265,3 +265,27 @@ def test_a_stuck_server_is_killed_and_the_mutant_tested_again(
     assert [str(failure) for failure in failures] == [
         "Bazel wrote no build events for 1 seconds"
     ]
+
+
+@_POSIX_ONLY
+def test_a_worker_restarts_its_server_after_a_number_of_commands(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(worker, "_COMMANDS_PER_SERVER", 2)
+    work = _prepared_worker(tmp_path, monkeypatch, [], [])
+    work.test_baseline()
+
+    for _ in range(3):
+        _ = work.test(_MUTANT, _ALL_TESTS)
+
+    commands = (tmp_path / "fake/commands").read_text(encoding="utf-8").split()
+    assert commands == [
+        "info",
+        "build",
+        "query",
+        "test",
+        "test",
+        "shutdown",
+        "test",
+        "test",
+    ]

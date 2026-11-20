@@ -110,7 +110,8 @@ The problems this mutation tester solves, and the intentions behind its design.
   Each worker's Bazel server takes memory, and a machine that runs out of memory
   kills other programs. Each added worker also gains less than the one before,
   because the workers share one execution service. Bazel servers stay small and
-  exit when idle.
+  exit when idle. A worker restarts its Bazel server regularly, so that memory
+  the server keeps from each command cannot fill its heap.
 - **Rely on the execution service to stop and reuse work.** It stops the tests
   that a stopped build no longer waits for, so that a killed mutant costs no
   more than its first failure. It reuses the directories of earlier actions that
