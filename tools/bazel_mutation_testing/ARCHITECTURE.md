@@ -25,6 +25,12 @@ The problems this mutation tester solves, and the intentions behind its design.
   test helpers, files that builds generate, and code generators. A generator's
   mutant changes only the code it generates, so a surviving one does not show
   which test is missing.
+- **Leave out a mutant that no test could tell apart from the original code,**
+  when a rule that reads only the source shows this. Such a mutant only costs
+  time, since it survives or only a lint kills it. Each rule must hold for every
+  mutant that the rule matches, so that leaving mutants out never hides a
+  missing test. When a generator's own way to skip mutants can single out
+  exactly the mutants that a rule describes, the rule uses that way instead.
 - **Test a commit, not the working tree,** so that a run's results describe code
   that someone can check out. A run resumes only from results of the same
   commit, area and settings.

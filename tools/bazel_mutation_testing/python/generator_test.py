@@ -130,3 +130,171 @@ def check(value: int) -> int:
         "pkg/lib.py:3:13: replace < 0 with <= 0 (pkg.lib.x_check__mutmut_3)",
         "pkg/lib.py:3:16: replace 0 with 1 (pkg.lib.x_check__mutmut_4)",
     ]
+
+
+def test_changes_to_the_type_of_a_cast_are_skipped(tmp_path: pathlib.Path):
+    source = """\
+import typing
+from typing import cast
+
+
+def convert(value: object) -> int:
+    first = cast("int", value)
+    return typing.cast("int", first)
+"""
+    mutants = _list_mutants(_workspace(tmp_path, source))
+    # mutmut's mutants 2, 6 to 8, 12 and 13 change only the type.
+    assert [listed.name for listed in mutants] == [
+        'pkg/lib.py:6:5: replace first = cast("int", value) with first = None '
+        + "(pkg.lib.x_convert__mutmut_1)",
+        'pkg/lib.py:6:13: replace cast("int", value) with cast("int", None) '
+        + "(pkg.lib.x_convert__mutmut_3)",
+        'pkg/lib.py:6:13: replace cast("int", value) with cast(value) '
+        + "(pkg.lib.x_convert__mutmut_4)",
+        'pkg/lib.py:6:13: replace cast("int", value) with cast("int", ) '
+        + "(pkg.lib.x_convert__mutmut_5)",
+        'pkg/lib.py:7:12: replace typing.cast("int", first) with '
+        + 'typing.cast("int", None) (pkg.lib.x_convert__mutmut_9)',
+        'pkg/lib.py:7:12: replace typing.cast("int", first) with '
+        + "typing.cast(first) (pkg.lib.x_convert__mutmut_10)",
+        'pkg/lib.py:7:12: replace typing.cast("int", first) with '
+        + 'typing.cast("int", ) (pkg.lib.x_convert__mutmut_11)',
+    ]
+
+
+def test_removed_match_arms_that_only_raise_are_skipped(tmp_path: pathlib.Path):
+    source = """\
+def describe(value: object) -> object:
+    match value:
+        case int():
+            raise TypeError
+        case str():
+            return value
+    return None
+"""
+    mutants = _list_mutants(_workspace(tmp_path, source))
+    # mutmut's first mutant removes the arm that raises.
+    assert [listed.name for listed in mutants] == [
+        "pkg/lib.py:2:5: replace ...raise TypeError case str(): return value "
+        + "with ...raise TypeError (pkg.lib.x_describe__mutmut_2)",
+    ]
+
+
+def test_removed_last_match_arms_that_do_nothing_are_skipped(
+    tmp_path: pathlib.Path,
+):
+    source = """\
+def describe(value: object) -> object:
+    match value:
+        case None:
+            pass
+        case bytes():
+            return value
+        case float():
+            pass
+    match value:
+        case list():
+            return value
+        case other:
+            pass
+    return other
+"""
+    mutants = _list_mutants(_workspace(tmp_path, source))
+    # mutmut's third mutant removes the `case float()` arm. The `case None` arm
+    # is not the last arm, and the `case other` arm binds a name.
+    assert [listed.name for listed in mutants] == [
+        "pkg/lib.py:2:5: replace ...ch value: case None: pass case bytes(): "
+        + "return... with ...ch value: case bytes(): return... "
+        + "(pkg.lib.x_describe__mutmut_1)",
+        "pkg/lib.py:2:5: replace ...one: pass case bytes(): return value "
+        + "case float(): pass with ...one: pass case float(): pass "
+        + "(pkg.lib.x_describe__mutmut_2)",
+        "pkg/lib.py:9:5: replace match value: case list(): return value "
+        + "case other: pass with match value: case other: pass "
+        + "(pkg.lib.x_describe__mutmut_4)",
+        "pkg/lib.py:9:5: replace match value: case list(): return value "
+        + "case other: pass with match value: case list(): return value "
+        + "(pkg.lib.x_describe__mutmut_5)",
+    ]
+
+
+def test_removed_default_arguments_and_lenient_zips_are_skipped(
+    tmp_path: pathlib.Path,
+):
+    source = """\
+import subprocess
+
+
+def pair(left: list[int], right: list[int]) -> list[tuple[int, int]]:
+    _ = subprocess.run(["true"], check=False)
+    _ = zip(left, right, strict=False)
+    return zip(left, right, strict=True)
+"""
+    mutants = _list_mutants(_workspace(tmp_path, source))
+    # mutmut's mutants 5, 15 and 22 remove `check` or `strict`, and its
+    # mutant 23 changes `strict=True` to `strict=False`.
+    assert [listed.name for listed in mutants] == [
+        'pkg/lib.py:5:5: replace _ = subprocess.run(["true"], check=False) '
+        + "with _ = None (pkg.lib.x_pair__mutmut_1)",
+        'pkg/lib.py:5:9: replace subprocess.run(["true"], check=False) with '
+        + "subprocess.run(None, check=False) (pkg.lib.x_pair__mutmut_2)",
+        'pkg/lib.py:5:9: replace subprocess.run(["true"], check=False) with '
+        + 'subprocess.run(["true"], check=None) (pkg.lib.x_pair__mutmut_3)',
+        'pkg/lib.py:5:9: replace subprocess.run(["true"], check=False) with '
+        + "subprocess.run(check=False) (pkg.lib.x_pair__mutmut_4)",
+        'pkg/lib.py:5:25: replace "true" with "XXtrueXX" '
+        + "(pkg.lib.x_pair__mutmut_6)",
+        'pkg/lib.py:5:25: replace "true" with "TRUE" (pkg.lib.x_pair__mutmut_7)',
+        "pkg/lib.py:5:40: replace False with True (pkg.lib.x_pair__mutmut_8)",
+        "pkg/lib.py:6:5: replace _ = zip(left, right, strict=False) with "
+        + "_ = None (pkg.lib.x_pair__mutmut_9)",
+        "pkg/lib.py:6:9: replace zip(left, right, strict=False) with "
+        + "zip(None, right, strict=False) (pkg.lib.x_pair__mutmut_10)",
+        "pkg/lib.py:6:9: replace zip(left, right, strict=False) with "
+        + "zip(left, None, strict=False) (pkg.lib.x_pair__mutmut_11)",
+        "pkg/lib.py:6:9: replace zip(left, right, strict=False) with "
+        + "zip(left, right, strict=None) (pkg.lib.x_pair__mutmut_12)",
+        "pkg/lib.py:6:9: replace zip(left, right, strict=False) with "
+        + "zip(right, strict=False) (pkg.lib.x_pair__mutmut_13)",
+        "pkg/lib.py:6:9: replace zip(left, right, strict=False) with "
+        + "zip(left, strict=False) (pkg.lib.x_pair__mutmut_14)",
+        "pkg/lib.py:6:33: replace False with True (pkg.lib.x_pair__mutmut_16)",
+        "pkg/lib.py:7:12: replace zip(left, right, strict=True) with "
+        + "zip(None, right, strict=True) (pkg.lib.x_pair__mutmut_17)",
+        "pkg/lib.py:7:12: replace zip(left, right, strict=True) with "
+        + "zip(left, None, strict=True) (pkg.lib.x_pair__mutmut_18)",
+        "pkg/lib.py:7:12: replace zip(left, right, strict=True) with "
+        + "zip(left, right, strict=None) (pkg.lib.x_pair__mutmut_19)",
+        "pkg/lib.py:7:12: replace zip(left, right, strict=True) with "
+        + "zip(right, strict=True) (pkg.lib.x_pair__mutmut_20)",
+        "pkg/lib.py:7:12: replace zip(left, right, strict=True) with "
+        + "zip(left, strict=True) (pkg.lib.x_pair__mutmut_21)",
+    ]
+
+
+def test_case_changes_of_codec_names_are_skipped(tmp_path: pathlib.Path):
+    source = """\
+def encode(text: str, codec: str) -> bytes:
+    if codec == "ascii":
+        return text.encode("ascii")
+    return text.encode(encoding="utf-8")
+"""
+    mutants = _list_mutants(_workspace(tmp_path, source))
+    # mutmut's mutants 6 and 9 change the case of a codec name. The `"ascii"`
+    # that `codec` is compared with is not a codec name.
+    assert [listed.name for listed in mutants] == [
+        'pkg/lib.py:2:13: replace == "ascii" with != "ascii" '
+        + "(pkg.lib.x_encode__mutmut_1)",
+        'pkg/lib.py:2:17: replace "ascii" with "XXasciiXX" '
+        + "(pkg.lib.x_encode__mutmut_2)",
+        'pkg/lib.py:2:17: replace "ascii" with "ASCII" '
+        + "(pkg.lib.x_encode__mutmut_3)",
+        'pkg/lib.py:3:16: replace text.encode("ascii") with text.encode(None) '
+        + "(pkg.lib.x_encode__mutmut_4)",
+        'pkg/lib.py:3:28: replace "ascii" with "XXasciiXX" '
+        + "(pkg.lib.x_encode__mutmut_5)",
+        'pkg/lib.py:4:12: replace text.encode(encoding="utf-8") with '
+        + "text.encode(encoding=None) (pkg.lib.x_encode__mutmut_7)",
+        'pkg/lib.py:4:33: replace "utf-8" with "XXutf-8XX" '
+        + "(pkg.lib.x_encode__mutmut_8)",
+    ]

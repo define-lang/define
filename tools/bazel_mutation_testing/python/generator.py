@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import codecs
 import pathlib
 from typing import TYPE_CHECKING, NamedTuple, cast
 
 import libcst
+import libcst.helpers
 import libcst.matchers
 from libcst import metadata
 from mutmut.mutation import (
@@ -19,7 +21,7 @@ from mutmut.utils import format_utils
 from tools.bazel_mutation_testing import mutant
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Iterable, Mapping, Sequence
 
 # Lines of unchanged context around each change, as in `diff -u`.
 _CONTEXT_LINES = 3
@@ -29,6 +31,23 @@ _SNIPPET_LENGTH = 60
 # Otherwise it shows each one's changed part, with this many unchanged
 # characters on each side.
 _CHANGE_CONTEXT = 15
+_CAST_NAMES = frozenset({"cast", "typing.cast"})
+# Keyword arguments that a call acts the same without, by the callee's name
+# and the keyword, with the literal values that this holds for. ruff's B905 and
+# PLW1510 make code pass `strict=False` and `check=False`, which are the
+# defaults. `zip` without `strict=True` differs from `zip` with `strict=True`
+# only where `zip` with `strict=True` raises an exception.
+_REMOVABLE_ARGUMENTS: dict[tuple[str, str], frozenset[str]] = {
+    ("zip", "strict"): frozenset({"True", "False"}),
+    ("subprocess.run", "check"): frozenset({"False"}),
+}
+# String methods whose first argument is a codec name.
+_CODEC_METHODS = frozenset({"encode", "decode"})
+_BINDING_PATTERN = (
+    libcst.matchers.MatchAs(name=libcst.matchers.Name())
+    | libcst.matchers.MatchStar(name=libcst.matchers.Name())
+    | libcst.matchers.MatchMapping(rest=libcst.matchers.Name())
+)
 
 
 class _Function(NamedTuple):
@@ -199,33 +218,249 @@ def _ignored_code(
     )
 
 
-def _never_matters(
-    mutation: file_mutation.Mutation, wrapper: metadata.MetadataWrapper
+def _removed_element[T](original: Sequence[T], mutated: Sequence[T]) -> T | None:
+    """Return the element of `original` that `mutated` leaves out.
+
+    Return None when `mutated` is not `original` with exactly one element left
+    out. libcst compares nodes by identity, and a mutation reuses every node
+    that the mutation does not change.
+    """
+    if len(mutated) != len(original) - 1:
+        return None
+    removed = [element for element in original if element not in mutated]
+    if len(removed) != 1:
+        return None
+    return removed[0]
+
+
+def _argument_of(
+    node: libcst.CSTNode, parents: Mapping[libcst.CSTNode, libcst.CSTNode]
+) -> tuple[libcst.Call, libcst.Arg] | None:
+    """Return the call and the argument whose value `node` is, if `node` is one."""
+    argument = parents.get(node)
+    if not isinstance(argument, libcst.Arg) or argument.value is not node:
+        return None
+    call = parents[argument]
+    if not isinstance(call, libcst.Call):
+        return None
+    return call, argument
+
+
+def _is_in_raise(
+    node: libcst.CSTNode, parents: Mapping[libcst.CSTNode, libcst.CSTNode]
 ) -> bool:
-    """Return whether no test could ever tell `mutation` apart from the original code.
+    """Return whether `node` is part of a `raise` statement.
 
     Exceptions report only states that cannot happen, since errors in a
-    user's program are diagnostics, so no test raises one to check it. A
-    variable set to `False` acts the same as `None` wherever only its truth
+    user's program are diagnostics, so no test raises one to check it.
+    """
+    current: libcst.CSTNode | None = node
+    while current is not None:
+        if isinstance(current, libcst.Raise):
+            return True
+        current = parents.get(current)
+    return False
+
+
+def _is_false_to_none(original: libcst.CSTNode, mutated: libcst.CSTNode) -> bool:
+    """Return whether the mutation changes an assignment of `False` to `None`.
+
+    A variable set to `False` acts the same as `None` wherever only its truth
     is read, and pyright rejects `None` where a `bool` is needed.
     """
-    original = mutation.original_node
-    mutated = mutation.mutated_node
-    if (
+    return (
         isinstance(original, libcst.Assign)
         and isinstance(mutated, libcst.Assign)
         and libcst.matchers.matches(original.value, libcst.matchers.Name("False"))
         and libcst.matchers.matches(mutated.value, libcst.matchers.Name("None"))
+    )
+
+
+def _is_cast(call: libcst.Call) -> bool:
+    return libcst.helpers.get_full_name_for_node(call.func) in _CAST_NAMES
+
+
+def _is_cast_type_change(
+    original: libcst.CSTNode,
+    mutated: libcst.CSTNode,
+    parents: Mapping[libcst.CSTNode, libcst.CSTNode],
+) -> bool:
+    """Return whether the mutation changes only the type that `cast` names.
+
+    `cast` returns its value whatever the type is. Python never evaluates a
+    type that is given as a string, so a mutant with any other string or
+    `None` there runs the same. Only pyright and ruff read the type, and a
+    mutant that they reject stands for no bug that a test could find.
+    """
+    if isinstance(original, libcst.Call) and isinstance(mutated, libcst.Call):
+        return (
+            _is_cast(original)
+            and len(original.args) == 2
+            and isinstance(original.args[0].value, libcst.BaseString)
+            and len(mutated.args) == 2
+            and mutated.args[1] is original.args[1]
+        )
+    argument = _argument_of(original, parents)
+    if argument is None or not isinstance(original, libcst.BaseString):
+        return False
+    call, type_argument = argument
+    return _is_cast(call) and call.args[0] is type_argument
+
+
+def _removed_simple_case(
+    original: libcst.CSTNode,
+    mutated: libcst.CSTNode,
+    statement: libcst.matchers.BaseSmallStatement,
+) -> libcst.MatchCase | None:
+    """Return the `match` arm that the mutation removes, if the arm is simple.
+
+    A simple arm has no guard, and its body is one statement that matches
+    `statement`.
+    """
+    if not isinstance(original, libcst.Match) or not isinstance(mutated, libcst.Match):
+        return None
+    removed = _removed_element(original.cases, mutated.cases)
+    if removed is None or removed.guard is not None:
+        return None
+    body = libcst.matchers.IndentedBlock(
+        body=[libcst.matchers.SimpleStatementLine(body=[statement])]
+    )
+    if not libcst.matchers.matches(removed.body, body):
+        return None
+    return removed
+
+
+def _is_removed_raising_case(original: libcst.CSTNode, mutated: libcst.CSTNode) -> bool:
+    """Return whether the mutation removes a `match` arm that only raises.
+
+    A subject matches that arm only in a state that cannot happen, since the
+    arm raises an exception.
+    """
+    return _removed_simple_case(original, mutated, libcst.matchers.Raise()) is not None
+
+
+def _is_removed_last_empty_case(
+    original: libcst.CSTNode, mutated: libcst.CSTNode
+) -> bool:
+    """Return whether the mutation removes a last `match` arm that does nothing.
+
+    A subject that matches no arm skips the whole `match`. The last arm does the
+    same when it has no guard, its body is only `pass`, and its pattern binds no
+    names.
+    """
+    removed = _removed_simple_case(original, mutated, libcst.matchers.Pass())
+    return (
+        removed is not None
+        and isinstance(original, libcst.Match)
+        and removed is original.cases[-1]
+        and not libcst.matchers.findall(removed.pattern, _BINDING_PATTERN)
+    )
+
+
+def _is_removed_default_argument(
+    original: libcst.CSTNode, mutated: libcst.CSTNode
+) -> bool:
+    """Return whether the mutation removes an argument in `_REMOVABLE_ARGUMENTS`."""
+    if not isinstance(original, libcst.Call) or not isinstance(mutated, libcst.Call):
+        return False
+    removed = _removed_element(original.args, mutated.args)
+    if removed is None or removed.keyword is None:
+        return False
+    callee = libcst.helpers.get_full_name_for_node(original.func)
+    if callee is None:
+        return False
+    values = _REMOVABLE_ARGUMENTS.get((callee, removed.keyword.value))
+    return (
+        values is not None
+        and isinstance(removed.value, libcst.Name)
+        and removed.value.value in values
+    )
+
+
+def _is_strict_zip_to_lenient(
+    original: libcst.CSTNode,
+    mutated: libcst.CSTNode,
+    parents: Mapping[libcst.CSTNode, libcst.CSTNode],
+) -> bool:
+    """Return whether the mutation changes `strict=True` of `zip` to `False`.
+
+    `zip` with `strict=False` differs from `zip` with `strict=True` only where
+    `zip` with `strict=True` raises an exception.
+    """
+    argument = _argument_of(original, parents)
+    if argument is None:
+        return False
+    call, strict = argument
+    return (
+        libcst.helpers.get_full_name_for_node(call.func) == "zip"
+        and libcst.matchers.matches(
+            strict, libcst.matchers.Arg(keyword=libcst.matchers.Name("strict"))
+        )
+        and libcst.matchers.matches(original, libcst.matchers.Name("True"))
+        and libcst.matchers.matches(mutated, libcst.matchers.Name("False"))
+    )
+
+
+def _is_codec_argument(call: libcst.Call, argument: libcst.Arg) -> bool:
+    if libcst.matchers.matches(
+        argument, libcst.matchers.Arg(keyword=libcst.matchers.Name("encoding"))
     ):
         return True
+    return (
+        isinstance(call.func, libcst.Attribute)
+        and call.func.attr.value in _CODEC_METHODS
+        and call.args[0] is argument
+        and argument.keyword is None
+    )
+
+
+def _is_codec_name_case_change(
+    original: libcst.CSTNode,
+    mutated: libcst.CSTNode,
+    parents: Mapping[libcst.CSTNode, libcst.CSTNode],
+) -> bool:
+    """Return whether the mutation changes only the case of a codec name.
+
+    Python finds a codec by its name in any case.
+    """
+    if not isinstance(original, libcst.SimpleString) or not isinstance(
+        mutated, libcst.SimpleString
+    ):
+        return False
+    argument = _argument_of(original, parents)
+    if argument is None or not _is_codec_argument(*argument):
+        return False
+    name = original.evaluated_value
+    mutated_name = mutated.evaluated_value
+    if not isinstance(name, str) or not isinstance(mutated_name, str):
+        return False
+    if name.lower() != mutated_name.lower():
+        return False
+    try:
+        _ = codecs.lookup(name)
+    except LookupError:
+        return False
+    return True
+
+
+def _never_matters(
+    mutation: file_mutation.Mutation, wrapper: metadata.MetadataWrapper
+) -> bool:
+    """Return whether no test could ever tell `mutation` apart from the original code."""
+    original = mutation.original_node
+    mutated = mutation.mutated_node
     # The wrapper resolves the parents once and keeps them.
     parents = wrapper.resolve(metadata.ParentNodeProvider)
-    node: libcst.CSTNode | None = original
-    while node is not None:
-        if isinstance(node, libcst.Raise):
-            return True
-        node = parents.get(node)
-    return False
+    return (
+        _is_in_raise(original, parents)
+        or _is_false_to_none(original, mutated)
+        or _is_cast_type_change(original, mutated, parents)
+        or _is_removed_raising_case(original, mutated)
+        or _is_removed_last_empty_case(original, mutated)
+        or _is_removed_default_argument(original, mutated)
+        or _is_strict_zip_to_lenient(original, mutated, parents)
+        or _is_codec_name_case_change(original, mutated, parents)
+    )
 
 
 def _file_mutants(path: str, code: str) -> list[mutant.Mutant]:
