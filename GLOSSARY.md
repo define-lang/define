@@ -2,6 +2,7 @@
 
 Use these exact terms for these Define concepts. "Not:" lists terms to avoid.
 
+- **Abstract Operation**: A logical operation or a value operation.
 - **action**: A quality defined with `define the potential action<...>`. Once
   assigned to a particle, it triggers when its Trigger Conditions Block becomes
   true and then runs its Action Statements Block. Not: function, method,

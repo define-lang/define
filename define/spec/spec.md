@@ -2030,32 +2030,6 @@ Output views may not look at a literal.
 The same position or view may not be specified as the position or view that more
 than one view is looking at in any given Operation Arguments Block.
 
-### Code Generation for Value Operations
-
-Proposals:
-
-- [DLP 48: Encoding Operation Associations](../proposals/00048-encoding-operation-associations.md)
-- [DLP 55: Logical Operations](../proposals/00055-logical-operations.md)
-
-Encoding Operations are associated with logical operations. An Encoding
-Operation associated with a logical operation must have the same views as the
-logical operation, with the same names and directions, in the same order.
-
-For each executed value operation, the compiler compiles the value operation's
-statements, choosing an Encoding Operation for each Logical Operation Execution
-Statement based on the encodings of what its views look at. That Encoding
-Operation is what occurs at runtime in the program.
-
-<!-- TODO: Require full formal verification that encoding operations match the logic? -->
-
-The compiler trusts that an Encoding Operation implements the meaning of the
-logical operation it is associated with. If it does not, that is a soundness
-error in that Encoding Operation or in the compiler's implementation of the
-logical operation.
-
-The compiler may, of course, choose to optimize the runtime code in any way,
-provided the program remains sound.
-
 ## Executing Logical Operations
 
 Proposals:
@@ -2180,9 +2154,11 @@ Proposals:
 - [DLP 58: Association Rules](../proposals/00058-association-rules.md)
 
 Associations provide the compiler information about how to generate code for
-Value Setting Statements and Value Operations.
+Value Setting Statements and Value Operations. The compiler uses this
+information to look up encodings and Encoding Operations.
 
-The compiler validates an association only when the compiler must use it.
+Encodings and Encoding Operations are compiled only when the compiler needs them
+for the actual implementation of the code under compilation.
 
 There are some facts that all association configurations have in common:
 
@@ -2232,31 +2208,87 @@ Proposals:
 - [DLP 48: Encoding Operation Associations](../proposals/00048-encoding-operation-associations.md)
 - [DLP 55: Logical Operations](../proposals/00055-logical-operations.md)
 
-The configuration file `.define/encodings/encoding_operations.defcl` contains
-associations between logical operations and Encoding Operations.
+The term "Abstract Operation" means either a Logical Operation or a Value
+Operation.
 
-An association declares that an Encoding Operation can be used to implement a
-logical operation. Each association names a logical operation and an Encoding
+The configuration file `.define/encodings/encoding_operations.defcl` contains
+associations between Abstract Operations and Encoding Operations.
+
+An association declares that an Encoding Operation can be used to implement an
+Abstract Operation. Each association names an Abstract Operation and an Encoding
 Operation, and lists the Encoding Operation's Interface Views in order, each
 with the encoding that the Encoding Operation assigns it.
 
 When the compiler loads an associated Encoding Operation, its Interface Views
 must have the names, order, and encodings that the association lists.
 
-A logical operation may be associated with several Encoding Operations, and an
-Encoding Operation with several logical operations. Associating the same logical
-operation and Encoding Operation more than once is an error. The associations
-must be sorted lexicographically by logical operation name.
+One Abstract Operation may be associated with several Encoding Operations, and
+an Encoding Operation with several Abstract Operations. Associating the same
+Abstract Operation and Encoding Operation together more than once is an error.
+The associations must be sorted lexicographically by the Abstract Operation's
+full typed name.
 
-The universe that defines the association must also define at least one of:
+##### Rules for Encoding Operation Associations
 
-- The named logical operation.
+The views of the Abstract Operation must have the same names, directions, and
+order as the views of any Encoding Operation that is associated with it.
+
+When the Abstract Operation is a Value Operation, that Value Operation must be
+defined in the same universe that defines the association.
+
+When the Abstract Operation is a logical operation, the universe that defines
+the association must also define at least one of:
+
+- The logical operation.
 - An encoding that is assigned to one of the named Encoding Operation's
   Interface Views.
 
-<!-- TODO: Specify associating an Encoding Operation with a Value Operation,
-which DLP 55 and DLP 58 allow when the universe that defines the association
-also defines the Value Operation. -->
+#### Code Generation for Value Operations
+
+There are two different ways code can be generated for a Value Operation: an
+Encoding Operation can implement the full Value Operation, or the individual
+statements in the Operation Statements Block can be individually translated.
+
+<!-- TODO: Require full formal verification that encoding operations match the logic? -->
+
+##### Full Value Operation Association
+
+Upon seeing an execution of a Value Operation, the compiler determines the
+encodings of the values being looked at for that execution. It then looks for an
+Encoding Operation Association between that Value Operation and an Encoding
+Operation with those exact encodings for those views.
+
+If such an association exists (which we can call a "Full Value Operation
+Association"), that is used as the whole implementation of the Value Operation,
+and no further association is done of that Value Operation's Operation
+Statements Block.
+
+##### Statement-by-Statement Compilation
+
+If there is no valid Full Value Operation Association for an executed Value
+Operation, the compiler then compiles each of the Value Operation's statements
+in its Operation Statements Block.
+
+When encountering a Logical Operation Execution Statement, the compiler
+determines the encodings of the views that logical operation is looking at, and
+uses that information to look up the Encoding Operation to implement that
+execution.
+
+If the compiler finds no Encoding Operation that can implement a Logical
+Operation Execution Statement, the compiler throws an error.
+
+##### Trust of Encoding Operations
+
+The compiler trusts that an Encoding Operation implements the meaning of the
+Abstract Operation it is associated with. If it does not, that is a soundness
+error in that Encoding Operation or in the compiler's implementation of it.
+
+##### Optimization of Value Operations at Runtime
+
+The compiler may choose to optimize the runtime code of Value Operations in any
+way, provided the program remains sound. This means that the rules above do not
+guarantee how the compiler actually generates runtime code, only how it resolves
+associations for the purpose of validation and preparing for code generation.
 
 ## Dead Code
 
