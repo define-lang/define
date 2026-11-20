@@ -83,6 +83,10 @@ coverage --test_tag_filters=-no-coverage
 # Rust tests report the coverage of each code region, which
 # //tools:analyze_coverage reports, as Python tests that load Rust do.
 coverage --@rules_rust//rust/coverage:collector=//tools/rust_coverage:collect_rust_coverage
+# rules_rust builds PyO3 extensions optimized, and an optimized crate lets other
+# crates copy its small functions, which coverage then never counts. A later
+# opt-level replaces rules_rust's own.
+coverage --@rules_rust//rust/settings:extra_rustc_flag=-Copt-level=0
 
 # Opt into future Bazel defaults (green-field project)
 # Uncomment when protobuf sets toolchain param on run_shell actions.
