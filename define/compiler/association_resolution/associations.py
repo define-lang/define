@@ -11,11 +11,12 @@ from define.compiler.errors import association_resolution_diagnostics
 from define.compiler.graphs import reference_graph
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Collection, Mapping
 
     from define.compiler import ast
-    from define.compiler.config import encoding_operations_config
-    from define.compiler.errors import diagnostics
+    from define.compiler.config import config_loader, encoding_operations_config
+    from define.compiler.data_structures import define_path
+    from define.compiler.errors import config_diagnostics, diagnostics
 
 
 class ChosenEncodingOperation(msgspec.Struct, frozen=True):
@@ -100,10 +101,6 @@ class Associations:
                     value_quality=definition.typed_name.source_typed_name,
                 )
             ]
-        # Each encoding was in a universe that the project does not configure,
-        # which is already reported.
-        if not associated_encodings:
-            return []
         if len(associated_encodings) > 1:
             # TODO: Choose between a value quality's encodings when each
             # particle is created, as the spec allows.
@@ -240,17 +237,54 @@ class Associations:
         """Return each Encoding Operation that resolution chose, with the association that chose it, once every definition is resolved."""
         return list(self._chosen_encoding_operations.values())
 
-    def chosen_edges(self) -> list[reference_graph.ReferenceEdge]:
-        """Return the edge to each encoding and Encoding Operation that resolution chose, once every definition is resolved."""
-        edges = list(self._value_encodings.values())
+    def chosen_edges(
+        self,
+    ) -> tuple[list[reference_graph.ReferenceEdge], Collection[diagnostics.Diagnostic]]:
+        """Return the edge to each encoding and Encoding Operation that resolution chose, once every definition is resolved, with the diagnostics about the edges.
+
+        An edge to a universe that the project whose config writes the edge
+        does not configure is left out. Each such universe is reported once
+        for each config file, at the place in the file that names it first.
+        """
+        candidates = list(self._value_encodings.values())
         for chosen in self._chosen_encoding_operations.values():
-            edges.append(
+            candidates.append(
                 reference_graph.ReferenceEdge(
                     enclosing_definition=chosen.abstract_operation,
                     global_name_reference=chosen.encoding_operation_association.reference,
                 )
             )
-        return edges
+        edges: list[reference_graph.ReferenceEdge] = []
+        # The diagnostic for each config file and the universe that it names.
+        unconfigured: dict[
+            tuple[str | None, str],
+            config_diagnostics.ExternalUniverseNotConfiguredDiagnostic,
+        ] = {}
+        for edge in candidates:
+            reference = edge.global_name_reference
+            # An association is in the config of the project whose universe
+            # its references are written in, which is loaded.
+            _, root_config = typing.cast(
+                "tuple[define_path.DefinePath, config_loader.Config]",
+                self._project_roots.get_loaded_root_config(
+                    reference.enclosing_fqun.canonical
+                ),
+            )
+            diagnostic = root_config.check_universe_configured(reference.name_content)
+            if diagnostic is None:
+                edges.append(edge)
+                continue
+            location = diagnostic.location
+            key = (location.file_path, diagnostic.universe)
+            first = unconfigured.get(key)
+            # Resolution chooses associations concurrently, so the edges come
+            # in no fixed order.
+            if first is None or (location.line, location.column) < (
+                first.location.line,
+                first.location.column,
+            ):
+                unconfigured[key] = diagnostic
+        return edges, unconfigured.values()
 
     def value_encodings(self) -> Mapping[str, ast.GlobalTypedNameReference]:
         """Return each value quality's encoding, by the value quality's full typed name, once every value quality is added."""

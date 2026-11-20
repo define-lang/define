@@ -10,11 +10,8 @@ from define.compiler.parsing import parser
 from define.compiler.validator.structural import name_validators
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from defcl.python import validator as defcl_validator
     from define.compiler import name_types
-    from define.compiler.config import local_deps_config
     from define.compiler.errors import diagnostics
 
 
@@ -104,24 +101,4 @@ def associated_reference(
         name_content=name,
         enclosing_fqun=fqun,
         location=name.location,
-    )
-
-
-def check_universe_configured(
-    name: ast.ReferenceGlobalNameContent,
-    fqun: ast.Fqun,
-    sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry],
-) -> config_diagnostics.ExternalUniverseNotConfiguredDiagnostic | None:
-    """Return a diagnostic if name is in a universe that the project whose universe is fqun and whose sub-roots are sub_roots must configure before referencing it, and does not."""
-    name_fqun = name.fqun
-    if (
-        name_fqun is None
-        or not universe_needs_configuration(name_fqun.canonical)
-        or name_fqun.canonical in sub_roots
-    ):
-        return None
-    return config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-        location=name_fqun.location,
-        universe=name_fqun.canonical,
-        current_universe_name=fqun.canonical,
     )

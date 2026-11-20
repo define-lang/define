@@ -16,7 +16,7 @@ from define.compiler.errors import association_resolution_diagnostics
 from define.compiler.validator.reference_graph import abstract_program
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Collection, Iterable, Mapping
 
     from define.compiler import ast
     from define.compiler.config import project_roots
@@ -104,8 +104,10 @@ class AssociationResolver:
         )
         return action_diagnostics
 
-    def chosen_edges(self) -> list[reference_graph.ReferenceEdge]:
-        """Return the edge to each encoding and Encoding Operation that resolution chose, once every definition is resolved."""
+    def chosen_edges(
+        self,
+    ) -> tuple[list[reference_graph.ReferenceEdge], Collection[diagnostics.Diagnostic]]:
+        """Return the edge to each encoding and Encoding Operation that resolution chose, once every definition is resolved, with the diagnostics about the edges."""
         return self._associations.chosen_edges()
 
     def resolve_encoding_operations(

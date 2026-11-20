@@ -1,0 +1,6 @@
+# An association whose encoding is in a universe that the project does not configure is not reported when the program does not use its value quality. Nothing defines /unused.
+define the potential value<my.domain.com:my_lib:/test> {
+    it supports the logical_operation<standard:/text/less_than> {
+        it may be read.
+    }
+}

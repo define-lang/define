@@ -1,0 +1,36 @@
+encoding_operations: {
+  operation_encodings: [
+    {
+      logical_operation: "/flip"
+      encoding_operation: {
+        name: "other.example.com:lib:/flip"
+        views: [
+          {
+            view: "a"
+            encoding: "standard:/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "standard:/number/integer/ascii"
+          }
+        ]
+      }
+    },
+    {
+      logical_operation: "/negate"
+      encoding_operation: {
+        name: "other.example.com:lib:/negate"
+        views: [
+          {
+            view: "a"
+            encoding: "standard:/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "standard:/number/integer/ascii"
+          }
+        ]
+      }
+    }
+  ]
+}

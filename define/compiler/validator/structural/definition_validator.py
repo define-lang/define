@@ -9,9 +9,7 @@ from define.compiler import (
     constants,
     name_types,
 )
-from define.compiler.config import global_names
 from define.compiler.errors import (
-    config_diagnostics,
     structural_diagnostics,
 )
 from define.compiler.graphs import reference_graph
@@ -1112,26 +1110,15 @@ class DefinitionStructuralValidator:
         self._seen_edge_targets.add(typed_global_name.full_typed_name)
 
         # Process a cross-FQUN reference in a filesystem context.
-        if (
-            global_name.fqun is not None
-            and global_names.universe_needs_configuration(global_name.fqun.canonical)
-            and self._context.is_filesystem_context
-        ):
+        if self._context.is_filesystem_context:
             root_config = self._context.root_config
             if root_config is None:
                 raise ValueError("filesystem contexts must define a root config")
-            fqun_string = global_name.fqun.canonical
-            if fqun_string in self._unknown_fquns:
-                return None
-            if fqun_string not in root_config.sub_roots:
-                self._unknown_fquns.add(fqun_string)
-                self._diagnostics.append(
-                    config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-                        location=global_name.fqun.location,
-                        universe=fqun_string,
-                        current_universe_name=root_config.fqun.canonical,
-                    )
-                )
+            universe_diagnostic = root_config.check_universe_configured(global_name)
+            if universe_diagnostic is not None:
+                if universe_diagnostic.universe not in self._unknown_fquns:
+                    self._unknown_fquns.add(universe_diagnostic.universe)
+                    self._diagnostics.append(universe_diagnostic)
                 return None
 
         return reference_graph.ReferenceEdge(

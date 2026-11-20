@@ -1,0 +1,12 @@
+# Two value qualities have encodings in the same universe, which the project does not configure. The universe is reported once, at the association that comes first in the config file.
+define the potential value<my.domain.com:my_lib:/test> {
+    it supports the logical_operation<standard:/text/less_than> {
+        it may be read.
+    }
+}
+
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the value</value>.
+    }
+}

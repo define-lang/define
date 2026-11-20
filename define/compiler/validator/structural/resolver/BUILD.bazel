@@ -30,7 +30,6 @@ py_library(
         "//define/compiler/config:project_config",
         "//define/compiler/config:project_roots",
         "//define/compiler/data_structures:define_path",
-        "//define/compiler/errors:config_diagnostics",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/errors:structural_diagnostics",
         "//define/compiler/graphs:reference_graph",

@@ -1,0 +1,55 @@
+# Two Encoding Operations that executions choose are in the same universe, which the project does not configure. The universe is reported once, at the association that comes first in the config file.
+define the operation<my.domain.com:my_lib:/test> {
+    define the view<amount> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<flipped> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<negated> {
+        it is written.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+
+    it does {
+        execute the logical_operation</negate> {
+            with view<a> looking at view<amount>.
+            with view<result> looking at view<negated>.
+        }
+        execute the logical_operation</flip> {
+            with view<a> looking at view<amount>.
+            with view<result> looking at view<flipped>.
+        }
+    }
+}
+
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</flipped>.
+    it also assigns the position</negated>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<amount> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<amount>.
+        set the value of position<amount> from literal<standard:/number>"1".
+        create a particle in position</flipped>.
+        create a particle in position</negated>.
+        execute the operation</test> {
+            with view<amount> looking at position<amount>.
+            with view<flipped> looking at position</flipped>.
+            with view<negated> looking at position</negated>.
+        }
+    }
+}

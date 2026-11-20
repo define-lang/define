@@ -10,7 +10,7 @@ import msgspec
 from define.compiler.errors import config_diagnostics, diagnostics
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Collection
 
     from crates.source_rendering.python import rendering
     from define.compiler import ast
@@ -37,7 +37,7 @@ class ProgramValidationResult(msgspec.Struct):
     # so that the result includes diagnostics that a stage finds after the
     # result is built. Each stage only ever adds to its list. Read them only
     # once every stage is done.
-    diagnostic_lists: list[Sequence[diagnostics.FormattableDiagnostic]]
+    diagnostic_lists: list[Collection[diagnostics.FormattableDiagnostic]]
     source_map: rendering.SourceMap
 
     def sorted_diagnostics(self) -> list[diagnostics.FormattableDiagnostic]:

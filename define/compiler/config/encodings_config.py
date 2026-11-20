@@ -13,12 +13,12 @@ from define.compiler.errors import config_diagnostics
 from define.config.encodings import encodings_pb2
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
 
     from crates.source_rendering.python import rendering
     from defcl.python import validator as defcl_validator
     from define.compiler import ast
-    from define.compiler.config import config_loader, local_deps_config
+    from define.compiler.config import config_loader
     from define.compiler.errors import diagnostics
 
 CONFIG_FILE = config_file.ConfigFile(
@@ -77,7 +77,6 @@ class EncodingsConfigReader(config_file.ConfigFileReader[encodings_pb2.Encodings
             result.message.encodings.value_encodings,
             result.file,
             config.fqun,
-            config.sub_roots,
         )
         encodings_diagnostics.extend(association_diagnostics)
         return types.MappingProxyType(value_encodings), encodings_diagnostics
@@ -120,7 +119,6 @@ def _value_encodings(
     associations: Sequence[encodings_pb2.ValueEncoding],
     file: defcl_validator.ValidatedFile,
     fqun: ast.Fqun,
-    sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry],
 ) -> tuple[
     dict[str, list[ast.GlobalTypedNameReference]],
     list[diagnostics.FormattableDiagnostic],
@@ -128,14 +126,10 @@ def _value_encodings(
     """Return references to each value quality's encodings from the Value Encoding Associations, with the diagnostics about the associations.
 
     An association repeated later, or whose value quality or encoding is not a
-    valid name for it, is ignored, and so is one whose encoding is in a
-    universe that the project, whose universe is fqun and whose sub-roots are
-    sub_roots, does not configure.
+    valid name for it, is ignored. fqun is the project's universe.
     """
     value_encodings: dict[str, list[ast.GlobalTypedNameReference]] = {}
     association_diagnostics: list[diagnostics.FormattableDiagnostic] = []
-    # Each universe that the project does not configure is reported once.
-    unconfigured_universes: set[str] = set()
     # The index of the first association of each value quality and encoding.
     first_indexes: dict[tuple[str, str], int] = {}
     previous_value = ""
@@ -172,17 +166,9 @@ def _value_encodings(
         if names is None:
             continue
         value, encoding = names
-        encodings = value_encodings.setdefault(value.path.name, [])
-        universe_diagnostic = global_names.check_universe_configured(
-            encoding, fqun, sub_roots
-        )
-        if universe_diagnostic is None:
-            encodings.append(
-                global_names.associated_reference(
-                    name_types.NameType.ENCODING, encoding, fqun
-                )
+        value_encodings.setdefault(value.path.name, []).append(
+            global_names.associated_reference(
+                name_types.NameType.ENCODING, encoding, fqun
             )
-        elif universe_diagnostic.universe not in unconfigured_universes:
-            unconfigured_universes.add(universe_diagnostic.universe)
-            association_diagnostics.append(universe_diagnostic)
+        )
     return value_encodings, association_diagnostics

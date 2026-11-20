@@ -44,6 +44,7 @@ py_library(
     srcs = ["config_loader.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
+        ":global_names",
         ":local_deps_config",
         ":project_config",
         "//crates/source_rendering/python:rendering",
@@ -63,7 +64,6 @@ py_library(
         ":config_file",
         ":config_loader",
         ":global_names",
-        ":local_deps_config",
         "//crates/source_rendering/python:rendering",
         "//defcl/python:validator",
         "//define/compiler:ast",
@@ -84,7 +84,6 @@ py_library(
         ":config_file",
         ":config_loader",
         ":global_names",
-        ":local_deps_config",
         "//crates/source_rendering/python:rendering",
         "//defcl/python:validator",
         "//define/compiler:ast",
@@ -101,7 +100,6 @@ py_library(
     srcs = ["global_names.py"],
     visibility = ["//define/compiler:__subpackages__"],
     deps = [
-        ":local_deps_config",
         "//defcl/python:validator",
         "//define/compiler:ast",
         "//define/compiler:constants",

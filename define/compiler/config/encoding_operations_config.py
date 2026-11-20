@@ -19,7 +19,7 @@ if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
     from defcl.python import validator as defcl_validator
     from define.compiler import ast
-    from define.compiler.config import config_loader, local_deps_config
+    from define.compiler.config import config_loader
     from define.compiler.errors import diagnostics
 
 CONFIG_FILE = config_file.ConfigFile(
@@ -102,7 +102,7 @@ class EncodingOperationsConfigReader(
         if result is None:
             return None, encoding_operations_diagnostics
         associations, association_diagnostics = _AssociationsReader(
-            result.file, config.fqun, config.sub_roots
+            result.file, config.fqun
         ).read(result.message.encoding_operations.operation_encodings)
         encoding_operations_diagnostics.extend(association_diagnostics)
         return associations, encoding_operations_diagnostics
@@ -211,25 +211,17 @@ class _AssociationsReader:
     - An association whose Abstract Operation, Encoding Operation, or listed
       view encoding is not a valid name for it.
     - An association whose Abstract Operation is in another universe.
-    - An association whose Encoding Operation is in a universe that the
-      project does not configure.
     """
 
     def __init__(
         self,
         file: defcl_validator.ValidatedFile,
         fqun: ast.Fqun,
-        sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry],
     ):
-        """Create a reader for file, whose project's universe is fqun and whose project's sub-roots are sub_roots."""
+        """Create a reader for file, whose project's universe is fqun."""
         self._file: defcl_validator.ValidatedFile = file
         self._fqun: ast.Fqun = fqun
-        self._sub_roots: Mapping[str, local_deps_config.LocalDependencyEntry] = (
-            sub_roots
-        )
         self._diagnostics: list[diagnostics.FormattableDiagnostic] = []
-        # Each universe that the project does not configure is reported once.
-        self._unconfigured_universes: set[str] = set()
         # The index of the first association of each Abstract Operation and
         # Encoding Operation. Each global name has only one legal spelling, so
         # the written names identify the pair.
@@ -286,8 +278,6 @@ class _AssociationsReader:
         ):
             return None
         if short_name is None or encoding_operation is None:
-            return None
-        if not self._check_universe_configured(encoding_operation):
             return None
         encodings: list[str] = []
         for view in encoding_operation.views:
@@ -366,20 +356,6 @@ class _AssociationsReader:
                 ),
             )
         )
-        return False
-
-    def _check_universe_configured(
-        self, encoding_operation: AssociatedEncodingOperation
-    ) -> bool:
-        """Return whether the project configures the universe of encoding_operation, and report the universe the first time it does not."""
-        unconfigured_diagnostic = global_names.check_universe_configured(
-            encoding_operation.reference.name_content, self._fqun, self._sub_roots
-        )
-        if unconfigured_diagnostic is None:
-            return True
-        if unconfigured_diagnostic.universe not in self._unconfigured_universes:
-            self._unconfigured_universes.add(unconfigured_diagnostic.universe)
-            self._diagnostics.append(unconfigured_diagnostic)
         return False
 
     def _check_unique_encodings(

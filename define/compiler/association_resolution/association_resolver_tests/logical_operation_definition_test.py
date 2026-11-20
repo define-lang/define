@@ -369,6 +369,32 @@ def test_encoding_operation_in_unconfigured_universe(
     ]
 
 
+def test_unchosen_encoding_operation_in_unconfigured_universe(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == []
+
+
+def test_encoding_operations_in_same_unconfigured_universe(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+            location=rendering.SourceLocation(
+                line=6,
+                column=16,
+                end_line=6,
+                end_column=36,
+                file_path=".define/encodings/encoding_operations.defcl",
+            ),
+            universe="other.example.com:lib",
+            current_universe_name="my.domain.com:my_lib",
+        )
+    ]
+
+
 def test_association_with_fewer_views(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

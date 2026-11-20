@@ -1,0 +1,12 @@
+encodings: {
+  value_encodings: [
+    {
+      value: "/test"
+      encoding: "other.example.com:lib:/binary/ascii"
+    },
+    {
+      value: "/value"
+      encoding: "other.example.com:lib:/text/ascii"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+encodings: {
+  value_encodings: [
+    {
+      value: "/test"
+      encoding: "standard:/binary/ascii"
+    },
+    {
+      value: "/unused"
+      encoding: "other.example.com:lib:/binary/ascii"
+    }
+  ]
+}

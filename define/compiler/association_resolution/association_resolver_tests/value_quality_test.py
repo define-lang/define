@@ -112,6 +112,32 @@ def test_encoding_only_in_unconfigured_universe(
     ]
 
 
+def test_unused_encoding_in_unconfigured_universe(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == []
+
+
+def test_encodings_in_same_unconfigured_universe(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(max_workers=1)
+    assert result.program_validation.sorted_diagnostics() == [
+        config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+            location=rendering.SourceLocation(
+                line=5,
+                column=18,
+                end_line=5,
+                end_column=38,
+                file_path=".define/encodings/encodings.defcl",
+            ),
+            universe="other.example.com:lib",
+            current_universe_name="my.domain.com:my_lib",
+        )
+    ]
+
+
 def test_value_quality_without_project_root(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):

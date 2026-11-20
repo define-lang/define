@@ -59,7 +59,8 @@ def validate_and_resolve_program(
     # resolution chooses it, and each Encoding Operation could be resolved once
     # what it references is loaded, instead of waiting for every definition to
     # be resolved first.
-    program.load_associated(resolver.chosen_edges(), max_workers=max_workers)
+    chosen_edges, edge_diagnostics = resolver.chosen_edges()
+    program.load_associated(chosen_edges, max_workers=max_workers)
     # The structural run's state, such as its resolver and loaded paths, would
     # otherwise be retained until code generation, but nothing loads more of
     # the program after this.
@@ -68,7 +69,7 @@ def validate_and_resolve_program(
         program_result.encoding_operations
     )
     program_result.diagnostic_lists.extend(
-        [found_diagnostics, encoding_operation_diagnostics]
+        [found_diagnostics, edge_diagnostics, encoding_operation_diagnostics]
     )
     return CompilerValidationResult(
         program_validation=program_result,

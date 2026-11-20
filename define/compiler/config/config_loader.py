@@ -7,6 +7,7 @@ import typing
 import msgspec
 
 from define.compiler.config import (
+    global_names,
     local_deps_config,
     project_config,
 )
@@ -38,6 +39,23 @@ class Config(msgspec.Struct):
     # Where the project config says that the project has Encoding Operation
     # associations, or None if it does not say so.
     has_encoding_operations_location: rendering.SourceLocation | None
+
+    def check_universe_configured(
+        self, name: ast.ReferenceGlobalNameContent
+    ) -> config_diagnostics.ExternalUniverseNotConfiguredDiagnostic | None:
+        """Return a diagnostic if name is in a universe that the project must configure before referencing it, and does not."""
+        name_fqun = name.fqun
+        if (
+            name_fqun is None
+            or not global_names.universe_needs_configuration(name_fqun.canonical)
+            or name_fqun.canonical in self.sub_roots
+        ):
+            return None
+        return config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+            location=name_fqun.location,
+            universe=name_fqun.canonical,
+            current_universe_name=self.fqun.canonical,
+        )
 
 
 class ConfigLoadResult(msgspec.Struct, frozen=True):

@@ -285,22 +285,15 @@ def test_encodings_only_in_unconfigured_universe(
     monkeypatch.chdir(testdata_project_directory)
 
     table, table_diagnostics = test_helpers.load_association_table()
-    # Both encodings are in the same universe, which is reported once.
-    (diagnostic,) = table_diagnostics
-    assert diagnostic == config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-        location=rendering.SourceLocation(
-            line=5,
-            column=18,
-            end_line=5,
-            end_column=30,
-            file_path=str(encodings_config.CONFIG_FILE.path),
-        ),
-        universe="other.com:lib",
-        current_universe_name="test.example.com:my_lib",
-    )
-    # The value quality is still associated with an encoding, so it keeps
-    # its entry.
-    assert test_helpers.associated_names(table.value_encodings) == {"/number": []}
+    # Association resolution reports an unconfigured universe when it uses an
+    # association, so loading the config keeps both associations.
+    assert table_diagnostics == []
+    assert test_helpers.associated_names(table.value_encodings) == {
+        "/number": [
+            test_helpers.encoding_name("other.com:lib:/number/ascii", 5),
+            test_helpers.encoding_name("other.com:lib:/number/binary", 9),
+        ]
+    }
 
 
 def test_encoding_missing(

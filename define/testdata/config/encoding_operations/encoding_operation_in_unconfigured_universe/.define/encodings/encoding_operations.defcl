@@ -23,11 +23,11 @@ encoding_operations: {
         views: [
           {
             view: "a"
-            encoding: "other.com:lib:/number/natural/ascii"
+            encoding: "other.com:lib:/number/natural/binary"
           },
           {
             view: "result"
-            encoding: "other.com:lib:/number/natural/ascii"
+            encoding: "other.com:lib:/number/natural/binary"
           }
         ]
       }

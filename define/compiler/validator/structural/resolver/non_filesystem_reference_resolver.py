@@ -13,7 +13,6 @@ import typing
 
 from define.compiler.config import global_names, project_config, project_roots
 from define.compiler.errors import (
-    config_diagnostics,
     structural_diagnostics,
 )
 from define.compiler.validator.structural.resolver import reference_resolver
@@ -107,22 +106,18 @@ class NonFilesystemReferenceResolver(reference_resolver.ReferenceResolver):
         # The config's diagnostics are already recorded.
         if root_config is None:
             return reference_resolver.ALREADY_REPORTED
-        fqun = edge.global_name_reference.name_content.fqun
-        if fqun is None or fqun.canonical in root_config.sub_roots:
+        universe_diagnostic = root_config.check_universe_configured(
+            edge.global_name_reference.name_content
+        )
+        if universe_diagnostic is None:
             return None
         # In a filesystem context, file validation reports an unknown universe
         # once per file and records no edge for it. The supplied source is one
         # file, so report each unknown universe once here.
-        if fqun.canonical in self._unknown_universes:
+        if universe_diagnostic.universe in self._unknown_universes:
             return reference_resolver.ALREADY_REPORTED
-        self._unknown_universes.add(fqun.canonical)
-        return reference_resolver.Unresolved(
-            config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
-                location=fqun.location,
-                universe=fqun.canonical,
-                current_universe_name=root_config.fqun.canonical,
-            )
-        )
+        self._unknown_universes.add(universe_diagnostic.universe)
+        return reference_resolver.Unresolved(universe_diagnostic)
 
     def _no_project_root_diagnostic(
         self, edge: reference_graph.ReferenceEdge
