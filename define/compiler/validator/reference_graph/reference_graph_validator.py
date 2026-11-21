@@ -38,10 +38,7 @@ class DefinitionValidation(msgspec.Struct, frozen=True):
 def requires_validation(
     definition: ast.GlobalDefinition,
 ) -> typing.TypeIs[
-    ast.ActionDefinition
-    | ast.ValueOperationDefinition
-    | ast.LogicalOperationDefinition
-    | ast.ValueDefinition
+    ast.ActionDefinition | ast.ValueOperationDefinition | ast.LogicalOperationDefinition
 ]:
     """Whether reference graph validation validates a definition, which association resolution then resolves."""
     # Association resolution validates Encoding Operations once it has the
@@ -50,8 +47,7 @@ def requires_validation(
         definition,
         ast.ActionDefinition
         | ast.ValueOperationDefinition
-        | ast.LogicalOperationDefinition
-        | ast.ValueDefinition,
+        | ast.LogicalOperationDefinition,
     )
 
 
@@ -101,8 +97,7 @@ class ReferenceGraphValidator:
         self,
         definition: ast.ActionDefinition
         | ast.ValueOperationDefinition
-        | ast.LogicalOperationDefinition
-        | ast.ValueDefinition,
+        | ast.LogicalOperationDefinition,
     ) -> DefinitionValidation:
         """Validate a definition, and return what validation found.
 
@@ -141,7 +136,7 @@ class ReferenceGraphValidator:
                         definition=definition, steps=steps
                     ),
                 )
-            case ast.LogicalOperationDefinition() | ast.ValueDefinition():
+            case ast.LogicalOperationDefinition():
                 return DefinitionValidation(diagnostics=[], abstract=definition)
 
     def _validate_action(

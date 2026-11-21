@@ -151,11 +151,8 @@ class AbstractValueOperation(msgspec.Struct):
 
 
 # What reference graph validation hands to association resolution for one
-# definition. Logical operations and value qualities need nothing from
-# validation but their definitions.
+# definition. Logical operations need nothing from validation but their
+# definitions.
 type AbstractDefinition = (
-    AbstractAction
-    | AbstractValueOperation
-    | ast.LogicalOperationDefinition
-    | ast.ValueDefinition
+    AbstractAction | AbstractValueOperation | ast.LogicalOperationDefinition
 )

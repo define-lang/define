@@ -232,28 +232,43 @@ class ValueOperationResolver:
             )
         return by_value_operation
 
-    def resolve(
+    def resolve[LookedAtT](
         self,
         value_operation: ast.ValueOperationDefinition,
-        view_encodings: dict[str, ast.GlobalTypedNameReference],
-    ) -> ResolvedValueOperation:
-        """Return what executing the Value Operation runs when its interface views have ``view_encodings``, keyed by each view's source typed name."""
-        encodings: list[ast.GlobalTypedNameReference] = []
-        for view in value_operation.views:
-            encodings.append(view_encodings[view.typed_name.source_typed_name])
-        key = (
-            value_operation.typed_name.full_typed_name,
-            _full_typed_names(encodings),
-        )
-        return self._resolve_once(key, value_operation, view_encodings)
+        arguments: list[concrete_program.OperationArgument[LookedAtT]],
+        encodings: list[ast.GlobalTypedNameReference],
+    ) -> (
+        tuple[
+            concrete_program.RuntimeOperation,
+            list[concrete_program.OperationArgument[LookedAtT]],
+        ]
+        | MissingEncodingOperation
+        | None
+    ):
+        """Return the runtime operation that an execution of the Value Operation runs, and the arguments it runs with, when the execution's arguments are ``arguments`` and what each argument looks at has the encoding at the same place in ``encodings``.
 
-    def _resolve_once(
+        None means the execution cannot run for a reason that is already
+        reported.
+        """
+        resolution = self._resolution(value_operation, encodings)
+        if resolution is None or isinstance(resolution, MissingEncodingOperation):
+            return resolution
+        # A Value Operation that makes a single execution is resolved to that
+        # execution, whose arguments look at the Value Operation's interface
+        # views, so they are replaced by what the execution's arguments look
+        # at.
+        if isinstance(resolution, concrete_program.OperationExecution):
+            return resolution.runtime_operation, resolution.arguments_for(arguments)
+        return resolution, arguments
+
+    def _resolution(
         self,
-        key: _ValueOperationEncodings,
         value_operation: ast.ValueOperationDefinition,
-        view_encodings: dict[str, ast.GlobalTypedNameReference],
+        encodings: list[ast.GlobalTypedNameReference],
     ) -> ResolvedValueOperation:
-        """Return the resolution of the Value Operation for the encodings that key names, working it out only if no thread has."""
+        """Return what executing the Value Operation runs when its interface views have ``encodings``, in their order, working it out only if no thread has."""
+        encoding_names = _full_typed_names(encodings)
+        key = (value_operation.typed_name.full_typed_name, encoding_names)
         # A resolution is never removed, so a key that is present stays
         # present. A resolution can be None, so presence is checked by key.
         if key in self._resolutions:
@@ -267,16 +282,17 @@ class ValueOperationResolver:
         with self._resolution_locks.setdefault(key, threading.Lock()):
             if key not in self._resolutions:
                 self._resolutions[key] = self._resolve_uncached_value_operation(
-                    value_operation, view_encodings
+                    value_operation, encoding_names, encodings
                 )
         return self._resolutions[key]
 
     def _resolve_uncached_value_operation(
         self,
         value_operation: ast.ValueOperationDefinition,
-        interface_view_encodings: dict[str, ast.GlobalTypedNameReference],
+        encoding_names: tuple[str, ...],
+        encodings: list[ast.GlobalTypedNameReference],
     ) -> ResolvedValueOperation:
-        """Work out what executing the Value Operation runs when its interface views have ``interface_view_encodings``."""
+        """Work out what executing the Value Operation runs when its interface views have ``encodings``, in their order, whose full typed names are ``encoding_names``."""
         steps = self._value_operation_steps.get(
             value_operation.typed_name.full_typed_name
         )
@@ -292,18 +308,19 @@ class ValueOperationResolver:
             return None
         # A Full Value Operation Association is the whole implementation of
         # the Value Operation, so none of its statements is resolved.
-        encodings: list[ast.GlobalTypedNameReference] = []
-        for view in value_operation.views:
-            encodings.append(
-                interface_view_encodings[view.typed_name.source_typed_name]
-            )
         encoding_operation = (
             self._abstract_operation_associations.choose_encoding_operation(
-                value_operation.typed_name, _full_typed_names(encodings)
+                value_operation.typed_name, encoding_names
             )
         )
         if encoding_operation is not None:
             return encoding_operation
+        interface_view_encodings: dict[str, ast.GlobalTypedNameReference] = {}
+        # ZIP: This relationship can only be created here because the cache
+        # key needs the encodings in the order of the interface views, and
+        # only compiling the statements looks the encodings up by view name.
+        for view, encoding in zip(value_operation.views, encodings, strict=True):
+            interface_view_encodings[view.typed_name.source_typed_name] = encoding
         encoded_steps = self._encode_steps(value_operation, steps)
         # A literal that cannot be encoded is reported.
         if encoded_steps is None:
@@ -409,17 +426,16 @@ class ValueOperationResolver:
         view_encodings: dict[str, ast.GlobalTypedNameReference],
     ) -> concrete_program.OperationExecution | MissingEncodingOperation | None:
         """Return what an execution of another Value Operation runs, for the encodings of what its arguments look at."""
-        executed_view_encodings: dict[str, ast.GlobalTypedNameReference] = {}
+        encodings: list[ast.GlobalTypedNameReference] = []
         for argument in execution.arguments:
             looking_at = argument.looking_at
-            executed_view = argument.interface_view.typed_name.source_typed_name
             if isinstance(looking_at, concrete_program.EncodedLiteral):
-                executed_view_encodings[executed_view] = looking_at.encoding
+                encodings.append(looking_at.encoding)
             else:
-                executed_view_encodings[executed_view] = view_encodings[
-                    looking_at.source_typed_name
-                ]
-        executed = self.resolve(execution.value_operation, executed_view_encodings)
+                encodings.append(view_encodings[looking_at.source_typed_name])
+        executed = self.resolve(
+            execution.value_operation, execution.arguments, encodings
+        )
         if isinstance(executed, MissingEncodingOperation):
             return MissingEncodingOperation(
                 view_encodings=executed.view_encodings,
@@ -427,11 +443,7 @@ class ValueOperationResolver:
             )
         if executed is None:
             return None
-        if isinstance(executed, concrete_program.OperationExecution):
-            return concrete_program.OperationExecution(
-                runtime_operation=executed.runtime_operation,
-                arguments=executed.arguments_for(execution.arguments),
-            )
+        runtime_operation, arguments = executed
         return concrete_program.OperationExecution(
-            runtime_operation=executed, arguments=execution.arguments
+            runtime_operation=runtime_operation, arguments=arguments
         )

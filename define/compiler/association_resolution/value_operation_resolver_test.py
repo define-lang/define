@@ -68,7 +68,8 @@ def test_concurrent_resolutions_work_out_each_key_once(
 
     def resolve_slowly(
         operation: ast.ValueOperationDefinition,
-        _view_encodings: dict[str, ast.GlobalTypedNameReference],
+        _encoding_names: tuple[str, ...],
+        _encodings: list[ast.GlobalTypedNameReference],
     ) -> value_operation_resolver.ResolvedValueOperation:
         resolutions.append(operation)
         first_is_resolving.set()
@@ -89,10 +90,13 @@ def test_concurrent_resolutions_work_out_each_key_once(
             return lock
 
     monkeypatch.setattr(resolver, "_resolution_locks", _Locks())
-    results: list[value_operation_resolver.ResolvedValueOperation] = []
+    results: list[object] = []
+    arguments: list[
+        concrete_program.OperationArgument[ast.LocalTypedNameReference]
+    ] = []
 
     def resolve():
-        results.append(resolver.resolve(value_operation, view_encodings))
+        results.append(resolver.resolve(value_operation, arguments, [value_quality]))
 
     first = threading.Thread(target=resolve)
     first.start()
@@ -107,4 +111,4 @@ def test_concurrent_resolutions_work_out_each_key_once(
     second.join()
 
     assert resolutions == [value_operation]
-    assert results == [composite, composite]
+    assert results == [(composite, []), (composite, [])]

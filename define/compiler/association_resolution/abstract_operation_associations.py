@@ -16,6 +16,14 @@ if typing.TYPE_CHECKING:
     from define.compiler.errors import diagnostics
 
 
+# An Abstract Operation, and its associations, by the full typed names of the
+# encodings that they list, in order.
+type _AbstractOperationEncodingOperations = tuple[
+    ast.AbstractOperationDefinition,
+    dict[tuple[str, ...], encoding_operations_config.AssociatedEncodingOperation],
+]
+
+
 class ChosenEncodingOperation(msgspec.Struct, frozen=True):
     """An Encoding Operation that association resolution chose for an execution of an Abstract Operation."""
 
@@ -45,20 +53,11 @@ class AbstractOperationAssociations:
         self._project_roots = roots
         # Each Abstract Operation, and its associations, by the full typed
         # names of the encodings that they list, in order, by the Abstract
-        # Operation's full typed name.
+        # Operation's full typed name. None means that a diagnostic in the
+        # project's config files keeps the associations from being used.
         self._encoding_operations: dict[
-            str,
-            tuple[
-                ast.AbstractOperationDefinition,
-                dict[
-                    tuple[str, ...],
-                    encoding_operations_config.AssociatedEncodingOperation,
-                ],
-            ],
+            str, _AbstractOperationEncodingOperations | None
         ] = {}
-        # The full typed names of the Abstract Operations whose associations a
-        # diagnostic in their project's config files keeps from being used.
-        self._unusable_abstract_operations: set[str] = set()
         # The diagnostics about the associations of each added Value
         # Operation.
         self._value_operation_diagnostics: list[diagnostics.Diagnostic] = []
@@ -70,12 +69,6 @@ class AbstractOperationAssociations:
             tuple[str, tuple[str, ...]], ChosenEncodingOperation
         ] = {}
 
-    def add_logical_operation(
-        self, definition: ast.LogicalOperationDefinition
-    ) -> list[diagnostics.Diagnostic]:
-        """Add a logical operation's associations with Encoding Operations, and return a diagnostic for each association that cannot be used."""
-        return self._add_abstract_operation(definition)
-
     def add_value_operation(self, definition: ast.ValueOperationDefinition):
         """Add a Value Operation's associations with Encoding Operations.
 
@@ -84,20 +77,19 @@ class AbstractOperationAssociations:
         associations. A Value Operation with such a diagnostic has no usable
         associations.
         """
-        association_diagnostics = self._add_abstract_operation(definition)
-        name = definition.typed_name.full_typed_name
+        association_diagnostics = self.add_abstract_operation(definition)
         # An execution of a Value Operation with a wrong association does not
         # fall back to compiling the Value Operation's statements, because the
         # wrong association might have been the one that the execution needed.
         if association_diagnostics:
-            self._unusable_abstract_operations.add(name)
+            self._encoding_operations[definition.typed_name.full_typed_name] = None
         self._value_operation_diagnostics.extend(association_diagnostics)
 
     def value_operation_diagnostics(self) -> list[diagnostics.Diagnostic]:
         """Return the diagnostics about the associations of each added Value Operation, once every definition is resolved."""
         return self._value_operation_diagnostics
 
-    def _add_abstract_operation(
+    def add_abstract_operation(
         self, definition: ast.AbstractOperationDefinition
     ) -> list[diagnostics.Diagnostic]:
         """Add an Abstract Operation's associations with Encoding Operations, and return a diagnostic for each association that cannot be used."""
@@ -116,9 +108,7 @@ class AbstractOperationAssociations:
         # The diagnostic that keeps the project's Encoding Operation
         # associations from being used is already reported.
         if associated_encoding_operations is None:
-            self._unusable_abstract_operations.add(
-                definition.typed_name.full_typed_name
-            )
+            self._encoding_operations[definition.typed_name.full_typed_name] = None
             return []
         encoding_operations: dict[
             tuple[str, ...], encoding_operations_config.AssociatedEncodingOperation
@@ -144,9 +134,7 @@ class AbstractOperationAssociations:
         abstract_operation: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
     ) -> bool:
         """Whether the Abstract Operation's associations can be used, rather than a diagnostic in its project's config files, which is already reported, keeping them from being used."""
-        return (
-            abstract_operation.full_typed_name not in self._unusable_abstract_operations
-        )
+        return self._encoding_operations[abstract_operation.full_typed_name] is not None
 
     def choose_encoding_operation(
         self,
@@ -157,9 +145,10 @@ class AbstractOperationAssociations:
 
         The Abstract Operation's associations must be usable.
         """
-        definition, encoding_operations = self._encoding_operations[
-            abstract_operation.full_typed_name
-        ]
+        definition, encoding_operations = typing.cast(
+            "_AbstractOperationEncodingOperations",
+            self._encoding_operations[abstract_operation.full_typed_name],
+        )
         association = encoding_operations.get(encodings)
         if association is None:
             return None

@@ -73,12 +73,11 @@ class AssociationResolver:
                 )
                 return []
             case ast.LogicalOperationDefinition():
-                return self.resolve_logical_operation(definition)
+                return self._abstract_operation_associations.add_abstract_operation(
+                    definition
+                )
             case ast.PositionDefinition():
                 self._look_up_value_encoding(definition.quality_assignment_block)
-                return []
-            # A value quality's encoding is looked up when something needs it.
-            case ast.ValueDefinition():
                 return []
 
     def _look_up_value_encoding(
@@ -92,12 +91,6 @@ class AssociationResolver:
             _ = self._value_quality_associations.value_encoding(
                 quality_assignment_block.value_quality
             )
-
-    def resolve_logical_operation(
-        self, definition: ast.LogicalOperationDefinition
-    ) -> list[diagnostics.Diagnostic]:
-        """Add a logical operation's associations with Encoding Operations, and return the diagnostics about them."""
-        return self._abstract_operation_associations.add_logical_operation(definition)
 
     def resolve_action(
         self, action: abstract_program.AbstractAction
@@ -276,14 +269,15 @@ class AssociationResolver:
         )
         if arguments is None:
             return None, argument_diagnostics
-        view_encodings: dict[str, ast.GlobalTypedNameReference] = {}
+        encodings: list[ast.GlobalTypedNameReference] = []
         for argument in arguments:
             looking_at = argument.looking_at
-            view_name = argument.interface_view.typed_name.source_typed_name
             if isinstance(looking_at, concrete_program.EncodedLiteral):
-                view_encodings[view_name] = looking_at.encoding
+                encodings.append(looking_at.encoding)
                 continue
-            value_quality = execution.looked_at_value_qualities.get(view_name)
+            value_quality = execution.looked_at_value_qualities.get(
+                argument.interface_view.typed_name.source_typed_name
+            )
             # A looked-at position whose value quality is unknown was already
             # reported.
             if value_quality is None:
@@ -293,9 +287,9 @@ class AssociationResolver:
             # definition.
             if encoding is None:
                 return None, argument_diagnostics
-            view_encodings[view_name] = encoding
+            encodings.append(encoding)
         result = self._value_operations.resolve(
-            execution.value_operation, view_encodings
+            execution.value_operation, arguments, encodings
         )
         if isinstance(result, value_operation_resolver.MissingEncodingOperation):
             return None, [
@@ -304,18 +298,12 @@ class AssociationResolver:
             ]
         if result is None:
             return None, argument_diagnostics
-        if isinstance(result, concrete_program.OperationExecution):
-            return concrete_program.ActionOperationExecution(
-                operation=execution.operation,
-                operation_arguments=arguments,
-                runtime_operation=result.runtime_operation,
-                arguments=result.arguments_for(arguments),
-            ), argument_diagnostics
+        runtime_operation, runtime_arguments = result
         return concrete_program.ActionOperationExecution(
             operation=execution.operation,
             operation_arguments=arguments,
-            runtime_operation=result,
-            arguments=arguments,
+            runtime_operation=runtime_operation,
+            arguments=runtime_arguments,
         ), argument_diagnostics
 
 

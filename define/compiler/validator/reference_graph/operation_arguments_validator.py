@@ -112,17 +112,24 @@ class OperationArgumentsValidator:
         ]
         | None
     ):
-        """Describe the arguments of a statement that executes a Value Operation, if each names one of its views."""
+        """Describe the arguments of a statement that executes a Value Operation, in the order of its views, if each of its views has exactly one argument."""
+        # Structural validation reports two arguments that name the same view,
+        # and two views of the Value Operation that have the same name.
+        # Reference graph validation reports a view that no argument names.
+        if len(statement.arguments) != len(executed.views):
+            return None
         arguments: list[
             abstract_program.Argument[
                 ast.InterfaceViewDefinition, LookedAtT | ast.Literal
             ]
         ] = []
         for argument in statement.arguments:
-            interface_view = executed.get_view(argument.view.source_typed_name)
-            # Structural validation reports a view name with an invalid format.
-            if interface_view is None:
-                return None
+            # Each view has exactly one argument, so each argument names a
+            # view.
+            interface_view = typing.cast(
+                "ast.InterfaceViewDefinition",
+                executed.get_view(argument.view.source_typed_name),
+            )
             arguments.append(
                 abstract_program.Argument(
                     interface_view=interface_view,

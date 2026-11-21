@@ -247,8 +247,7 @@ def test_definition_resolves_after_its_validation_and_referenced_resolutions():
         validator: reference_graph_validator.ReferenceGraphValidator,
         definition: ast.ActionDefinition
         | ast.ValueOperationDefinition
-        | ast.LogicalOperationDefinition
-        | ast.ValueDefinition,
+        | ast.LogicalOperationDefinition,
     ) -> reference_graph_validator.DefinitionValidation:
         validation = original_validate(validator, definition)
         with events_lock:
