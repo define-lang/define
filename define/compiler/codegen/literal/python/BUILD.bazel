@@ -74,6 +74,7 @@ py_library(
         ":renderer",
         ":value_types",
         "//define/compiler:ast",
+        "//define/compiler:computer_operations",
         "//define/compiler:constants",
         "//define/compiler/association_resolution:concrete_program",
         "@pypi//msgspec",

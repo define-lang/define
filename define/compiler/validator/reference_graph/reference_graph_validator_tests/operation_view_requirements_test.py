@@ -32,10 +32,10 @@ def test_duplicate_caller_view(
     diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, structural_diagnostics.LocalNameConflictDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 28
+    assert diagnostic.location.line == 31
     assert diagnostic.location.column == 16
     assert diagnostic.local_name == "number"
-    assert diagnostic.first_definition_line == 22
+    assert diagnostic.first_definition_line == 25
 
 
 def test_value_mismatch(

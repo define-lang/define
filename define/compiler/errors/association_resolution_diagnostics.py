@@ -268,6 +268,22 @@ class NoProjectRootForAssociationsDiagnostic(diagnostics.Diagnostic):
     )
 
 
+class UnknownComputerOperationDiagnostic(diagnostics.Diagnostic):
+    """Diagnostic for an Encoding Operation that executes a computer operation that the compiler does not know how to perform."""
+
+    encoding_operation_name: str
+    message_format: ClassVar[str] = (
+        "{self.encoding_operation_name} executes the computer operation, but"
+        + " the compiler does not know how to perform a computer operation for"
+        + " {self.encoding_operation_name}. To fix this, do one of these:\n"
+        + "  1. Use an Encoding Operation from the standard universe instead of"
+        + " {self.encoding_operation_name}.\n"
+        + "  2. In {self.encoding_operation_name}, replace 'execute the computer"
+        + " operation.' with statements that execute Encoding Operations that the"
+        + " compiler knows how to perform."
+    )
+
+
 class ValueHasNoEncodingDiagnostic(diagnostics.Diagnostic):
     """A value quality is not associated with any encoding."""
 

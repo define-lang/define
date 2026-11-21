@@ -56,6 +56,13 @@ py_library(
 )
 
 py_library(
+    name = "computer_operations",
+    srcs = ["computer_operations.py"],
+    visibility = [":__subpackages__"],
+    deps = [":constants"],
+)
+
+py_library(
     name = "constants",
     srcs = ["constants.py"],
     data = ["//define/standard"],
@@ -291,6 +298,7 @@ pyright_test(
         ":chained_name",
         ":chained_name_test",
         ":compiler",
+        ":computer_operations",
         ":constants",
         ":definition_pipeline",
         ":definition_pipeline_test",

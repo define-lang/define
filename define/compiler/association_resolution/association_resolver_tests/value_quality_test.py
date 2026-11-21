@@ -116,7 +116,7 @@ def test_unused_encoding_in_unconfigured_universe(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_validation.sorted_diagnostics() == []
+    assert_no_errors(result.program_validation)
 
 
 def test_encodings_in_same_unconfigured_universe(

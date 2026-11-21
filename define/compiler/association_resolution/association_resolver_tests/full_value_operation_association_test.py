@@ -11,6 +11,7 @@ from define.compiler.errors import (
     association_resolution_diagnostics,
     config_diagnostics,
 )
+from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.validation_pipeline import (
@@ -40,16 +41,16 @@ def test_runs_associated_encoding_operation(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_validation.sorted_diagnostics() == []
+    assert_no_errors(result.program_validation)
     program = result.concrete_program
     assert (
         _flip_runtime_operation(program)
         == "encoding_operation<my.domain.com:my_lib:/flip/ascii>"
     )
-    assert sorted(program.encoding_operations) == [
+    assert program.encoding_operations.keys() == {
         "encoding_operation<my.domain.com:my_lib:/flip/ascii>",
         "encoding_operation<standard:/number/integer/ascii/negate>",
-    ]
+    }
     assert program.composite_value_operations == {}
 
 
@@ -57,15 +58,15 @@ def test_unmatched_encodings_compile_statement_by_statement(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_validation.sorted_diagnostics() == []
+    assert_no_errors(result.program_validation)
     program = result.concrete_program
     assert (
         _flip_runtime_operation(program)
         == "encoding_operation<standard:/number/integer/ascii/negate>"
     )
-    assert sorted(program.encoding_operations) == [
+    assert program.encoding_operations.keys() == {
         "encoding_operation<standard:/number/integer/ascii/negate>",
-    ]
+    }
 
 
 def test_association_with_different_view_name(
@@ -293,7 +294,7 @@ def test_value_operation_universe_with_only_standard_values(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_validation.sorted_diagnostics() == []
+    assert_no_errors(result.program_validation)
     assert (
         _flip_runtime_operation(result.concrete_program)
         == "encoding_operation<my.domain.com:my_lib:/flip/ascii>"
@@ -304,11 +305,44 @@ def test_association_skips_invalid_literal(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_validation.sorted_diagnostics() == []
+    assert_no_errors(result.program_validation)
 
 
 def test_association_skips_local_view_without_encoding(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_validation.sorted_diagnostics() == []
+    assert_no_errors(result.program_validation)
+
+
+def test_unknown_computer_operation(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        association_resolution_diagnostics.UnknownComputerOperationDiagnostic(
+            location=rendering.SourceLocation(
+                line=16,
+                column=9,
+                end_line=16,
+                end_column=39,
+                file_path="flip/ascii.dfn",
+            ),
+            encoding_operation_name="encoding_operation<my.domain.com:my_lib:/flip/ascii>",
+        )
+    ]
+
+
+def test_unchosen_unknown_computer_operation(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_validation)
+    program = result.concrete_program
+    assert (
+        _flip_runtime_operation(program)
+        == "encoding_operation<standard:/number/integer/ascii/negate>"
+    )
+    assert program.encoding_operations.keys() == {
+        "encoding_operation<standard:/number/integer/ascii/negate>",
+    }

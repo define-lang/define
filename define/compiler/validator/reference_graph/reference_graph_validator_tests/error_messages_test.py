@@ -787,7 +787,7 @@ def test_literal_cannot_be_converted_format(validate_project: ValidateProject):
         "    define the view<result> {\n"
         "        it is written.\n"
         "        it may only contain particles where {\n"
-        "            it has the encoding<standard:/number/decimal/ascii>.\n"
+        "            it has the encoding<standard:/number/integer/ascii>.\n"
         "        }\n"
         "    }\n"
         "\n"
@@ -809,34 +809,37 @@ def test_literal_cannot_be_converted_format(validate_project: ValidateProject):
                 "    define the view<number> {\n"
                 "        it is read.\n"
                 "        it may only contain particles where {\n"
-                "            it has the encoding<standard:/number/decimal/ascii>.\n"
+                "            it has the encoding<standard:/number/integer/ascii>.\n"
                 "        }\n"
                 "    }\n"
                 "    define the view<result> {\n"
                 "        it is written.\n"
                 "        it may only contain particles where {\n"
-                "            it has the encoding<standard:/number/decimal/ascii>.\n"
+                "            it has the encoding<standard:/number/integer/ascii>.\n"
                 "        }\n"
                 "    }\n"
                 "\n"
                 "    it does {\n"
-                "        execute the computer operation.\n"
+                "        execute the encoding_operation<standard:/number/integer/ascii/negate> {\n"
+                "            with view<a> looking at view<number>.\n"
+                "            with view<result> looking at view<result>.\n"
+                "        }\n"
                 "    }\n"
                 "}\n"
             ),
         },
     )
-    all_diags = result.program_validation.sorted_diagnostics()
-    assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_validation.source_map)
+    [diagnostic] = result.program_validation.sorted_diagnostics()
+    formatted = diagnostic.format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 42
             with view<number> looking at literal</text>"5".
                                          ^^^^^^^^^^^^^^
-        literal</text> cannot be looked at as encoding<standard:/number/decimal/ascii>, because literals with the encoding</text_encoding> cannot be translated into encoding<standard:/number/decimal/ascii>.
-        To look at a literal as encoding<standard:/number/decimal/ascii>, use a literal with one of these encodings:
+        literal</text> cannot be looked at as encoding<standard:/number/integer/ascii>, because literals with the encoding</text_encoding> cannot be translated into encoding<standard:/number/integer/ascii>.
+        To look at a literal as encoding<standard:/number/integer/ascii>, use a literal with one of these encodings:
             encoding<standard:/binary/ascii>
-            encoding<standard:/number/decimal/ascii>""")
+            encoding<standard:/number/decimal/ascii>
+            encoding<standard:/number/hex/ascii>""")
 
 
 def test_literal_cannot_be_converted_to_any_literal_encoding_format(
@@ -885,9 +888,20 @@ def test_literal_cannot_be_converted_to_any_literal_encoding_format(
             ),
         },
     )
-    all_diags = result.program_validation.sorted_diagnostics()
-    assert len(all_diags) == 1
-    formatted = all_diags[0].format(result.program_validation.source_map)
+    unknown_computer_operation, diagnostic = (
+        result.program_validation.sorted_diagnostics()
+    )
+    assert (
+        unknown_computer_operation.format(result.program_validation.source_map)
+        == textwrap.dedent("""\
+        File "append.dfn", line 16, column 9
+            execute the computer operation.
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        encoding_operation<my.domain.com:my_lib:/append> executes the computer operation, but the compiler does not know how to perform a computer operation for encoding_operation<my.domain.com:my_lib:/append>. To fix this, do one of these:
+          1. Use an Encoding Operation from the standard universe instead of encoding_operation<my.domain.com:my_lib:/append>.
+          2. In encoding_operation<my.domain.com:my_lib:/append>, replace 'execute the computer operation.' with statements that execute Encoding Operations that the compiler knows how to perform.""")
+    )
+    formatted = diagnostic.format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
         File "test.dfn", line 11, column 40
             with view<text> looking at literal<standard:/number>"5".
@@ -1589,10 +1603,17 @@ def test_operation_argument_missing_qualities_format(
         "            it has the encoding</text>.\n"
         "        }\n"
         "    }\n"
+        "    define the view<result> {\n"
+        "        it is written.\n"
+        "        it may only contain particles where {\n"
+        "            it has the encoding<standard:/number/integer/ascii>.\n"
+        "        }\n"
+        "    }\n"
         "\n"
         "    it does {\n"
         "        execute the encoding_operation</encoded> {\n"
         "            with view<source> looking at view<number>.\n"
+        "            with view<result> looking at view<result>.\n"
         "        }\n"
         "    }\n"
         "}\n"
@@ -1606,26 +1627,34 @@ def test_operation_argument_missing_qualities_format(
                 "    define the view<source> {\n"
                 "        it is read.\n"
                 "        it may only contain particles where {\n"
-                "            it has the encoding<standard:/number/decimal/ascii>.\n"
+                "            it has the encoding<standard:/number/integer/ascii>.\n"
+                "        }\n"
+                "    }\n"
+                "    define the view<result> {\n"
+                "        it is written.\n"
+                "        it may only contain particles where {\n"
+                "            it has the encoding<standard:/number/integer/ascii>.\n"
                 "        }\n"
                 "    }\n"
                 "\n"
                 "    it does {\n"
-                "        execute the computer operation.\n"
+                "        execute the encoding_operation<standard:/number/integer/ascii/negate> {\n"
+                "            with view<a> looking at view<source>.\n"
+                "            with view<result> looking at view<result>.\n"
+                "        }\n"
                 "    }\n"
                 "}\n"
             ),
         }
     )
-    diags = result.program_validation.sorted_diagnostics()
-    assert len(diags) == 1
-    formatted = diags[0].format(result.program_validation.source_map)
+    [diagnostic] = result.program_validation.sorted_diagnostics()
+    formatted = diagnostic.format(result.program_validation.source_map)
     assert formatted == textwrap.dedent("""\
-        File "test.dfn", line 11, column 42
+        File "test.dfn", line 17, column 42
             with view<source> looking at view<number>.
                                          ^^^^^^^^^^^^
         'view<source>' cannot look at 'view<number>' because 'view<number>' does not have the required qualities:
-          encoding<standard:/number/decimal/ascii>""")
+          encoding<standard:/number/integer/ascii>""")
 
 
 def test_operation_argument_position_missing_qualities_format(

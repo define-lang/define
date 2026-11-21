@@ -4,26 +4,29 @@ define the encoding_operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.
         it may only contain particles where {
-            it has the encoding<standard:/number/decimal/ascii>.
+            it has the encoding<standard:/number/integer/ascii>.
             it has the encoding</text>.
         }
     }
     define the view<target> {
         it is written.
         it may only contain particles where {
-            it has the encoding<standard:/number/decimal/ascii>.
+            it has the encoding<standard:/number/integer/ascii>.
         }
     }
 
     it does {
-        execute the computer operation.
+        execute the encoding_operation<standard:/number/integer/ascii/negate> {
+            with view<a> looking at view<source>.
+            with view<result> looking at view<target>.
+        }
     }
 }
 define the encoding_operation<my.domain.com:my_lib:/reset> {
     define the view<result> {
         it is written.
         it may only contain particles where {
-            it has the encoding<standard:/number/decimal/ascii>.
+            it has the encoding<standard:/number/integer/ascii>.
         }
     }
 

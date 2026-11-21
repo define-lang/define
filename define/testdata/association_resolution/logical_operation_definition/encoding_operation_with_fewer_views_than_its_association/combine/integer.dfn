@@ -13,6 +13,9 @@ define the encoding_operation<my.domain.com:my_lib:/combine/integer> {
     }
 
     it does {
-        execute the computer operation.
+        execute the encoding_operation<standard:/number/integer/ascii/negate> {
+            with view<a> looking at view<a>.
+            with view<result> looking at view<result>.
+        }
     }
 }

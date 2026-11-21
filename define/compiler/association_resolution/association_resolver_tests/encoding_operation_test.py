@@ -31,8 +31,19 @@ def test_valid_composition(
 def test_computer_operation_fulfills_directions(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
+    # TODO: Once a standard Encoding Operation that executes the computer
+    # operation has a read/write view, use it here instead of a user's
+    # Encoding Operation that executes the computer operation, which the
+    # compiler reports.
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert_no_errors(result)
+    assert result.sorted_diagnostics() == [
+        association_resolution_diagnostics.UnknownComputerOperationDiagnostic(
+            location=rendering.SourceLocation(
+                line=24, column=9, end_line=24, end_column=39
+            ),
+            encoding_operation_name="encoding_operation<my.domain.com:my_lib:/update>",
+        ),
+    ]
 
 
 def test_unread_input_view(
@@ -43,7 +54,7 @@ def test_unread_input_view(
     diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, reference_graph_diagnostics.UnreadInputViewDiagnostic)
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 21
+    assert diagnostic.location.line == 24
     assert diagnostic.location.column == 16
     assert diagnostic.view_name == "view<number>"
 
@@ -52,15 +63,14 @@ def test_unwritten_output_view(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.sorted_diagnostics()) == 1
-    diagnostic = result.sorted_diagnostics()[0]
-    assert isinstance(
-        diagnostic, reference_graph_diagnostics.UnwrittenOutputViewDiagnostic
-    )
-    assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 15
-    assert diagnostic.location.column == 16
-    assert diagnostic.view_name == "view<number>"
+    assert result.sorted_diagnostics() == [
+        reference_graph_diagnostics.UnwrittenOutputViewDiagnostic(
+            location=rendering.SourceLocation(
+                line=3, column=16, end_line=3, end_column=27
+            ),
+            view_name="view<number>",
+        ),
+    ]
 
 
 def test_executes_read_write_operation_with_input_only_view(
@@ -70,7 +80,7 @@ def test_executes_read_write_operation_with_input_only_view(
     assert result.sorted_diagnostics() == [
         reference_graph_diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
-                line=30, column=21, end_line=30, end_column=53
+                line=40, column=21, end_line=40, end_column=53
             ),
             operation_name="encoding_operation</increment_by>",
             view_name="view<total>",
@@ -85,7 +95,7 @@ def test_executes_read_write_operation_with_output_only_view(
     assert result.sorted_diagnostics() == [
         reference_graph_diagnostics.ExecutedOperationHasReadWriteViewDiagnostic(
             location=rendering.SourceLocation(
-                line=30, column=21, end_line=30, end_column=53
+                line=40, column=21, end_line=40, end_column=53
             ),
             operation_name="encoding_operation</increment_by>",
             view_name="view<total>",
@@ -103,7 +113,7 @@ def test_out_of_order(
         diagnostic, reference_graph_diagnostics.OperationArgumentOrderDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 37
+    assert diagnostic.location.line == 40
     assert diagnostic.location.column == 18
     assert diagnostic.view_name == "view<source>"
     assert diagnostic.operation_name == "encoding_operation</copy>"
@@ -120,7 +130,7 @@ def test_missing_argument(
         diagnostic, reference_graph_diagnostics.MissingOperationArgumentDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 29
+    assert diagnostic.location.line == 32
     assert diagnostic.location.column == 21
     assert diagnostic.view_name == "view<target>"
     assert diagnostic.operation_name == "encoding_operation</copy>"
@@ -137,7 +147,7 @@ def test_missing_encoding(
         reference_graph_diagnostics.OperationArgumentMissingQualitiesDiagnostic,
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 38
+    assert diagnostic.location.line == 41
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<source>"
     assert diagnostic.looked_at_name == "view<number>"
@@ -148,16 +158,33 @@ def test_missing_encoding(
 def test_literal_in_decimal_ascii_encoding(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
+    # TODO: Once a standard Encoding Operation has views with the decimal
+    # encoding, use it here instead of a user's Encoding Operation that
+    # executes the computer operation, which the compiler reports.
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert_no_errors(result)
+    assert result.sorted_diagnostics() == [
+        association_resolution_diagnostics.UnknownComputerOperationDiagnostic(
+            location=rendering.SourceLocation(
+                line=17, column=9, end_line=17, end_column=39
+            ),
+            encoding_operation_name="encoding_operation<my.domain.com:my_lib:/copy>",
+        ),
+    ]
 
 
 def test_literal_without_literal_parser(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):
     result = validate_testdata_non_filesystem_with_reference_graph()
-    assert len(result.sorted_diagnostics()) == 1
-    diagnostic = result.sorted_diagnostics()[0]
+    unknown_computer_operation, diagnostic = result.sorted_diagnostics()
+    assert unknown_computer_operation == (
+        association_resolution_diagnostics.UnknownComputerOperationDiagnostic(
+            location=rendering.SourceLocation(
+                line=18, column=9, end_line=18, end_column=39
+            ),
+            encoding_operation_name="encoding_operation<my.domain.com:my_lib:/copy>",
+        )
+    )
     assert isinstance(
         diagnostic,
         association_resolution_diagnostics.LiteralCannotBeConvertedDiagnostic,
@@ -181,11 +208,11 @@ def test_invalid_literal_content(
         diagnostic, association_resolution_diagnostics.InvalidLiteralContentDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 30
+    assert diagnostic.location.line == 33
     assert diagnostic.location.column == 68
     assert diagnostic.content == "abc"
     assert diagnostic.potential_literal == "literal<standard:/number>"
-    assert diagnostic.value_encoding == "encoding<standard:/number/decimal/ascii>"
+    assert diagnostic.value_encoding == "encoding<standard:/number/integer/ascii>"
     assert diagnostic.reason == "'a' is not allowed in a number"
 
 
@@ -199,7 +226,7 @@ def test_output_view_looks_at_literal(
         diagnostic, reference_graph_diagnostics.OutputViewLooksAtLiteralDiagnostic
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 31
+    assert diagnostic.location.line == 34
     assert diagnostic.location.column == 42
     assert diagnostic.view_name == "view<target>"
     assert diagnostic.operation_name == "encoding_operation</copy>"
@@ -216,7 +243,7 @@ def test_literal_in_every_view_encoding(
         association_resolution_diagnostics.LiteralCannotBeConvertedDiagnostic,
     )
     assert diagnostic.location.file_path is None
-    assert diagnostic.location.line == 32
+    assert diagnostic.location.line == 35
     assert diagnostic.location.column == 42
     assert diagnostic.potential_literal == "literal<standard:/number>"
     assert diagnostic.literal_encoding == "encoding<standard:/number/decimal/ascii>"

@@ -143,7 +143,7 @@ def test_invalid_argument_view_name_in_encoding_operation(
     assert result.sorted_diagnostics() == [
         structural_diagnostics.InvalidLocalNameFormatDiagnostic(
             location=rendering.SourceLocation(
-                line=36, column=23, end_line=36, end_column=23, file_path=None
+                line=39, column=23, end_line=39, end_column=23, file_path=None
             ),
             chars=("S",),
             local_name="Source",

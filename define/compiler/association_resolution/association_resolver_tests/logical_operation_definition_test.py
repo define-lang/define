@@ -105,6 +105,9 @@ def test_encoding_operation_with_different_view_direction(
 def test_encoding_operation_view_unknown_to_logical_operation_before_view_with_different_direction(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
+    # TODO: Once a standard Encoding Operation only reads its views, use it
+    # here instead of a user's Encoding Operation that executes the computer
+    # operation, which the compiler reports.
     result = validate_testdata_project_with_reference_graph()
     assert result.program_validation.sorted_diagnostics() == [
         association_resolution_diagnostics.AssociationViewNameDiagnostic(
@@ -147,6 +150,16 @@ def test_encoding_operation_view_unknown_to_logical_operation_before_view_with_d
                 end_column=30,
                 file_path=".define/encodings/encoding_operations.defcl",
             ),
+        ),
+        association_resolution_diagnostics.UnknownComputerOperationDiagnostic(
+            location=rendering.SourceLocation(
+                line=16,
+                column=9,
+                end_line=16,
+                end_column=39,
+                file_path="negate/integer.dfn",
+            ),
+            encoding_operation_name="encoding_operation<my.domain.com:my_lib:/negate/integer>",
         ),
     ]
 
@@ -245,7 +258,7 @@ def test_encoding_operation_with_read_write_view(
                 end_column=30,
                 file_path=".define/encodings/encoding_operations.defcl",
             ),
-        )
+        ),
     ]
 
 
@@ -273,6 +286,16 @@ def test_encoding_operation_view_without_encoding(
                 file_path="negate/integer.dfn",
             ),
             quality_name="value</number>",
+        ),
+        association_resolution_diagnostics.UnknownComputerOperationDiagnostic(
+            location=rendering.SourceLocation(
+                line=16,
+                column=9,
+                end_line=16,
+                end_column=39,
+                file_path="negate/integer.dfn",
+            ),
+            encoding_operation_name="encoding_operation<my.domain.com:my_lib:/negate/integer>",
         ),
     ]
 
@@ -322,6 +345,16 @@ def test_encoding_operation_view_without_encoding_before_view_with_different_enc
             ),
             quality_name="value</number>",
         ),
+        association_resolution_diagnostics.UnknownComputerOperationDiagnostic(
+            location=rendering.SourceLocation(
+                line=16,
+                column=9,
+                end_line=16,
+                end_column=39,
+                file_path="negate/integer.dfn",
+            ),
+            encoding_operation_name="encoding_operation<my.domain.com:my_lib:/negate/integer>",
+        ),
     ]
 
 
@@ -347,7 +380,7 @@ def test_unexecuted_logical_operation_does_not_load_encoding_operations(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_validation.sorted_diagnostics() == []
+    assert_no_errors(result.program_validation)
 
 
 def test_encoding_operation_in_unconfigured_universe(
@@ -373,7 +406,7 @@ def test_unchosen_encoding_operation_in_unconfigured_universe(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph()
-    assert result.program_validation.sorted_diagnostics() == []
+    assert_no_errors(result.program_validation)
 
 
 def test_encoding_operations_in_same_unconfigured_universe(

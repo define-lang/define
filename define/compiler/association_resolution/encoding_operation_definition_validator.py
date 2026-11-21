@@ -7,11 +7,12 @@ from typing import override
 
 import msgspec
 
-from define.compiler import ast, name_types
+from define.compiler import ast, computer_operations, name_types
 from define.compiler.association_resolution import (
     concrete_program,
     literal_encoder,
 )
+from define.compiler.errors import association_resolution_diagnostics
 from define.compiler.validator.reference_graph import operation_definition_validator
 
 if typing.TYPE_CHECKING:
@@ -57,10 +58,20 @@ class EncodingOperationDefinitionValidator(
         # interface view, so there are no view uses to check.
         match self._definition.operation_statements.statements:
             case [ast.ComputerOperationExecutionStatement() as statement]:
-                # TODO: Once users can define Encoding Operations that
-                # associate with Value Operations, report a computer operation
-                # that the compiler cannot perform. Code generation relies on
-                # performing every one.
+                # Code generation has code only for the computer operations in
+                # computer_operations.PERFORMABLE. Code generation cannot
+                # generate any other Encoding Operation that executes the
+                # computer operation.
+                if (
+                    self._definition.typed_name.full_typed_name
+                    not in computer_operations.PERFORMABLE
+                ):
+                    self._diagnostics.append(
+                        association_resolution_diagnostics.UnknownComputerOperationDiagnostic(
+                            location=statement.location,
+                            encoding_operation_name=self._definition.typed_name.source_typed_name,
+                        )
+                    )
                 self._computer_operation = statement
                 return self._build_result()
             case _:

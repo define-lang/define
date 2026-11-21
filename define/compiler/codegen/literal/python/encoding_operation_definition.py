@@ -7,7 +7,7 @@ from typing import Final, final
 
 import msgspec
 
-from define.compiler import ast, constants
+from define.compiler import ast, computer_operations, constants
 from define.compiler.codegen.literal.python import (
     operation_function,
     renderer,
@@ -163,6 +163,14 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         result_view="view<result>",
     ),
 }
+# Validation accepts exactly the computer operations that the compiler knows
+# how to perform, so code generation must perform every one of them.
+if _COMPUTER_OPERATIONS.keys() != computer_operations.PERFORMABLE:
+    raise RuntimeError(
+        "Python code generation does not perform exactly the computer operations"
+        + " that the compiler knows how to perform: "
+        + f"{sorted(_COMPUTER_OPERATIONS.keys() ^ computer_operations.PERFORMABLE)}"
+    )
 
 
 @final

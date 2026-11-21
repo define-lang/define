@@ -14,6 +14,19 @@ define the encoding_operation<my.domain.com:my_lib:/negate/integer> {
     }
 
     it does {
-        execute the computer operation.
+        define the view<negated> {
+            it may only contain particles where {
+                it has the encoding<standard:/number/integer/ascii>.
+            }
+        }
+        execute the encoding_operation<standard:/number/integer/ascii/negate> {
+            with view<a> looking at view<a>.
+            with view<result> looking at view<result>.
+        }
+        execute the encoding_operation<standard:/number/integer/ascii/negate> {
+            with view<a> looking at view<a>.
+            with view<result> looking at view<negated>.
+        }
+        set the value of view<a> from view<negated>.
     }
 }
