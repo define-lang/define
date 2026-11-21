@@ -195,31 +195,26 @@ def _callee_state_at_destruction(
         # Another contract can describe a child particle with an independent
         # origin after a Move. Its own caller knowledge must determine that
         # particle's Child State, not the old contents of this caller position.
+        # What this action knows about a position whose particle the callee
+        # replaced or removed is about a particle that is not there at the
+        # moment of destruction.
         for name, child_position_state in tracker.transitive_child_states_except(
             root.position,
             prefix_for_returned_keys=root.position_in_child_state,
-            excluded_keys=callee_contracts.positions,
+            is_excluded=callee_contracts.ends_caller_knowledge_from_above,
         ):
             if (
                 child_position_state.particle is not None
                 and not child_position_state.is_in_error_chain
             ):
                 caller_particles[name] = child_position_state.particle
-            known_occupancy = callee_child_state.occupancy.get(name)
-            if known_occupancy is None:
-                # The callee left occupancy unknown, so this action can supply it.
-                child_occupancy = child_position_state.child_occupancy()
-                if child_occupancy is not None:
-                    occupancy[name] = child_occupancy
-            elif known_occupancy != position_occupancy.PositionOccupancyState.OCCUPIED:
-                # The callee knows this position is empty or has an error, so
-                # this action's particle cannot supply a value here.
-                continue
+            child_occupancy = child_position_state.child_occupancy()
+            if child_occupancy is not None:
+                occupancy[name] = child_occupancy
             if child_position_state.unexpanded is not None:
                 unexpanded[name] = child_position_state.unexpanded
-            # Even when the callee knew the occupancy, the value may be unknown.
             value = child_position_state.child_value()
-            if value is not None and callee_child_state.values.get(name) is None:
+            if value is not None:
                 values[name] = value
     return destruction_walk.CalleeStateAtDestruction(
         callee_contracts=callee_contracts,

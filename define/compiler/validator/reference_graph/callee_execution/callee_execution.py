@@ -253,7 +253,7 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
         state = self.state_at_destruction
         position = requirement.position.in_caller(self.action_chain)
         position_in_child_state = self.position_in_child_state(position)
-        occupancy = state.child_state.occupancy_at(position_in_child_state)
+        occupancy = state.occupancy_at(position_in_child_state)
         if occupancy is None:
             return state.position_in_caller(position, position_in_child_state)
         return KnownAtDestruction(
@@ -271,7 +271,7 @@ class DestructorInCalleeExecution(DestructorExecution, frozen=True):
         state = self.state_at_destruction
         position = requirement.position.in_caller(self.action_chain)
         position_in_child_state = self.position_in_child_state(position)
-        occupancy = state.child_state.occupancy_at(position_in_child_state)
+        occupancy = state.occupancy_at(position_in_child_state)
         if occupancy is None:
             return state.position_in_caller(position, position_in_child_state)
         value_state = state.child_state.value_at(position_in_child_state)

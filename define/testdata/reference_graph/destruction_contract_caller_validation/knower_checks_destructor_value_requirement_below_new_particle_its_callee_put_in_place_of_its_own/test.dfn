@@ -1,0 +1,24 @@
+# action</destroyer> moves the particle in position</child> of the particle that action</test> passes to it to a local position, and action</fill> creates a new particle in position</child>.
+# action</destroyer> then destroys the particle, so position</child> holds the new particle at the moment of destruction.
+# Only action</test> knows the Destructor action</cleanup> on the destroyed particle, and action</cleanup> requires position</child>::position</b>::position</c> to have a set value.
+# action</fill_2> set that value on the new particle, so the requirement is satisfied, even though action</test> left the value unset on the particle that was moved away.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<my_item> {
+            it may only contain particles where {
+                it has the action</cleanup>.
+                it has the action</fill>.
+                it has the position</child>.
+            }
+        }
+        create a particle in position<my_item>.
+        create a particle in position<my_item>::position</child>.
+        create a particle in position<my_item>::position</child>::position</b>.
+        create a particle in position<my_item>::position</child>::position</b>::position</c>.
+        move the particle in position<my_item> to action</destroyer>::position<target>.
+        create a particle in action</destroyer>::position<run>.
+    }
+}

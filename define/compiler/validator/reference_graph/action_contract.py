@@ -420,6 +420,53 @@ class DestructionContracts(msgspec.Struct, frozen=True):
             contract.position_in_child_state for contract in self.particles
         )
 
+    def records_no_caller_particle_at(
+        self, position_in_child_state: chained_name.ChainedNameTuple
+    ) -> bool:
+        """Return whether the destroyer or an action between it and the caller recorded the occupancy of ``position_in_child_state``, and no particle of these contracts is there.
+
+        At the moment of destruction, the position then holds no particle that
+        the caller passed in. Neither does any position below it, other than
+        the position of a particle of these contracts.
+        """
+        # Every particle from the caller that the destroyer or an action
+        # between it and the caller tracked has a Destruction Contract, so a
+        # recorded position without one holds a new particle or nothing.
+        return (
+            position_in_child_state not in self.positions
+            and self.child_state.occupancy.get(position_in_child_state) is not None
+        )
+
+    def ends_caller_knowledge_from_above(
+        self, position_in_child_state: chained_name.ChainedNameTuple
+    ) -> bool:
+        """Return whether what the caller knows about a particle of these contracts stops applying at ``position_in_child_state``, a position below that particle, and at every position below it.
+
+        Either another particle of these contracts is there, which the caller
+        knows from where that particle was, or the position holds no particle
+        that the caller passed in.
+        """
+        return position_in_child_state in self.positions or (
+            self.records_no_caller_particle_at(position_in_child_state)
+        )
+
+    def holds_caller_particle(
+        self, position_in_child_state: chained_name.ChainedNameTuple
+    ) -> bool:
+        """Return whether a particle in ``position_in_child_state`` at the moment of destruction would be one that the caller passed in."""
+        # The nearest position at or above it that has a record or holds a
+        # particle of these contracts decides.
+        for length in range(len(position_in_child_state), 0, -1):
+            prefix = chained_name.ChainedNameTuple(position_in_child_state[:length])
+            if prefix in self.positions:
+                return True
+            if self.records_no_caller_particle_at(prefix):
+                return False
+        # Child State has no record for the destroyed particle itself. Every
+        # position this is asked about is at or below a particle of these
+        # contracts, so here that particle is the destroyed particle.
+        return True
+
     def propagation_steps(self) -> Iterator[propagation_step.PropagationStep]:
         """Iterate from the immediate callee to the destroying action."""
         if self.propagation is not None:

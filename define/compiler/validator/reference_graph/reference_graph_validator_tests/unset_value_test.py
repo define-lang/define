@@ -571,14 +571,21 @@ def test_destructor_contract_replace_set(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph().program_validation
-    assert len(result.sorted_diagnostics()) == 2
+    assert len(result.sorted_diagnostics()) == 3
     diagnostic = result.sorted_diagnostics()[0]
     assert isinstance(diagnostic, reference_graph_diagnostics.DeadValueWriteDiagnostic)
     assert diagnostic.location.file_path == "close.dfn"
     assert diagnostic.location.line == 10
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<input>::position</value>"
+    # action</close> overwrites this value before anything reads it.
     diagnostic = result.sorted_diagnostics()[1]
+    assert isinstance(diagnostic, reference_graph_diagnostics.DeadValueWriteDiagnostic)
+    assert diagnostic.location.file_path == "test.dfn"
+    assert diagnostic.location.line == 14
+    assert diagnostic.location.column == 26
+    assert diagnostic.position_name == "position<box>::position</value>"
+    diagnostic = result.sorted_diagnostics()[2]
     assert isinstance(
         diagnostic, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
     )

@@ -16,11 +16,11 @@ from define.compiler.validator.reference_graph.particles import (
 
 if typing.TYPE_CHECKING:
     from collections.abc import (
+        Callable,
         Collection,
         Iterator,
         Sequence,
     )
-    from collections.abc import Set as AbstractSet
 
     from crates.source_rendering.python import rendering
     from define.compiler import ast
@@ -231,7 +231,7 @@ class ParticleTracker:
         position: ast.PositionReference,
         *,
         prefix_for_returned_keys: chained_name.ChainedNameTuple,
-        excluded_keys: AbstractSet[chained_name.ChainedNameTuple],
+        is_excluded: Callable[[chained_name.ChainedNameTuple], bool],
     ) -> Iterator[
         tuple[chained_name.ChainedNameTuple, particle_state_store.PositionState]
     ]:
@@ -239,13 +239,13 @@ class ParticleTracker:
 
         Each returned key is ``prefix_for_returned_keys`` followed by the
         child position's names after ``position``. A child position whose
-        returned key is in ``excluded_keys`` is skipped with all of its own
+        returned key ``is_excluded`` accepts is skipped with all of its own
         transitive child positions. The yielded states must not be changed.
         """
         return self._store.transitive_child_states_except(
             position.canonical_chained_name_tuple,
             prefix_for_returned_keys=prefix_for_returned_keys,
-            excluded_keys=excluded_keys,
+            is_excluded=is_excluded,
         )
 
     def create(

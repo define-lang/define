@@ -15,8 +15,7 @@ from define.compiler.validator.reference_graph import (
 from define.compiler.validator.reference_graph.particles import particle_info
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
-    from collections.abc import Set as AbstractSet
+    from collections.abc import Callable, Iterator, Sequence
 
     from crates.source_rendering.python import rendering
     from define.compiler import ast
@@ -378,19 +377,19 @@ class ParticleStateStore:
         key: chained_name.PositionReferenceTuple,
         *,
         prefix_for_returned_keys: chained_name.ChainedNameTuple,
-        excluded_keys: AbstractSet[chained_name.ChainedNameTuple],
+        is_excluded: Callable[[chained_name.ChainedNameTuple], bool],
     ) -> Iterator[tuple[chained_name.ChainedNameTuple, PositionState]]:
         """Yield a ``(returned key, state)`` pair for every transitive child position of ``key`` that the store has recorded, where the store has recorded ``key`` too.
 
         Each returned key is ``prefix_for_returned_keys`` followed by the
         child position's names after ``key``. A child position whose returned
-        key is in ``excluded_keys`` is skipped with all of its own transitive
+        key ``is_excluded`` accepts is skipped with all of its own transitive
         child positions. Only the store may change the yielded states.
         """
         return self._state.descendant_items_except(
             key,
             prefix_for_returned_keys=prefix_for_returned_keys,
-            excluded_keys=excluded_keys,
+            is_excluded=is_excluded,
         )
 
     def state_without_expanding(

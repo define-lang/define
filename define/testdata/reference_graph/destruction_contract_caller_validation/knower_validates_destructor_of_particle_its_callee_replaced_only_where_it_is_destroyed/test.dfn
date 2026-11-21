@@ -1,0 +1,27 @@
+# action</test> creates a particle with the Destructor action</cleanup_child>, which only action</test> knows, in position</child> of the particle it passes to action</destroyer>.
+# action</destroyer> destroys that particle, creates a new particle in position</child>, and then destroys the particle above it.
+# action</cleanup_child> requires position</a> to be occupied, which it is not, so action</cleanup_child> is violated once, for the destruction of its own particle.
+# The destruction of the particle above does not destroy that particle again.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<spare> {
+            it may only contain particles where {
+                it has the action</cleanup_child>.
+                it has the position</a>.
+            }
+        }
+        define the position<my_item> {
+            it may only contain particles where {
+                it has the position</child>.
+            }
+        }
+        create a particle in position<my_item>.
+        create a particle in position<spare>.
+        move the particle in position<spare> to position<my_item>::position</child>.
+        move the particle in position<my_item> to action</destroyer>::position<target>.
+        create a particle in action</destroyer>::position<run>.
+    }
+}

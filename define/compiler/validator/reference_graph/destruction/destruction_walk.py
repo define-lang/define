@@ -71,21 +71,18 @@ class CalleeStateAtDestruction(msgspec.Struct, frozen=True):
             is not None
         )
 
-    def another_contract_starts_at(
+    def occupancy_at(
         self, position_in_child_state: chained_name.ChainedNameTuple
-    ) -> bool:
-        """Return whether a Destruction Contract of this destruction starts at ``position_in_child_state``."""
-        return position_in_child_state in self.callee_contracts.positions
-
-    def records_empty(
-        self, position_in_child_state: chained_name.ChainedNameTuple
-    ) -> bool:
-        """Return whether ``position_in_child_state`` was empty at the moment of destruction."""
-        occupancy = self.child_state.occupancy.get(position_in_child_state)
-        return (
-            occupancy is not None
-            and occupancy == position_occupancy.PositionOccupancyState.EMPTY
-        )
+    ) -> position_occupancy.PositionOccupancyState | None:
+        """Return the occupancy of ``position_in_child_state`` at the moment of destruction, or None when only this action's state at its trigger of the callee decides it."""
+        occupancy = self.child_state.occupancy_at(position_in_child_state)
+        if occupancy is None and not self.callee_contracts.holds_caller_particle(
+            position_in_child_state
+        ):
+            # The child positions of a new particle are empty until something
+            # fills them.
+            return position_occupancy.PositionOccupancyState.EMPTY
+        return occupancy
 
     def caller_particle_at(
         self, position_in_child_state: chained_name.ChainedNameTuple
@@ -284,6 +281,19 @@ class _Walk:
     ):
         """Add what destroying ``parent_particle`` destroys in its child position ``names`` to ``walked``."""
         position = parent_position.with_position_suffix(*names)
+        position_in_child_state = chained_name.with_suffix(
+            parent_in_child_state, *(name.full_typed_name for name in names)
+        )
+        # Another contract's walk covers the particles below it. Where the
+        # callee replaced or removed a particle, what this action has there is
+        # not what the destruction destroys.
+        if (
+            self._state is not None
+            and self._state.callee_contracts.ends_caller_knowledge_from_above(
+                position_in_child_state
+            )
+        ):
+            return
         found = self._particle_to_destroy_or_destructors_call_at(
             position, parent_particle
         )
@@ -296,17 +306,6 @@ class _Walk:
                     position=self._as_named_in_known_destruction_work(found.position),
                 )
             )
-            return
-        position_in_child_state = chained_name.with_suffix(
-            parent_in_child_state, *(name.full_typed_name for name in names)
-        )
-        # Another contract's walk covers the particles below it, and nothing
-        # was destroyed below a position that was empty at the moment of
-        # destruction.
-        if self._state is not None and (
-            self._state.another_contract_starts_at(position_in_child_state)
-            or self._state.records_empty(position_in_child_state)
-        ):
             return
         self._add_particle(position, found, position_in_child_state, walked)
 

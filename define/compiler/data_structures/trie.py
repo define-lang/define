@@ -26,7 +26,6 @@ if typing.TYPE_CHECKING:
         Iterable,
         Iterator,
     )
-    from collections.abc import Set as AbstractSet
 
 type TrieKey = chained_name.ChainedNameTuple
 
@@ -211,13 +210,13 @@ class ReparentingTrie[V]:
         key: TrieKey,
         *,
         prefix_for_returned_keys: TrieKey,
-        excluded_keys: AbstractSet[TrieKey],
+        is_excluded: Callable[[TrieKey], bool],
     ) -> Iterator[tuple[TrieKey, V]]:
         """Yield a ``(returned key, value)`` pair for each descendant of ``key``, in unspecified order.
 
         Each returned key is ``prefix_for_returned_keys`` followed by the
-        descendant's path from ``key``. A descendant whose returned key is in
-        ``excluded_keys`` is skipped with all of its own descendants.
+        descendant's path from ``key``. A descendant whose returned key
+        ``is_excluded`` accepts is skipped with all of its own descendants.
         ``key`` itself is never yielded or excluded.
         """
         pending: list[tuple[tuple[str, ...], tuple[str, ...]]] = [
@@ -226,13 +225,12 @@ class ReparentingTrie[V]:
         while pending:
             full_node, result_node = pending.pop()
             for full_child in self._child_keys_with_values(full_node):
-                result_child = (*result_node, full_child[-1])
-                if result_child in excluded_keys:
-                    continue
-                yield (
-                    chained_name.ChainedNameTuple(result_child),
-                    typing.cast("V", self._values[full_child]),
+                result_child = chained_name.ChainedNameTuple(
+                    (*result_node, full_child[-1])
                 )
+                if is_excluded(result_child):
+                    continue
+                yield result_child, typing.cast("V", self._values[full_child])
                 pending.append((full_child, result_child))
 
     def subtree_values_with_parents(self, key: TrieKey) -> Iterator[tuple[V, V]]:

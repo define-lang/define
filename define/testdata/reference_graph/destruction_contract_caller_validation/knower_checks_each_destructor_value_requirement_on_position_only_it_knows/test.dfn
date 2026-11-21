@@ -1,0 +1,25 @@
+# action</test> is the knower of both Destructors on the particle it passes to action</inner>, and no action below it knows position</reading>.
+# Each Destructor requires position</reading> to have a set value, and action</test> left its value unset, so each Destructor's requirement is violated.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</inner>.
+            }
+        }
+        define the position<my_item> {
+            it may only contain particles where {
+                it has the action</destructor>.
+                it has the action</second_destructor>.
+                it has the position</reading>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<my_item>.
+        create a particle in position<my_item>::position</reading>.
+        move the particle in position<my_item> to position<box>::action</inner>::position<target>.
+        create a particle in position<box>::action</inner>::position<run>.
+    }
+}

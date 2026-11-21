@@ -1,0 +1,23 @@
+# action</destroyer> moves the particle in position</child> of the particle that action</test> passes to it to a local position, and then destroys the particle.
+# position</child> is empty at the moment of destruction.
+# Only action</test> knows the Destructor action</cleanup> on the destroyed particle, and action</cleanup> requires position</child> and every position below it that it names to be occupied.
+# Each of these positions is empty, so each requirement is violated, even though action</test> filled position</child>::position</a> of the particle that was moved away.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</destroyer>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<my_item> {
+            it may only contain particles where {
+                it has the action</cleanup>.
+                it has the action</fill>.
+                it has the position</child>.
+            }
+        }
+        create a particle in position<my_item>.
+        create a particle in position<my_item>::position</child>.
+        create a particle in position<my_item>::position</child>::position</a>.
+        move the particle in position<my_item> to action</destroyer>::position<target>.
+        create a particle in action</destroyer>::position<run>.
+    }
+}

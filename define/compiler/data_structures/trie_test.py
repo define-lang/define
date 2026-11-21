@@ -12,6 +12,10 @@ def _key(*names: str) -> chained_name.ChainedNameTuple:
     return chained_name.ChainedNameTuple(names)
 
 
+def _exclude_nothing(_name: chained_name.ChainedNameTuple) -> bool:
+    return False
+
+
 class TestPointOps:
     def test_setitem_and_contains(self):
         t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
@@ -112,7 +116,7 @@ class TestDeletedKeys:
         assert list(t.descendant_items(_key("a"))) == [(_key("d"), 4)]
         assert list(
             t.descendant_items_except(
-                _key("a"), prefix_for_returned_keys=_key(), excluded_keys=set()
+                _key("a"), prefix_for_returned_keys=_key(), is_excluded=_exclude_nothing
             )
         ) == [(_key("d"), 4)]
         assert list(t.subtree_values_with_parents(_key("a"))) == [(1, 4)]
@@ -298,7 +302,7 @@ class TestDescendantItemsExcept:
             values.descendant_items_except(
                 _key("a"),
                 prefix_for_returned_keys=_key("p", "q"),
-                excluded_keys=excluded,
+                is_excluded=excluded.__contains__,
             )
         ) == {_key("p", "q", "d"): 3, _key("p", "q", "d", "f"): 5}
 
@@ -309,7 +313,7 @@ class TestDescendantItemsExcept:
         values[_key("a", "b", "c")] = 2
         assert dict(
             values.descendant_items_except(
-                _key("a"), prefix_for_returned_keys=_key(), excluded_keys=set()
+                _key("a"), prefix_for_returned_keys=_key(), is_excluded=_exclude_nothing
             )
         ) == {_key("b"): 1, _key("b", "c"): 2}
 
@@ -319,7 +323,9 @@ class TestDescendantItemsExcept:
         assert (
             list(
                 values.descendant_items_except(
-                    _key("a"), prefix_for_returned_keys=_key(), excluded_keys=set()
+                    _key("a"),
+                    prefix_for_returned_keys=_key(),
+                    is_excluded=_exclude_nothing,
                 )
             )
             == []
@@ -329,7 +335,7 @@ class TestDescendantItemsExcept:
                 values.descendant_items_except(
                     _key("missing"),
                     prefix_for_returned_keys=_key(),
-                    excluded_keys=set(),
+                    is_excluded=_exclude_nothing,
                 )
             )
             == []
@@ -341,7 +347,7 @@ class TestDescendantItemsExcept:
         values[_key("a", "b")] = 2
         assert sorted(
             values.descendant_items_except(
-                _key(), prefix_for_returned_keys=_key(), excluded_keys=set()
+                _key(), prefix_for_returned_keys=_key(), is_excluded=_exclude_nothing
             )
         ) == [(_key("a"), 1), (_key("a", "b"), 2)]
 
