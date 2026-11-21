@@ -86,6 +86,23 @@ py_test(
 )
 
 py_test(
+    name = "project_roots_test",
+    size = "small",
+    srcs = ["project_roots_test.py"],
+    deps = [
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler:constants",
+        "//define/compiler/config:association_config",
+        "//define/compiler/config:config_loader",
+        "//define/compiler/config:local_deps_config",
+        "//define/compiler/config:project_config",
+        "//define/compiler/config:project_roots",
+        "//define/compiler/data_structures:define_path",
+        "@pypi//pytest",
+    ],
+)
+
+py_test(
     name = "project_test",
     size = "small",
     srcs = ["project_test.py"],
@@ -169,6 +186,7 @@ pyright_test(
         ":encodings_test",
         ":local_deps_test",
         ":project_root_test",
+        ":project_roots_test",
         ":project_test",
         ":sub_root_test",
         ":test_helpers",

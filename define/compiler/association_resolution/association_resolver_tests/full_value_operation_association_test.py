@@ -287,3 +287,14 @@ def test_same_association_with_different_encodings(
             ),
         ),
     ]
+
+
+def test_value_operation_universe_with_only_standard_values(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == []
+    assert (
+        _flip_runtime_operation(result.concrete_program)
+        == "encoding_operation<my.domain.com:my_lib:/flip/ascii>"
+    )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 import types
 import typing
 
@@ -68,13 +69,16 @@ class ProjectRoots:
     """The program's project roots, with their configs, the sub-roots that their configs list, and their associations.
 
     Loads each project config and each project's associations once, and
-    records the diagnostics that loading finds. Only the coordinator thread may
-    use it.
+    records the diagnostics that loading finds. Any thread may use it.
     """
 
     def __init__(self, source_map: rendering.SourceMap):
         """Initialize with the source map to register config files with, and no project roots."""
         self._source_map = source_map
+        # Held while loading a config or a project's associations, so that
+        # each is loaded once. Loading the associations of a universe can load
+        # the project root's config, so the lock is reentrant.
+        self._lock = threading.RLock()
         self._configs: dict[define_path.DefinePath, config_loader.Config] = {}
         self._by_universe: dict[
             str, tuple[define_path.DefinePath, config_loader.Config]
@@ -103,7 +107,8 @@ class ProjectRoots:
         Returns None, after recording the config's diagnostics, if the config
         file is missing or cannot be used.
         """
-        return self._load(constants.PROJECT_ROOT, None)
+        with self._lock:
+            return self._load(constants.PROJECT_ROOT, None)
 
     def load_project_root_config(self) -> config_loader.Config | NoProjectConfig | None:
         """Return the config of the project root, which is the working directory, loading it if needed.
@@ -112,16 +117,24 @@ class ProjectRoots:
         project config file, so that the caller reports it, and marks the root
         failed. Returns None if the root is failed.
         """
+        # A loaded config is never replaced, so reading it needs no lock.
         existing = self._configs.get(constants.PROJECT_ROOT)
         if existing is not None:
             return existing
-        if constants.PROJECT_ROOT in self._failed:
-            return None
-        loader = config_loader.ConfigLoader(constants.PROJECT_ROOT, self._source_map)
-        if not loader.is_project_root():
-            self._failed.add(constants.PROJECT_ROOT)
-            return NoProjectConfig()
-        return self._load(constants.PROJECT_ROOT, None)
+        with self._lock:
+            # Another thread may have loaded the config while this one waited.
+            existing = self._configs.get(constants.PROJECT_ROOT)
+            if existing is not None:
+                return existing
+            if constants.PROJECT_ROOT in self._failed:
+                return None
+            loader = config_loader.ConfigLoader(
+                constants.PROJECT_ROOT, self._source_map
+            )
+            if not loader.is_project_root():
+                self._failed.add(constants.PROJECT_ROOT)
+                return NoProjectConfig()
+            return self._load(constants.PROJECT_ROOT, None)
 
     def load_sub_root_config(
         self, fqun: str | None, referencing_root: define_path.DefinePath
@@ -167,10 +180,16 @@ class ProjectRoots:
         directory has no project config, so that each value quality in the
         universe reports it.
         """
+        # A loaded table is never replaced, so reading it needs no lock.
         table = self._association_tables.get(universe)
-        if table is None:
-            table = self._read_association_table(universe)
-            self._association_tables[universe] = table
+        if table is not None:
+            return table
+        with self._lock:
+            # Another thread may have loaded the table while this one waited.
+            table = self._association_tables.get(universe)
+            if table is None:
+                table = self._read_association_table(universe)
+                self._association_tables[universe] = table
         return table
 
     def _read_association_table(
@@ -225,13 +244,19 @@ class ProjectRoots:
         declaring_entry: local_deps_config.LocalDependencyEntry | None,
     ) -> tuple[define_path.DefinePath, config_loader.Config] | None:
         """Return a project root and its config, loading the config if needed, or None if the config cannot be used."""
+        # A loaded config is never replaced, so reading it needs no lock.
         root_config = self._configs.get(root)
-        if root_config is None:
-            if root in self._failed:
-                return None
-            root_config = self._load(root, declaring_entry)
+        if root_config is not None:
+            return root, root_config
+        with self._lock:
+            # Another thread may have loaded the config while this one waited.
+            root_config = self._configs.get(root)
             if root_config is None:
-                return None
+                if root in self._failed:
+                    return None
+                root_config = self._load(root, declaring_entry)
+                if root_config is None:
+                    return None
         return root, root_config
 
     def _load(
