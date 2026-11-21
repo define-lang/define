@@ -97,9 +97,14 @@ class ValueOperationResolver:
         """Initialize with the program's associations, the literal encoder, and no Value Operations."""
         self._associations = associations
         self._encoder = encoder
-        # The steps of each Value Operation whose literals could be encoded,
-        # by the Value Operation's full typed name.
-        self._value_operation_steps: dict[str, list[EncodedValueOperationStep]] = {}
+        # The steps of each valid Value Operation, by the Value Operation's
+        # full typed name.
+        self._value_operation_steps: dict[
+            str, Collection[abstract_program.ValueOperationStep]
+        ] = {}
+        # The diagnostics about the literals of each Value Operation that was
+        # compiled statement by statement.
+        self._literal_diagnostics: list[diagnostics.Diagnostic] = []
         # Each Value Operation's resolution for each set of encodings.
         self._resolutions: dict[_ValueOperationEncodings, ResolvedValueOperation] = {}
         # The lock that one thread holds while it works out the resolution of
@@ -110,8 +115,20 @@ class ValueOperationResolver:
         self,
         definition: ast.ValueOperationDefinition,
         steps: Collection[abstract_program.ValueOperationStep],
-    ) -> list[diagnostics.Diagnostic]:
-        """Add a valid Value Operation, encoding the literals in its steps, and return the diagnostics about the ones that cannot be encoded."""
+    ):
+        """Add a valid Value Operation."""
+        self._value_operation_steps[definition.typed_name.full_typed_name] = steps
+
+    def literal_diagnostics(self) -> list[diagnostics.Diagnostic]:
+        """Return the diagnostics about the literals of each Value Operation that was compiled statement by statement, once every definition is resolved."""
+        return self._literal_diagnostics
+
+    def _encode_steps(
+        self,
+        definition: ast.ValueOperationDefinition,
+        steps: Collection[abstract_program.ValueOperationStep],
+    ) -> list[EncodedValueOperationStep] | None:
+        """Return the Value Operation's steps with their literals encoded, or None if a literal cannot be encoded, and record the diagnostics about the literals."""
         enclosing_fqun = definition.typed_name.name_content.fqun
         encoded_steps: list[EncodedValueOperationStep] = []
         literal_diagnostics: list[diagnostics.Diagnostic] = []
@@ -131,13 +148,12 @@ class ValueOperationResolver:
                         arguments=arguments,
                     )
                 )
-        # A Value Operation with a literal that cannot be encoded has no steps,
-        # so executing it runs nothing.
-        if len(encoded_steps) == len(steps):
-            self._value_operation_steps[definition.typed_name.full_typed_name] = (
-                encoded_steps
-            )
-        return literal_diagnostics
+        # Each interface view has one value quality, and each value quality
+        # has one encoding, so each Value Operation is compiled at most once.
+        self._literal_diagnostics.extend(literal_diagnostics)
+        if len(encoded_steps) != len(steps):
+            return None
+        return encoded_steps
 
     def resolve_arguments[LookedAtT](
         self,
@@ -259,7 +275,7 @@ class ValueOperationResolver:
         steps = self._value_operation_steps.get(
             value_operation.typed_name.full_typed_name
         )
-        # A Value Operation with diagnostics has no steps.
+        # A Value Operation with validation diagnostics has no steps.
         if steps is None:
             return None
         self._associations.add_value_operation(value_operation)
@@ -279,10 +295,14 @@ class ValueOperationResolver:
         )
         if encoding_operation is not None:
             return encoding_operation
+        encoded_steps = self._encode_steps(value_operation, steps)
+        # A literal that cannot be encoded is reported.
+        if encoded_steps is None:
+            return None
         # Local views are added as they are defined.
         view_encodings = dict(interface_view_encodings)
         composite_steps: list[concrete_program.OperationStep] = []
-        for step in steps:
+        for step in encoded_steps:
             match step:
                 case ast.LocalViewDefinition():
                     encoding = self._local_view_encoding(step)

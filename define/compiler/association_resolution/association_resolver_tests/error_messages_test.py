@@ -585,6 +585,12 @@ def _value_quality_files(encodings: str | None) -> dict[str, str]:
             "        it may be read.\n"
             "    }\n"
             "}\n"
+            "\n"
+            "define the potential position<my.domain.com:my_lib:/test> {\n"
+            "    it may only contain particles where {\n"
+            "        it has the value</test>.\n"
+            "    }\n"
+            "}\n"
         ),
     }
     if encodings is not None:

@@ -1,0 +1,20 @@
+encoding_operations: {
+  operation_encodings: [
+    {
+      operation: "/test"
+      encoding_operation: {
+        name: "/test/ascii"
+        views: [
+          {
+            view: "number"
+            encoding: "standard:/number/integer/ascii"
+          },
+          {
+            view: "twice_negated"
+            encoding: "standard:/number/integer/ascii"
+          }
+        ]
+      }
+    }
+  ]
+}

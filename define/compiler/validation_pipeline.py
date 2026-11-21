@@ -69,7 +69,12 @@ def validate_and_resolve_program(
         program_result.encoding_operations
     )
     program_result.diagnostic_lists.extend(
-        [found_diagnostics, edge_diagnostics, encoding_operation_diagnostics]
+        [
+            found_diagnostics,
+            edge_diagnostics,
+            encoding_operation_diagnostics,
+            *resolver.lookup_diagnostic_lists(),
+        ]
     )
     return CompilerValidationResult(
         program_validation=program_result,

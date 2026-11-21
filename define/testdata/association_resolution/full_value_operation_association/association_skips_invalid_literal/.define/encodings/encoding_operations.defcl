@@ -1,0 +1,20 @@
+encoding_operations: {
+  operation_encodings: [
+    {
+      operation: "/bump"
+      encoding_operation: {
+        name: "/bump/ascii"
+        views: [
+          {
+            view: "a"
+            encoding: "standard:/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "standard:/number/integer/ascii"
+          }
+        ]
+      }
+    }
+  ]
+}

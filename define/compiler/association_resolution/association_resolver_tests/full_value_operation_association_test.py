@@ -298,3 +298,17 @@ def test_value_operation_universe_with_only_standard_values(
         _flip_runtime_operation(result.concrete_program)
         == "encoding_operation<my.domain.com:my_lib:/flip/ascii>"
     )
+
+
+def test_association_skips_invalid_literal(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == []
+
+
+def test_association_skips_local_view_without_encoding(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == []

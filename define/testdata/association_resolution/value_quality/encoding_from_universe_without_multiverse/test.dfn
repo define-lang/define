@@ -5,3 +5,9 @@ define the potential value<my.domain.com:my_lib:/test> {
         it may be read.
     }
 }
+
+define the potential position<my.domain.com:my_lib:/test> {
+    it may only contain particles where {
+        it has the value</test>.
+    }
+}

@@ -1,0 +1,20 @@
+# 'abc' cannot be an integer, but a Full Value Operation Association implements every execution of /bump, so the literal in /bump's statements is never encoded.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</bumped>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
+        create a particle in position<source>.
+        set the value of position<source> from literal<standard:/number>"1".
+        create a particle in position</bumped>.
+        execute the operation</bump> {
+            with view<a> looking at position<source>.
+            with view<result> looking at position</bumped>.
+        }
+    }
+}

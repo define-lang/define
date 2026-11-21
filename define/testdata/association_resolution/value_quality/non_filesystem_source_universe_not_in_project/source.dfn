@@ -4,3 +4,9 @@ define the potential value<other.example.com:lib:/test> {
         it may be read.
     }
 }
+
+define the potential position<other.example.com:lib:/test> {
+    it may only contain particles where {
+        it has the value</test>.
+    }
+}

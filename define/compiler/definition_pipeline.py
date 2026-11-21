@@ -7,6 +7,7 @@ import enum
 import functools
 import typing
 
+from define.compiler import ast
 from define.compiler.validator.reference_graph import reference_graph_validator
 
 if typing.TYPE_CHECKING:
@@ -99,16 +100,26 @@ class DefinitionPipeline:
                 )
                 return False
             case Stage.RESOLVE:
+                handle_result = functools.partial(self._handle_resolution, index)
+                # Validation skips positions, but resolution looks up the
+                # encoding of the value quality that each position holds.
+                if isinstance(definition, ast.PositionDefinition):
+                    self._pool.submit(
+                        self._resolver.resolve,
+                        definition,
+                        handle_result=handle_result,
+                    )
+                    return False
                 abstract = self._abstract_definitions.pop(index, None)
                 # A Value Operation whose steps validation could not work out,
-                # and every kind that validation skips, have nothing to
+                # and every other kind that validation skips, have nothing to
                 # resolve.
                 if abstract is None:
                     return True
                 self._pool.submit(
                     self._resolver.resolve,
                     abstract,
-                    handle_result=functools.partial(self._handle_resolution, index),
+                    handle_result=handle_result,
                 )
                 return False
 

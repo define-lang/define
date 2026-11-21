@@ -1,4 +1,4 @@
-# view<source> has no value quality, so a literal cannot know which value it becomes.
+# view<source> has no value quality, so a literal cannot know which value it becomes. The action executes /double, so its statements are compiled.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<source> {
         it is read.
@@ -32,6 +32,24 @@ define the operation<my.domain.com:my_lib:/double> {
         execute the operation</copy> {
             with view<source> looking at literal<standard:/number>"2".
             with view<target> looking at view<result>.
+        }
+    }
+}
+
+define the potential position<my.domain.com:my_lib:/doubled> {
+    it may only contain particles where {
+        it has the value<standard:/number/natural>.
+    }
+}
+
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</doubled>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</doubled>.
+        execute the operation</double> {
+            with view<result> looking at position</doubled>.
         }
     }
 }

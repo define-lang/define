@@ -39,7 +39,7 @@ class AssociationResolver:
     ):
         """Initialize with the program's definitions by full typed name, and the program's project roots, whose configs have the associations."""
         self._definitions = definitions
-        self._associations = associations.Associations(roots)
+        self._associations = associations.Associations(definitions, roots)
         self._literal_encoder = literal_encoder.LiteralEncoder(definitions)
         self._value_operations = value_operation_resolver.ValueOperationResolver(
             self._associations, self._literal_encoder
@@ -50,24 +50,38 @@ class AssociationResolver:
         ] = {}
 
     def resolve(
-        self, definition: abstract_program.AbstractDefinition
+        self,
+        definition: abstract_program.AbstractDefinition | ast.PositionDefinition,
     ) -> list[diagnostics.Diagnostic]:
         """Resolve a definition once it is validated and everything it references is resolved, and return the diagnostics about it."""
         match definition:
             case abstract_program.AbstractAction():
                 return self.resolve_action(definition)
             case abstract_program.AbstractValueOperation():
-                return self.resolve_value_operation(definition)
+                self._value_operations.add_value_operation(
+                    definition.definition, definition.steps
+                )
+                return []
             case ast.LogicalOperationDefinition():
                 return self.resolve_logical_operation(definition)
+            case ast.PositionDefinition():
+                self._look_up_value_encoding(definition.quality_assignment_block)
+                return []
+            # A value quality's encoding is looked up when something needs it.
             case ast.ValueDefinition():
-                return self.resolve_value(definition)
+                return []
 
-    def resolve_value(
-        self, definition: ast.ValueDefinition
-    ) -> list[diagnostics.Diagnostic]:
-        """Find the one encoding associated with a value quality, and return a diagnostic if it has none."""
-        return self._associations.add_value(definition)
+    def _look_up_value_encoding(
+        self, quality_assignment_block: ast.QualityAssignmentBlock | None
+    ):
+        """Look up the encoding of the value quality that a position's quality assignments assign, if they assign one, because code generation represents the position's values in that encoding."""
+        if (
+            quality_assignment_block is not None
+            and quality_assignment_block.value_quality is not None
+        ):
+            _ = self._associations.value_encoding(
+                quality_assignment_block.value_quality
+            )
 
     def resolve_logical_operation(
         self, definition: ast.LogicalOperationDefinition
@@ -75,23 +89,20 @@ class AssociationResolver:
         """Add a logical operation's associations with Encoding Operations, and return the diagnostics about them."""
         return self._associations.add_logical_operation(definition)
 
-    def resolve_value_operation(
-        self, value_operation: abstract_program.AbstractValueOperation
-    ) -> list[diagnostics.Diagnostic]:
-        """Encode the literals in the steps of a valid Value Operation, once everything it references is resolved, and return the diagnostics about the ones that cannot be encoded."""
-        return self._value_operations.add_value_operation(
-            value_operation.definition, value_operation.steps
-        )
-
     def resolve_action(
         self, action: abstract_program.AbstractAction
     ) -> list[diagnostics.Diagnostic]:
         """Encode the action's literals and choose what each of its executions of a Value Operation runs, and return the diagnostics about them."""
         definition = action.definition
+        for position in definition.interface_positions:
+            self._look_up_value_encoding(position.quality_assignment_block)
         action_diagnostics: list[diagnostics.Diagnostic] = []
         steps: list[concrete_program.ActionStep] = []
         for step in action.steps:
             match step:
+                case ast.LocalPositionDefinition():
+                    self._look_up_value_encoding(step.quality_assignment_block)
+                    steps.append(step)
                 case abstract_program.LiteralValueSetting():
                     value_setting, value_setting_diagnostics = (
                         self._literal_value_setting(definition, step)
@@ -124,11 +135,18 @@ class AssociationResolver:
         """Return the edge to each encoding and Encoding Operation that resolution chose, once every definition is resolved, with the diagnostics about the edges."""
         return self._associations.chosen_edges()
 
+    def lookup_diagnostic_lists(self) -> list[list[diagnostics.Diagnostic]]:
+        """Return the diagnostics that resolution found when something first needed an encoding, a Value Operation's associations, or a Value Operation's literals, once every definition is resolved."""
+        return [
+            *self._associations.lookup_diagnostic_lists(),
+            self._value_operations.literal_diagnostics(),
+        ]
+
     def resolve_encoding_operations(
         self, encoding_operations: Iterable[ast.EncodingOperationDefinition]
     ) -> list[diagnostics.Diagnostic]:
-        """Validate each loaded Encoding Operation and check each chosen association against the Encoding Operation it names, once the chosen ones are loaded, and return the diagnostics, with the diagnostics about the associations of each executed Value Operation."""
-        found = self._associations.value_operation_diagnostics()
+        """Validate each loaded Encoding Operation and check each chosen association against the Encoding Operation it names, once the chosen ones are loaded, and return the diagnostics."""
+        found: list[diagnostics.Diagnostic] = []
         for definition in encoding_operations:
             found.extend(self._resolve_encoding_operation(definition))
         for chosen in self._associations.chosen_encoding_operations():

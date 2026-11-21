@@ -1,0 +1,22 @@
+define the operation<my.domain.com:my_lib:/bump> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/integer>.
+        }
+    }
+
+    it does {
+        execute the operation<standard:/number/integer/add> {
+            with view<a> looking at view<a>.
+            with view<b> looking at literal<standard:/number>"abc".
+            with view<result> looking at view<result>.
+        }
+    }
+}

@@ -53,7 +53,9 @@ def test_concurrent_resolutions_work_out_each_key_once(
     assert value_quality is not None
     view_encodings = {view.typed_name.source_typed_name: value_quality}
     resolver = value_operation_resolver.ValueOperationResolver(
-        associations.Associations(project_roots.ProjectRoots(rendering.SourceMap())),
+        associations.Associations(
+            {}, project_roots.ProjectRoots(rendering.SourceMap())
+        ),
         literal_encoder.LiteralEncoder({}),
     )
     first_is_resolving = threading.Event()

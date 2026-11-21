@@ -1,0 +1,21 @@
+define the encoding_operation<my.domain.com:my_lib:/test/ascii> {
+    define the view<number> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/integer/ascii>.
+        }
+    }
+    define the view<twice_negated> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding<standard:/number/integer/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation<standard:/number/integer/ascii/negate> {
+            with view<a> looking at view<number>.
+            with view<result> looking at view<twice_negated>.
+        }
+    }
+}

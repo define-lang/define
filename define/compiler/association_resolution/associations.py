@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import threading
 import typing
 
 import msgspec
 
+from define.compiler import ast
 from define.compiler.config import project_config, project_roots
 from define.compiler.errors import association_resolution_diagnostics
 from define.compiler.graphs import reference_graph
@@ -13,7 +15,6 @@ from define.compiler.graphs import reference_graph
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Mapping
 
-    from define.compiler import ast
     from define.compiler.config import config_loader, encoding_operations_config
     from define.compiler.data_structures import define_path
     from define.compiler.errors import config_diagnostics, diagnostics
@@ -39,12 +40,26 @@ class Associations:
     Each Value Operation is added whenever resolution executes it.
     """
 
-    def __init__(self, roots: project_roots.ProjectRoots):
-        """Initialize with the program's project roots, whose configs have the associations, and nothing added."""
+    def __init__(
+        self,
+        definitions: Mapping[str, ast.GlobalDefinition],
+        roots: project_roots.ProjectRoots,
+    ):
+        """Initialize with the program's definitions by full typed name, the program's project roots, whose configs have the associations, and nothing added."""
+        self._definitions = definitions
         self._project_roots = roots
-        # The edge to each value quality's one encoding, by the value
-        # quality's full typed name.
-        self._value_encodings: dict[str, reference_graph.ReferenceEdge] = {}
+        # The edge to each value quality's one encoding, or None if it has
+        # none or is not defined, by the value quality's full typed name, once
+        # something needs the encoding.
+        self._value_encodings: dict[str, reference_graph.ReferenceEdge | None] = {}
+        # The diagnostics about the encoding of each value quality that
+        # something needed. Each value quality is looked up once, so each
+        # lookup adds its diagnostics once.
+        self._value_diagnostics: list[diagnostics.Diagnostic] = []
+        # The lock that one thread holds while it looks up each value
+        # quality's encoding, by the value quality's full typed name, so that
+        # each is looked up only once.
+        self._value_encoding_locks: dict[str, threading.Lock] = {}
         # Each Abstract Operation, and its associations, by the full typed
         # names of the encodings that they list, in order, by the Abstract
         # Operation's full typed name.
@@ -61,9 +76,9 @@ class Associations:
         # The full typed names of the Abstract Operations whose associations a
         # diagnostic in their project's config files keeps from being used.
         self._unusable_abstract_operations: set[str] = set()
-        # The diagnostics about each added Value Operation's associations, by
-        # the Value Operation's full typed name.
-        self._value_operation_diagnostics: dict[str, list[diagnostics.Diagnostic]] = {}
+        # The diagnostics about the associations of each added Value
+        # Operation.
+        self._value_operation_diagnostics: list[diagnostics.Diagnostic] = []
         # Each Encoding Operation that resolution chose, by the full typed
         # names of its Abstract Operation and of the encodings that its
         # association lists, which identify the association, so that each
@@ -71,50 +86,6 @@ class Associations:
         self._chosen_encoding_operations: dict[
             tuple[str, tuple[str, ...]], ChosenEncodingOperation
         ] = {}
-
-    def add_value(
-        self, definition: ast.ValueDefinition
-    ) -> list[diagnostics.Diagnostic]:
-        """Find the one encoding associated with a value quality, and return a diagnostic if it has none."""
-        name_content = definition.typed_name.name_content
-        table = self._project_roots.get_association_table(name_content.fqun.canonical)
-        if isinstance(table, project_roots.NoProjectConfig):
-            return [
-                association_resolution_diagnostics.NoProjectRootForAssociationsDiagnostic(
-                    location=definition.typed_name.location,
-                    value_quality=definition.typed_name.source_typed_name,
-                    config_path=str(project_config.CONFIG_FILE.path),
-                )
-            ]
-        value_encodings = table.value_encodings
-        # The diagnostic that keeps the project's Value Encoding Associations
-        # from being used is already reported.
-        if value_encodings is None:
-            return []
-        associated_encodings = value_encodings.get(name_content.path.name)
-        # Only the value quality's own universe can associate it with an
-        # encoding, so without one nothing can ever hold the value.
-        if associated_encodings is None:
-            return [
-                association_resolution_diagnostics.ValueHasNoEncodingDiagnostic(
-                    location=definition.typed_name.location,
-                    value_quality=definition.typed_name.source_typed_name,
-                )
-            ]
-        if len(associated_encodings) > 1:
-            # TODO: Choose between a value quality's encodings when each
-            # particle is created, as the spec allows.
-            raise NotImplementedError(
-                f"{definition.typed_name.source_typed_name} has more than one encoding:"
-                + f" {[encoding.full_typed_name for encoding in associated_encodings]}"
-            )
-        self._value_encodings[definition.typed_name.full_typed_name] = (
-            reference_graph.ReferenceEdge(
-                enclosing_definition=definition,
-                global_name_reference=associated_encodings[0],
-            )
-        )
-        return []
 
     def add_logical_operation(
         self, definition: ast.LogicalOperationDefinition
@@ -125,8 +96,8 @@ class Associations:
     def add_value_operation(self, definition: ast.ValueOperationDefinition):
         """Add a Value Operation's associations with Encoding Operations.
 
-        Adding the same Value Operation again changes nothing.
-        ``value_operation_diagnostics`` returns the diagnostics about the
+        Each Value Operation must be added at most once.
+        ``lookup_diagnostic_lists`` returns the diagnostics about the
         associations. A Value Operation with such a diagnostic has no usable
         associations.
         """
@@ -137,15 +108,11 @@ class Associations:
         # wrong association might have been the one that the execution needed.
         if association_diagnostics:
             self._unusable_abstract_operations.add(name)
-        # Each addition finds the same diagnostics, so only the first is kept.
-        _ = self._value_operation_diagnostics.setdefault(name, association_diagnostics)
+        self._value_operation_diagnostics.extend(association_diagnostics)
 
-    def value_operation_diagnostics(self) -> list[diagnostics.Diagnostic]:
-        """Return the diagnostics about the associations of every added Value Operation, once every definition is resolved."""
-        found: list[diagnostics.Diagnostic] = []
-        for association_diagnostics in self._value_operation_diagnostics.values():
-            found.extend(association_diagnostics)
-        return found
+    def lookup_diagnostic_lists(self) -> list[list[diagnostics.Diagnostic]]:
+        """Return the diagnostics about the encoding of each value quality that something needed, and about the associations of each added Value Operation, once every definition is resolved."""
+        return [self._value_diagnostics, self._value_operation_diagnostics]
 
     def _add_abstract_operation(
         self, definition: ast.AbstractOperationDefinition
@@ -192,11 +159,77 @@ class Associations:
     def value_encoding(
         self, value_quality: ast.GlobalTypedNameReference
     ) -> ast.GlobalTypedNameReference | None:
-        """Return the value quality's encoding, or None if it is not defined or has none, which is already reported."""
-        edge = self._value_encodings.get(value_quality.full_typed_name)
+        """Return the value quality's encoding, looking it up the first time something needs it, or None if it is not defined or has none.
+
+        ``lookup_diagnostics`` returns why a value quality has no encoding.
+        """
+        name = value_quality.full_typed_name
+        # A recorded encoding is never replaced, so reading it needs no lock.
+        if name not in self._value_encodings:
+            # CPython's dict.setdefault is atomic, with or without the GIL, so
+            # every thread that needs this value quality gets the same lock.
+            with self._value_encoding_locks.setdefault(name, threading.Lock()):
+                # Another thread may have looked it up while this one waited.
+                if name not in self._value_encodings:
+                    self._value_encodings[name] = self._look_up_value_encoding(name)
+        edge = self._value_encodings[name]
         if edge is None:
             return None
         return edge.global_name_reference
+
+    def _look_up_value_encoding(
+        self, name: str
+    ) -> reference_graph.ReferenceEdge | None:
+        """Look up the encoding of the value quality whose full typed name is name, and record its diagnostics."""
+        definition = self._definitions.get(name)
+        # Structural validation reports a value quality that is not defined,
+        # or a definition of another type.
+        if not isinstance(definition, ast.ValueDefinition):
+            return None
+        edge, found = self._value_encoding_edge(definition)
+        self._value_diagnostics.extend(found)
+        return edge
+
+    def _value_encoding_edge(
+        self, definition: ast.ValueDefinition
+    ) -> tuple[reference_graph.ReferenceEdge | None, list[diagnostics.Diagnostic]]:
+        """Return the edge to the one encoding associated with a value quality, or None with a diagnostic if it has none."""
+        name_content = definition.typed_name.name_content
+        table = self._project_roots.get_association_table(name_content.fqun.canonical)
+        if isinstance(table, project_roots.NoProjectConfig):
+            return None, [
+                association_resolution_diagnostics.NoProjectRootForAssociationsDiagnostic(
+                    location=definition.typed_name.location,
+                    value_quality=definition.typed_name.source_typed_name,
+                    config_path=str(project_config.CONFIG_FILE.path),
+                )
+            ]
+        value_encodings = table.value_encodings
+        # The diagnostic that keeps the project's Value Encoding Associations
+        # from being used is already reported.
+        if value_encodings is None:
+            return None, []
+        associated_encodings = value_encodings.get(name_content.path.name)
+        # Only the value quality's own universe can associate it with an
+        # encoding, so without one nothing can ever hold the value.
+        if associated_encodings is None:
+            return None, [
+                association_resolution_diagnostics.ValueHasNoEncodingDiagnostic(
+                    location=definition.typed_name.location,
+                    value_quality=definition.typed_name.source_typed_name,
+                )
+            ]
+        if len(associated_encodings) > 1:
+            # TODO: Choose between a value quality's encodings when each
+            # particle is created, as the spec allows.
+            raise NotImplementedError(
+                f"{definition.typed_name.source_typed_name} has more than one encoding:"
+                + f" {[encoding.full_typed_name for encoding in associated_encodings]}"
+            )
+        return reference_graph.ReferenceEdge(
+            enclosing_definition=definition,
+            global_name_reference=associated_encodings[0],
+        ), []
 
     def has_usable_associations(
         self,
@@ -246,7 +279,10 @@ class Associations:
         does not configure is left out. Each such universe is reported once
         for each config file, at the place in the file that names it first.
         """
-        candidates = list(self._value_encodings.values())
+        candidates: list[reference_graph.ReferenceEdge] = []
+        for edge in self._value_encodings.values():
+            if edge is not None:
+                candidates.append(edge)
         for chosen in self._chosen_encoding_operations.values():
             candidates.append(
                 reference_graph.ReferenceEdge(
@@ -287,10 +323,11 @@ class Associations:
         return edges, unconfigured.values()
 
     def value_encodings(self) -> Mapping[str, ast.GlobalTypedNameReference]:
-        """Return each value quality's encoding, by the value quality's full typed name, once every value quality is added."""
+        """Return the encoding of each value quality that something needed and that has one, by the value quality's full typed name, once every definition is resolved."""
         value_encodings: dict[str, ast.GlobalTypedNameReference] = {}
         for value_quality, edge in self._value_encodings.items():
-            value_encodings[value_quality] = edge.global_name_reference
+            if edge is not None:
+                value_encodings[value_quality] = edge.global_name_reference
         return value_encodings
 
 
