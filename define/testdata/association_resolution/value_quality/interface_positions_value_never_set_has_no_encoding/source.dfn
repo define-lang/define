@@ -1,0 +1,43 @@
+# A value quality that no encoding is associated with is reported when only a callee's interface positions have it and nothing sets a value of it.
+define the potential value<my.domain.com:my_lib:/flag> {
+    it supports the logical_operation<standard:/text/less_than> {
+        it may be read.
+    }
+}
+
+define the potential action<my.domain.com:my_lib:/copier> {
+    define the position<value> {
+        it may only contain particles where {
+            it has the value</flag>.
+        }
+    }
+    define the position<copy> {
+        it may only contain particles where {
+            it has the value</flag>.
+        }
+    }
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        set the value of position<copy> from position<value>.
+        destroy the particle in position<run>.
+    }
+}
+
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<copying> {
+            it may only contain particles where {
+                it has the action</copier>.
+            }
+        }
+        create a particle in position<copying>.
+        create a particle in position<copying>::action</copier>::position<value>.
+        create a particle in position<copying>::action</copier>::position<copy>.
+        create a particle in position<copying>::action</copier>::position<run>.
+        destroy the particle in position<copying>.
+    }
+}

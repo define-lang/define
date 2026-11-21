@@ -1989,6 +1989,28 @@ def test_knower_skips_destructor_requirement_below_position_its_callee_left_in_e
     ]
 
 
+def test_knower_skips_destructor_requirement_two_names_below_position_its_callee_left_in_error(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 13
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == "inner.dfn"
+    assert all_diags[0].position_name == "position<target>::position</shelf>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
+    assert action_graph(result.concrete_program) == [
+        (_INNER, _DESTRUCTOR),
+        (_MID, _INNER),
+        (_TEST, _MID),
+    ]
+
+
 def test_knower_skips_destructor_requirement_below_its_own_position_in_error(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

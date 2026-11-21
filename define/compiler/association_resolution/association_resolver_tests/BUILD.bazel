@@ -42,6 +42,7 @@ py_test(
         "//define/compiler/errors:syntax_errors",
         "//define/compiler/test_fixtures:validation_pipeline",
         "//define/compiler/validator:test_helpers",
+        "//define/compiler/validator/reference_graph:propagation_step",
         "@pypi//pytest",
     ],
 )

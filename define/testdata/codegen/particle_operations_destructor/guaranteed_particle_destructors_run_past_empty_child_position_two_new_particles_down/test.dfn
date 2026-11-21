@@ -1,0 +1,17 @@
+# action</maker> leaves position</q>::position</c>::position</a> empty and a particle with a Destructor in position</q>::position</c>::position</b>, so destroying the particle runs the Destructor.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<making> {
+            it may only contain particles where {
+                it has the action</maker>.
+            }
+        }
+        create a particle in position<making>.
+        create a particle in position<making>::action</maker>::position<target>.
+        create a particle in position<making>::action</maker>::position<run>.
+        destroy the particle in position<making>::action</maker>::position<target>.
+        destroy the particle in position<making>.
+    }
+}
