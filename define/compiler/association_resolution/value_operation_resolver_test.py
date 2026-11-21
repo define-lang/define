@@ -13,10 +13,11 @@ from collections import UserDict
 
 from crates.source_rendering.python import rendering
 from define.compiler.association_resolution import (
-    associations,
+    abstract_operation_associations,
     concrete_program,
     literal_encoder,
     value_operation_resolver,
+    value_quality_associations,
 )
 from define.compiler.config import project_roots
 from define.compiler.parsing import test_helpers
@@ -52,10 +53,10 @@ def test_concurrent_resolutions_work_out_each_key_once(
     value_quality = view.quality_assignment_block.value_quality
     assert value_quality is not None
     view_encodings = {view.typed_name.source_typed_name: value_quality}
+    roots = project_roots.ProjectRoots(rendering.SourceMap())
     resolver = value_operation_resolver.ValueOperationResolver(
-        associations.Associations(
-            {}, project_roots.ProjectRoots(rendering.SourceMap())
-        ),
+        abstract_operation_associations.AbstractOperationAssociations(roots),
+        value_quality_associations.ValueQualityAssociations({}, roots),
         literal_encoder.LiteralEncoder({}),
     )
     first_is_resolving = threading.Event()

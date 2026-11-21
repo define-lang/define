@@ -4,6 +4,20 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
+    name = "abstract_operation_associations",
+    srcs = ["abstract_operation_associations.py"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler/config:encoding_operations_config",
+        "//define/compiler/config:project_roots",
+        "//define/compiler/errors:association_resolution_diagnostics",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/graphs:reference_graph",
+        "@pypi//msgspec",
+    ],
+)
+
+py_library(
     name = "associated_encoding_operation_checks",
     srcs = ["associated_encoding_operation_checks.py"],
     deps = [
@@ -23,53 +37,23 @@ py_library(
         "//define/compiler/validator/reference_graph:__pkg__",
     ],
     deps = [
+        ":abstract_operation_associations",
         ":associated_encoding_operation_checks",
-        ":associations",
         ":concrete_program",
         ":encoding_operation_definition_validator",
         ":literal_encoder",
         ":value_operation_resolver",
-        "//define/compiler:ast",
-        "//define/compiler/config:project_roots",
-        "//define/compiler/errors:association_resolution_diagnostics",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/graphs:reference_graph",
-        "//define/compiler/graphs:reference_graph_order",
-        "//define/compiler/validator/reference_graph:abstract_program",
-    ],
-)
-
-py_library(
-    name = "associations",
-    srcs = ["associations.py"],
-    deps = [
+        ":value_quality_associations",
         "//define/compiler:ast",
         "//define/compiler/config:config_loader",
-        "//define/compiler/config:encoding_operations_config",
-        "//define/compiler/config:project_config",
         "//define/compiler/config:project_roots",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:association_resolution_diagnostics",
         "//define/compiler/errors:config_diagnostics",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/graphs:reference_graph",
-        "@pypi//msgspec",
-    ],
-)
-
-py_test(
-    name = "associations_test",
-    size = "small",
-    srcs = ["associations_test.py"],
-    deps = [
-        ":associations",
-        "//crates/source_rendering/python:rendering",
-        "//define/compiler:ast",
-        "//define/compiler/config:project_roots",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/graphs:reference_graph",
-        "//define/compiler/parsing:test_helpers",
-        "@pypi//pytest",
+        "//define/compiler/graphs:reference_graph_order",
+        "//define/compiler/validator/reference_graph:abstract_program",
     ],
 )
 
@@ -118,9 +102,10 @@ py_library(
     srcs = ["value_operation_resolver.py"],
     visibility = ["//define/compiler/validator/reference_graph:__pkg__"],
     deps = [
-        ":associations",
+        ":abstract_operation_associations",
         ":concrete_program",
         ":literal_encoder",
+        ":value_quality_associations",
         "//define/compiler:ast",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator/reference_graph:abstract_program",
@@ -133,10 +118,11 @@ py_test(
     size = "small",
     srcs = ["value_operation_resolver_test.py"],
     deps = [
-        ":associations",
+        ":abstract_operation_associations",
         ":concrete_program",
         ":literal_encoder",
         ":value_operation_resolver",
+        ":value_quality_associations",
         "//crates/source_rendering/python:rendering",
         "//define/compiler:ast",
         "//define/compiler/config:project_roots",
@@ -145,18 +131,48 @@ py_test(
     ],
 )
 
+py_library(
+    name = "value_quality_associations",
+    srcs = ["value_quality_associations.py"],
+    deps = [
+        "//define/compiler:ast",
+        "//define/compiler/config:project_config",
+        "//define/compiler/config:project_roots",
+        "//define/compiler/errors:association_resolution_diagnostics",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/graphs:reference_graph",
+    ],
+)
+
+py_test(
+    name = "value_quality_associations_test",
+    size = "small",
+    srcs = ["value_quality_associations_test.py"],
+    deps = [
+        ":value_quality_associations",
+        "//crates/source_rendering/python:rendering",
+        "//define/compiler:ast",
+        "//define/compiler/config:project_roots",
+        "//define/compiler/errors:diagnostics",
+        "//define/compiler/graphs:reference_graph",
+        "//define/compiler/parsing:test_helpers",
+        "@pypi//pytest",
+    ],
+)
+
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":abstract_operation_associations",
         ":associated_encoding_operation_checks",
         ":association_resolver",
-        ":associations",
-        ":associations_test",
         ":concrete_program",
         ":encoding_operation_definition_validator",
         ":literal_encoder",
         ":value_operation_resolver",
         ":value_operation_resolver_test",
+        ":value_quality_associations",
+        ":value_quality_associations_test",
     ],
 )
 

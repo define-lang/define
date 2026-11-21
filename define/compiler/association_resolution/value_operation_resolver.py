@@ -15,9 +15,10 @@ if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterable
 
     from define.compiler.association_resolution import (
-        associations as associations_module,
+        abstract_operation_associations,
+        literal_encoder,
+        value_quality_associations,
     )
-    from define.compiler.association_resolution import literal_encoder
     from define.compiler.errors import diagnostics
 
 
@@ -91,11 +92,13 @@ class ValueOperationResolver:
 
     def __init__(
         self,
-        associations: associations_module.Associations,
+        abstract_operation_associations: abstract_operation_associations.AbstractOperationAssociations,
+        value_quality_associations: value_quality_associations.ValueQualityAssociations,
         encoder: literal_encoder.LiteralEncoder,
     ):
-        """Initialize with the program's associations, the literal encoder, and no Value Operations."""
-        self._associations = associations
+        """Initialize with the program's associations of Abstract Operations and of value qualities, the literal encoder, and no Value Operations."""
+        self._abstract_operation_associations = abstract_operation_associations
+        self._value_quality_associations = value_quality_associations
         self._encoder = encoder
         # The steps of each valid Value Operation, by the Value Operation's
         # full typed name.
@@ -189,7 +192,9 @@ class ValueOperationResolver:
             # Structural validation reports a view without a value quality.
             if value_quality is None:
                 return None, literal_diagnostics
-            value_encoding = self._associations.value_encoding(value_quality)
+            value_encoding = self._value_quality_associations.value_encoding(
+                value_quality
+            )
             # A missing value quality, or one without an encoding, was already
             # reported.
             if value_encoding is None:
@@ -278,10 +283,12 @@ class ValueOperationResolver:
         # A Value Operation with validation diagnostics has no steps.
         if steps is None:
             return None
-        self._associations.add_value_operation(value_operation)
+        self._abstract_operation_associations.add_value_operation(value_operation)
         # Executing the Value Operation cannot be resolved for a reason that
         # is already reported.
-        if not self._associations.has_usable_associations(value_operation.typed_name):
+        if not self._abstract_operation_associations.has_usable_associations(
+            value_operation.typed_name
+        ):
             return None
         # A Full Value Operation Association is the whole implementation of
         # the Value Operation, so none of its statements is resolved.
@@ -290,8 +297,10 @@ class ValueOperationResolver:
             encodings.append(
                 interface_view_encodings[view.typed_name.source_typed_name]
             )
-        encoding_operation = self._associations.choose_encoding_operation(
-            value_operation.typed_name, _full_typed_names(encodings)
+        encoding_operation = (
+            self._abstract_operation_associations.choose_encoding_operation(
+                value_operation.typed_name, _full_typed_names(encodings)
+            )
         )
         if encoding_operation is not None:
             return encoding_operation
@@ -349,7 +358,7 @@ class ValueOperationResolver:
         # Structural validation reports a local view without a value quality.
         if value_quality is None:
             return None
-        return self._associations.value_encoding(value_quality)
+        return self._value_quality_associations.value_encoding(value_quality)
 
     def _encoding_operation_execution(
         self,
@@ -358,13 +367,17 @@ class ValueOperationResolver:
     ) -> concrete_program.OperationExecution | MissingEncodingOperation | None:
         """Return the execution of the Encoding Operation that is associated with a logical operation for the encodings of the views it looks at."""
         # Executing it cannot be resolved for a reason that is already reported.
-        if not self._associations.has_usable_associations(execution.logical_operation):
+        if not self._abstract_operation_associations.has_usable_associations(
+            execution.logical_operation
+        ):
             return None
         encodings: list[ast.GlobalTypedNameReference] = []
         for argument in execution.arguments:
             encodings.append(view_encodings[argument.looking_at.source_typed_name])
-        encoding_operation = self._associations.choose_encoding_operation(
-            execution.logical_operation, _full_typed_names(encodings)
+        encoding_operation = (
+            self._abstract_operation_associations.choose_encoding_operation(
+                execution.logical_operation, _full_typed_names(encodings)
+            )
         )
         if encoding_operation is None:
             missing_view_encodings: dict[str, ast.GlobalTypedNameReference] = {}

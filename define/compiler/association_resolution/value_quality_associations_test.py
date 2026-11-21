@@ -12,7 +12,7 @@ import typing
 from collections import UserDict
 
 from crates.source_rendering.python import rendering
-from define.compiler.association_resolution import associations
+from define.compiler.association_resolution import value_quality_associations
 from define.compiler.config import project_roots
 from define.compiler.parsing import test_helpers
 
@@ -49,7 +49,7 @@ def test_concurrent_lookups_look_up_each_value_encoding_once(
     assert quality_assignment_block is not None
     value_quality = quality_assignment_block.value_quality
     assert value_quality is not None
-    program_associations = associations.Associations(
+    associations = value_quality_associations.ValueQualityAssociations(
         {value_definition.typed_name.full_typed_name: value_definition},
         project_roots.ProjectRoots(rendering.SourceMap()),
     )
@@ -66,7 +66,7 @@ def test_concurrent_lookups_look_up_each_value_encoding_once(
         _ = finish_first.wait()
         return None, []
 
-    monkeypatch.setattr(program_associations, "_value_encoding_edge", look_up_slowly)
+    monkeypatch.setattr(associations, "_value_encoding_edge", look_up_slowly)
 
     class _Locks(UserDict[str, threading.Lock]):
         """Signals when a thread that found no encoding gets a value quality's lock."""
@@ -78,11 +78,11 @@ def test_concurrent_lookups_look_up_each_value_encoding_once(
                 second_found_no_encoding.set()
             return lock
 
-    monkeypatch.setattr(program_associations, "_value_encoding_locks", _Locks())
+    monkeypatch.setattr(associations, "_value_encoding_locks", _Locks())
     results: list[ast.GlobalTypedNameReference | None] = []
 
     def look_up():
-        results.append(program_associations.value_encoding(value_quality))
+        results.append(associations.value_encoding(value_quality))
 
     first = threading.Thread(target=look_up)
     first.start()

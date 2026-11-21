@@ -6,12 +6,13 @@ import typing
 
 from define.compiler import ast
 from define.compiler.association_resolution import (
+    abstract_operation_associations,
     associated_encoding_operation_checks,
-    associations,
     concrete_program,
     encoding_operation_definition_validator,
     literal_encoder,
     value_operation_resolver,
+    value_quality_associations,
 )
 from define.compiler.errors import association_resolution_diagnostics
 from define.compiler.validator.reference_graph import abstract_program
@@ -19,8 +20,9 @@ from define.compiler.validator.reference_graph import abstract_program
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Mapping
 
-    from define.compiler.config import project_roots
-    from define.compiler.errors import diagnostics
+    from define.compiler.config import config_loader, project_roots
+    from define.compiler.data_structures import define_path
+    from define.compiler.errors import config_diagnostics, diagnostics
     from define.compiler.graphs import reference_graph, reference_graph_order
 
 
@@ -39,10 +41,18 @@ class AssociationResolver:
     ):
         """Initialize with the program's definitions by full typed name, and the program's project roots, whose configs have the associations."""
         self._definitions = definitions
-        self._associations = associations.Associations(definitions, roots)
+        self._project_roots = roots
+        self._abstract_operation_associations = (
+            abstract_operation_associations.AbstractOperationAssociations(roots)
+        )
+        self._value_quality_associations = (
+            value_quality_associations.ValueQualityAssociations(definitions, roots)
+        )
         self._literal_encoder = literal_encoder.LiteralEncoder(definitions)
         self._value_operations = value_operation_resolver.ValueOperationResolver(
-            self._associations, self._literal_encoder
+            self._abstract_operation_associations,
+            self._value_quality_associations,
+            self._literal_encoder,
         )
         self._actions: dict[str, concrete_program.ConcreteAction] = {}
         self._encoding_operations: dict[
@@ -79,7 +89,7 @@ class AssociationResolver:
             quality_assignment_block is not None
             and quality_assignment_block.value_quality is not None
         ):
-            _ = self._associations.value_encoding(
+            _ = self._value_quality_associations.value_encoding(
                 quality_assignment_block.value_quality
             )
 
@@ -87,7 +97,7 @@ class AssociationResolver:
         self, definition: ast.LogicalOperationDefinition
     ) -> list[diagnostics.Diagnostic]:
         """Add a logical operation's associations with Encoding Operations, and return the diagnostics about them."""
-        return self._associations.add_logical_operation(definition)
+        return self._abstract_operation_associations.add_logical_operation(definition)
 
     def resolve_action(
         self, action: abstract_program.AbstractAction
@@ -132,13 +142,53 @@ class AssociationResolver:
     def chosen_edges(
         self,
     ) -> tuple[list[reference_graph.ReferenceEdge], Collection[diagnostics.Diagnostic]]:
-        """Return the edge to each encoding and Encoding Operation that resolution chose, once every definition is resolved, with the diagnostics about the edges."""
-        return self._associations.chosen_edges()
+        """Return the edge to each encoding and Encoding Operation that resolution chose, once every definition is resolved, with the diagnostics about the edges.
+
+        An edge to a universe that the project whose config writes the edge
+        does not configure is left out. Each such universe is reported once
+        for each config file, at the place in the file that names it first.
+        """
+        candidates = [
+            *self._value_quality_associations.encoding_edges(),
+            *self._abstract_operation_associations.chosen_edges(),
+        ]
+        edges: list[reference_graph.ReferenceEdge] = []
+        # The diagnostic for each config file and the universe that it names.
+        unconfigured: dict[
+            tuple[str | None, str],
+            config_diagnostics.ExternalUniverseNotConfiguredDiagnostic,
+        ] = {}
+        for edge in candidates:
+            reference = edge.global_name_reference
+            # An association is in the config of the project whose universe
+            # its references are written in, which is loaded.
+            _, root_config = typing.cast(
+                "tuple[define_path.DefinePath, config_loader.Config]",
+                self._project_roots.get_loaded_root_config(
+                    reference.enclosing_fqun.canonical
+                ),
+            )
+            diagnostic = root_config.check_universe_configured(reference.name_content)
+            if diagnostic is None:
+                edges.append(edge)
+                continue
+            location = diagnostic.location
+            key = (location.file_path, diagnostic.universe)
+            first = unconfigured.get(key)
+            # Resolution chooses associations concurrently, so the edges come
+            # in no fixed order.
+            if first is None or (location.line, location.column) < (
+                first.location.line,
+                first.location.column,
+            ):
+                unconfigured[key] = diagnostic
+        return edges, unconfigured.values()
 
     def lookup_diagnostic_lists(self) -> list[list[diagnostics.Diagnostic]]:
         """Return the diagnostics that resolution found when something first needed an encoding, a Value Operation's associations, or a Value Operation's literals, once every definition is resolved."""
         return [
-            *self._associations.lookup_diagnostic_lists(),
+            self._value_quality_associations.diagnostics(),
+            self._abstract_operation_associations.value_operation_diagnostics(),
             self._value_operations.literal_diagnostics(),
         ]
 
@@ -149,7 +199,9 @@ class AssociationResolver:
         found: list[diagnostics.Diagnostic] = []
         for definition in encoding_operations:
             found.extend(self._resolve_encoding_operation(definition))
-        for chosen in self._associations.chosen_encoding_operations():
+        for (
+            chosen
+        ) in self._abstract_operation_associations.chosen_encoding_operations():
             found.extend(
                 associated_encoding_operation_checks.check(
                     chosen.abstract_operation,
@@ -179,7 +231,7 @@ class AssociationResolver:
             definition_order=definition_order,
             actions=self._actions,
             encoding_operations=self._encoding_operations,
-            value_encodings=self._associations.value_encodings(),
+            value_encodings=self._value_quality_associations.value_encodings(),
             composite_value_operations=self._value_operations.composite_value_operations(),
         )
 
@@ -190,7 +242,9 @@ class AssociationResolver:
     ) -> tuple[
         concrete_program.LiteralValueSetting | None, list[diagnostics.Diagnostic]
     ]:
-        value_encoding = self._associations.value_encoding(value_setting.value_quality)
+        value_encoding = self._value_quality_associations.value_encoding(
+            value_setting.value_quality
+        )
         # A value quality without an encoding was already reported at its
         # definition.
         if value_encoding is None:
@@ -234,7 +288,7 @@ class AssociationResolver:
             # reported.
             if value_quality is None:
                 return None, argument_diagnostics
-            encoding = self._associations.value_encoding(value_quality)
+            encoding = self._value_quality_associations.value_encoding(value_quality)
             # A value quality without an encoding was already reported at its
             # definition.
             if encoding is None:
