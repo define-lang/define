@@ -5,7 +5,7 @@ go 1.27.4
 require (
 	cloud.google.com/go/longrunning v1.5.0
 	github.com/bazelbuild/remote-apis v0.0.0-20261110225606-e0c0554bfc8a
-	github.com/define-lang/define v0.0.0-20261121043622-668032941902
+	github.com/define-lang/define/tools/processtree v0.0.0-00010101000000-000000000000
 	golang.org/x/sys v0.50.0
 	google.golang.org/genproto/googleapis/bytestream v0.0.0-20261118221215-c8830f628b3f
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261118221215-c8830f628b3f
@@ -18,3 +18,5 @@ require (
 	golang.org/x/text v0.43.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20261012220534-4341edf3f941 // indirect
 )
+
+replace github.com/define-lang/define/tools/processtree => ../processtree
