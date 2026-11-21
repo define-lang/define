@@ -1,0 +1,20 @@
+# The library's project config has no universe name, so the library's associations cannot be read, and executing /number/negate with the library's encoding finds no Encoding Operation.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</final_result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<source>.
+        set the value of position<source> from literal<standard:/number>"5".
+        create a particle in position</final_result>.
+        execute the operation</flip> {
+            with view<a> looking at position<source>.
+            with view<result> looking at position</final_result>.
+        }
+    }
+}

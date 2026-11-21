@@ -628,6 +628,98 @@ The project says it has encoding associations, but .define/encodings/encodings.d
     ]
 
 
+def test_unsorted_encoding_operation_format(validate_project: ValidateProject):
+    encoding_operations = (
+        "encoding_operations: {\n"
+        "  operation_encodings: [\n"
+        "    {\n"
+        '      logical_operation: "standard:/number/negate"\n'
+        "      encoding_operation: {\n"
+        '        name: "/negate/digits"\n'
+        "        views: [\n"
+        "          {\n"
+        '            view: "a"\n'
+        '            encoding: "/digits"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "result"\n'
+        '            encoding: "/digits"\n'
+        "          }\n"
+        "        ]\n"
+        "      }\n"
+        "    },\n"
+        "    {\n"
+        '      logical_operation: "/combine"\n'
+        "      encoding_operation: {\n"
+        '        name: "/combine/integer"\n'
+        "        views: [\n"
+        "          {\n"
+        '            view: "a"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "b"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "result"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          }\n"
+        "        ]\n"
+        "      }\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+    )
+    result = validate_project(_association_files(encoding_operations))
+    assert [
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.sorted_diagnostics()
+    ] == [
+        """\
+File ".define/encodings/encoding_operations.defcl", line 20, column 26
+    logical_operation: "/combine"
+                       ^^^^^^^^^^
+Encoding Operation associations must list every 'logical_operation' before any 'operation', and must be sorted by name within each of those two groups, but 'logical_operation</combine>' comes after 'logical_operation<standard:/number/negate>'.""",
+    ]
+
+
+def test_association_without_own_definition_format(validate_project: ValidateProject):
+    encoding_operations = (
+        "encoding_operations: {\n"
+        "  operation_encodings: [\n"
+        "    {\n"
+        '      logical_operation: "standard:/number/negate"\n'
+        "      encoding_operation: {\n"
+        '        name: "/negate/integer"\n'
+        "        views: [\n"
+        "          {\n"
+        '            view: "a"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          },\n"
+        "          {\n"
+        '            view: "result"\n'
+        '            encoding: "standard:/number/integer/ascii"\n'
+        "          }\n"
+        "        ]\n"
+        "      }\n"
+        "    }\n"
+        "  ]\n"
+        "}\n"
+    )
+    result = validate_project(_association_files(encoding_operations))
+    assert [
+        diagnostic.format(result.program_validation.source_map)
+        for diagnostic in result.program_validation.sorted_diagnostics()
+    ] == [
+        """\
+File ".define/encodings/encoding_operations.defcl", line 4, column 27
+    logical_operation: "standard:/number/negate"
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+'logical_operation<standard:/number/negate>' is not in this project's universe, 'my.domain.com:my_lib'. An association of a logical operation from another universe must list an encoding from 'my.domain.com:my_lib' for at least one of the Encoding Operation's views, but this association does not.""",
+    ]
+
+
 def test_unsorted_value_encoding_format(validate_project: ValidateProject):
     encodings = (
         "encodings: {\n"

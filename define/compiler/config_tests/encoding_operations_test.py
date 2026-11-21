@@ -34,7 +34,7 @@ def test_resolves_encoding_operations(
     () = table_diagnostics
     assert test_helpers.associated_names(table.value_encodings) == {}
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
-        "logical_operation</number/add>": [
+        "logical_operation<test.example.com:my_lib:/number/add>": [
             (
                 "/number/integer/add",
                 test_helpers.encoding_operation_name_location("/number/integer/add", 6),
@@ -56,7 +56,7 @@ def test_resolves_encoding_operations(
                 ],
             ),
         ],
-        "logical_operation</number/negate>": [
+        "logical_operation<test.example.com:my_lib:/number/negate>": [
             (
                 "/number/integer/negate",
                 test_helpers.encoding_operation_name_location(
@@ -91,14 +91,36 @@ def test_missing_encoding_operations(
     )
 
 
-def test_logical_operation_in_another_universe(
+def test_logical_operation_in_another_universe_with_own_encoding(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    table, table_diagnostics = test_helpers.load_association_table()
+    () = table_diagnostics
+    assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
+        "logical_operation<other.com:lib:/number/add>": [
+            (
+                "/number/integer/add",
+                test_helpers.encoding_operation_name_location("/number/integer/add", 6),
+                [
+                    ("a", "/number/integer/ascii"),
+                    ("b", "/number/integer/ascii"),
+                    ("result", "/number/integer/ascii"),
+                ],
+            ),
+        ],
+    }
+
+
+def test_logical_operation_in_another_universe_without_own_encoding(
     testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
 ):
     monkeypatch.chdir(testdata_project_directory)
 
     table, table_diagnostics = test_helpers.load_association_table()
     (diagnostic,) = table_diagnostics
-    assert diagnostic == config_diagnostics.AssociationNameInAnotherUniverseDiagnostic(
+    assert diagnostic == config_diagnostics.AssociationWithoutOwnDefinitionDiagnostic(
         location=rendering.SourceLocation(
             line=4,
             column=27,
@@ -106,11 +128,27 @@ def test_logical_operation_in_another_universe(
             end_column=51,
             file_path=str(encoding_operations_config.CONFIG_FILE.path),
         ),
-        field_name="logical_operation",
-        name="other.com:lib:/number/add",
+        logical_operation="logical_operation<other.com:lib:/number/add>",
         fqun="test.example.com:my_lib",
     )
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {}
+
+
+def test_sorted_by_written_name(
+    testdata_project_directory: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.chdir(testdata_project_directory)
+
+    table, table_diagnostics = test_helpers.load_association_table()
+    # "/number/add" sorts before "other.com:lib:/number/negate" as written,
+    # but the full typed names sort the other way.
+    () = table_diagnostics
+    assert list(
+        test_helpers.associated_encoding_operations(table.encoding_operations)
+    ) == [
+        "logical_operation<test.example.com:my_lib:/number/add>",
+        "logical_operation<other.com:lib:/number/negate>",
+    ]
 
 
 def test_logical_operation_that_is_not_a_global_name(
@@ -191,7 +229,7 @@ def test_encoding_operation_that_is_not_a_global_name(
         )
     )
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
-        "logical_operation</number/multiply>": [
+        "logical_operation<test.example.com:my_lib:/number/multiply>": [
             (
                 "/number/integer/multiply",
                 test_helpers.encoding_operation_name_location(
@@ -246,7 +284,7 @@ def test_unsorted_logical_operations(
         previous_abstract_operation="logical_operation</number/negate>",
     )
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
-        "logical_operation</number/negate>": [
+        "logical_operation<test.example.com:my_lib:/number/negate>": [
             (
                 "/number/integer/negate",
                 test_helpers.encoding_operation_name_location(
@@ -255,7 +293,7 @@ def test_unsorted_logical_operations(
                 [("a", "/number/integer/ascii"), ("result", "/number/integer/ascii")],
             ),
         ],
-        "logical_operation</number/add>": [
+        "logical_operation<test.example.com:my_lib:/number/add>": [
             (
                 "/number/integer/add",
                 test_helpers.encoding_operation_name_location(
@@ -291,7 +329,7 @@ def test_duplicate_encoding_operation(
         ),
     )
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
-        "logical_operation</number/add>": [
+        "logical_operation<test.example.com:my_lib:/number/add>": [
             (
                 "/number/integer/add",
                 test_helpers.encoding_operation_name_location("/number/integer/add", 6),
@@ -358,7 +396,7 @@ def test_encoding_operation_in_unconfigured_universe(
     # association, so loading the config keeps both associations.
     assert table_diagnostics == []
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
-        "logical_operation</number/negate>": [
+        "logical_operation<test.example.com:my_lib:/number/negate>": [
             (
                 "other.com:lib:/number/natural/negate",
                 test_helpers.encoding_operation_name_location(
@@ -422,7 +460,7 @@ def test_resolves_value_operation_encoding_operations(
     () = table_diagnostics
     negate_views = [("a", "/number/integer/ascii"), ("result", "/number/integer/ascii")]
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
-        "logical_operation</number/negate>": [
+        "logical_operation<test.example.com:my_lib:/number/negate>": [
             (
                 "/number/integer/negate",
                 test_helpers.encoding_operation_name_location(
@@ -431,7 +469,7 @@ def test_resolves_value_operation_encoding_operations(
                 negate_views,
             ),
         ],
-        "operation</number/negate>": [
+        "operation<test.example.com:my_lib:/number/negate>": [
             (
                 "/number/integer/negate",
                 test_helpers.encoding_operation_name_location(
@@ -440,7 +478,7 @@ def test_resolves_value_operation_encoding_operations(
                 negate_views,
             ),
         ],
-        "operation</number/negate_twice>": [
+        "operation<test.example.com:my_lib:/number/negate_twice>": [
             (
                 "/number/integer/negate_twice",
                 test_helpers.encoding_operation_name_location(
@@ -471,7 +509,7 @@ def test_unsorted_abstract_operations(
     )
     negate_views = [("a", "/number/integer/ascii"), ("result", "/number/integer/ascii")]
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
-        "logical_operation</number/negate>": [
+        "logical_operation<test.example.com:my_lib:/number/negate>": [
             (
                 "/number/integer/negate",
                 test_helpers.encoding_operation_name_location(
@@ -480,7 +518,7 @@ def test_unsorted_abstract_operations(
                 negate_views,
             ),
         ],
-        "operation</number/add>": [
+        "operation<test.example.com:my_lib:/number/add>": [
             (
                 "/number/integer/negate",
                 test_helpers.encoding_operation_name_location(
@@ -534,7 +572,7 @@ def test_associations_with_same_encodings(
     )
     negate_views = [("a", "/number/integer/ascii"), ("result", "/number/integer/ascii")]
     assert test_helpers.associated_encoding_operations(table.encoding_operations) == {
-        "logical_operation</number/negate>": [
+        "logical_operation<test.example.com:my_lib:/number/negate>": [
             (
                 "/number/integer/negate",
                 test_helpers.encoding_operation_name_location(

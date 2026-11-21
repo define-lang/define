@@ -1,0 +1,12 @@
+encodings: {
+  value_encodings: [
+    {
+      value: "/digit_number"
+      encoding: "mv:define-lang.org:numbers:/number/digits"
+    },
+    {
+      value: "/number"
+      encoding: "standard:/number/integer/ascii"
+    }
+  ]
+}

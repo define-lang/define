@@ -19,6 +19,7 @@ from define.compiler.errors import config_diagnostics
 
 if typing.TYPE_CHECKING:
     from crates.source_rendering.python import rendering
+    from define.compiler import ast
     from define.compiler.config import local_deps_config
     from define.compiler.errors import diagnostics
 
@@ -69,7 +70,7 @@ class ProjectRoots:
     """The program's project roots, with their configs, the sub-roots that their configs list, and their associations.
 
     Loads each project config and each project's associations once, and
-    records the diagnostics that loading finds. Any thread may use it.
+    records the diagnostics that loading finds. It is thread-safe.
     """
 
     def __init__(self, source_map: rendering.SourceMap):
@@ -191,6 +192,32 @@ class ProjectRoots:
                 table = self._read_association_table(universe)
                 self._association_tables[universe] = table
         return table
+
+    def get_referenced_association_table(
+        self, reference: ast.GlobalTypedNameReference
+    ) -> association_config.AssociationTable | NoProjectConfig | None:
+        """Return the associations of the universe that reference names, loading that universe's project root as the project that writes reference sees it.
+
+        Returns None if the project that writes reference does not configure
+        the universe, or if the universe's config cannot be used. Either
+        problem is reported where reference is used.
+        """
+        universe = reference.effective_fqun.canonical
+        referencing = self._by_universe.get(reference.enclosing_fqun.canonical)
+        # Loading the named universe's project root needs the project root of
+        # the reference's universe. Source compiled in a non-filesystem
+        # context has no loaded project root, so a reference in that source
+        # skips the load.
+        if universe not in self._by_universe and referencing is not None:
+            referencing_root, referencing_config = referencing
+            if (
+                referencing_config.check_universe_configured(reference.name_content)
+                is not None
+            ):
+                return None
+            if self.load_sub_root_config(universe, referencing_root) is None:
+                return None
+        return self.get_association_table(universe)
 
     def _read_association_table(
         self, universe: str

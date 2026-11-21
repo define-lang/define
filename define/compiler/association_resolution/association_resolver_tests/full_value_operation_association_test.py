@@ -346,3 +346,22 @@ def test_unchosen_unknown_computer_operation(
     assert program.encoding_operations.keys() == {
         "encoding_operation<standard:/number/integer/ascii/negate>",
     }
+
+
+def test_chosen_encoding_operation_in_unconfigured_universe(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+            location=rendering.SourceLocation(
+                line=6,
+                column=33,
+                end_line=6,
+                end_column=45,
+                file_path="flip/ascii.dfn",
+            ),
+            universe="other.com:lib",
+            current_universe_name="my.domain.com:my_lib",
+        )
+    ]

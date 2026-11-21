@@ -1,0 +1,21 @@
+define the operation<my.domain.com:my_lib:/measure> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the value</number>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value</digit_number>.
+        }
+    }
+
+    it does {
+        execute the logical_operation<standard:/number/absolute_value> {
+            with view<a> looking at view<a>.
+            with view<result> looking at view<result>.
+        }
+    }
+}

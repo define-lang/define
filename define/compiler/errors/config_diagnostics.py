@@ -55,6 +55,28 @@ class AssociationNameInAnotherUniverseDiagnostic(diagnostics.Diagnostic):
         )
 
 
+class AssociationWithoutOwnDefinitionDiagnostic(diagnostics.Diagnostic):
+    """Diagnostic for an association of a logical operation in another universe that lists no encoding from the project's universe.
+
+    Its location is the logical operation's name.
+    """
+
+    # The logical operation's typed name, as the association writes it.
+    logical_operation: str
+    # The project's universe.
+    fqun: str
+
+    @typing.override
+    def render_message(self, _sources: rendering.SourceMap, /) -> str:
+        return (
+            f"'{self.logical_operation}' is not in this project's universe,"
+            + f" '{self.fqun}'. An association of a logical operation from"
+            + " another universe must list an encoding from"
+            + f" '{self.fqun}' for at least one of the Encoding Operation's"
+            + " views, but this association does not."
+        )
+
+
 class ConfigViolationDiagnostic(diagnostics.Diagnostic):
     """Diagnostic for the field of a config file at field_path, whose value breaks a rule of its schema."""
 

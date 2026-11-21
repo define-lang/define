@@ -1,0 +1,5 @@
+project: {
+  associations: {
+    has_encoding_operations: TRUE
+  }
+}

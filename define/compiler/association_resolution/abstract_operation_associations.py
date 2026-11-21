@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import functools
 import typing
 
 import msgspec
 
+from define.compiler import ast
 from define.compiler.config import project_roots
+from define.compiler.data_structures import computed_once
 from define.compiler.errors import association_resolution_diagnostics
 from define.compiler.graphs import reference_graph
 
 if typing.TYPE_CHECKING:
-    from define.compiler import ast
+    from collections.abc import Mapping, Sequence
+
     from define.compiler.config import encoding_operations_config
     from define.compiler.errors import diagnostics
 
@@ -43,9 +47,13 @@ class AbstractOperationAssociations:
     name for the encodings at an execution. Deciding what an execution of a
     Value Operation runs is ``ValueOperationResolver``'s job.
 
-    Each logical operation is added once, concurrently with others, and only
-    after everything that reads its associations is added. Each Value
-    Operation is added the first time resolution executes it.
+    A Value Operation's associations are in its own universe. A logical
+    operation's associations are in its own universe and in the universe of
+    each encoding at an execution.
+
+    It is thread-safe. Each logical operation must be added once, with
+    ``add_abstract_operation``, before ``choose_encoding_operation`` is called
+    for it.
     """
 
     def __init__(self, roots: project_roots.ProjectRoots):
@@ -58,9 +66,21 @@ class AbstractOperationAssociations:
         self._encoding_operations: dict[
             str, _AbstractOperationEncodingOperations | None
         ] = {}
-        # The diagnostics about the associations of each added Value
-        # Operation.
-        self._value_operation_diagnostics: list[diagnostics.Diagnostic] = []
+        # The diagnostics about the associations that resolution looks up
+        # when an execution first needs them: each added Value Operation's,
+        # and each logical operation's in each other universe.
+        self._lookup_diagnostics: list[diagnostics.Diagnostic] = []
+        # The usable associations of each logical operation in each universe
+        # other than its own, by the full typed name of the logical operation
+        # and the universe, once an execution needs them. None means that the
+        # universe's associations cannot be used, which is already reported.
+        self._other_universe_associations: computed_once.ComputedOnce[
+            tuple[str, str],
+            Mapping[
+                tuple[str, ...], encoding_operations_config.AssociatedEncodingOperation
+            ]
+            | None,
+        ] = computed_once.ComputedOnce()
         # Each Encoding Operation that resolution chose, by the full typed
         # names of its Abstract Operation and of the encodings that its
         # association lists, which identify the association, so that each
@@ -73,7 +93,7 @@ class AbstractOperationAssociations:
         """Add a Value Operation's associations with Encoding Operations.
 
         Each Value Operation must be added at most once.
-        ``value_operation_diagnostics`` returns the diagnostics about the
+        ``lookup_diagnostics`` returns the diagnostics about the
         associations. A Value Operation with such a diagnostic has no usable
         associations.
         """
@@ -83,11 +103,11 @@ class AbstractOperationAssociations:
         # wrong association might have been the one that the execution needed.
         if association_diagnostics:
             self._encoding_operations[definition.typed_name.full_typed_name] = None
-        self._value_operation_diagnostics.extend(association_diagnostics)
+        self._lookup_diagnostics.extend(association_diagnostics)
 
-    def value_operation_diagnostics(self) -> list[diagnostics.Diagnostic]:
-        """Return the diagnostics about the associations of each added Value Operation, once every definition is resolved."""
-        return self._value_operation_diagnostics
+    def lookup_diagnostics(self) -> list[diagnostics.Diagnostic]:
+        """Return the diagnostics about the associations that resolution looked up when an execution first needed them, once every definition is resolved."""
+        return self._lookup_diagnostics
 
     def add_abstract_operation(
         self, definition: ast.AbstractOperationDefinition
@@ -110,19 +130,12 @@ class AbstractOperationAssociations:
         if associated_encoding_operations is None:
             self._encoding_operations[definition.typed_name.full_typed_name] = None
             return []
-        encoding_operations: dict[
-            tuple[str, ...], encoding_operations_config.AssociatedEncodingOperation
-        ] = {}
-        association_diagnostics: list[diagnostics.Diagnostic] = []
-        abstract_operation = (definition.typed_name.name_type, name_content.path.name)
-        for encodings, association in associated_encoding_operations.get(
-            abstract_operation, {}
-        ).items():
-            view_diagnostics = _view_name_diagnostics(definition, association)
-            if view_diagnostics:
-                association_diagnostics.extend(view_diagnostics)
-                continue
-            encoding_operations[encodings] = association
+        encoding_operations, association_diagnostics = _usable_associations(
+            definition,
+            associated_encoding_operations.get(
+                definition.typed_name.full_typed_name, {}
+            ),
+        )
         self._encoding_operations[definition.typed_name.full_typed_name] = (
             definition,
             encoding_operations,
@@ -132,27 +145,53 @@ class AbstractOperationAssociations:
     def has_usable_associations(
         self,
         abstract_operation: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
+        encodings: Sequence[ast.GlobalTypedNameReference],
     ) -> bool:
-        """Whether the Abstract Operation's associations can be used, rather than a diagnostic in its project's config files, which is already reported, keeping them from being used."""
-        return self._encoding_operations[abstract_operation.full_typed_name] is not None
+        """Whether the associations that an execution of the Abstract Operation with ``encodings`` could use can be used, rather than an already reported diagnostic keeping some of them from being used.
+
+        Those are the Abstract Operation's associations in its own universe,
+        and a logical operation's associations in the universe of each
+        encoding.
+        """
+        own = self._encoding_operations[abstract_operation.full_typed_name]
+        if own is None:
+            return False
+        definition, _ = own
+        if not isinstance(definition, ast.LogicalOperationDefinition):
+            return True
+        for associations in self._associations_in_other_universes(
+            definition, encodings
+        ):
+            if associations is None:
+                return False
+        return True
 
     def choose_encoding_operation(
         self,
         abstract_operation: ast.GlobalTypedName[ast.GlobalNameContent[ast.Fqun | None]],
-        encodings: tuple[str, ...],
+        encodings: Sequence[ast.GlobalTypedNameReference],
     ) -> ast.GlobalTypedNameReference | None:
-        """Return the Encoding Operation whose association with the Abstract Operation lists the encodings with the full typed names ``encodings``, in their order, if one does, and record that resolution chose it.
+        """Return the Encoding Operation whose association with the Abstract Operation lists ``encodings``, in their order, if one does, and record that resolution chose it.
 
-        The Abstract Operation's associations must be usable.
+        The associations of a logical operation are in its own universe or in
+        the universe of one of the encodings. ``has_usable_associations``
+        must be true for the Abstract Operation and ``encodings``.
         """
         definition, encoding_operations = typing.cast(
             "_AbstractOperationEncodingOperations",
             self._encoding_operations[abstract_operation.full_typed_name],
         )
-        association = encoding_operations.get(encodings)
+        key_encodings = tuple(encoding.full_typed_name for encoding in encodings)
+        association = encoding_operations.get(key_encodings)
+        if association is None and isinstance(
+            definition, ast.LogicalOperationDefinition
+        ):
+            association = self._other_universe_association(
+                definition, encodings, key_encodings
+            )
         if association is None:
             return None
-        key = (abstract_operation.full_typed_name, encodings)
+        key = (abstract_operation.full_typed_name, key_encodings)
         # Resolution chooses concurrently, but every choice of this association
         # records the same value, so concurrent writes of a key are harmless and
         # need no lock.
@@ -162,6 +201,85 @@ class AbstractOperationAssociations:
                 encoding_operation_association=association,
             )
         return association.reference
+
+    def _other_universe_association(
+        self,
+        definition: ast.LogicalOperationDefinition,
+        encodings: Sequence[ast.GlobalTypedNameReference],
+        key_encodings: tuple[str, ...],
+    ) -> encoding_operations_config.AssociatedEncodingOperation | None:
+        """Return the association of the logical operation that lists the encodings, from the universe of one of the encodings other than the logical operation's, if one makes it."""
+        # At most one universe can make a matching association. A
+        # universe that makes one must see the logical operation and every
+        # listed encoding, and must define one of them, so two such universes
+        # would each depend on the other. Project dependencies cannot form a
+        # cycle, so the first match is the only one.
+        for associations in self._associations_in_other_universes(
+            definition, encodings
+        ):
+            # The caller checked that every universe's associations are
+            # usable.
+            association = typing.cast(
+                "Mapping[tuple[str, ...], encoding_operations_config.AssociatedEncodingOperation]",
+                associations,
+            ).get(key_encodings)
+            if association is not None:
+                return association
+        return None
+
+    def _associations_in_other_universes(
+        self,
+        definition: ast.LogicalOperationDefinition,
+        encodings: Sequence[ast.GlobalTypedNameReference],
+    ) -> list[
+        Mapping[tuple[str, ...], encoding_operations_config.AssociatedEncodingOperation]
+        | None
+    ]:
+        """Return the logical operation's usable associations in the universe of each encoding that is not in the logical operation's own universe."""
+        own_universe = definition.typed_name.name_content.fqun.canonical
+        found: list[
+            Mapping[
+                tuple[str, ...], encoding_operations_config.AssociatedEncodingOperation
+            ]
+            | None
+        ] = []
+        for encoding in encodings:
+            universe = encoding.effective_fqun.canonical
+            # The associations in the logical operation's own universe were
+            # read when it was added.
+            if universe == own_universe:
+                continue
+            key = (definition.typed_name.full_typed_name, universe)
+            look_up = functools.partial(
+                self._look_up_associations_in_universe, definition, encoding
+            )
+            found.append(self._other_universe_associations.get(key, look_up))
+        return found
+
+    def _look_up_associations_in_universe(
+        self,
+        definition: ast.LogicalOperationDefinition,
+        encoding: ast.GlobalTypedNameReference,
+    ) -> (
+        Mapping[tuple[str, ...], encoding_operations_config.AssociatedEncodingOperation]
+        | None
+    ):
+        """Look up the usable associations of the logical operation in the universe of the encoding, or None if they cannot be used, and record their diagnostics."""
+        table = self._project_roots.get_referenced_association_table(encoding)
+        # A universe that cannot be loaded, or whose Encoding Operation
+        # associations cannot be used, is already reported.
+        if (
+            table is None
+            or isinstance(table, project_roots.NoProjectConfig)
+            or table.encoding_operations is None
+        ):
+            return None
+        associations, association_diagnostics = _usable_associations(
+            definition,
+            table.encoding_operations.get(definition.typed_name.full_typed_name, {}),
+        )
+        self._lookup_diagnostics.extend(association_diagnostics)
+        return associations
 
     def chosen_encoding_operations(self) -> list[ChosenEncodingOperation]:
         """Return each Encoding Operation that resolution chose, with the association that chose it, once every definition is resolved."""
@@ -178,6 +296,29 @@ class AbstractOperationAssociations:
                 )
             )
         return edges
+
+
+def _usable_associations(
+    definition: ast.AbstractOperationDefinition,
+    associations: Mapping[
+        tuple[str, ...], encoding_operations_config.AssociatedEncodingOperation
+    ],
+) -> tuple[
+    dict[tuple[str, ...], encoding_operations_config.AssociatedEncodingOperation],
+    list[diagnostics.Diagnostic],
+]:
+    """Return the associations of the Abstract Operation whose views match its views, and a diagnostic for each way the others do not."""
+    usable: dict[
+        tuple[str, ...], encoding_operations_config.AssociatedEncodingOperation
+    ] = {}
+    association_diagnostics: list[diagnostics.Diagnostic] = []
+    for encodings, association in associations.items():
+        view_diagnostics = _view_name_diagnostics(definition, association)
+        if view_diagnostics:
+            association_diagnostics.extend(view_diagnostics)
+            continue
+        usable[encodings] = association
+    return usable, association_diagnostics
 
 
 def _view_name_diagnostics(

@@ -20,7 +20,7 @@ if typing.TYPE_CHECKING:
 class ValueQualityAssociations:
     """Each value quality's encoding, which association resolution looks up the first time something needs it.
 
-    Any thread may look up an encoding.
+    Looking up an encoding is thread-safe.
     """
 
     def __init__(

@@ -181,7 +181,7 @@ class AssociationResolver:
         """Return the diagnostics that resolution found when something first needed an encoding, a Value Operation's associations, or a Value Operation's literals, once every definition is resolved."""
         return [
             self._value_quality_associations.diagnostics(),
-            self._abstract_operation_associations.value_operation_diagnostics(),
+            self._abstract_operation_associations.lookup_diagnostics(),
             self._value_operations.literal_diagnostics(),
         ]
 

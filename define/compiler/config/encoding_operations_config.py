@@ -1,4 +1,4 @@
-"""The encoding operations config, .define/encodings/encoding_operations.defcl, which associates the project's Abstract Operations with Encoding Operations."""
+"""The encoding operations config, .define/encodings/encoding_operations.defcl, which associates Abstract Operations with Encoding Operations."""
 
 from __future__ import annotations
 
@@ -47,14 +47,12 @@ class AssociatedEncodingOperation(msgspec.Struct, frozen=True):
     views: tuple[AssociatedView, ...]
 
 
-# A project's associations of its Abstract Operations with Encoding
-# Operations. The Encoding Operations associated with each Abstract Operation
-# are keyed by the Abstract Operation's name type and short global name, and
-# then by the full typed names of the encodings that each association lists,
-# in order.
+# A project's associations of Abstract Operations with Encoding Operations.
+# The Encoding Operations associated with each Abstract Operation are keyed by
+# the Abstract Operation's full typed name, and then by the full typed names of
+# the encodings that each association lists, in order.
 type EncodingOperationAssociations = Mapping[
-    tuple[name_types.NameType, str],
-    Mapping[tuple[str, ...], AssociatedEncodingOperation],
+    str, Mapping[tuple[str, ...], AssociatedEncodingOperation]
 ]
 
 # The associations of a project that has no Encoding Operation associations.
@@ -76,7 +74,7 @@ class EncodingOperationsConfigReader(
         EncodingOperationAssociations | None,
         list[diagnostics.FormattableDiagnostic],
     ]:
-        """Load and validate the project's Encoding Operation associations with its Abstract Operations.
+        """Load and validate the project's associations of Abstract Operations with Encoding Operations.
 
         Returns the associations, or None if a diagnostic keeps the
         associations from being used, with the associations' diagnostics. The
@@ -131,10 +129,8 @@ class _AbstractOperation(msgspec.Struct, frozen=True, order=True):
 class _ReadAssociation(msgspec.Struct, frozen=True):
     """An association that is not ignored."""
 
-    # The name type of the association's Abstract Operation.
-    name_type: name_types.NameType
-    # The short global name of the association's Abstract Operation.
-    short_name: str
+    # The full typed name of the association's Abstract Operation.
+    abstract_operation: str
     # The full typed names of the encodings that the association lists, in
     # order.
     encodings: tuple[str, ...]
@@ -210,7 +206,9 @@ class _AssociationsReader:
       of the same Abstract Operation.
     - An association whose Abstract Operation, Encoding Operation, or listed
       view encoding is not a valid name for it.
-    - An association whose Abstract Operation is in another universe.
+    - An association of a Value Operation in another universe.
+    - An association of a logical operation in another universe that lists no
+      encoding from the project's universe.
     """
 
     def __init__(
@@ -238,18 +236,13 @@ class _AssociationsReader:
     ) -> tuple[EncodingOperationAssociations, list[diagnostics.FormattableDiagnostic]]:
         """Return the Encoding Operations of each Abstract Operation from the associations, with the diagnostics about the associations."""
         encoding_operations: dict[
-            tuple[name_types.NameType, str],
-            dict[tuple[str, ...], AssociatedEncodingOperation],
+            str, dict[tuple[str, ...], AssociatedEncodingOperation]
         ] = {}
         for index, association in enumerate(associations):
             read_association = self._read_association(index, association)
             if read_association is None:
                 continue
-            abstract_operation = (
-                read_association.name_type,
-                read_association.short_name,
-            )
-            encoding_operations.setdefault(abstract_operation, {})[
+            encoding_operations.setdefault(read_association.abstract_operation, {})[
                 read_association.encodings
             ] = read_association.encoding_operation
         return encoding_operations, self._diagnostics
@@ -261,9 +254,13 @@ class _AssociationsReader:
         field_path = ("encoding_operations", "operation_encodings", index)
         abstract_operation = _abstract_operation(association)
         abstract_operation_path = (*field_path, abstract_operation.name_type.value)
-        short_name = self._check_abstract_operation_name(
-            abstract_operation, abstract_operation_path
+        name, name_diagnostics = global_names.config_global_name(
+            self._file,
+            abstract_operation_path,
+            abstract_operation.written_name,
+            self._fqun.canonical,
         )
+        self._diagnostics.extend(name_diagnostics)
         encoding_operation, encoding_operation_diagnostics = _encoding_operation(
             self._file,
             (*field_path, "encoding_operation"),
@@ -277,14 +274,19 @@ class _AssociationsReader:
             index, field_path, abstract_operation, written_encoding_operation
         ):
             return None
-        if short_name is None or encoding_operation is None:
+        if name is None or encoding_operation is None:
+            return None
+        if not self._check_abstract_operation_universe(
+            abstract_operation, name, encoding_operation
+        ):
             return None
         encodings: list[str] = []
         for view in encoding_operation.views:
             encodings.append(view.encoding.full_typed_name)
         read_association = _ReadAssociation(
-            name_type=abstract_operation.name_type,
-            short_name=short_name,
+            abstract_operation=global_names.associated_reference(
+                abstract_operation.name_type, name, self._fqun
+            ).full_typed_name,
             encodings=tuple(encodings),
             encoding_operation=encoding_operation,
         )
@@ -292,29 +294,36 @@ class _AssociationsReader:
             return None
         return read_association
 
-    def _check_abstract_operation_name(
+    def _check_abstract_operation_universe(
         self,
         abstract_operation: _AbstractOperation,
-        abstract_operation_path: config_diagnostics.FieldPath,
-    ) -> str | None:
-        """Return the short global name of abstract_operation, or None if the name is not valid or is in another universe."""
-        canonical = self._fqun.canonical
-        name, name_diagnostics = global_names.config_global_name(
-            self._file,
-            abstract_operation_path,
-            abstract_operation.written_name,
-            canonical,
-        )
-        self._diagnostics.extend(name_diagnostics)
-        if name is None:
-            return None
-        universe_diagnostic = global_names.check_global_name_in_this_universe(
-            abstract_operation.name_type.value, name, canonical
-        )
-        if universe_diagnostic is not None:
+        name: ast.ReferenceGlobalNameContent,
+        encoding_operation: AssociatedEncodingOperation,
+    ) -> bool:
+        """Return whether the project's universe may make an association of the Abstract Operation named name, and report the association if it may not."""
+        if abstract_operation.name_type is name_types.NameType.OPERATION:
+            universe_diagnostic = global_names.check_global_name_in_this_universe(
+                abstract_operation.name_type.value, name, self._fqun.canonical
+            )
+            if universe_diagnostic is None:
+                return True
             self._diagnostics.append(universe_diagnostic)
-            return None
-        return name.path.name
+            return False
+        # `config_global_name` requires a name in the project's universe to
+        # use the short form, so only a name in another universe has an FQUN.
+        if name.fqun is None:
+            return True
+        for view in encoding_operation.views:
+            if view.encoding.name_content.fqun is None:
+                return True
+        self._diagnostics.append(
+            config_diagnostics.AssociationWithoutOwnDefinitionDiagnostic(
+                location=name.location,
+                logical_operation=abstract_operation.written_typed_name,
+                fqun=self._fqun.canonical,
+            )
+        )
+        return False
 
     def _check_sorted(
         self,

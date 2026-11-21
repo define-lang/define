@@ -155,6 +155,7 @@ py_library(
         ":encoding_operations_config",
         ":local_deps_config",
         "//crates/source_rendering/python:rendering",
+        "//define/compiler:ast",
         "//define/compiler:constants",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:config_diagnostics",

@@ -1,0 +1,10 @@
+define the potential value<my.domain.com:my_lib:/digit_number> {
+    it supports the logical_operation<standard:/number/absolute_value> {
+        it may be read.
+        it may be written.
+    }
+    it supports the logical_operation<standard:/number/negate> {
+        it may be read.
+        it may be written.
+    }
+}

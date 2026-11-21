@@ -1,0 +1,20 @@
+# /flip's Full Value Operation Association chooses /flip/ascii, which is loaded only because the association chose it. /flip/ascii names an encoding in a universe that the project does not configure.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</final_result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<source> {
+            it may only contain particles where {
+                it has the value</number>.
+            }
+        }
+        create a particle in position<source>.
+        set the value of position<source> from literal<standard:/number>"1".
+        create a particle in position</final_result>.
+        execute the operation</flip> {
+            with view<a> looking at position<source>.
+            with view<result> looking at position</final_result>.
+        }
+    }
+}

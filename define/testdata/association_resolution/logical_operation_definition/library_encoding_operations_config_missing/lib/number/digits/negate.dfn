@@ -1,0 +1,22 @@
+define the encoding_operation<mv:define-lang.org:numbers:/number/digits/negate> {
+    define the view<a> {
+        it is read.
+        it may only contain particles where {
+            it has the encoding<standard:/number/integer/ascii>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the encoding</number/digits>.
+            it has the encoding<standard:/number/integer/ascii>.
+        }
+    }
+
+    it does {
+        execute the encoding_operation<standard:/number/integer/ascii/negate> {
+            with view<a> looking at view<a>.
+            with view<result> looking at view<result>.
+        }
+    }
+}

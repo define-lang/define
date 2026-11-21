@@ -2226,7 +2226,7 @@ One Abstract Operation may be associated with several Encoding Operations, and
 an Encoding Operation with several Abstract Operations. Associating the same
 Abstract Operation and Encoding Operation together more than once is an error.
 The associations must be sorted lexicographically by the Abstract Operation's
-full typed name.
+typed name.
 
 ##### Rules for Encoding Operation Associations
 

@@ -274,18 +274,15 @@ class ValueOperationResolver:
         # wait for each other.
         return self._resolutions.get(
             key,
-            lambda: self._resolve_uncached_value_operation(
-                value_operation, encoding_names, encodings
-            ),
+            lambda: self._resolve_uncached_value_operation(value_operation, encodings),
         )
 
     def _resolve_uncached_value_operation(
         self,
         value_operation: ast.ValueOperationDefinition,
-        encoding_names: tuple[str, ...],
         encodings: list[ast.GlobalTypedNameReference],
     ) -> ResolvedValueOperation:
-        """Work out what executing the Value Operation runs when its interface views have ``encodings``, in their order, whose full typed names are ``encoding_names``."""
+        """Work out what executing the Value Operation runs when its interface views have ``encodings``, in their order."""
         steps = self._value_operation_steps.get(
             value_operation.typed_name.full_typed_name
         )
@@ -296,14 +293,14 @@ class ValueOperationResolver:
         # Executing the Value Operation cannot be resolved for a reason that
         # is already reported.
         if not self._abstract_operation_associations.has_usable_associations(
-            value_operation.typed_name
+            value_operation.typed_name, encodings
         ):
             return None
         # A Full Value Operation Association is the whole implementation of
         # the Value Operation, so none of its statements is resolved.
         encoding_operation = (
             self._abstract_operation_associations.choose_encoding_operation(
-                value_operation.typed_name, encoding_names
+                value_operation.typed_name, encodings
             )
         )
         if encoding_operation is not None:
@@ -376,17 +373,17 @@ class ValueOperationResolver:
         view_encodings: dict[str, ast.GlobalTypedNameReference],
     ) -> concrete_program.OperationExecution | MissingEncodingOperation | None:
         """Return the execution of the Encoding Operation that is associated with a logical operation for the encodings of the views it looks at."""
-        # Executing it cannot be resolved for a reason that is already reported.
-        if not self._abstract_operation_associations.has_usable_associations(
-            execution.logical_operation
-        ):
-            return None
         encodings: list[ast.GlobalTypedNameReference] = []
         for argument in execution.arguments:
             encodings.append(view_encodings[argument.looking_at.source_typed_name])
+        # Executing it cannot be resolved for a reason that is already reported.
+        if not self._abstract_operation_associations.has_usable_associations(
+            execution.logical_operation, encodings
+        ):
+            return None
         encoding_operation = (
             self._abstract_operation_associations.choose_encoding_operation(
-                execution.logical_operation, _full_typed_names(encodings)
+                execution.logical_operation, encodings
             )
         )
         if encoding_operation is None:

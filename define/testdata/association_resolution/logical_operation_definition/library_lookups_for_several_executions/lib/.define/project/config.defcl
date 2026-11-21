@@ -1,0 +1,6 @@
+project: {
+  universe_name: "mv:define-lang.org:numbers"
+  associations: {
+    has_encoding_operations: TRUE
+  }
+}

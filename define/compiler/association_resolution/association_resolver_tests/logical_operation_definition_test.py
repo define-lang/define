@@ -640,3 +640,166 @@ def test_non_filesystem_source_logical_operation_without_project_root(
             config_path=".define/project/config.defcl",
         )
     ]
+
+
+def test_library_associates_standard_logical_operation(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_validation)
+    assert result.concrete_program.encoding_operations.keys() == {
+        "encoding_operation<mv:define-lang.org:numbers:/number/digits/negate>",
+        "encoding_operation<standard:/number/integer/ascii/negate>",
+    }
+
+
+def test_unused_library_encoding_operations(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert_no_errors(result.program_validation)
+    assert result.concrete_program.encoding_operations.keys() == {
+        "encoding_operation<standard:/number/integer/ascii/negate>",
+    }
+
+
+def test_library_lookups_for_several_executions(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    # One worker makes the library's universe already loaded for the second
+    # lookup in it.
+    result = validate_testdata_project_with_reference_graph(max_workers=1)
+    assert result.program_validation.sorted_diagnostics() == [
+        association_resolution_diagnostics.MissingEncodingOperationDiagnostic(
+            location=rendering.SourceLocation(
+                line=27, column=21, end_line=27, end_column=39, file_path="test.dfn"
+            ),
+            logical_operation_name="logical_operation<standard:/number/absolute_value>",
+            view_encodings={
+                "view<a>": "encoding<standard:/number/integer/ascii>",
+                "view<result>": "encoding<mv:define-lang.org:numbers:/number/digits>",
+            },
+            execution_stack=[
+                association_resolution_diagnostics.OperationExecutionStep(
+                    executing_name="action<my.domain.com:my_lib:/test>",
+                    executed_name="operation</measure>",
+                    location=rendering.SourceLocation(
+                        line=27,
+                        column=21,
+                        end_line=27,
+                        end_column=39,
+                        file_path="test.dfn",
+                    ),
+                ),
+                association_resolution_diagnostics.OperationExecutionStep(
+                    executing_name="operation</measure>",
+                    executed_name="logical_operation<standard:/number/absolute_value>",
+                    location=rendering.SourceLocation(
+                        line=16,
+                        column=21,
+                        end_line=16,
+                        end_column=70,
+                        file_path="measure.dfn",
+                    ),
+                ),
+            ],
+        )
+    ]
+
+
+def test_library_encoding_operations_config_missing(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        config_diagnostics.EncodingOperationsConfigNotFoundDiagnostic(
+            location=rendering.SourceLocation(
+                line=4,
+                column=30,
+                end_line=4,
+                end_column=33,
+                file_path="lib/.define/project/config.defcl",
+            ),
+            encoding_operations_config_path="lib/.define/encodings/encoding_operations.defcl",
+        ),
+    ]
+
+
+def test_library_project_config_unusable(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        config_diagnostics.ConfigViolationDiagnostic(
+            location=rendering.SourceLocation(
+                line=1,
+                column=1,
+                end_line=1,
+                end_column=7,
+                file_path="lib/.define/project/config.defcl",
+            ),
+            field_path=("project", "universe_name"),
+            violation_message="value is required",
+        ),
+    ]
+
+
+def test_encoding_in_unconfigured_universe(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        config_diagnostics.ExternalUniverseNotConfiguredDiagnostic(
+            location=rendering.SourceLocation(
+                line=5,
+                column=18,
+                end_line=5,
+                end_column=43,
+                file_path=".define/encodings/encodings.defcl",
+            ),
+            universe="mv:define-lang.org:numbers",
+            current_universe_name="my.domain.com:my_lib",
+        ),
+    ]
+
+
+def test_encodings_from_two_other_universes(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        association_resolution_diagnostics.MissingEncodingOperationDiagnostic(
+            location=rendering.SourceLocation(
+                line=15, column=21, end_line=15, end_column=36, file_path="test.dfn"
+            ),
+            logical_operation_name="logical_operation</scramble>",
+            view_encodings={
+                "view<a>": "encoding<standard:/number/integer/ascii>",
+                "view<result>": "encoding<mv:define-lang.org:numbers:/number/digits>",
+            },
+            execution_stack=[
+                association_resolution_diagnostics.OperationExecutionStep(
+                    executing_name="action<my.domain.com:my_lib:/test>",
+                    executed_name="operation</flip>",
+                    location=rendering.SourceLocation(
+                        line=15,
+                        column=21,
+                        end_line=15,
+                        end_column=36,
+                        file_path="test.dfn",
+                    ),
+                ),
+                association_resolution_diagnostics.OperationExecutionStep(
+                    executing_name="operation</flip>",
+                    executed_name="logical_operation</scramble>",
+                    location=rendering.SourceLocation(
+                        line=16,
+                        column=21,
+                        end_line=16,
+                        end_column=48,
+                        file_path="flip.dfn",
+                    ),
+                ),
+            ],
+        )
+    ]
