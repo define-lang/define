@@ -42,6 +42,8 @@ rust_library(
 rust_test(
     name = "formatter_test",
     size = "small",
+    # The tests read their defcl files with include_str!.
+    compile_data = ["//defcl/testdata:testdata_files"],
     crate = ":formatter",
     lint_config = lint_config(),
     proc_macro_deps = ["@crates//:indoc"],

@@ -95,6 +95,14 @@ mod tests {
     }
 
     #[gtest]
+    fn formatted_file_with_comments_is_unchanged() -> Result<()> {
+        verify_that!(
+            format(include_str!("../../testdata/valid/comments.defcl")),
+            (none(), is_empty())
+        )
+    }
+
+    #[gtest]
     fn indentation() -> Result<()> {
         verify_that!(
             format(indoc! {"
@@ -234,6 +242,40 @@ mod tests {
                     }
                 "})),
                 is_empty()
+            )
+        )
+    }
+
+    #[gtest]
+    fn carriage_return_without_an_error_of_its_own_is_deleted() -> Result<()> {
+        // A file gets an error only for its first carriage return, which here
+        // is among the whitespace that the misplaced comment is in.
+        verify_that!(
+            format(indoc! {"
+                a: {
+                  b\r
+                  # x
+                  : 1\r
+                }
+            "}),
+            (
+                some(eq(indoc! {"
+                    a: {
+                      b\r
+                      # x
+                      : 1
+                    }
+                "})),
+                eq(&vec![
+                    SyntaxError {
+                        kind: SyntaxErrorKind::MisplacedComment,
+                        location: Some(location(3, 3, 3, 5)),
+                    },
+                    SyntaxError {
+                        kind: SyntaxErrorKind::CarriageReturnNotAllowed,
+                        location: Some(location(2, 4, 2, 4)),
+                    },
+                ])
             )
         )
     }

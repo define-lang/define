@@ -1,0 +1,2 @@
+config: {
+  level: LOG_LEVEL_VERBOSE_DEBUG_TRACE_ON

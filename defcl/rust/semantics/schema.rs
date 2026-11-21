@@ -385,7 +385,8 @@ mod tests {
     use crate::test_support::valid_schemas;
     use descriptor_proto::google::protobuf::field_descriptor_proto::Type;
     use descriptor_proto::google::protobuf::{
-        DescriptorProto, Edition, FieldDescriptorProto, FileDescriptorProto, FileDescriptorSet,
+        DescriptorProto, Edition, EnumDescriptorProto, EnumValueDescriptorProto,
+        FieldDescriptorProto, FileDescriptorProto, FileDescriptorSet,
     };
     use googletest::prelude::*;
 
@@ -443,6 +444,62 @@ mod tests {
                 type_name: ".package.Missing".to_owned(),
             }))
         )
+    }
+
+    #[gtest]
+    fn schema_with_more_enum_types_than_message_types() -> Result<()> {
+        let enum_field = |name: &str, number: i32, type_name: &str| FieldDescriptorProto {
+            name: Some(name.to_owned()),
+            number: Some(number),
+            r#type: Some(Type::Enum.into()),
+            type_name: Some(format!(".package.{type_name}")),
+            ..FieldDescriptorProto::default()
+        };
+        let enum_type = |name: &str| EnumDescriptorProto {
+            name: Some(name.to_owned()),
+            value: vec![EnumValueDescriptorProto {
+                name: Some(format!("{}_UNSPECIFIED", name.to_uppercase())),
+                number: Some(0),
+                ..EnumValueDescriptorProto::default()
+            }],
+            ..EnumDescriptorProto::default()
+        };
+        let file_descriptor_set = FileDescriptorSet {
+            file: vec![FileDescriptorProto {
+                name: Some("file.proto".to_owned()),
+                package: Some("package".to_owned()),
+                syntax: Some("editions".to_owned()),
+                edition: Some(Edition::Edition2024.into()),
+                message_type: vec![
+                    DescriptorProto {
+                        name: Some("File".to_owned()),
+                        field: vec![FieldDescriptorProto {
+                            name: Some("shirt".to_owned()),
+                            number: Some(1),
+                            r#type: Some(Type::Message.into()),
+                            type_name: Some(".package.Shirt".to_owned()),
+                            ..FieldDescriptorProto::default()
+                        }],
+                        ..DescriptorProto::default()
+                    },
+                    DescriptorProto {
+                        name: Some("Shirt".to_owned()),
+                        field: vec![
+                            enum_field("color", 1, "Color"),
+                            enum_field("size", 2, "Size"),
+                            enum_field("fabric", 3, "Fabric"),
+                        ],
+                        ..DescriptorProto::default()
+                    },
+                ],
+                enum_type: vec![enum_type("Color"), enum_type("Size"), enum_type("Fabric")],
+                ..FileDescriptorProto::default()
+            }],
+        };
+        verify_ok!(Schema::from_descriptor_set(
+            file_descriptor_set,
+            "package.File"
+        ))
     }
 
     #[gtest]

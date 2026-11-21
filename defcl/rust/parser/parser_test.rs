@@ -1332,6 +1332,25 @@ mod invalid_layout {
     }
 
     #[gtest]
+    fn no_space_after_hash_and_trailing_space() -> Result<()> {
+        verify_eq!(
+            layout_errors(include_str!(
+                "../../testdata/invalid/syntax/comments/no_space_after_hash_and_trailing_space.defcl"
+            ))?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::CommentSpacing,
+                    location: Some(location(2, 3, 2, 3)),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::TrailingWhitespace,
+                    location: Some(location(2, 5, 2, 5)),
+                },
+            ]
+        )
+    }
+
+    #[gtest]
     fn comment_without_space() -> Result<()> {
         verify_eq!(
             layout_errors(indoc! {"
@@ -1715,6 +1734,28 @@ mod invalid_file_format {
     }
 
     #[gtest]
+    fn only_a_line_feed() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/file_format/only_a_line_feed.defcl"
+            )),
+            eq(&ParseResult {
+                file: None,
+                errors: vec![
+                    SyntaxError {
+                        kind: SyntaxErrorKind::BlankLine,
+                        location: Some(location(1, 1, 1, 1)),
+                    },
+                    SyntaxError {
+                        kind: SyntaxErrorKind::MissingTopLevelMessage,
+                        location: None,
+                    },
+                ],
+            })
+        )
+    }
+
+    #[gtest]
     fn only_a_comment() -> Result<()> {
         verify_that!(
             parse(include_str!(
@@ -1818,6 +1859,19 @@ mod invalid_messages {
     }
 
     #[gtest]
+    fn unclosed_message_after_enum_value() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/messages/unclosed_message_after_enum_value.defcl"
+            )),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::UnclosedMessage,
+                location: Some(location(1, 9, 1, 9)),
+            }))
+        )
+    }
+
+    #[gtest]
     fn unclosed_message() -> Result<()> {
         verify_that!(
             parse(include_str!(
@@ -1911,6 +1965,19 @@ mod invalid_numbers {
             eq(&stopped_by(SyntaxError {
                 kind: SyntaxErrorKind::MissingDigitBeforeDecimalPoint,
                 location: Some(location(2, 10, 2, 10)),
+            }))
+        )
+    }
+
+    #[gtest]
+    fn zero_with_trailing_decimal() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/numbers/zero_with_trailing_decimal.defcl"
+            )),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::MissingDigitAfterDecimalPoint,
+                location: Some(location(2, 11, 2, 11)),
             }))
         )
     }
@@ -2178,6 +2245,42 @@ mod invalid_characters {
                   b: \"café\"
                 }
             "}))
+        )
+    }
+
+    #[gtest]
+    fn zero_width_space_before_unexpected_character() -> Result<()> {
+        verify_that!(
+            parse(include_str!(
+                "../../testdata/invalid/syntax/characters/zero_width_space_before_unexpected_character.defcl"
+            )),
+            eq(&stopped_by(SyntaxError {
+                kind: SyntaxErrorKind::UnexpectedCharacter { character: '@' },
+                location: Some(location(2, 7, 2, 7)),
+            }))
+        )
+    }
+
+    #[gtest]
+    fn zero_width_spaces_before_indentation() -> Result<()> {
+        verify_eq!(
+            layout_errors(include_str!(
+                "../../testdata/invalid/syntax/characters/zero_width_spaces_before_indentation.defcl"
+            ))?,
+            vec![
+                SyntaxError {
+                    kind: SyntaxErrorKind::InvisibleCharacter {
+                        character: ZERO_WIDTH_SPACE
+                    },
+                    location: Some(location(2, 1, 2, 1)),
+                },
+                SyntaxError {
+                    kind: SyntaxErrorKind::InvisibleCharacter {
+                        character: ZERO_WIDTH_SPACE
+                    },
+                    location: Some(location(3, 1, 3, 1)),
+                },
+            ]
         )
     }
 
@@ -2640,6 +2743,19 @@ mod invalid_separators {
     }
 
     #[gtest]
+    fn comment_directly_after_field_name() -> Result<()> {
+        verify_eq!(
+            layout_errors(include_str!(
+                "../../testdata/invalid/syntax/separators/comment_directly_after_field_name.defcl"
+            ))?,
+            vec![SyntaxError {
+                kind: SyntaxErrorKind::MisplacedComment,
+                location: Some(location(2, 4, 2, 6)),
+            }]
+        )
+    }
+
+    #[gtest]
     fn comment_before_top_level_colon() -> Result<()> {
         verify_eq!(
             layout_errors(include_str!(
@@ -2688,6 +2804,19 @@ mod invalid_repeated_values {
                 kind: SyntaxErrorKind::ExpectedCommaOrCloseBracket,
                 location: Some(location(4, 5, 4, 5)),
             }))
+        )
+    }
+
+    #[gtest]
+    fn two_spaces_after_colon() -> Result<()> {
+        verify_eq!(
+            layout_errors(include_str!(
+                "../../testdata/invalid/syntax/repeated_values/two_spaces_after_colon.defcl"
+            ))?,
+            vec![SyntaxError {
+                kind: SyntaxErrorKind::WrongSpacingAfterColon,
+                location: Some(location(2, 5, 2, 6)),
+            }]
         )
     }
 
@@ -3365,6 +3494,19 @@ mod invalid_toplevel {
 
 mod invalid_whitespace {
     use super::*;
+
+    #[gtest]
+    fn blank_line_at_start_of_file() -> Result<()> {
+        verify_eq!(
+            layout_errors(include_str!(
+                "../../testdata/invalid/syntax/whitespace/blank_line_at_start_of_file.defcl"
+            ))?,
+            vec![SyntaxError {
+                kind: SyntaxErrorKind::BlankLine,
+                location: Some(location(1, 1, 1, 1)),
+            }]
+        )
+    }
 
     #[gtest]
     fn carriage_return() -> Result<()> {
