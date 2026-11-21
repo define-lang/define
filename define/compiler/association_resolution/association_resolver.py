@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import typing
 
+from define.compiler import ast
 from define.compiler.association_resolution import (
     associated_encoding_operation_checks,
     associations,
@@ -18,7 +19,6 @@ from define.compiler.validator.reference_graph import abstract_program
 if typing.TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Mapping
 
-    from define.compiler import ast
     from define.compiler.config import project_roots
     from define.compiler.errors import diagnostics
     from define.compiler.graphs import reference_graph, reference_graph_order
@@ -48,6 +48,20 @@ class AssociationResolver:
         self._encoding_operations: dict[
             str, concrete_program.ConcreteEncodingOperation
         ] = {}
+
+    def resolve(
+        self, definition: abstract_program.AbstractDefinition
+    ) -> list[diagnostics.Diagnostic]:
+        """Resolve a definition once it is validated and everything it references is resolved, and return the diagnostics about it."""
+        match definition:
+            case abstract_program.AbstractAction():
+                return self.resolve_action(definition)
+            case abstract_program.AbstractValueOperation():
+                return self.resolve_value_operation(definition)
+            case ast.LogicalOperationDefinition():
+                return self.resolve_logical_operation(definition)
+            case ast.ValueDefinition():
+                return self.resolve_value(definition)
 
     def resolve_value(
         self, definition: ast.ValueDefinition

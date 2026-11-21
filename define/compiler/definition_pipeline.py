@@ -7,11 +7,7 @@ import enum
 import functools
 import typing
 
-from define.compiler import ast
-from define.compiler.validator.reference_graph import (
-    abstract_program,
-    reference_graph_validator,
-)
+from define.compiler.validator.reference_graph import reference_graph_validator
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable
@@ -20,6 +16,7 @@ if typing.TYPE_CHECKING:
     from define.compiler.association_resolution import association_resolver
     from define.compiler.errors import diagnostics
     from define.compiler.graphs import reference_graph_order
+    from define.compiler.validator.reference_graph import abstract_program
 
 
 class Stage(enum.IntEnum):
@@ -108,33 +105,12 @@ class DefinitionPipeline:
                 # resolve.
                 if abstract is None:
                     return True
-                handle_result = functools.partial(self._handle_resolution, index)
-                match abstract:
-                    case abstract_program.AbstractAction():
-                        self._pool.submit(
-                            self._resolver.resolve_action,
-                            abstract,
-                            handle_result=handle_result,
-                        )
-                        return False
-                    case abstract_program.AbstractValueOperation():
-                        self._pool.submit(
-                            self._resolver.resolve_value_operation,
-                            abstract,
-                            handle_result=handle_result,
-                        )
-                        return False
-                    # Resolving a logical operation or a value quality is a
-                    # lookup in its project's associations, which costs less
-                    # than handing the lookup to a worker.
-                    case ast.LogicalOperationDefinition():
-                        self._diagnostics.extend(
-                            self._resolver.resolve_logical_operation(abstract)
-                        )
-                        return True
-                    case ast.ValueDefinition():
-                        self._diagnostics.extend(self._resolver.resolve_value(abstract))
-                        return True
+                self._pool.submit(
+                    self._resolver.resolve,
+                    abstract,
+                    handle_result=functools.partial(self._handle_resolution, index),
+                )
+                return False
 
     def _handle_validation(
         self,

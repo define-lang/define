@@ -67,7 +67,6 @@ py_library(
     name = "definition_pipeline",
     srcs = ["definition_pipeline.py"],
     deps = [
-        ":ast",
         ":work_pool",
         "//define/compiler/association_resolution:association_resolver",
         "//define/compiler/errors:diagnostics",
