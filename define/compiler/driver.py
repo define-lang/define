@@ -25,8 +25,6 @@ from define.compiler.validator.structural import program_validator
 if typing.TYPE_CHECKING:
     from pathlib import Path
 
-    from define.compiler import ast
-
 
 class DriverMode(enum.StrEnum):
     """Mode of operation for the driver."""
@@ -46,7 +44,6 @@ class CompilationResult(msgspec.Struct, frozen=True):
     """Caller-facing result retained after compilation."""
 
     _sorted_diagnostics: list[diagnostics.FormattableDiagnostic]
-    entry_action: ast.ActionDefinition | None
     _error_strings: list[str]
 
     @classmethod
@@ -57,7 +54,6 @@ class CompilationResult(msgspec.Struct, frozen=True):
         program_validation = validation.program_validation
         return cls(
             _sorted_diagnostics=program_validation.sorted_diagnostics(),
-            entry_action=program_validation.entry_action,
             _error_strings=program_validation.error_strings(),
         )
 

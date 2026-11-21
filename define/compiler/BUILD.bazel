@@ -101,7 +101,6 @@ py_library(
     srcs = ["driver.py"],
     visibility = ["//visibility:public"],
     deps = [
-        ":ast",
         ":constants",
         ":validation_pipeline",
         "//define/compiler/codegen:generator",
