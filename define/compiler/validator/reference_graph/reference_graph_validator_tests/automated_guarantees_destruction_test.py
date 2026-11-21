@@ -26,6 +26,7 @@ _RETIRE = "action<my.domain.com:my_lib:/retire>"
 _WRAPPER = "action<my.domain.com:my_lib:/wrapper>"
 _EMPTY_MARKER = "action<my.domain.com:my_lib:/empty_marker>"
 _BUILD = "action<my.domain.com:my_lib:/build>"
+_FILL_1 = "action<my.domain.com:my_lib:/fill_1>"
 
 
 def _destroyed_positions(
@@ -1322,3 +1323,51 @@ def test_destructor_requirement_on_position_the_caller_left_in_error_does_not_pr
         (_HOLDER, "position<my.domain.com:my_lib:/box>"),
         (_HOLDER,),
     ]
+
+
+def test_destructor_after_unpublished_destructor_contract_runs_for_destroyed_particle(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(max_workers=1)
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
+    assert all_diags[0].location.line == 3
+    assert all_diags[0].location.column == 20
+    assert all_diags[0].location.file_path == "child_2.dfn"
+    assert all_diags[0].cycle == [
+        _CLEANUP,
+        "action<my.domain.com:my_lib:/fill_1>",
+        "action<my.domain.com:my_lib:/fill_2>",
+        "position<my.domain.com:my_lib:/child_2>",
+        _CLEANUP,
+    ]
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionDiagnostic
+    )
+    assert all_diags[1].location.line == 7
+    assert all_diags[1].location.column == 28
+    assert all_diags[1].location.file_path == "cleanup.dfn"
+    assert all_diags[1].quality_name == "action</fill_1>"
+    assert all_diags[1].position_name == "position<dependency>"
+    (published,) = result.concrete_program.actions[
+        _FILL_1
+    ].guaranteed_particle_destructors
+    assert published.position_in_action == (
+        "position<my.domain.com:my_lib:/child_1>",
+        "position<my.domain.com:my_lib:/child_2>",
+    )
+    assert [destructor.full_typed_name for destructor in published.destructors] == [
+        "action<my.domain.com:my_lib:/cleanup_b>"
+    ]
+    step = result.concrete_program.actions[_TEST].steps[-1]
+    assert isinstance(step, abstract_program.Destruction)
+    (run,) = step.contribution.work.guaranteed_particle_destructors
+    assert run.position.canonical_chained_name_tuple == (
+        _HOLDER,
+        "position<my.domain.com:my_lib:/child_1>",
+        "position<my.domain.com:my_lib:/child_2>",
+    )
+    assert run.action.full_typed_name == _FILL_1

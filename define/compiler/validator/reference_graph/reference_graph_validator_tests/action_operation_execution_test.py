@@ -257,3 +257,91 @@ def test_requires_occupied(
             "file_path": "run.dfn",
         },
     )
+
+
+def test_error_state_argument_before_written_position(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.sorted_diagnostics() == [
+        reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic(
+            location=rendering.SourceLocation(
+                line=28, column=30, end_line=28, end_column=44, file_path=None
+            ),
+            position_name="position<empty>",
+            is_action_interface_position=False,
+            inferred_at=None,
+        )
+    ]
+
+
+def test_no_value_quality_argument_before_written_position(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.sorted_diagnostics() == [
+        reference_graph_diagnostics.OperationArgumentMissingQualitiesDiagnostic(
+            location=rendering.SourceLocation(
+                line=29, column=37, end_line=29, end_column=51, file_path=None
+            ),
+            view_name="view<a>",
+            looked_at_name="position<plain>",
+            looked_at_kind=reference_graph_diagnostics.LookedAtKind.POSITION,
+            missing_qualities=["value<standard:/number/natural>"],
+        )
+    ]
+
+
+def test_requires_set_value_unset_after_set(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_validation
+    assert result.sorted_diagnostics() == [
+        reference_graph_diagnostics.InferredRequirementViolationDiagnostic(
+            location=rendering.SourceLocation(
+                line=16, column=30, end_line=16, end_column=78, file_path="test.dfn"
+            ),
+            position_name="position<worker>::action</run>::position<second>",
+            propagation_chain=[
+                propagation_step.PropagationStep(
+                    location=rendering.SourceLocation(
+                        line=15,
+                        column=30,
+                        end_line=15,
+                        end_column=77,
+                        file_path="test.dfn",
+                    ),
+                    kind=propagation_step.PropagationKind.FILL_SITE,
+                    enclosing_quality_name="position<worker>::action</run>::position<second>",
+                    triggered_quality_name=None,
+                ),
+                propagation_step.PropagationStep(
+                    location=rendering.SourceLocation(
+                        line=16,
+                        column=30,
+                        end_line=16,
+                        end_column=78,
+                        file_path="test.dfn",
+                    ),
+                    kind=propagation_step.PropagationKind.ACTION_TRIGGER,
+                    enclosing_quality_name="action<my.domain.com:my_lib:/test>",
+                    triggered_quality_name="action<my.domain.com:my_lib:/run>",
+                ),
+                propagation_step.PropagationStep(
+                    location=rendering.SourceLocation(
+                        line=20,
+                        column=41,
+                        end_line=20,
+                        end_column=56,
+                        file_path="run.dfn",
+                    ),
+                    kind=propagation_step.PropagationKind.DIRECT_INFERENCE,
+                    enclosing_quality_name="action<my.domain.com:my_lib:/run>",
+                    triggered_quality_name=None,
+                ),
+            ],
+            required_empty=False,
+            action_name="action<my.domain.com:my_lib:/run>",
+            required_value=True,
+        )
+    ]

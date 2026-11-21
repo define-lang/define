@@ -1,0 +1,16 @@
+# A chain is checked again after its first name is defined again without the quality that the chain names.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<a> {
+            it may only contain particles where {
+                it has the position</q>.
+            }
+        }
+        create a particle in position<a>.
+        create a particle in position<a>::position</q>.
+        define the position<a>.
+        destroy the particle in position<a>::position</q>.
+    }
+}

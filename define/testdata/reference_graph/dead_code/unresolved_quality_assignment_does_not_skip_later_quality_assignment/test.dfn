@@ -1,0 +1,15 @@
+# A quality assignment whose file did not load must not stop the quality
+# assignments after it from being checked for dead code.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the position</missing>.
+                it has the position</thing>.
+            }
+        }
+        create a particle in position<box>.
+    }
+}

@@ -1,10 +1,11 @@
 # Interface views of a value operation may not have encodings.
+# The value quality after the encoding is still found.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<number> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/natural>.
             it has the encoding<standard:/number/decimal/ascii>.
+            it has the value<standard:/number/natural>.
         }
     }
 

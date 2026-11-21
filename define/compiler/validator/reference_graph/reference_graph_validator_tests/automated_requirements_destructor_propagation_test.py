@@ -411,3 +411,67 @@ def test_requirement_destructor_gets_from_its_callee_names_destructor(
         (_DESTRUCTOR, _CHECK),
         (_TEST, _DESTRUCTOR),
     ]
+
+
+def test_value_requirement_follows_moved_in_particle_to_contracted_origin(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert all_diags[0].required_value is True
+    assert all_diags[0].location.line == 15
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == "test.dfn"
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].action_name == _MID
+    assert (
+        all_diags[0].position_name
+        == "position<holder>::action</mid>::position<incoming>"
+    )
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": propagation_step.PropagationKind.FILL_SITE,
+            "enclosing_quality_name": "position<holder>::action</mid>::position<incoming>",
+            "triggered_quality_name": None,
+            "line": 14,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MID,
+            "line": 15,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 13,
+            "column": 28,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 19,
+            "column": 33,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 13,
+            "column": 80,
+            "file_path": "destructor.dfn",
+        },
+    )

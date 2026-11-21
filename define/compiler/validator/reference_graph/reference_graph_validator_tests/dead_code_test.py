@@ -94,6 +94,29 @@ def test_unresolved_quality_assignment_is_not_reported_as_dead(
     assert all_diags[0].location.file_path == "test.dfn"
 
 
+def test_unresolved_quality_assignment_does_not_skip_later_quality_assignment(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
+    assert all_diags[0].file_path == "missing.dfn"
+    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.column == 37
+    assert all_diags[0].location.file_path == "test.dfn"
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.DeadChildPositionDiagnostic
+    )
+    assert all_diags[1].quality_name == "position</thing>"
+    assert all_diags[1].position_name == "position<box>"
+    assert all_diags[1].location.line == 10
+    assert all_diags[1].location.column == 28
+    assert all_diags[1].location.file_path == "test.dfn"
+
+
 def test_guarantee_on_unresolved_implied_position_is_ignored(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -115,6 +138,23 @@ def test_guarantee_on_unresolved_implied_position_is_ignored(
     assert all_diags[1].location.line == 10
     assert all_diags[1].location.column == 28
     assert all_diags[1].location.file_path == "test.dfn"
+
+
+def test_guarantee_on_unresolved_implied_position_does_not_skip_later_guarantees(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
+    assert all_diags[0].file_path == "copy.dfn"
+    assert all_diags[0].location.line == 5
+    assert all_diags[0].location.column == 34
+    assert all_diags[0].location.file_path == "test.dfn"
 
 
 def test_child_position_referenced_by_create_is_alive(
@@ -223,6 +263,15 @@ def test_quality_assignment_on_interface_position_filled_by_create_is_alive(
 
 
 def test_multiple_quality_assignments_on_guaranteed_interface_position_are_alive(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
+    assert_no_errors(result.program_validation)
+
+
+def test_guarantee_on_callee_particle_does_not_skip_later_guarantees(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
     result = validate_testdata_project_with_reference_graph(
@@ -920,6 +969,30 @@ def test_implied_action_referenced_but_never_triggered_is_dead(
     assert all_diags[1].action_name == "action</worker>"
     assert all_diags[1].position_name == "action</worker>::position<input>"
     assert all_diags[1].location.line == 6
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == "test.dfn"
+    assert action_graph(result.concrete_program) == []
+
+
+def test_implied_action_after_implied_position_referenced_but_never_triggered_is_dead(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.UntriggeredImpliedActionDiagnostic
+    )
+    assert all_diags[0].implied_action_name == "action</worker>"
+    assert all_diags[0].location.line == 5
+    assert all_diags[0].location.column == 25
+    assert all_diags[0].location.file_path == "test.dfn"
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic
+    )
+    assert all_diags[1].action_name == "action</worker>"
+    assert all_diags[1].position_name == "action</worker>::position<input>"
+    assert all_diags[1].location.line == 10
     assert all_diags[1].location.column == 30
     assert all_diags[1].location.file_path == "test.dfn"
     assert action_graph(result.concrete_program) == []

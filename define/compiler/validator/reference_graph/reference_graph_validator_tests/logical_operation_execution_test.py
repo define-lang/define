@@ -207,6 +207,36 @@ def test_missing_value(
     ]
 
 
+def test_missing_value_before_missing_quality(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_validation
+    assert result.sorted_diagnostics() == [
+        structural_diagnostics.StandardDefinitionNotFoundDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=24, end_line=8, end_column=54, file_path="test.dfn"
+            ),
+            definition_name="value<standard:/number/missing>",
+        ),
+        structural_diagnostics.ViewMultipleValueQualitiesDiagnostic(
+            location=rendering.SourceLocation(
+                line=9, column=24, end_line=9, end_column=54, file_path="test.dfn"
+            ),
+            first_value_name="value<standard:/number/missing>",
+            first_assignment_line=8,
+        ),
+        reference_graph_diagnostics.OperationArgumentMissingQualitiesDiagnostic(
+            location=rendering.SourceLocation(
+                line=35, column=42, end_line=35, end_column=62, file_path="test.dfn"
+            ),
+            view_name="view<amount>",
+            looked_at_name="position<test_amount>",
+            looked_at_kind=reference_graph_diagnostics.LookedAtKind.POSITION,
+            missing_qualities=["value<standard:/number/integer>"],
+        ),
+    ]
+
+
 def test_view_without_value_quality(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):

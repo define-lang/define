@@ -1,0 +1,32 @@
+# The particle arrives in position<i> of action</worker> and moves to
+# position<j> of the same action before action</worker> is triggered. The
+# trigger passes the particle in position<j>, but the arrival in position<i>
+# never reaches action</worker>.
+define the potential action<my.domain.com:my_lib:/worker> {
+    define the position<run>.
+    define the position<i>.
+    define the position<j>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<j>.
+        create a particle in position<i>.
+        destroy the particle in position<i>.
+        destroy the particle in position<run>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</worker>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::action</worker>::position<i>.
+        move the particle in position<box>::action</worker>::position<i> to position<box>::action</worker>::position<j>.
+        create a particle in position<box>::action</worker>::position<run>.
+    }
+}

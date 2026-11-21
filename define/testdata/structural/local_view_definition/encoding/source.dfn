@@ -1,4 +1,5 @@
 # A local view of a value operation may not have an encoding.
+# The value quality after the encoding is still found.
 define the logical_operation<my.domain.com:my_lib:/negate> {
     define the view<value> {
         it is read.
@@ -24,8 +25,8 @@ define the operation<my.domain.com:my_lib:/negate_twice> {
     it does {
         define the view<negated> {
             it may only contain particles where {
-                it has the value<standard:/number/integer>.
                 it has the encoding<standard:/number/decimal/ascii>.
+                it has the value<standard:/number/integer>.
             }
         }
         execute the logical_operation</negate> {

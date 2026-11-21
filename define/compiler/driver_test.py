@@ -9,9 +9,14 @@ from unittest import mock
 
 import pytest
 
-from define.compiler import driver, validation_pipeline
+from crates.source_rendering.python import rendering
+from define.compiler import driver, validation_pipeline, work_pool
 from define.compiler.data_structures import define_path
-from define.compiler.errors import diagnostics, structural_diagnostics
+from define.compiler.errors import (
+    diagnostics,
+    reference_graph_diagnostics,
+    structural_diagnostics,
+)
 from define.compiler.validator.structural import program_validator
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -32,6 +37,61 @@ def _write_source(tmp_path: Path, rel_path: str, source: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(source, encoding="utf-8", newline="\n")
     return path
+
+
+_CONSTRUCTOR_SOURCE = (
+    "define the potential action<my.domain.com:my_lib:/test> {\n"
+    "    it happens when {\n"
+    "        this particle is created.\n"
+    "    } and it does {\n"
+    "        define the position<output>.\n"
+    "        create a particle in position<output>.\n"
+    "    }\n"
+    "}\n"
+)
+
+_ENTRY_ACTION_WITH_INTERFACE_POSITION_SOURCE = (
+    "define the potential action<my.domain.com:my_lib:/test> {\n"
+    "    define the position<input>.\n"
+    "    it happens when {\n"
+    "        this particle is created.\n"
+    "    } and it does {\n"
+    "        create a particle in position<input>.\n"
+    "    }\n"
+    "}\n"
+)
+
+
+class TestMaxThreads:
+    def test_max_threads_reaches_every_work_pool(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _setup_project(tmp_path, "my.domain.com:my_lib")
+        _write_source(tmp_path, "test.dfn", _CONSTRUCTOR_SOURCE)
+        monkeypatch.chdir(tmp_path)
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+        pool_sizes: list[int | None] = []
+        create_pool = work_pool.WorkPool
+
+        def record_pool_size(max_workers: int | None = None) -> work_pool.WorkPool:
+            pool_sizes.append(max_workers)
+            return create_pool(max_workers)
+
+        monkeypatch.setattr(work_pool, "WorkPool", record_pool_size)
+
+        exit_code = driver.Driver().run(
+            Path("test.dfn"),
+            mode=driver.DriverMode.COMPILE,
+            output_dir=output_dir,
+            max_threads=3,
+        )
+
+        assert exit_code == driver.ExitCode.SUCCESS
+        # Structural validation, the definition pipeline, loading what
+        # association resolution chooses, and code generation each run one
+        # pool.
+        assert pool_sizes == [3, 3, 3, 3]
 
 
 class TestPathFormats:
@@ -224,6 +284,82 @@ class TestPathResolution:
         assert driver_result.program_validation.file_results == []
 
 
+class TestEntryAction:
+    def test_source_entry_action_with_interface_position_reports_diagnostic(self):
+        driver_result = driver.Driver().validate_source(
+            _ENTRY_ACTION_WITH_INTERFACE_POSITION_SOURCE
+        )
+
+        assert driver_result.program_validation.sorted_diagnostics() == [
+            structural_diagnostics.EntryPointInterfacePositionDiagnostic(
+                location=rendering.SourceLocation(
+                    line=2, column=16, end_line=2, end_column=30
+                ),
+                position_name="position<input>",
+            )
+        ]
+
+    def test_file_entry_action_with_interface_position_reports_diagnostic(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        _setup_project(tmp_path, "my.domain.com:my_lib")
+        _write_source(
+            tmp_path, "test.dfn", _ENTRY_ACTION_WITH_INTERFACE_POSITION_SOURCE
+        )
+        monkeypatch.chdir(tmp_path)
+
+        driver_result = driver.Driver().validate_program(Path("test.dfn"))
+
+        assert driver_result.program_validation.sorted_diagnostics() == [
+            structural_diagnostics.EntryPointInterfacePositionDiagnostic(
+                location=rendering.SourceLocation(
+                    line=2,
+                    column=16,
+                    end_line=2,
+                    end_column=30,
+                    file_path="test.dfn",
+                ),
+                position_name="position<input>",
+            )
+        ]
+
+    def test_entry_action_inferring_occupied_implied_position_reports_diagnostic(
+        self,
+    ):
+        source = (
+            "define the potential position<my.domain.com:my_lib:/implied>.\n"
+            "define the potential action<my.domain.com:my_lib:/worker> {\n"
+            "    it also assigns the position</implied>.\n"
+            "    define the position<trigger>.\n"
+            "    it happens when {\n"
+            "        the position<trigger> has a particle.\n"
+            "    } and it does {\n"
+            "        destroy the particle in position</implied>.\n"
+            "        destroy the particle in position<trigger>.\n"
+            "    }\n"
+            "}\n"
+            "define the potential action<my.domain.com:my_lib:/start> {\n"
+            "    it also assigns the action</worker>.\n"
+            "    it happens when {\n"
+            "        this particle is created.\n"
+            "    } and it does {\n"
+            "        create a particle in action</worker>::position<trigger>.\n"
+            "    }\n"
+            "}\n"
+        )
+
+        driver_result = driver.Driver().validate_source(source)
+
+        assert driver_result.program_validation.sorted_diagnostics() == [
+            reference_graph_diagnostics.EntryPointOccupiedImpliedPositionRequirementDiagnostic(
+                location=rendering.SourceLocation(
+                    line=17, column=30, end_line=17, end_column=63
+                ),
+                position_name="position</implied>",
+            )
+        ]
+
+
 class TestSourceValidation:
     def test_max_threads_configures_both_validation_phases(self):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
@@ -291,17 +427,7 @@ class TestSourceValidation:
 
 class TestSourceCompilation:
     def test_constructor_entry_point_writes_output(self, tmp_path: Path):
-        source = (
-            "define the potential action<my.domain.com:my_lib:/test> {\n"
-            "    it happens when {\n"
-            "        this particle is created.\n"
-            "    } and it does {\n"
-            "        define the position<output>.\n"
-            "        create a particle in position<output>.\n"
-            "    }\n"
-            "}\n"
-        )
-        driver_result = driver.Driver().compile_source(source, tmp_path)
+        driver_result = driver.Driver().compile_source(_CONSTRUCTOR_SOURCE, tmp_path)
         assert_no_errors(driver_result)
         main_file = tmp_path / "__main__.py"
         assert main_file.exists()
@@ -310,6 +436,7 @@ class TestSourceCompilation:
     def test_position_entry_point_reports_diagnostic(self, tmp_path: Path):
         source = "define the potential position<my.domain.com:my_lib:/test>.\n"
         driver_result = driver.Driver().compile_source(source, tmp_path)
+        assert driver_result.has_errors()
         all_diagnostics = driver_result.sorted_diagnostics()
         assert len(all_diagnostics) == 1
         diagnostic = all_diagnostics[0]

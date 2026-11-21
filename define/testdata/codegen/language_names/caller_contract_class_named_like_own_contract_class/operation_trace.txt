@@ -1,0 +1,7 @@
+test.create(/class_var::trigger_pos)
+class_var.create(source)
+class_var.create(source::/child)
+class_var.move(source, /class_var_::trigger_pos)
+class_var_.destroy(trigger_pos::/child)
+class_var_.destroy(trigger_pos)
+class_var.destroy(trigger_pos)

@@ -262,6 +262,13 @@ def test_name_allocator_skips_conflicting_source_suffixes():
     assert allocator.allocate("name") == "name_4"
 
 
+def test_name_allocator_takes_the_first_free_suffix_after_a_used_one():
+    allocator = naming.LocalNameAllocator()
+    assert allocator.allocate("name") == "name"
+    assert allocator.allocate("name_2") == "name_2"
+    assert allocator.allocate("name") == "name_3"
+
+
 def test_name_allocator_skips_conflicting_generated_suffixes():
     allocator = naming.LocalNameAllocator()
     assert allocator.allocate("name") == "name"
@@ -371,6 +378,21 @@ def test_composite_value_operation_with_underscore_in_encoding_path_ends_in_dige
             _encoding(_STANDARD_FQUN, "/text/unicode/code_point/ascii")
         ).function_name
         == "value_text_unicode_code_point_ascii___" + digest
+    )
+
+
+def test_composite_value_operation_digest_covers_every_encoding():
+    digest = hashlib.blake2b(
+        b"encoding<standard:/text/unicode/code_point/ascii>\n"
+        + b"encoding<standard:/number/integer/ascii>",
+        digest_size=8,
+    ).hexdigest()
+    assert (
+        _composite_value_operation_function(
+            _encoding(_STANDARD_FQUN, "/text/unicode/code_point/ascii"),
+            _encoding(_STANDARD_FQUN, "/number/integer/ascii"),
+        ).function_name
+        == "value_text_unicode_code_point_ascii__number_integer_ascii___" + digest
     )
 
 

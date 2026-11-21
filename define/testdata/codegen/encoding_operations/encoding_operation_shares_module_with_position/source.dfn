@@ -1,4 +1,6 @@
 # An Encoding Operation's function goes in the module of its parent path, which also holds the class of a position definition, so the function follows the class.
+# The position definition is not the first definition in the program.
+define the potential position<my.domain.com:my_lib:/earlier>.
 define the potential position<my.domain.com:my_lib:/thing>.
 define the encoding_operation<my.domain.com:my_lib:/thing/increment> {
     define the view<number> {

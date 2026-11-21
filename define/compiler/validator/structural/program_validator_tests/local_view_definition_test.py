@@ -118,10 +118,10 @@ def test_duplicate_local_view(
     assert result.sorted_diagnostics() == [
         structural_diagnostics.LocalNameConflictDiagnostic(
             location=rendering.SourceLocation(
-                line=30, column=20, end_line=30, end_column=32
+                line=39, column=20, end_line=39, end_column=32
             ),
             local_name="negated",
-            first_definition_line=25,
+            first_definition_line=26,
         )
     ]
 

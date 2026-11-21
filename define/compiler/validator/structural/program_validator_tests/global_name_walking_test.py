@@ -240,6 +240,46 @@ def test_cycle_path_search_skips_a_shared_definition_already_seen(
     ]
 
 
+def test_cycle_closed_after_a_reference_raises_the_depths_of_a_chain(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural(max_workers=1)
+    diags = result.sorted_diagnostics()
+    assert len(diags) == 1
+    assert isinstance(
+        diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 20
+    assert diags[0].location.file_path == "d.dfn"
+    assert diags[0].cycle == [
+        "position<mv:define-lang.org:coverage_cycle:/a>",
+        "position<mv:define-lang.org:coverage_cycle:/c>",
+        "position<mv:define-lang.org:coverage_cycle:/b>",
+        "position<mv:define-lang.org:coverage_cycle:/d>",
+        "position<mv:define-lang.org:coverage_cycle:/a>",
+    ]
+
+
+def test_cycle_closed_between_definitions_of_equal_depth(
+    validate_testdata_structural: ValidateTestdataStructural,
+):
+    result = validate_testdata_structural(max_workers=1)
+    diags = result.sorted_diagnostics()
+    assert len(diags) == 1
+    assert isinstance(
+        diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
+    assert diags[0].location.line == 3
+    assert diags[0].location.column == 20
+    assert diags[0].location.file_path == "d.dfn"
+    assert diags[0].cycle == [
+        "position<mv:define-lang.org:coverage_cycle:/c>",
+        "position<mv:define-lang.org:coverage_cycle:/d>",
+        "position<mv:define-lang.org:coverage_cycle:/c>",
+    ]
+
+
 def test_unknown_universe_emits_diagnostic(
     validate_testdata_structural: ValidateTestdataStructural,
 ):

@@ -19,8 +19,18 @@ define the operation<my.domain.com:my_lib:/smaller> {
     }
 
     it does {
+        define the view<first_smaller> {
+            it may only contain particles where {
+                it has the value<standard:/number/integer>.
+            }
+        }
         execute the operation<standard:/number/integer/minimum> {
             with view<a> looking at view<a>.
+            with view<b> looking at view<b>.
+            with view<result> looking at view<first_smaller>.
+        }
+        execute the operation<standard:/number/integer/minimum> {
+            with view<a> looking at view<first_smaller>.
             with view<b> looking at view<b>.
             with view<result> looking at view<smaller>.
         }

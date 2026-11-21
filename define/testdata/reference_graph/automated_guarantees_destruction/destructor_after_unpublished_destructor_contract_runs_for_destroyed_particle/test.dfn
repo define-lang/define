@@ -1,0 +1,19 @@
+# The particle that action</fill_2> creates in position</child_2> has
+# action</cleanup>, whose contract action</fill_1> never sees because of the
+# circular reference, and then action</cleanup_b>. action</fill_1> skips
+# action</cleanup> and still runs action</cleanup_b> when position<holder> is
+# destroyed.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</cleanup>.
+                it has the action</fill_1>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</fill_1>::position<run>.
+    }
+}

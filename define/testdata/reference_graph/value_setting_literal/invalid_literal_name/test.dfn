@@ -1,0 +1,9 @@
+# A Value Setting Statement whose literal has an invalid Potential Literal name is not checked further.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<dest>.
+        set the value of position<dest> from literal<standard:/bad-name>"5".
+    }
+}

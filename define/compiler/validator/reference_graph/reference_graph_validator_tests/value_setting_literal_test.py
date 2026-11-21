@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.reference_graph import propagation_step
 from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
@@ -217,3 +218,18 @@ def test_callee_target_missing_value_quality(
     assert diagnostic.location.column == 26
     assert diagnostic.position_name == "position<target>"
     assert diagnostic.origin_position_name == "position<target>"
+
+
+def test_invalid_literal_name(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_validation
+    assert result.sorted_diagnostics() == [
+        structural_diagnostics.InvalidGlobalNamePathCharacterDiagnostic(
+            location=rendering.SourceLocation(
+                line=7, column=67, end_line=7, end_column=67, file_path="test.dfn"
+            ),
+            chars=("-",),
+            segment="bad-name",
+        ),
+    ]

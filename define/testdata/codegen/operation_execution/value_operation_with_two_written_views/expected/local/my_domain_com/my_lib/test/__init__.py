@@ -7,8 +7,8 @@ from define.runtime import literal
 import local.my_domain_com.my_lib.largest
 import local.my_domain_com.my_lib.least
 import local.my_domain_com.my_lib.order
+import local.my_domain_com.my_lib.smaller
 import local.my_domain_com.my_lib.smallest
-import standard.number.integer.ascii
 
 
 class TestAction(literal.Action):
@@ -35,7 +35,7 @@ class TestAction(literal.Action):
         ).create_particle()
         self.on_particle.get_position(
             local.my_domain_com.my_lib.least.LeastPosition
-        ).particle.value = standard.number.integer.ascii.encoding_minimum(
+        ).particle.value = local.my_domain_com.my_lib.smaller.value_number_integer_ascii(
             position_first.particle.value,
             position_second.particle.value,
         )

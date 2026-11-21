@@ -792,6 +792,15 @@ def test_trace_records_direct_calls_and_repeated_operations(
     assert trace_file.read_text(encoding="utf-8") == expected
 
 
+def test_trace_file_ends_lines_with_line_feeds(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    trace_file = tmp_path / "trace.txt"
+    monkeypatch.setenv("DEFINE_OPERATION_TRACE_FILE", str(trace_file))
+    literal.start(_Worker, trace_operations=True)
+    assert trace_file.read_bytes() == b"worker.create(item)\nworker.destroy(item)\n"
+
+
 def test_disabled_tracing_does_not_write_file(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):

@@ -1,0 +1,32 @@
+# action</destroyer> replaces the particle in position</child> of the particle that it receives from action</mid>, and then destroys the particle.
+# action</fill>, which action</destroyer> triggers, creates the new particle in position</child> and sets the value of the new particle in position</child>::position</d>.
+# The callee of action</fill>, action</fill_2>, fills position</b> and position</b>::position</c> below the new particle in position</child>.
+# action</mid> is the knower of the Destructor action</cleanup> on the destroyed particle, so action</mid> checks the Destructor against what action</fill> left in action</destroyer>.
+# position</child>::position</a> is empty at destruction even though action</test> filled it.
+# position</child>::position</b>::position</c> is occupied at destruction even though action</test> never filled it.
+# The particle in position</child>::position</d> has a value at destruction even though action</test> never set the value of the particle that it put there.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<outer_box> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        define the position<my_item> {
+            it may only contain particles where {
+                it has the action</cleanup>.
+                it has the action</fill>.
+                it has the position</child>.
+            }
+        }
+        create a particle in position<outer_box>.
+        create a particle in position<my_item>.
+        create a particle in position<my_item>::position</child>.
+        create a particle in position<my_item>::position</child>::position</a>.
+        create a particle in position<my_item>::position</child>::position</d>.
+        move the particle in position<my_item> to position<outer_box>::action</mid>::position<incoming>.
+        create a particle in position<outer_box>::action</mid>::position<run>.
+    }
+}

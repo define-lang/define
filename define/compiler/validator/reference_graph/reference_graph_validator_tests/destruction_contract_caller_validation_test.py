@@ -37,6 +37,9 @@ _DESTROYER = "action<my.domain.com:my_lib:/destroyer>"
 _CLEANUP = "action<my.domain.com:my_lib:/cleanup>"
 _CLEANUP_CHILD = "action<my.domain.com:my_lib:/cleanup_child>"
 _DESTROYER_CHILD = "action</destroyer>::position<target>::position</child>"
+_SHELF_CLEANUP = "action<my.domain.com:my_lib:/shelf_cleanup>"
+_FILL = "action<my.domain.com:my_lib:/fill>"
+_FILL_2 = "action<my.domain.com:my_lib:/fill_2>"
 
 
 def test_parent_validation_does_not_skip_child_destructor(
@@ -2218,3 +2221,174 @@ def test_destructor_requirement_violation_through_constructor_names_constructor_
             "file_path": "destructor.dfn",
         },
     )
+
+
+def test_knower_resolves_destructor_requirement_two_names_below_position_its_callee_emptied(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_validation.sorted_diagnostics()
+    position_names: list[str] = []
+    for diag in all_diags:
+        assert isinstance(
+            diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+        )
+        assert diag.location.line == 19
+        assert diag.location.column == 30
+        assert diag.location.file_path == "mid.dfn"
+        assert diag.action_name == _INNER
+        assert diag.required_empty is False
+        assert diag.required_value is False
+        position_names.append(diag.position_name)
+    assert position_names == [
+        "position<box>::action</inner>::position<target>::position</shelf>",
+        "position<box>::action</inner>::position<target>::position</shelf>::position</book>",
+        "position<box>::action</inner>::position<target>::position</shelf>::position</book>::position</page>",
+    ]
+    page_diag = all_diags[2]
+    assert isinstance(
+        page_diag, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert page_diag.position_name == position_names[2]
+    assert_propagation_chain(
+        page_diag,
+        {
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 4,
+            "column": 24,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</inner>::position<target>",
+            "triggered_quality_name": None,
+            "line": 18,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _INNER,
+            "line": 19,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _INNER,
+            "triggered_quality_name": _DESTRUCTOR,
+            "line": 12,
+            "column": 33,
+            "file_path": "inner.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _DESTRUCTOR,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "destructor.dfn",
+        },
+    )
+    assert action_graph(result.concrete_program) == [
+        (_INNER, _DESTRUCTOR),
+        (_MID, _INNER),
+        (_TEST, _MID),
+    ]
+
+
+def test_knower_skips_destructor_requirement_through_action_below_position_its_callee_left_in_error(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 14
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == "inner.dfn"
+    assert all_diags[0].position_name == "position<target>::position</shelf>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
+    assert action_graph(result.concrete_program) == [
+        (_INNER, _SHELF_CLEANUP),
+        (_MID, _INNER),
+        (_TEST, _MID),
+    ]
+
+
+def test_knower_checks_destructor_requirements_against_what_callee_of_destroyer_left_below_new_particle(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert all_diags[0].location.line == 23
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == "mid.dfn"
+    assert (
+        all_diags[0].position_name
+        == "position<box>::action</destroyer>::position<target>::position</child>::position</a>"
+    )
+    assert all_diags[0].action_name == _DESTROYER
+    assert all_diags[0].required_empty is False
+    assert all_diags[0].required_value is False
+    assert_propagation_chain(
+        all_diags[0],
+        {
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<incoming>",
+            "triggered_quality_name": _CLEANUP,
+            "line": 4,
+            "column": 24,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<box>::action</destroyer>::position<target>",
+            "triggered_quality_name": None,
+            "line": 20,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MID,
+            "triggered_quality_name": _DESTROYER,
+            "line": 23,
+            "column": 30,
+            "file_path": "mid.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _DESTROYER,
+            "triggered_quality_name": _CLEANUP,
+            "line": 15,
+            "column": 33,
+            "file_path": "destroyer.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CLEANUP,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "cleanup.dfn",
+        },
+    )
+    assert action_graph(result.concrete_program) == [
+        (_CLEANUP, _KEEP),
+        (_FILL, _FILL_2),
+        (_DESTROYER, _FILL),
+        (_DESTROYER, _CLEANUP),
+        (_MID, _DESTROYER),
+        (_TEST, _MID),
+    ]

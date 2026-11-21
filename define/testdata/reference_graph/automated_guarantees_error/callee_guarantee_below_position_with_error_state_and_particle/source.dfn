@@ -1,0 +1,40 @@
+# The Move to an occupied position gives position<holder>::position</g>
+# error state, and position<holder>::position</g> keeps its particle.
+# action</fill> then puts a particle below that position. That particle's
+# position is below a position with error state, so creating a particle there
+# afterward reports nothing.
+define the potential position<my.domain.com:my_lib:/k>.
+define the potential position<my.domain.com:my_lib:/g> {
+    it may only contain particles where {
+        it has the position</k>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/fill> {
+    it also assigns the position</g>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in position</g>::position</k>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</fill>.
+                it has the position</g>.
+            }
+        }
+        define the position<h>.
+        create a particle in position<holder>.
+        create a particle in position<holder>::position</g>.
+        create a particle in position<h>.
+        move the particle in position<holder>::position</g> to position<h>.
+        create a particle in position<holder>::action</fill>::position<run>.
+        create a particle in position<holder>::position</g>::position</k>.
+    }
+}

@@ -445,3 +445,29 @@ def test_move_clears_error_state_below_target(
     assert all_diags[1].location.line == 18
     assert all_diags[1].location.column == 33
     assert all_diags[1].position_name == "position<b>::position</x>"
+
+
+def test_error_state_reaches_parent_positions_added_below_error_position(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    diags = result.sorted_diagnostics()
+    assert len(diags) == 2
+    assert isinstance(
+        diags[0], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
+    assert diags[0].location.file_path is None
+    assert diags[0].location.line == 27
+    assert diags[0].location.column == 45
+    assert diags[0].position_name == "position<h>"
+    assert diags[0].occupied_at.file_path is None
+    assert diags[0].occupied_at.line == 26
+    assert diags[0].occupied_at.column == 30
+    assert isinstance(
+        diags[1], reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+    )
+    assert diags[1].location.file_path is None
+    assert diags[1].location.line == 28
+    assert diags[1].location.column == 71
+    assert diags[1].element_name == "position<my.domain.com:my_lib:/zz>"
+    assert diags[1].parent_name == "position<my.domain.com:my_lib:/c>"

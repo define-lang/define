@@ -1,10 +1,11 @@
 # Views may not have position quality assignments.
+# The value quality after the position quality is still found.
 define the operation<my.domain.com:my_lib:/copy> {
     define the view<number> {
         it is read.
         it may only contain particles where {
-            it has the value<standard:/number/natural>.
             it has the position</box>.
+            it has the value<standard:/number/natural>.
         }
     }
 

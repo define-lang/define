@@ -1,0 +1,69 @@
+# action</make> leaves error state in position</p>::position</c> below the
+# particle it creates, and a particle in position</p>::position</k>.
+# action</test> reads below position<first>::position</p> before anything else
+# in action</test> has error state. action</test> then moves the particle in
+# position<first>, and position</p>::position</c> keeps its error state below
+# position<moved>. The Move from position<w> gives
+# position<second>::position</p> error state before anything reads below it,
+# and the particle in position<second>::position</p>::position</k> has error
+# state too. Only the Move from position<w> reports diagnostics.
+define the potential position<my.domain.com:my_lib:/d>.
+define the potential position<my.domain.com:my_lib:/k>.
+define the potential position<my.domain.com:my_lib:/c> {
+    it may only contain particles where {
+        it has the position</d>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/p> {
+    it may only contain particles where {
+        it has the position</c>.
+        it has the position</k>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/make> {
+    it also assigns the position</p>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in position</p>.
+        create a particle in position</p>::position</k>.
+        destroy the particle in position</p>::position</c>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<first> {
+            it may only contain particles where {
+                it has the action</make>.
+                it has the position</p>.
+            }
+        }
+        define the position<moved> {
+            it may only contain particles where {
+                it has the position</p>.
+            }
+        }
+        define the position<second> {
+            it may only contain particles where {
+                it has the action</make>.
+                it has the position</p>.
+            }
+        }
+        define the position<x>.
+        define the position<y>.
+        define the position<w>.
+        create a particle in position<first>.
+        create a particle in position<first>::action</make>::position<run>.
+        move the particle in position<first>::position</p>::position</c>::position</d> to position<x>.
+        move the particle in position<first> to position<moved>.
+        move the particle in position<moved>::position</p>::position</c> to position<y>.
+        create a particle in position<second>.
+        create a particle in position<second>::action</make>::position<run>.
+        move the particle in position<w> to position<second>::position</p>.
+        create a particle in position<second>::position</p>::position</k>.
+    }
+}

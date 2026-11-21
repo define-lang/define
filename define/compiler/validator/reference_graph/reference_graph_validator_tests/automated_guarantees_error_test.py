@@ -19,12 +19,14 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.validation_pipeline import (
+        ValidateTestdataNonFilesystemWithReferenceGraph,
         ValidateTestdataProjectWithReferenceGraph,
     )
 
 pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 _TEST = "action<my.domain.com:my_lib:/test>"
+_FILL = "action<my.domain.com:my_lib:/fill>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
 _OUTER = "action<my.domain.com:my_lib:/outer>"
 
@@ -923,3 +925,116 @@ def test_unfilled_implied_action_interface_leaves_its_other_interface_positions_
         == "position<box>::action</impl>::position<trigger_pos>"
     )
     assert all_diags[5].inferred_at is None
+
+
+def test_error_state_a_callee_left_below_new_particle_after_expansion(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    all_diags = result.sorted_diagnostics()
+    assert len(all_diags) == 3
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.DestroyInEmptyPositionDiagnostic
+    )
+    assert all_diags[0].location.file_path is None
+    assert all_diags[0].location.line == 32
+    assert all_diags[0].location.column == 33
+    assert all_diags[0].position_name == "position</p>::position</c>"
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
+    assert all_diags[1].location.file_path is None
+    assert all_diags[1].location.line == 66
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].position_name == "position<w>"
+    assert all_diags[1].is_action_interface_position is False
+    assert all_diags[1].inferred_at is None
+    assert isinstance(
+        all_diags[2], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
+    assert all_diags[2].location.file_path is None
+    assert all_diags[2].location.line == 66
+    assert all_diags[2].location.column == 45
+    assert all_diags[2].position_name == "position<second>::position</p>"
+    assert all_diags[2].occupied_at.file_path is None
+    assert all_diags[2].occupied_at.line == 30
+    assert all_diags[2].occupied_at.column == 30
+
+
+def test_callee_guarantee_below_position_with_error_state_and_particle(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    all_diags = result.sorted_diagnostics()
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveToOccupiedPositionDiagnostic
+    )
+    assert all_diags[0].location.file_path is None
+    assert all_diags[0].location.line == 36
+    assert all_diags[0].location.column == 64
+    assert all_diags[0].position_name == "position<h>"
+    assert all_diags[0].occupied_at.file_path is None
+    assert all_diags[0].occupied_at.line == 35
+    assert all_diags[0].occupied_at.column == 30
+
+
+def test_invalid_chained_name_first_read_below_new_particle(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    all_diags = result.sorted_diagnostics()
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.ChainElementNotAssignedDiagnostic
+    )
+    assert all_diags[0].location.file_path is None
+    assert all_diags[0].location.line == 36
+    assert all_diags[0].location.column == 76
+    assert all_diags[0].element_name == "position<my.domain.com:my_lib:/zz>"
+    assert all_diags[0].parent_name == "position<my.domain.com:my_lib:/c>"
+
+
+def test_callee_guarantee_below_position_with_unknown_occupancy(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    all_diags = result.sorted_diagnostics()
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.ParentPositionNotOccupiedDiagnostic
+    )
+    assert all_diags[0].location.file_path is None
+    assert all_diags[0].location.line == 38
+    assert all_diags[0].location.column == 45
+    assert all_diags[0].position_name == "position<holder>::position</q>::position</r>"
+    assert all_diags[0].parent_position_name == "position<holder>::position</q>"
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert all_diags[1].location.file_path is None
+    assert all_diags[1].location.line == 39
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].position_name == "position<holder>::position</q>"
+    assert all_diags[1].required_empty is False
+    assert all_diags[1].required_value is False
+    assert all_diags[1].action_name == _FILL
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _FILL,
+            "line": 39,
+            "column": 30,
+            "file_path": None,
+        },
+        {
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _FILL,
+            "triggered_quality_name": None,
+            "line": 22,
+            "column": 30,
+            "file_path": None,
+        },
+    )

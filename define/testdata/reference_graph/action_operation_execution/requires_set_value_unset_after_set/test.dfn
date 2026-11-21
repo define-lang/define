@@ -1,0 +1,18 @@
+# A value requirement that the caller meets must not stop the callee's later
+# value requirements from being checked.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</run>.
+            }
+        }
+        create a particle in position<worker>.
+        create a particle in position<worker>::action</run>::position<first>.
+        set the value of position<worker>::action</run>::position<first> from literal<standard:/number>"2".
+        create a particle in position<worker>::action</run>::position<second>.
+        create a particle in position<worker>::action</run>::position<trigger>.
+    }
+}

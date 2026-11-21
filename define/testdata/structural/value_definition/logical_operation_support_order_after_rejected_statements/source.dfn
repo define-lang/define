@@ -1,0 +1,20 @@
+# A rejected Logical Operation Support Statement does not stop the checks of the statements after it.
+define the logical_operation<my.domain.com:my_lib:/add> {
+    define the view<result> {
+        it is written.
+    }
+}
+define the potential value<my.domain.com:my_lib:/number> {
+    it supports the logical_operation<my.domain.com:my_lib:/add> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/text/less_than> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/text/less_than> {
+        it may be read.
+    }
+    it supports the logical_operation<standard:/boolean/and> {
+        it may be read.
+    }
+}

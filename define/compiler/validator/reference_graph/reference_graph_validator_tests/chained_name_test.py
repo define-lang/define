@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from crates.source_rendering.python import rendering
 from define.compiler.errors import reference_graph_diagnostics, structural_diagnostics
 from define.compiler.validator.test_helpers import assert_no_errors
 
@@ -63,6 +64,66 @@ def test_short_names(
     assert_no_errors(
         validate_testdata_project_with_reference_graph().program_validation
     )
+
+
+def test_same_chain_through_action_not_interface_position_twice(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
+    assert result.program_validation.sorted_diagnostics() == [
+        reference_graph_diagnostics.ChainElementNotInterfacePositionDiagnostic(
+            location=rendering.SourceLocation(
+                line=11, column=63, end_line=11, end_column=79, file_path="test.dfn"
+            ),
+            element_name="position<no_such>",
+            parent_name="action<my.domain.com:my_lib:/act_b>",
+        ),
+        reference_graph_diagnostics.ChainElementNotInterfacePositionDiagnostic(
+            location=rendering.SourceLocation(
+                line=12, column=66, end_line=12, end_column=82, file_path="test.dfn"
+            ),
+            element_name="position<no_such>",
+            parent_name="action<my.domain.com:my_lib:/act_b>",
+        ),
+    ]
+
+
+def test_chain_through_missing_action_after_recreating_first_particle(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        structural_diagnostics.ReferencedFileNotFoundDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=35, end_line=8, end_column=42, file_path="test.dfn"
+            ),
+            file_path="missing.dfn",
+        ),
+    ]
+
+
+def test_chain_after_first_name_redefined(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    assert result.program_validation.sorted_diagnostics() == [
+        structural_diagnostics.LocalNameConflictDiagnostic(
+            location=rendering.SourceLocation(
+                line=13, column=20, end_line=13, end_column=30, file_path="test.dfn"
+            ),
+            local_name="a",
+            first_definition_line=6,
+        ),
+        reference_graph_diagnostics.ChainElementNotAssignedDiagnostic(
+            location=rendering.SourceLocation(
+                line=14, column=46, end_line=14, end_column=57, file_path="test.dfn"
+            ),
+            element_name="position<my.domain.com:my_lib:/q>",
+            parent_name="position<a>",
+        ),
+    ]
 
 
 class TestCreateParticle:

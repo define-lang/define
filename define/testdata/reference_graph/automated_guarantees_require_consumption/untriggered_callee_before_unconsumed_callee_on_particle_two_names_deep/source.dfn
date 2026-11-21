@@ -1,0 +1,44 @@
+# action</worker> runs on the particle in position<p>::position</q> and leaves
+# a particle in its interface position<result>. action</idle> on the same
+# particle is never triggered. Both actions report their own interface
+# positions.
+define the potential action<my.domain.com:my_lib:/idle> {
+    define the position<run>.
+    define the position<data>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<data>.
+        destroy the particle in position<run>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/worker> {
+    define the position<input>.
+    define the position<result>.
+    it happens when {
+        the position<input> has a particle.
+    } and it does {
+        move the particle in position<input> to position<result>.
+    }
+}
+define the potential position<my.domain.com:my_lib:/q> {
+    it may only contain particles where {
+        it has the action</idle>.
+        it has the action</worker>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<p> {
+        it may only contain particles where {
+            it has the position</q>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<p>.
+        create a particle in position<p>::position</q>.
+        create a particle in position<p>::position</q>::action</idle>::position<data>.
+        create a particle in position<p>::position</q>::action</worker>::position<input>.
+    }
+}

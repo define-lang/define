@@ -280,17 +280,24 @@ def test_local_view_without_encoding(
     ]
 
 
-def test_local_view_with_two_encodings(
+def test_local_view_with_three_encodings(
     validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
 ):
     result = validate_testdata_structural_non_filesystem()
     assert result.sorted_diagnostics() == [
         structural_diagnostics.LocalViewMultipleEncodingsDiagnostic(
             location=rendering.SourceLocation(
-                line=32, column=28, end_line=32, end_column=67
+                line=33, column=28, end_line=33, end_column=67
             ),
             first_encoding_name="encoding<standard:/number/natural/ascii>",
-            first_assignment_line=31,
+            first_assignment_line=32,
+        ),
+        structural_diagnostics.LocalViewMultipleEncodingsDiagnostic(
+            location=rendering.SourceLocation(
+                line=34, column=28, end_line=34, end_column=67
+            ),
+            first_encoding_name="encoding<standard:/number/natural/ascii>",
+            first_assignment_line=32,
         ),
     ]
 

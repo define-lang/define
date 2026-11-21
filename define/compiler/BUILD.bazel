@@ -148,8 +148,11 @@ py_test(
     deps = [
         ":driver",
         ":validation_pipeline",
+        ":work_pool",
+        "//crates/source_rendering/python:rendering",
         "//define/compiler/data_structures:define_path",
         "//define/compiler/errors:diagnostics",
+        "//define/compiler/errors:reference_graph_diagnostics",
         "//define/compiler/errors:structural_diagnostics",
         "//define/compiler/validator:test_helpers",
         "//define/compiler/validator/structural:program_validator",

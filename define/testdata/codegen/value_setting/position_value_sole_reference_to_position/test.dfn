@@ -1,0 +1,14 @@
+# action</filler> creates the particles in position</holder> and position</holder>::position</box>, and sets the value of position</holder>::position</box>.
+# The Value Setting Statement in action</test> is the only statement in action</test> that names position</box>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</filler>.
+    it also assigns the position</holder>.
+    it also assigns the position</result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</filler>::position<trigger>.
+        create a particle in position</result>.
+        set the value of position</result> from position</holder>::position</box>.
+    }
+}

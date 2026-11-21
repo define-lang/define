@@ -1,0 +1,7 @@
+test.create(/filler::trigger)
+filler.create(/holder)
+filler.create(/holder::/box)
+filler.set_value(/holder::/box, 4)
+filler.destroy(trigger)
+test.create(/result)
+test.set_value(/result, /holder::/box)

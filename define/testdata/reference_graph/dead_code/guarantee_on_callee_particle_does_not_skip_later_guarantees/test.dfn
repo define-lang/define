@@ -1,0 +1,31 @@
+# This action guarantees position<box>::action</inner>::position</item> is
+# occupied by a particle that action</inner> created, so no quality assignment
+# of this action belongs to that particle. That guarantee must not stop the
+# later guarantee on position<iface>::position</part> from keeping the value
+# quality assignment of position<made> alive.
+define the potential action<my.domain.com:my_lib:/test> {
+    define the position<box> {
+        it may only contain particles where {
+            it has the action</inner>.
+        }
+    }
+    define the position<iface> {
+        it may only contain particles where {
+            it has the position</part>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position<box>.
+        create a particle in position<box>::action</inner>::position<trigger_pos>.
+        define the position<made> {
+            it may only contain particles where {
+                it has the value<standard:/number/natural>.
+            }
+        }
+        create a particle in position<made>.
+        create a particle in position<iface>.
+        move the particle in position<made> to position<iface>::position</part>.
+    }
+}

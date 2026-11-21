@@ -1,0 +1,27 @@
+# action</close> sets position</value> before it destroys the particle, but
+# never touches position</other_value>. The value requirement on
+# position</value> holds when the particle is destroyed, and the requirement
+# on position</other_value> must still be checked against this action.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</cleanup>.
+                it has the position</value>.
+                it has the position</other_value>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<box>::position</value>.
+        create a particle in position<box>::position</other_value>.
+        define the position<worker> {
+            it may only contain particles where {
+                it has the action</close>.
+            }
+        }
+        create a particle in position<worker>.
+        move the particle in position<box> to position<worker>::action</close>::position<input>.
+    }
+}

@@ -205,3 +205,25 @@ def test_duplicate_argument(
             first_argument_line=40,
         )
     ]
+
+
+def test_looks_at_same_invalid_view_name_twice(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.sorted_diagnostics() == [
+        structural_diagnostics.InvalidLocalNameFormatDiagnostic(
+            location=rendering.SourceLocation(
+                line=40, column=47, end_line=40, end_column=47, file_path=None
+            ),
+            chars=("R",),
+            local_name="Result",
+        ),
+        structural_diagnostics.InvalidLocalNameFormatDiagnostic(
+            location=rendering.SourceLocation(
+                line=41, column=47, end_line=41, end_column=47, file_path=None
+            ),
+            chars=("R",),
+            local_name="Result",
+        ),
+    ]

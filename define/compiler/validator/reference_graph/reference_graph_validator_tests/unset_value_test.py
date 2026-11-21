@@ -1949,3 +1949,73 @@ def test_unset_value_a_callee_left_below_particle_it_created_is_reported_when_de
             "file_path": "cleanup.dfn",
         },
     )
+
+
+def test_destructor_contract_set_then_untouched_unset(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_validation
+    assert len(result.sorted_diagnostics()) == 2
+    diagnostic = result.sorted_diagnostics()[0]
+    assert isinstance(diagnostic, reference_graph_diagnostics.DeadValueWriteDiagnostic)
+    assert diagnostic.location.file_path == "close.dfn"
+    assert diagnostic.location.line == 10
+    assert diagnostic.location.column == 26
+    assert diagnostic.position_name == "position<input>::position</value>"
+    diagnostic = result.sorted_diagnostics()[1]
+    assert isinstance(
+        diagnostic, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert diagnostic.location.file_path == "test.dfn"
+    assert diagnostic.location.line == 25
+    assert diagnostic.location.column == 47
+    assert (
+        diagnostic.position_name
+        == "position<worker>::action</close>::position<input>::position</other_value>"
+    )
+    assert diagnostic.required_value is True
+    assert diagnostic.required_empty is False
+    assert diagnostic.action_name == "action<my.domain.com:my_lib:/close>"
+    assert_propagation_chain(
+        diagnostic,
+        {
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<box>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 11,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.PARTICLE_ORIGIN,
+            "enclosing_quality_name": "position<worker>::action</close>::position<input>",
+            "triggered_quality_name": None,
+            "line": 16,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/test>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/close>",
+            "line": 25,
+            "column": 47,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/close>",
+            "triggered_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "line": 11,
+            "column": 33,
+            "file_path": "close.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": "action<my.domain.com:my_lib:/cleanup>",
+            "triggered_quality_name": None,
+            "line": 23,
+            "column": 86,
+            "file_path": "cleanup.dfn",
+        },
+    )

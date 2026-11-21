@@ -1,0 +1,7 @@
+# Definitions are validated in the order they are first referenced. The reference from d to c closes the cycle when c and d have the same depth.
+define the potential position<mv:define-lang.org:coverage_cycle:/test> {
+    it may only contain particles where {
+        it has the position</a>.
+        it has the position</b>.
+    }
+}

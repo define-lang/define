@@ -1,0 +1,15 @@
+# The invalid second Move leaves position</item> in error. The Destructor
+# still reports that it empties position</spare>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</item>.
+    it also assigns the position</spare>.
+    it happens when {
+        this particle is being destroyed.
+    } and it does {
+        define the position<first>.
+        define the position<second>.
+        move the particle in position</item> to position<first>.
+        move the particle in position</item> to position<second>.
+        destroy the particle in position</spare>.
+    }
+}

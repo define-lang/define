@@ -1,0 +1,42 @@
+# action</middle> triggers action</worker> without filling its interface
+# position<input>, which action</middle> reports. The requirement of
+# action</worker> on position</g> comes after that requirement, and still
+# propagates into the contract of action</middle>. action</test> leaves
+# position<holder>::position</g> empty, so its trigger of action</middle> is
+# reported too.
+define the potential position<my.domain.com:my_lib:/g>.
+define the potential action<my.domain.com:my_lib:/worker> {
+    it also assigns the position</g>.
+    define the position<input>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<input>.
+        destroy the particle in position</g>.
+        destroy the particle in position<run>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/middle> {
+    it also assigns the action</worker>.
+    define the position<run>.
+    it happens when {
+        the position<run> has a particle.
+    } and it does {
+        destroy the particle in position<run>.
+        create a particle in action</worker>::position<run>.
+    }
+}
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</middle>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</middle>::position<run>.
+    }
+}

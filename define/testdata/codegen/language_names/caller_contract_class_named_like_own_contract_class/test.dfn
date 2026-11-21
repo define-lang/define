@@ -1,0 +1,11 @@
+# action</class_var> and action</class_var_> both produce ClassVarDestructionContracts.
+# action</class_var> executes action</class_var_>, so the module of action</class_var> holds a class for that execution.
+# That class must not take the name of the destruction contract class of action</class_var>.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the action</class_var>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in action</class_var>::position<trigger_pos>.
+    }
+}

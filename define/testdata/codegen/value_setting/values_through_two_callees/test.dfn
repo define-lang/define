@@ -1,0 +1,23 @@
+# action</test> sets a value and reads a value through chains that pass through two callees.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</result>.
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<caller> {
+            it may only contain particles where {
+                it has the action</outer>.
+            }
+        }
+        create a particle in position<caller>.
+        create a particle in position<caller>::action</outer>::position<trigger>.
+        create a particle in position<caller>::action</outer>::position<callee>::action</inner>::position<value>.
+        set the value of position<caller>::action</outer>::position<callee>::action</inner>::position<value> from literal<standard:/number>"4".
+        create a particle in position<caller>::action</outer>::position<callee>::action</inner>::position<copy>.
+        create a particle in position<caller>::action</outer>::position<callee>::action</inner>::position<trigger>.
+        create a particle in position</result>.
+        set the value of position</result> from position<caller>::action</outer>::position<callee>::action</inner>::position<copy>.
+        destroy the particle in position<caller>::action</outer>::position<callee>::action</inner>::position<value>.
+        destroy the particle in position<caller>::action</outer>::position<callee>::action</inner>::position<copy>.
+    }
+}

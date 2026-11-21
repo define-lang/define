@@ -1,0 +1,30 @@
+# view<missing> is not defined. That argument must not stop the later argument
+# from recording that the first execution writes view<partial>, which the
+# second execution then reads.
+define the operation<my.domain.com:my_lib:/total> {
+    define the view<partial> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+    define the view<result> {
+        it is written.
+        it may only contain particles where {
+            it has the value<standard:/number/natural>.
+        }
+    }
+
+    it does {
+        execute the operation<standard:/number/natural/add> {
+            with view<a> looking at view<missing>.
+            with view<b> looking at literal<standard:/number>"1".
+            with view<result> looking at view<partial>.
+        }
+        execute the operation<standard:/number/natural/add> {
+            with view<a> looking at view<partial>.
+            with view<b> looking at literal<standard:/number>"1".
+            with view<result> looking at view<result>.
+        }
+    }
+}

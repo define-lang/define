@@ -1,0 +1,17 @@
+# action</mid> moves the particle from position<incoming> below position<box>,
+# whose Destructor reads its value. The Destructor's value requirement becomes a
+# requirement of action</mid> on position<incoming>, which /test violates.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<holder> {
+            it may only contain particles where {
+                it has the action</mid>.
+            }
+        }
+        create a particle in position<holder>.
+        create a particle in position<holder>::action</mid>::position<incoming>.
+        create a particle in position<holder>::action</mid>::position<run>.
+    }
+}

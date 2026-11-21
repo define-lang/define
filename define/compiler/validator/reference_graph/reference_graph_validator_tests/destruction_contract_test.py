@@ -21,6 +21,7 @@ pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 _TEST = "action<my.domain.com:my_lib:/test>"
 _CALLER = "action<my.domain.com:my_lib:/caller>"
+_CHECK = "action<my.domain.com:my_lib:/check>"
 _CLOSE_FILE = "action<my.domain.com:my_lib:/close_file>"
 _DELETE_FILE1 = "action<my.domain.com:my_lib:/delete_file1>"
 _DELETE_FILE2 = "action<my.domain.com:my_lib:/delete_file2>"
@@ -896,5 +897,68 @@ def test_assignment_in_destructor_requirement_chain_appears_once(
             "line": 7,
             "column": 30,
             "file_path": "close_detail_destructor.dfn",
+        },
+    )
+
+
+def test_destructor_after_circular_destructor_is_validated(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(max_workers=1)
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
+    assert all_diags[0].cycle == [_DESTRUCTOR, _CLOSE_FILE, _DESTRUCTOR]
+    assert all_diags[0].location.line == 4
+    assert all_diags[0].location.column == 24
+    assert all_diags[0].location.file_path == "close_file.dfn"
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert all_diags[1].required_value is False
+    assert all_diags[1].required_empty is False
+    assert all_diags[1].location.line == 23
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == "test.dfn"
+    assert all_diags[1].action_name == _CLOSE_FILE
+    assert (
+        all_diags[1].position_name
+        == "position<box>::action</close_file>::position<target>::position</v>"
+    )
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CLOSE_FILE,
+            "line": 23,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<target>",
+            "triggered_quality_name": _CHECK,
+            "line": 5,
+            "column": 24,
+            "file_path": "close_file.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DESTRUCTOR_CASCADE,
+            "enclosing_quality_name": _CLOSE_FILE,
+            "triggered_quality_name": _CHECK,
+            "line": 12,
+            "column": 33,
+            "file_path": "close_file.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CHECK,
+            "triggered_quality_name": None,
+            "line": 7,
+            "column": 30,
+            "file_path": "check.dfn",
         },
     )

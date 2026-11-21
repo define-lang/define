@@ -1,0 +1,25 @@
+# action</destructor> and action</close_file> refer to each other, so
+# action</close_file> skips action</destructor> when it destroys
+# position<target>. action</close_file> still validates action</check>, the
+# Destructor after it, whose requirement on position</v> fails here.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<file> {
+            it may only contain particles where {
+                it has the action</destructor>.
+                it has the action</check>.
+            }
+        }
+        define the position<box> {
+            it may only contain particles where {
+                it has the action</close_file>.
+            }
+        }
+        create a particle in position<box>.
+        create a particle in position<file>.
+        move the particle in position<file> to position<box>::action</close_file>::position<target>.
+        create a particle in position<box>::action</close_file>::position<run>.
+    }
+}

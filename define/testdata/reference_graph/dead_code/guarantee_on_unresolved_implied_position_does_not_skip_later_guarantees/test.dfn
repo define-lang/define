@@ -1,0 +1,17 @@
+# position</copy> has no definition, so the guarantee this action makes about
+# it cannot keep any quality assignment alive. That guarantee must not stop the
+# later guarantee on position<iface> from keeping position</first> alive.
+define the potential action<my.domain.com:my_lib:/test> {
+    it also assigns the position</copy>.
+    define the position<iface> {
+        it may only contain particles where {
+            it has the position</first>.
+        }
+    }
+    it happens when {
+        this particle is created.
+    } and it does {
+        create a particle in position</copy>.
+        create a particle in position<iface>.
+    }
+}

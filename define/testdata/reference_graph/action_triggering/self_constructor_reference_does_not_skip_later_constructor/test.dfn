@@ -1,0 +1,17 @@
+# A constructor whose contract is unpublished because of a circular
+# reference must not stop the constructors assigned after it from being
+# triggered. The later constructor requires its interface position to be
+# occupied, which never holds when a constructor runs.
+define the potential action<my.domain.com:my_lib:/test> {
+    it happens when {
+        this particle is created.
+    } and it does {
+        define the position<item> {
+            it may only contain particles where {
+                it has the action</test>.
+                it has the action</consumer>.
+            }
+        }
+        create a particle in position<item>.
+    }
+}

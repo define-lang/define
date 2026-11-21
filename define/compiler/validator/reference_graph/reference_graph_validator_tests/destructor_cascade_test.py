@@ -173,3 +173,19 @@ def test_destroy_parent_does_not_fire_empty_child_destructor(
     assert all_diags[0].quality_name == "position</child>"
     assert all_diags[0].position_name == "position<box>"
     assert action_graph(result.concrete_program) == []
+
+
+def test_destroy_parent_with_unresolved_quality_fires_child_destructor(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
+    assert all_diags[0].file_path == "missing.dfn"
+    assert all_diags[0].location.line == 10
+    assert all_diags[0].location.column == 35
+    assert all_diags[0].location.file_path == "test.dfn"
+    assert action_graph(result.concrete_program) == [(_TEST, _CHILD_DESTRUCTOR)]

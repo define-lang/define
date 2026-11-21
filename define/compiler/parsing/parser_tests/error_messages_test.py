@@ -189,3 +189,24 @@ def test_invisible_character_in_comment_diagnostic_message(
             # a\\u{200b}b
                ^^^^^^^^
         comments may not have the invisible character U+200B ZERO WIDTH SPACE""")
+
+
+def test_unnamed_invisible_character_in_comment_diagnostic_message(
+    parse_with_diagnostics: ParseWithDiagnostics,
+):
+    source = (
+        "# a\u0378b\n"
+        + "define the potential position<mv:define-lang.org:parser:/path>.\n"
+    )
+    result = parse_with_diagnostics(source)
+    [diagnostic] = result.diagnostics
+    assert isinstance(
+        diagnostic, parser_diagnostics.InvisibleCharacterInCommentDiagnostic
+    )
+    assert diagnostic.format(
+        rendering.SourceMap(in_memory_source=source)
+    ) == textwrap.dedent("""\
+        line 1, column 4
+            # a\\u{378}b
+               ^^^^^^^
+        comments may not have the invisible character U+0378""")

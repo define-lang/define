@@ -899,10 +899,10 @@ class TestWithSuffix:
 class TestLiteralContentCharacterLocation:
     @pytest.mark.parametrize(
         ("index", "source_character"),
-        [(0, "a"), (1, "\\"), (2, "b"), (3, "\\"), (4, "c"), (5, "\\"), (6, "d")],
+        [(0, "X"), (1, "\\"), (2, "b"), (3, "\\"), (4, "c"), (5, "\\"), (6, "d")],
     )
     def test_points_at_source_character(self, index: int, source_character: str):
-        literal_line = '        set the value of position<dest> from literal</text>"a\\"b\\\\c\\nd".'
+        literal_line = '        set the value of position<dest> from literal</text>"X\\"b\\\\c\\nd".'
         source = (
             f"define the potential action<{_FQUN}:/test> {{\n"
             "    it happens when {\n"
@@ -920,7 +920,7 @@ class TestLiteralContentCharacterLocation:
         assert isinstance(statement, ast.ValueSettingStatement)
         literal = statement.source
         assert isinstance(literal, ast.Literal)
-        assert literal.content == 'a"b\\c\nd'
+        assert literal.content == 'X"b\\c\nd'
         location = literal.content_character_location(index)
         assert location.line == 6
         assert location.end_line == 6

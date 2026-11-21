@@ -321,3 +321,54 @@ def test_destructor_moving_received_particle_back_below_new_particle_does_not_re
     assert all_diags[3].location.column == 30
     assert all_diags[3].location.file_path == "test.dfn"
     assert all_diags[3].position_name == "position<box>"
+
+
+def test_body_error_does_not_stop_reporting_other_guarantees(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0], reference_graph_diagnostics.MoveFromEmptyPositionDiagnostic
+    )
+    assert all_diags[0].location.line == 12
+    assert all_diags[0].location.column == 30
+    assert all_diags[0].location.file_path == "test.dfn"
+    assert all_diags[0].position_name == "position</item>"
+    assert all_diags[0].is_action_interface_position is False
+    assert all_diags[0].inferred_at is None
+    assert isinstance(
+        all_diags[1],
+        reference_graph_diagnostics.DestructorProducesEmptyGuaranteeDiagnostic,
+    )
+    assert all_diags[1].location.line == 13
+    assert all_diags[1].location.column == 33
+    assert all_diags[1].location.file_path == "test.dfn"
+    assert all_diags[1].position_name == "position</spare>"
+
+
+def test_destructor_guarantees_from_one_callee_statement_are_reported_in_source_order(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0],
+        reference_graph_diagnostics.DestructorProducesEmptyGuaranteeDiagnostic,
+    )
+    assert all_diags[0].location.line == 7
+    assert all_diags[0].location.column == 33
+    assert all_diags[0].location.file_path == "emptier.dfn"
+    assert all_diags[0].position_name == "position<second_box>::position</item>"
+    assert isinstance(
+        all_diags[1],
+        reference_graph_diagnostics.DestructorProducesEmptyGuaranteeDiagnostic,
+    )
+    assert all_diags[1].location.line == 7
+    assert all_diags[1].location.column == 33
+    assert all_diags[1].location.file_path == "emptier.dfn"
+    assert all_diags[1].position_name == "position<first_box>::position</item>"

@@ -111,6 +111,7 @@ py_test(
         "//define/compiler:ast",
         "//define/compiler:name_types",
         "//define/compiler/errors:structural_diagnostics",
+        "@pypi//pytest",
     ],
 )
 

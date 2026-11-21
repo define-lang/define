@@ -8,6 +8,10 @@ from define.compiler.errors import (
     structural_diagnostics,
     syntax_errors,
 )
+from define.compiler.validator.reference_graph import propagation_step
+from define.compiler.validator.reference_graph.reference_graph_validator_tests.test_helpers import (
+    assert_propagation_chain,
+)
 from define.compiler.validator.reference_graph.test_helpers import (
     action_graph,
 )
@@ -22,6 +26,7 @@ if TYPE_CHECKING:
 pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 _TEST = "action<my.domain.com:my_lib:/test>"
+_CONSUMER = "action<my.domain.com:my_lib:/consumer>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
 _ACT_A = "action<my.domain.com:my_lib:/act_a>"
 _ACT_B = "action<my.domain.com:my_lib:/act_b>"
@@ -43,6 +48,61 @@ def test_self_constructor_reference_reports_circular_reference(
     assert all_diagnostics[0].location.file_path is None
     assert all_diagnostics[0].cycle == [_TEST, _TEST]
     assert all_diagnostics[0].location.line == 8
+
+
+def test_self_constructor_reference_does_not_skip_later_constructor(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph(max_workers=1)
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0], structural_diagnostics.CircularGlobalReferenceDiagnostic
+    )
+    assert all_diags[0].location.line == 11
+    assert all_diags[0].location.column == 28
+    assert all_diags[0].location.file_path == "test.dfn"
+    assert all_diags[0].cycle == [_TEST, _TEST]
+    assert isinstance(
+        all_diags[1], reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert all_diags[1].location.line == 15
+    assert all_diags[1].location.column == 30
+    assert all_diags[1].location.file_path == "test.dfn"
+    assert all_diags[1].required_value is False
+    assert all_diags[1].required_empty is False
+    assert all_diags[1].action_name == _CONSUMER
+    assert (
+        all_diags[1].position_name
+        == "position<item>::action</consumer>::position<input>"
+    )
+    assert_propagation_chain(
+        all_diags[1],
+        {
+            "kind": propagation_step.PropagationKind.QUALITY_ASSIGNED,
+            "enclosing_quality_name": "position<item>",
+            "triggered_quality_name": _CONSUMER,
+            "line": 12,
+            "column": 28,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.CONSTRUCTOR_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _CONSUMER,
+            "line": 15,
+            "column": 30,
+            "file_path": "test.dfn",
+        },
+        {
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _CONSUMER,
+            "triggered_quality_name": None,
+            "line": 6,
+            "column": 33,
+            "file_path": "consumer.dfn",
+        },
+    )
 
 
 def test_destroy_with_unresolved_action_quality_reports_reference_error(

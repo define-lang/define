@@ -12,6 +12,7 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.validation_pipeline import (
+        ValidateTestdataNonFilesystemWithReferenceGraph,
         ValidateTestdataProjectWithReferenceGraph,
     )
 
@@ -1363,3 +1364,54 @@ def test_implied_position_action_interface_is_checked_only_for_callees_implying_
         (_TEST, _OUTER_A),
         (_TEST, _OUTER_B),
     ]
+
+
+def test_untriggered_callee_before_unconsumed_callee_on_particle_two_names_deep(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph(
+        allow_entry_action_interface_positions=True
+    )
+    all_diags = result.sorted_diagnostics()
+    assert len(all_diags) == 2
+    assert isinstance(
+        all_diags[0],
+        reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic,
+    )
+    assert all_diags[0].action_name == "action</idle>"
+    assert (
+        all_diags[0].position_name
+        == "position<p>::position</q>::action</idle>::position<data>"
+    )
+    assert all_diags[0].location.line == 41
+    assert all_diags[0].location.column == 57
+    assert all_diags[0].location.file_path is None
+    assert isinstance(
+        all_diags[1],
+        reference_graph_diagnostics.UnconsumedActionInterfaceDiagnostic,
+    )
+    assert all_diags[1].action_name == "action</worker>"
+    assert (
+        all_diags[1].position_name
+        == "position<p>::position</q>::action</worker>::position<result>"
+    )
+    assert all_diags[1].location.line == 42
+    assert all_diags[1].location.column == 57
+    assert all_diags[1].location.file_path is None
+
+
+def test_move_between_interface_positions_before_trigger_leaves_first_arrival_untriggered(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    all_diags = result.sorted_diagnostics()
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0],
+        reference_graph_diagnostics.UntriggeredActionInterfaceDiagnostic,
+    )
+    assert all_diags[0].action_name == "action</worker>"
+    assert all_diags[0].position_name == "position<box>::action</worker>::position<i>"
+    assert all_diags[0].location.line == 28
+    assert all_diags[0].location.column == 45
+    assert all_diags[0].location.file_path is None

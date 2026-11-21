@@ -72,6 +72,20 @@ def test_output_only_target(
     ]
 
 
+def test_input_only_target(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_validation
+    assert result.sorted_diagnostics() == [
+        structural_diagnostics.ViewSettingInputOnlyTargetDiagnostic(
+            location=rendering.SourceLocation(
+                line=31, column=26, end_line=31, end_column=37, file_path="negate.dfn"
+            ),
+            view_name="view<number>",
+        )
+    ]
+
+
 def test_read_from_unwritten_local_view(
     validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
 ):
@@ -105,6 +119,27 @@ def test_read_from_unwritten_output_view(
             ),
             view_name="view<result>",
         )
+    ]
+
+
+def test_read_from_output_view_that_is_never_written(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph().program_validation
+    assert result.sorted_diagnostics() == [
+        structural_diagnostics.ViewSettingLocalTargetNotLookedAtDiagnostic(
+            location=rendering.SourceLocation(
+                line=21, column=26, end_line=21, end_column=35, file_path="negate.dfn"
+            ),
+            target_name="view<copy>",
+            source_name="view<result>",
+        ),
+        reference_graph_diagnostics.ViewSettingReadFromUnwrittenOutputViewDiagnostic(
+            location=rendering.SourceLocation(
+                line=21, column=42, end_line=21, end_column=53, file_path="negate.dfn"
+            ),
+            view_name="view<result>",
+        ),
     ]
 
 

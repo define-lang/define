@@ -19,12 +19,15 @@ from define.compiler.validator.test_helpers import assert_no_errors
 
 if TYPE_CHECKING:
     from define.compiler.test_fixtures.validation_pipeline import (
+        ValidateTestdataNonFilesystemWithReferenceGraph,
         ValidateTestdataProjectWithReferenceGraph,
     )
 
 pytest_plugins = ["define.compiler.test_fixtures.validation_pipeline"]
 
 _TEST = "action<my.domain.com:my_lib:/test>"
+_MIDDLE = "action<my.domain.com:my_lib:/middle>"
+_WORKER = "action<my.domain.com:my_lib:/worker>"
 _OTHER = "action<my.domain.com:my_lib:/other>"
 _CLOSE_FILE = "action<my.domain.com:my_lib:/close_file>"
 _PARENT = "action<my.domain.com:my_lib:/parent>"
@@ -966,3 +969,79 @@ def test_inner_action_local_failure_does_not_propagate_to_caller(
     assert action_graph(result.concrete_program) == [
         (_TEST, _OTHER),
     ]
+
+
+def test_requirement_after_unfilled_callee_interface_position_propagates(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    all_diags = result.sorted_diagnostics()
+    assert len(all_diags) == 2
+    first = all_diags[0]
+    assert isinstance(
+        first, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert first.location.file_path is None
+    assert first.location.line == 27
+    assert first.location.column == 30
+    assert first.required_empty is False
+    assert first.required_value is False
+    assert first.position_name == "action</worker>::position<input>"
+    assert first.action_name == _WORKER
+    assert_propagation_chain(
+        first,
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _WORKER,
+            "line": 27,
+            "column": 30,
+            "file_path": None,
+        },
+        {
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _WORKER,
+            "triggered_quality_name": None,
+            "line": 15,
+            "column": 33,
+            "file_path": None,
+        },
+    )
+    second = all_diags[1]
+    assert isinstance(
+        second, reference_graph_diagnostics.InferredRequirementViolationDiagnostic
+    )
+    assert second.location.file_path is None
+    assert second.location.line == 40
+    assert second.location.column == 30
+    assert second.required_empty is False
+    assert second.required_value is False
+    assert second.position_name == "position<holder>::position</g>"
+    assert second.action_name == _MIDDLE
+    assert_propagation_chain(
+        second,
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _TEST,
+            "triggered_quality_name": _MIDDLE,
+            "line": 40,
+            "column": 30,
+            "file_path": None,
+        },
+        {
+            "kind": propagation_step.PropagationKind.ACTION_TRIGGER,
+            "enclosing_quality_name": _MIDDLE,
+            "triggered_quality_name": _WORKER,
+            "line": 27,
+            "column": 30,
+            "file_path": None,
+        },
+        {
+            "kind": propagation_step.PropagationKind.DIRECT_INFERENCE,
+            "enclosing_quality_name": _WORKER,
+            "triggered_quality_name": None,
+            "line": 16,
+            "column": 33,
+            "file_path": None,
+        },
+    )

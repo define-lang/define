@@ -19,7 +19,7 @@ class ExpectedPropagationStep(TypedDict):
     triggered_quality_name: str | None
     line: int
     column: int
-    file_path: str
+    file_path: str | None
 
 
 def assert_propagation_chain(

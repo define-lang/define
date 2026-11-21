@@ -533,6 +533,18 @@ class TestFindLongestPrefixWhere:
             _key("a", "d"): _key("a"),
         }
 
+    def test_key_ignores_the_match_of_an_earlier_sibling_branch(self):
+        t: trie.ReparentingTrie[int] = trie.ReparentingTrie(default_factory=int)
+        t[_key("a", "b")] = 50
+        assert t.find_longest_prefixes_where(
+            (_key("a", "b"), _key("a", "c", "d"), _key("a", "c", "e")),
+            lambda value: value > 10,
+        ) == {
+            _key("a", "b"): _key("a", "b"),
+            _key("a", "c", "d"): None,
+            _key("a", "c", "e"): None,
+        }
+
 
 class TestIndependence:
     def test_parent_and_child_are_independent_values(self):

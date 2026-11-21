@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from crates.source_rendering.python import rendering
 from define.compiler import ast, name_types
 from define.compiler.errors import structural_diagnostics
@@ -352,6 +354,18 @@ class TestAuthorityPathFormat:
         assert result[0].location.end_line == 1
         assert result[0].location.end_column == 22
         assert result[0].location.file_path is None
+
+    def test_invalid_character_after_the_first(self):
+        result = _validate_authority_format(_authority("example.org/aB"))
+        assert result == [
+            structural_diagnostics.InvalidAuthorityPathSegmentDiagnostic(
+                location=rendering.SourceLocation(
+                    line=1, column=23, end_line=1, end_column=23
+                ),
+                segment="aB",
+                chars=("B",),
+            )
+        ]
 
     def test_multiple_invalid_segments(self):
         result = _validate_authority_format(_authority("example.org/Bad/.hidden"))
@@ -816,6 +830,22 @@ class TestLocalNameFormat:
         assert result[0].location.end_line == 1
         assert result[0].location.end_column == 12
         assert result[0].location.file_path is None
+
+    @pytest.mark.parametrize(
+        ("local_name", "column"),
+        [("aXb", 11), ("aXX", 11), ("XXa", 10)],
+    )
+    def test_uppercase_x(self, local_name: str, column: int):
+        result = name_validators.validate_local_name_format(_local_name(local_name))
+        assert result == [
+            structural_diagnostics.InvalidLocalNameFormatDiagnostic(
+                location=rendering.SourceLocation(
+                    line=1, column=column, end_line=1, end_column=column
+                ),
+                local_name=local_name,
+                chars=("X",),
+            )
+        ]
 
 
 class TestValidateFqun:

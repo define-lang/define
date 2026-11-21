@@ -202,6 +202,21 @@ class TestLoadFileErrors:
         assert invalid_encoding.escaped_char == "\\x80"
 
 
+class TestLoadSource:
+    def test_lone_surrogate_is_an_encoding_error(self):
+        loaded_file, file_diagnostics = file_loader.load_source("# note \ud800\n")
+
+        assert loaded_file.definitions == {}
+        assert file_diagnostics == [
+            syntax_errors.InvalidEncodingError(
+                location=rendering.SourceLocation(
+                    line=1, column=8, end_line=1, end_column=8
+                ),
+                escaped_char="\\xed",
+            )
+        ]
+
+
 class TestLoadFileDiagnostics:
     def test_path_mismatch(self, tmp_path: Path):
         source = "define the potential position<my.domain.com:my_lib:/wrong_path>.\n"

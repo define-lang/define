@@ -189,3 +189,33 @@ def test_missing_logical_operation_file(
             file_path="missing.dfn",
         )
     ]
+
+
+def test_logical_operation_support_order_after_rejected_statements(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.sorted_diagnostics() == [
+        structural_diagnostics.GlobalReferenceMustUseShortFormDiagnostic(
+            location=rendering.SourceLocation(
+                line=8, column=39, end_line=8, end_column=58
+            ),
+            fqun="my.domain.com:my_lib",
+        ),
+        structural_diagnostics.DuplicateLogicalOperationSupportDiagnostic(
+            location=rendering.SourceLocation(
+                line=14, column=21, end_line=14, end_column=63
+            ),
+            logical_operation_name="logical_operation<standard:/text/less_than>",
+            first_support_line=11,
+        ),
+        structural_diagnostics.LogicalOperationSupportOrderDiagnostic(
+            location=rendering.SourceLocation(
+                line=17, column=21, end_line=17, end_column=60
+            ),
+            logical_operation_name="logical_operation<standard:/boolean/and>",
+            logical_operation_name_it_must_precede=(
+                "logical_operation<standard:/text/less_than>"
+            ),
+        ),
+    ]

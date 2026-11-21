@@ -22,6 +22,7 @@ _CONSTRUCT = "action<my.domain.com:my_lib:/construct>"
 _CONSTRUCT_A = "action<my.domain.com:my_lib:/construct_a>"
 _CONSTRUCT_B = "action<my.domain.com:my_lib:/construct_b>"
 _INNER = "action<my.domain.com:my_lib:/inner>"
+_OTHER = "action<my.domain.com:my_lib:/other>"
 
 
 def test_consumes_implied_action_interface(
@@ -135,6 +136,22 @@ def test_missing_constructor_file_is_reported_and_skipped(
     assert all_diags[0].file_path == "construct.dfn"
     assert all_diags[0].location.file_path == "test.dfn"
     assert action_graph(result.concrete_program) == []
+
+
+def test_missing_constructor_file_does_not_skip_later_constructor(
+    validate_testdata_project_with_reference_graph: ValidateTestdataProjectWithReferenceGraph,
+):
+    result = validate_testdata_project_with_reference_graph()
+    all_diags = result.program_validation.sorted_diagnostics()
+    assert len(all_diags) == 1
+    assert isinstance(
+        all_diags[0], structural_diagnostics.ReferencedFileNotFoundDiagnostic
+    )
+    assert all_diags[0].location.line == 9
+    assert all_diags[0].location.column == 35
+    assert all_diags[0].file_path == "construct.dfn"
+    assert all_diags[0].location.file_path == "test.dfn"
+    assert action_graph(result.concrete_program) == [(_TEST, _OTHER)]
 
 
 def test_create_parent_not_occupied_does_not_fire_constructor(

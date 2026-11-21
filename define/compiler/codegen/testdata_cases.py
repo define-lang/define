@@ -27,7 +27,6 @@ def compile_case(
     output_dir: Path,
     *,
     trace_operations: bool = False,
-    max_threads: int | None = None,
 ) -> driver.CompilationResult:
     """Compile a case into ``output_dir``."""
     source_path = case_dir / _NON_FILESYSTEM_SOURCE
@@ -40,11 +39,9 @@ def compile_case(
                 source,
                 output_dir,
                 trace_operations=trace_operations,
-                max_threads=max_threads,
             )
         return driver.Driver().compile_program(
             Path(_FILESYSTEM_ENTRY),
             output_dir,
             trace_operations=trace_operations,
-            max_threads=max_threads,
         )

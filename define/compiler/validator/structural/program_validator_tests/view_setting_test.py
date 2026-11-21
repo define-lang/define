@@ -259,3 +259,18 @@ def test_value_quality_mismatch(
             source_value_quality="value<standard:/number/integer>",
         ),
     ]
+
+
+def test_local_target_not_looked_at_after_looked_at_target(
+    validate_testdata_structural_non_filesystem: ValidateTestdataStructuralNonFilesystem,
+):
+    result = validate_testdata_structural_non_filesystem()
+    assert result.sorted_diagnostics() == [
+        structural_diagnostics.ViewSettingLocalTargetNotLookedAtDiagnostic(
+            location=rendering.SourceLocation(
+                line=39, column=26, end_line=39, end_column=41
+            ),
+            target_name="view<other_copy>",
+            source_name="view<number>",
+        ),
+    ]

@@ -54,6 +54,16 @@ py_library(
     visibility = ["//tools:__pkg__"],
 )
 
+py_test(
+    name = "generated_program_runner_test",
+    size = "small",
+    srcs = ["generated_program_runner_test.py"],
+    deps = [
+        ":generated_program_runner",
+        "@pypi//pytest",
+    ],
+)
+
 py_library(
     name = "generator",
     srcs = ["generator.py"],
@@ -167,6 +177,7 @@ pyright_test(
         ":codegen",
         ":expected_programs_run_test",
         ":generated_program_runner",
+        ":generated_program_runner_test",
         ":generator",
         ":generator_integration_test",
         ":generator_test",

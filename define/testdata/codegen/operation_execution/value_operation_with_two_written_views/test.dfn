@@ -1,4 +1,4 @@
-# An action executes a Value Operation with two written views. Before that execution, the action executes a Value Operation whose one written view has the same name as one of them.
+# An action executes a Value Operation with two written views. Before that execution, the action executes a composite Value Operation whose one written view has the same name as one of them.
 define the potential action<my.domain.com:my_lib:/test> {
     it also assigns the position</least>.
     it also assigns the position</smallest>.

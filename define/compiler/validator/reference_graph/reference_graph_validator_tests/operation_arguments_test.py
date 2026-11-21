@@ -40,6 +40,20 @@ def test_undefined_view(
     ]
 
 
+def test_undefined_looked_at_view_before_defined_view(
+    validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
+):
+    result = validate_testdata_non_filesystem_with_reference_graph()
+    assert result.sorted_diagnostics() == [
+        structural_diagnostics.UndefinedLocalNameDiagnostic(
+            location=rendering.SourceLocation(
+                line=20, column=37, end_line=20, end_column=49, file_path=None
+            ),
+            local_name="view<missing>",
+        )
+    ]
+
+
 def test_out_of_order(
     validate_testdata_non_filesystem_with_reference_graph: ValidateTestdataNonFilesystemWithReferenceGraph,
 ):

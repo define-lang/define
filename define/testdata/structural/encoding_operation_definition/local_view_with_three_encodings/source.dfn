@@ -1,4 +1,5 @@
 # A local view in an Encoding Operation may only be assigned one encoding.
+# Each encoding after the first one is reported.
 define the encoding_operation<my.domain.com:my_lib:/minimum_of_three> {
     define the view<a> {
         it is read.
@@ -30,6 +31,7 @@ define the encoding_operation<my.domain.com:my_lib:/minimum_of_three> {
             it may only contain particles where {
                 it has the encoding<standard:/number/natural/ascii>.
                 it has the encoding<standard:/number/integer/ascii>.
+                it has the encoding<standard:/number/decimal/ascii>.
             }
         }
         execute the encoding_operation<standard:/number/natural/ascii/minimum> {
