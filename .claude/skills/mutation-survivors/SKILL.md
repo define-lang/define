@@ -70,19 +70,53 @@ These survivors are uninteresting:
 - Unreachable match arms and wildcards.
 - Timeouts caused by an infinite loop that the mutant creates, since a timeout
   still kills the mutant.
+- Behavior only on Windows, when the Windows VM kills the mutant or the mutant
+  is equivalent there.
+- Changes only to performance, such as a fast path that skips work the slow path
+  would also do.
+- Mutants that the user already decided to leave untested.
+
+A timeout can be a false kill. Under a full run's load, a test can run past its
+time limit without hanging, so the mutant may really survive. A mutant that
+really hangs times out a few seconds after the limit. The run's log gives each
+timeout's time, as `timed out by <test> in <seconds> s`. Check a timeout by hand
+(see Check One Mutant) when its time is well past the limit, or when the mutated
+code has no loop or wait that the mutant could make endless. Count the mutant as
+killed only if it times out again.
 
 ## Fix the Gaps
 
-- Prefer adding or improving tests. Do not change production code unless the
-  user asks for it.
+- Prefer adding or improving tests. Small, simple fixes to production code are
+  fine. Report larger fixes to the user first.
+- Before writing a unit test or a new kind of test file, look for a case that
+  fits the existing testdata, such as `define/testdata` or `//defcl/testdata`.
+  When a unit test is the only way, say why no testdata case works.
+- Remove dead code, dead regions and dead branches instead of testing them, and
+  report each removal with why the code is dead.
 - A test must be in the area to kill a mutant there. A mutant that only a test
-  outside the area would kill is reported as a survivor.
+  outside the area would kill is reported as a survivor. Add a test in the area
+  instead of adding packages to the area.
 - Tests tagged `no-coverage` do not run in mutation runs, so they kill no
   mutant.
 
+## Check One Mutant
+
+To check a few mutants without a run, such as a suspicious timeout or a new
+test's kill:
+
+1. Apply the mutant's patch from the survivors report to the working tree.
+2. Run the test that should kill the mutant, with the run's lint flags, from the
+   `lint_flags` field of the store's first line. Without them, a Rust mutant
+   that leaves code unused fails a lint that mutation runs turn off. Add
+   `--test_summary=short` to see how long the test took, since a test that runs
+   remotely leaves no local log.
+3. Revert the patch, and check that the working tree has only your intended
+   changes.
+
 ## Verify
 
-1. Run the targeted tests that cover the new or changed tests.
+1. Run the targeted tests that cover the new or changed tests, and check each
+   targeted mutant as in Check One Mutant.
 2. Make a snapshot commit of the working tree, without changing the branch or
    the user's index:
 
@@ -92,7 +126,7 @@ These survivors are uninteresting:
    GIT_INDEX_FILE=<scratch file> git commit-tree $(GIT_INDEX_FILE=<scratch file> git write-tree) -p HEAD -m Snapshot
    ```
 
-3. Rerun the tester with `--commit <snapshot>`, a new store, and the smallest
-   area that holds the mutated files and the new tests. Check that the mutants
-   you targeted are now killed.
+3. When the user asks for a run, rerun the tester with `--commit <snapshot>`, a
+   new store, and the smallest area that holds the mutated files and the new
+   tests. Check that the mutants you targeted are now killed.
 4. Finish with `bazelisk test --noshow_progress --ui_event_filters=-info //...`.
