@@ -44,8 +44,12 @@ The problems this mutation tester solves, and the intentions behind its design.
 - **Choose tests only by coverage that records every run of a line.** Coverage
   builds leave code unoptimized, since an optimized crate lets other crates copy
   its small functions, and coverage never counts those copies. A line that no
-  coverage records runs every test. The tests that record no coverage, such as
-  type checks, always run, so that skipping a test never hides a kill.
+  coverage records runs every test. The other tests that record no coverage
+  always run, so that skipping a test never hides a kill.
+- **Run only the type checks that check the mutated file.** A type check checks
+  only its own Python files and type stubs, so a mutant changes no other type
+  check's result. The type stubs of Rust extensions are written by hand, so a
+  Rust mutant runs no type check.
 - **Stop at the first failure.** Most mutants are killed, so most runs end
   early.
 - **Run one test before the rest.** A mutant first runs the test that runs its

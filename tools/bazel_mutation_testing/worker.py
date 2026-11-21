@@ -275,6 +275,19 @@ class Worker:
     def dependency_graph(self) -> dependency_graph.DependencyGraph:
         """Return the dependencies of the area's tests."""
         tests = f"tests({bazel.query_expression(self._test_patterns)})"
+        pyright_tests = bazel.run_checked(
+            self.worktree,
+            ["query", "--output=label", "--", f'attr(tags, "\\bpyright\\b", {tests})'],
+        )
+        pyright_sources = bazel.run_checked(
+            self.worktree,
+            [
+                "query",
+                "--output=label",
+                "--",
+                f'kind("^_pyright_sources rule$", deps({tests}))',
+            ],
+        )
         return dependency_graph.from_dot(
             bazel.run_checked(
                 self.worktree,
@@ -285,7 +298,9 @@ class Worker:
                     "--",
                     f"deps({tests})",
                 ],
-            )
+            ),
+            frozenset(pyright_tests.split()),
+            frozenset(pyright_sources.split()),
         )
 
     def _run_passing(self, arguments: list[str]):

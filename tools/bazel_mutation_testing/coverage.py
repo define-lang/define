@@ -16,7 +16,8 @@ class Selection(NamedTuple):
     """The tests that a mutant runs."""
 
     skipped: frozenset[str]
-    """The tests that record coverage but never run the mutant's lines."""
+    """The tests that record coverage but never run the mutant's lines, and
+    the pyright_tests that do not check the mutant's file."""
     covering_tests: int | None
     """How many tests that record coverage run the mutant's lines, or None when
     no coverage records them, so that every test runs."""
@@ -71,13 +72,19 @@ class Coverage:
             tests = recorded.get(starts.get(line, line))
             if tests is not None:
                 running = set(tests) if running is None else running | tests
+        # A pyright_test type-checks only the files it lists, so a mutant
+        # changes no other pyright_test's result. The stubs of Rust extensions
+        # are source files, so a Rust mutant changes no pyright_test's result.
+        not_checking = graph.pyright_tests_not_checking(path)
         if running is None:
-            return Selection(skipped=frozenset(), covering_tests=None, first_test=None)
+            return Selection(skipped=not_checking, covering_tests=None, first_test=None)
         if not running:
             # Only the tests that record no coverage run the mutant.
-            return Selection(skipped=self._tests, covering_tests=0, first_test=None)
+            return Selection(
+                skipped=self._tests | not_checking, covering_tests=0, first_test=None
+            )
         return Selection(
-            skipped=self._tests - running,
+            skipped=(self._tests - running) | not_checking,
             covering_tests=len(running),
             first_test=graph.closest_test(path, frozenset(running)),
         )
