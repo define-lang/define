@@ -399,6 +399,24 @@ py_binary(
     deps = [":runfiles"],
 )
 
+py_library(
+    name = "subprocess_coverage",
+    srcs = ["subprocess_coverage.py"],
+    visibility = ["//define/compiler:__pkg__"],
+    deps = ["@pypi//coverage"],
+)
+
+py_test(
+    name = "subprocess_coverage_test",
+    size = "small",
+    srcs = ["subprocess_coverage_test.py"],
+    deps = [
+        ":subprocess_coverage",
+        "@pypi//coverage",
+        "@pypi//pytest",
+    ],
+)
+
 py_binary(
     name = "sync_agent_permissions",
     srcs = ["sync_agent_permissions.py"],
@@ -515,6 +533,8 @@ pyright_test(
         ":serve_report",
         ":serve_report_test",
         ":setup_local_dev",
+        ":subprocess_coverage",
+        ":subprocess_coverage_test",
         ":sync_agent_permissions",
         ":sync_agent_permissions_test",
         ":update_lock",

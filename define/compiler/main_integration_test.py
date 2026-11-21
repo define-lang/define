@@ -12,9 +12,12 @@ import os
 import subprocess
 from typing import TYPE_CHECKING
 
-from tools import runfiles
+import pytest
+
+from tools import runfiles, subprocess_coverage
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from pathlib import Path
 
 _USAGE_ERROR = 2
@@ -29,6 +32,12 @@ _CONSTRUCTOR_SOURCE = (
     "    }\n"
     "}\n"
 )
+
+
+@pytest.fixture(scope="module")
+def compiler_coverage() -> Generator[None]:
+    with subprocess_coverage.measure_subprocesses():
+        yield
 
 
 def _binary_path() -> Path:
@@ -46,6 +55,7 @@ def _setup_project(tmp_path: Path, source: str = _POSITION_SOURCE):
     (tmp_path / "test.dfn").write_text(source, encoding="utf-8", newline="\n")
 
 
+@pytest.mark.usefixtures("compiler_coverage")
 class TestStdinPipe:
     def test_piped_source_without_file_validates(self, tmp_path: Path):
         _setup_project(tmp_path)

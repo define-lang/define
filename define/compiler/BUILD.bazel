@@ -185,6 +185,21 @@ py_test(
 py_binary(
     name = "main",
     srcs = ["main.py"],
+    # main_integration_test measures the coverage of this binary through
+    # PYTHONPATH, which Python ignores in isolated mode. -P and -s keep the
+    # rest of isolated mode, so that the script's directory, which has modules
+    # with the names of standard library modules, stays off sys.path.
+    interpreter_options = select({
+        "//tools/bzl:coverage_enabled": [
+            "-P",
+            "-s",
+        ],
+        "//conditions:default": [],
+    }),
+    isolated = select({
+        "//tools/bzl:coverage_enabled": False,
+        "//conditions:default": True,
+    }),
     visibility = ["//visibility:public"],
     deps = [
         ":constants",
@@ -199,10 +214,11 @@ py_test(
     srcs = ["main_integration_test.py"],
     data = [":main"],
     env = {"MAIN_BINARY": "$(rlocationpath :main)"},
-    # The compiler runs in a subprocess, so this test's own process executes no
-    # instrumented code and the coverage reporter fails on an empty data set.
-    tags = ["no-coverage"],
-    deps = ["//tools:runfiles"],
+    deps = [
+        "//tools:runfiles",
+        "//tools:subprocess_coverage",
+        "@pypi//pytest",
+    ],
 )
 
 py_test(
