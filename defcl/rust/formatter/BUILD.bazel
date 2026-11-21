@@ -25,9 +25,14 @@ rust_test(
     name = "defclfmt_test",
     size = "small",
     crate = ":defclfmt",
+    data = [":defclfmt"],
     lint_config = lint_config(),
     proc_macro_deps = ["@crates//:indoc"],
-    deps = ["@crates//:googletest"],
+    rustc_env = {"DEFCLFMT": "$(rlocationpath :defclfmt)"},
+    deps = [
+        "@crates//:googletest",
+        "@rules_rust//rust/runfiles",
+    ],
 )
 
 rust_library(

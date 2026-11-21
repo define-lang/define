@@ -259,6 +259,7 @@ mod tests {
     use googletest::prelude::*;
     use indoc::{formatdoc, indoc};
     use std::fmt::Write as _;
+    use std::io::Write as _;
     use std::path::PathBuf;
 
     /// What a line with bytes that are not valid UTF-8 shows in their place.
@@ -800,5 +801,37 @@ mod tests {
                 is a directory
             "})
         )
+    }
+
+    // The other tests call the formatting functions directly. This test runs
+    // the command, so that it covers how `main` chooses what to format and the
+    // exit status that `main` returns.
+    #[gtest]
+    fn command_formats_piped_standard_input_without_files() -> Result<()> {
+        let runfiles = runfiles::Runfiles::create().or_fail()?;
+        let defclfmt = runfiles::rlocation!(runfiles, env!("DEFCLFMT")).or_fail()?;
+        let mut command = std::process::Command::new(defclfmt)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .or_fail()?;
+        command
+            .stdin
+            .take()
+            .or_fail()?
+            .write_all(b"a: { b: 1 }\n")
+            .or_fail()?;
+        let finished = command.wait_with_output().or_fail()?;
+        verify_that!(finished.status.code(), some(eq(0)))?;
+        verify_that!(
+            String::from_utf8(finished.stdout).or_fail()?,
+            eq(indoc! {"
+                a: {
+                  b: 1
+                }
+            "})
+        )?;
+        verify_that!(finished.stderr, is_empty())
     }
 }

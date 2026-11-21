@@ -1,6 +1,5 @@
 load("@rules_py//py:defs.bzl", "py_library")
 load("//tools/bzl:build_file_checks.bzl", "check_build_file")
-load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
@@ -109,27 +108,10 @@ py_library(
         ":literal_encoder",
         ":value_quality_associations",
         "//define/compiler:ast",
+        "//define/compiler/data_structures:computed_once",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/validator/reference_graph:abstract_program",
         "@pypi//msgspec",
-    ],
-)
-
-py_test(
-    name = "value_operation_resolver_test",
-    size = "small",
-    srcs = ["value_operation_resolver_test.py"],
-    deps = [
-        ":abstract_operation_associations",
-        ":concrete_program",
-        ":literal_encoder",
-        ":value_operation_resolver",
-        ":value_quality_associations",
-        "//crates/source_rendering/python:rendering",
-        "//define/compiler:ast",
-        "//define/compiler/config:project_roots",
-        "//define/compiler/parsing:test_helpers",
-        "@pypi//pytest",
     ],
 )
 
@@ -140,25 +122,10 @@ py_library(
         "//define/compiler:ast",
         "//define/compiler/config:project_config",
         "//define/compiler/config:project_roots",
+        "//define/compiler/data_structures:computed_once",
         "//define/compiler/errors:association_resolution_diagnostics",
         "//define/compiler/errors:diagnostics",
         "//define/compiler/graphs:reference_graph",
-    ],
-)
-
-py_test(
-    name = "value_quality_associations_test",
-    size = "small",
-    srcs = ["value_quality_associations_test.py"],
-    deps = [
-        ":value_quality_associations",
-        "//crates/source_rendering/python:rendering",
-        "//define/compiler:ast",
-        "//define/compiler/config:project_roots",
-        "//define/compiler/errors:diagnostics",
-        "//define/compiler/graphs:reference_graph",
-        "//define/compiler/parsing:test_helpers",
-        "@pypi//pytest",
     ],
 )
 
@@ -172,9 +139,7 @@ pyright_test(
         ":encoding_operation_definition_validator",
         ":literal_encoder",
         ":value_operation_resolver",
-        ":value_operation_resolver_test",
         ":value_quality_associations",
-        ":value_quality_associations_test",
     ],
 )
 

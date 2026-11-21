@@ -58,12 +58,21 @@ def _read_while_first_loads(
     finish_first: threading.Event,
 ):
     """Read from two threads, where the second waits for the lock while the first loads."""
-    first = threading.Thread(target=read)
+
+    def read_then_set(finished: threading.Event):
+        # A thread that ends without reaching the step that sets its event
+        # still sets the event, so that the test fails instead of hanging.
+        try:
+            read()
+        finally:
+            finished.set()
+
+    first = threading.Thread(target=read_then_set, args=(first_is_loading,))
     first.start()
     _ = first_is_loading.wait()
     # The second thread finds nothing loaded yet, so it waits for the first
     # thread's lock, and then finds what the first thread stored.
-    second = threading.Thread(target=read)
+    second = threading.Thread(target=read_then_set, args=(lock.second_is_waiting,))
     second.start()
     _ = lock.second_is_waiting.wait()
     finish_first.set()
@@ -84,8 +93,10 @@ def test_concurrent_reads_load_each_association_table_once(
         universe: str,
     ) -> association_config.AssociationTable | project_roots.NoProjectConfig:
         loads.append(universe)
-        first_is_loading.set()
-        _ = finish_first.wait()
+        # A second load fails the test, so only the first load waits.
+        if len(loads) == 1:
+            first_is_loading.set()
+            _ = finish_first.wait()
         return table
 
     monkeypatch.setattr(roots, "_read_association_table", load_slowly)
@@ -124,8 +135,10 @@ def test_concurrent_reads_load_the_project_root_config_once(
         _declaring_entry: local_deps_config.LocalDependencyEntry | None,
     ) -> config_loader.Config | None:
         loads.append(root)
-        first_is_loading.set()
-        _ = finish_first.wait()
+        # A second load fails the test, so only the first load waits.
+        if len(loads) == 1:
+            first_is_loading.set()
+            _ = finish_first.wait()
         configs[root] = config
         return config
 
@@ -159,8 +172,10 @@ def test_concurrent_reads_load_each_sub_root_config_once(
         _declaring_entry: local_deps_config.LocalDependencyEntry | None,
     ) -> config_loader.Config | None:
         loads.append(root)
-        first_is_loading.set()
-        _ = finish_first.wait()
+        # A second load fails the test, so only the first load waits.
+        if len(loads) == 1:
+            first_is_loading.set()
+            _ = finish_first.wait()
         configs[root] = config
         return config
 

@@ -4,6 +4,22 @@ load("//tools/bzl:py_test.bzl", "py_test")
 load("//tools/bzl:pyright.bzl", "pyright_test")
 
 py_library(
+    name = "computed_once",
+    srcs = ["computed_once.py"],
+    visibility = ["//define/compiler:__subpackages__"],
+)
+
+py_test(
+    name = "computed_once_test",
+    size = "small",
+    srcs = ["computed_once_test.py"],
+    deps = [
+        ":computed_once",
+        "@pypi//pytest",
+    ],
+)
+
+py_library(
     name = "data_structures",
     srcs = ["__init__.py"],
     visibility = ["//define/compiler:__subpackages__"],
@@ -67,6 +83,8 @@ py_test(
 pyright_test(
     name = "pyright_test",
     deps = [
+        ":computed_once",
+        ":computed_once_test",
         ":data_structures",
         ":define_path",
         ":define_path_test",

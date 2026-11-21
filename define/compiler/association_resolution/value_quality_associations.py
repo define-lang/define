@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import threading
 import typing
 
 from define.compiler import ast
 from define.compiler.config import project_config, project_roots
+from define.compiler.data_structures import computed_once
 from define.compiler.errors import association_resolution_diagnostics
 from define.compiler.graphs import reference_graph
 
@@ -34,15 +34,13 @@ class ValueQualityAssociations:
         # The edge to each value quality's one encoding, or None if it has
         # none or is not defined, by the value quality's full typed name, once
         # something needs the encoding.
-        self._value_encodings: dict[str, reference_graph.ReferenceEdge | None] = {}
+        self._value_encodings: computed_once.ComputedOnce[
+            str, reference_graph.ReferenceEdge | None
+        ] = computed_once.ComputedOnce()
         # The diagnostics about the encoding of each value quality that
         # something needed. Each value quality is looked up once, so each
         # lookup adds its diagnostics once.
         self._diagnostics: list[diagnostics.Diagnostic] = []
-        # The lock that one thread holds while it looks up each value
-        # quality's encoding, by the value quality's full typed name, so that
-        # each is looked up only once.
-        self._value_encoding_locks: dict[str, threading.Lock] = {}
 
     def value_encoding(
         self, value_quality: ast.GlobalTypedNameReference
@@ -52,15 +50,9 @@ class ValueQualityAssociations:
         ``diagnostics`` returns why a value quality has no encoding.
         """
         name = value_quality.full_typed_name
-        # A recorded encoding is never replaced, so reading it needs no lock.
-        if name not in self._value_encodings:
-            # CPython's dict.setdefault is atomic, with or without the GIL, so
-            # every thread that needs this value quality gets the same lock.
-            with self._value_encoding_locks.setdefault(name, threading.Lock()):
-                # Another thread may have looked it up while this one waited.
-                if name not in self._value_encodings:
-                    self._value_encodings[name] = self._look_up_value_encoding(name)
-        edge = self._value_encodings[name]
+        edge = self._value_encodings.get(
+            name, lambda: self._look_up_value_encoding(name)
+        )
         if edge is None:
             return None
         return edge.global_name_reference

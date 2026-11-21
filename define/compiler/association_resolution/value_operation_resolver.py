@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import threading
 import typing
 
 import msgspec
 
 from define.compiler import ast
 from define.compiler.association_resolution import concrete_program
+from define.compiler.data_structures import computed_once
 from define.compiler.validator.reference_graph import abstract_program
 
 if typing.TYPE_CHECKING:
@@ -109,10 +109,9 @@ class ValueOperationResolver:
         # compiled statement by statement.
         self._literal_diagnostics: list[diagnostics.Diagnostic] = []
         # Each Value Operation's resolution for each set of encodings.
-        self._resolutions: dict[_ValueOperationEncodings, ResolvedValueOperation] = {}
-        # The lock that one thread holds while it works out the resolution of
-        # each key, so that each is worked out only once.
-        self._resolution_locks: dict[_ValueOperationEncodings, threading.Lock] = {}
+        self._resolutions: computed_once.ComputedOnce[
+            _ValueOperationEncodings, ResolvedValueOperation
+        ] = computed_once.ComputedOnce()
 
     def add_value_operation(
         self,
@@ -269,22 +268,16 @@ class ValueOperationResolver:
         """Return what executing the Value Operation runs when its interface views have ``encodings``, in their order, working it out only if no thread has."""
         encoding_names = _full_typed_names(encodings)
         key = (value_operation.typed_name.full_typed_name, encoding_names)
-        # A resolution is never removed, so a key that is present stays
-        # present. A resolution can be None, so presence is checked by key.
-        if key in self._resolutions:
-            return self._resolutions[key]
-        # CPython's dict.setdefault is atomic, with or without the GIL, so
-        # every thread that needs this key gets the same lock.
-        # A thread waits only for the lock of a Value Operation that the one it
-        # is working out executes, directly or through others. Value
+        # A thread waits only for the resolution of a Value Operation that the
+        # one it is working out executes, directly or through others. Value
         # Operations cannot execute each other in a cycle, so two threads never
         # wait for each other.
-        with self._resolution_locks.setdefault(key, threading.Lock()):
-            if key not in self._resolutions:
-                self._resolutions[key] = self._resolve_uncached_value_operation(
-                    value_operation, encoding_names, encodings
-                )
-        return self._resolutions[key]
+        return self._resolutions.get(
+            key,
+            lambda: self._resolve_uncached_value_operation(
+                value_operation, encoding_names, encodings
+            ),
+        )
 
     def _resolve_uncached_value_operation(
         self,
