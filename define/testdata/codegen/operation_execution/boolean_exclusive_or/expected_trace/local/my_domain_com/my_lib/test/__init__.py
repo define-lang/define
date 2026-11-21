@@ -5,7 +5,7 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.final_result
-import standard.boolean.exclusive_or
+import standard.boolean.ascii
 
 
 class TestAction(literal.Action):
@@ -35,7 +35,7 @@ class TestAction(literal.Action):
         literal.record_operation("test.set_value(unlocked, False)")
         self.on_particle.get_position(
             local.my_domain_com.my_lib.final_result.FinalResultPosition
-        ).particle.value = standard.boolean.exclusive_or.value_boolean_ascii(
+        ).particle.value = standard.boolean.ascii.encoding_exclusive_or(
             position_powered.particle.value,
             position_unlocked.particle.value,
         )

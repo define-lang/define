@@ -5,7 +5,7 @@ from typing import ClassVar, override
 from define.runtime import literal
 
 import local.my_domain_com.my_lib.final_result
-import standard.number.integer.maximum
+import standard.number.integer.ascii
 
 
 class TestAction(literal.Action):
@@ -25,7 +25,7 @@ class TestAction(literal.Action):
         position_reading.particle.value = -3
         self.on_particle.get_position(
             local.my_domain_com.my_lib.final_result.FinalResultPosition
-        ).particle.value = standard.number.integer.maximum.value_number_integer_ascii(
+        ).particle.value = standard.number.integer.ascii.encoding_maximum(
             position_reading.particle.value,
             4,
         )

@@ -162,6 +162,36 @@ _COMPUTER_OPERATIONS: Final[dict[str, _ComputerOperation]] = {
         right_view="view<b>",
         result_view="view<result>",
     ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/boolean/ascii/exclusive_or>": _BinaryOperation(
+        operator=renderer.BinaryOperator.ExclusiveOr(),
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/equals>": _BinaryOperation(
+        operator=renderer.BinaryOperator.Equal(),
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/maximum>": _binary_function_call(
+        "builtins", "max"
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/equals>": _BinaryOperation(
+        operator=renderer.BinaryOperator.Equal(),
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/maximum>": _binary_function_call(
+        "builtins", "max"
+    ),
+    f"encoding_operation<{constants.STANDARD_UNIVERSE}:/text/unicode/scalar/utf8/equals>": _BinaryOperation(
+        operator=renderer.BinaryOperator.Equal(),
+        left_view="view<a>",
+        right_view="view<b>",
+        result_view="view<result>",
+    ),
 }
 # Validation accepts exactly the computer operations that the compiler knows
 # how to perform, so code generation must perform every one of them.

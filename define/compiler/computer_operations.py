@@ -30,5 +30,11 @@ PERFORMABLE: Final = frozenset(
         f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/multiply>",
         f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/negate>",
         f"encoding_operation<{constants.STANDARD_UNIVERSE}:/text/unicode/scalar/utf8/less_than>",
+        f"encoding_operation<{constants.STANDARD_UNIVERSE}:/boolean/ascii/exclusive_or>",
+        f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/equals>",
+        f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/integer/ascii/maximum>",
+        f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/equals>",
+        f"encoding_operation<{constants.STANDARD_UNIVERSE}:/number/natural/ascii/maximum>",
+        f"encoding_operation<{constants.STANDARD_UNIVERSE}:/text/unicode/scalar/utf8/equals>",
     ]
 )

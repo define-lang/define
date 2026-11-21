@@ -343,6 +343,126 @@ encoding_operations: {
           }
         ]
       }
+    },
+    {
+      operation: "/boolean/exclusive_or"
+      encoding_operation: {
+        name: "/boolean/ascii/exclusive_or"
+        views: [
+          {
+            view: "a"
+            encoding: "/boolean/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/boolean/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/boolean/ascii"
+          }
+        ]
+      }
+    },
+    {
+      operation: "/number/integer/equals"
+      encoding_operation: {
+        name: "/number/integer/ascii/equals"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/boolean/ascii"
+          }
+        ]
+      }
+    },
+    {
+      operation: "/number/integer/maximum"
+      encoding_operation: {
+        name: "/number/integer/ascii/maximum"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/integer/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/integer/ascii"
+          }
+        ]
+      }
+    },
+    {
+      operation: "/number/natural/equals"
+      encoding_operation: {
+        name: "/number/natural/ascii/equals"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/boolean/ascii"
+          }
+        ]
+      }
+    },
+    {
+      operation: "/number/natural/maximum"
+      encoding_operation: {
+        name: "/number/natural/ascii/maximum"
+        views: [
+          {
+            view: "a"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "b"
+            encoding: "/number/natural/ascii"
+          },
+          {
+            view: "result"
+            encoding: "/number/natural/ascii"
+          }
+        ]
+      }
+    },
+    {
+      operation: "/text/unicode/scalar/equals"
+      encoding_operation: {
+        name: "/text/unicode/scalar/utf8/equals"
+        views: [
+          {
+            view: "a"
+            encoding: "/text/unicode/scalar/utf8"
+          },
+          {
+            view: "b"
+            encoding: "/text/unicode/scalar/utf8"
+          },
+          {
+            view: "result"
+            encoding: "/boolean/ascii"
+          }
+        ]
+      }
     }
   ]
 }
