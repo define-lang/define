@@ -11,7 +11,7 @@
 // Everything in this crate is optimized for performance, not readability
 // (other than the tests).
 
-use wide::u8x32;
+use wide::{i8x32, u8x32};
 
 /// The number of bytes that a scan compares at a time.
 pub const WIDTH: usize = 32;
@@ -40,68 +40,107 @@ pub struct QuotedContent {
 #[inline]
 #[must_use]
 pub fn quoted_content(source: &[u8]) -> QuotedContent {
+    let Some(&chunk) = source.first_chunk::<WIDTH>() else {
+        return short_quoted_content(source);
+    };
+    let vector = u8x32::new(chunk);
+    let stops = quoted_content_stops(vector);
+    if stops == 0 {
+        return long_quoted_content(source);
+    }
+    let length = stops.trailing_zeros() as usize;
+    let within = low_bits_before(stops);
+    let is_printable_ascii = unprintable_mask(vector) & within == 0;
+    // Printable ASCII has no UTF-8 continuation bytes, so counting continuation
+    // bytes happens only when the content has another byte.
+    let character_count = if is_printable_ascii {
+        length
+    } else {
+        length - (continuation_byte_mask(vector) & within).count_ones() as usize
+    };
+    QuotedContent {
+        length,
+        character_count,
+        is_printable_ascii,
+    }
+}
+
+/// Scans quoted content that starts fewer than 32 bytes before the end of the
+/// source.
+#[cold]
+#[inline(never)]
+fn short_quoted_content(source: &[u8]) -> QuotedContent {
+    let mut length = 0;
+    let mut continuation_bytes = 0;
+    let mut is_printable_ascii = true;
+    for &byte in source {
+        if matches!(byte, QUOTE | ESCAPE | LINE_FEED) {
+            break;
+        }
+        is_printable_ascii &= (b' '..=b'~').contains(&byte);
+        continuation_bytes += usize::from(byte & 0b1100_0000 == 0b1000_0000);
+        length += 1;
+    }
+    QuotedContent {
+        length,
+        character_count: length - continuation_bytes,
+        is_printable_ascii,
+    }
+}
+
+/// Scans quoted content that is at least 32 bytes long.
+#[inline(never)]
+fn long_quoted_content(source: &[u8]) -> QuotedContent {
     let (chunks, remainder) = source.as_chunks::<WIDTH>();
     let mut unprintable = 0;
-    let mut continuation_bytes = 0;
     for (index, &chunk) in chunks.iter().enumerate() {
         let vector = u8x32::new(chunk);
         let stops = quoted_content_stops(vector);
         if stops != 0 {
-            let length = stops.trailing_zeros() as usize;
-            let within = low_bits(length);
-            unprintable |= unprintable_mask(vector) & within;
-            continuation_bytes += (continuation_byte_mask(vector) & within).count_ones() as usize;
-            let length = index * WIDTH + length;
-            return QuotedContent {
-                length,
-                character_count: length - continuation_bytes,
-                is_printable_ascii: unprintable == 0,
-            };
+            let length = index * WIDTH + stops.trailing_zeros() as usize;
+            unprintable |= unprintable_mask(vector) & low_bits_before(stops);
+            return finish_quoted_content(source, length, unprintable == 0);
         }
         unprintable |= unprintable_mask(vector);
-        continuation_bytes += continuation_byte_mask(vector).count_ones() as usize;
     }
-    let (stops, remainder_unprintable, remainder_continuation) = match source.last_chunk::<WIDTH>()
-    {
-        // Loading the last 32 bytes of the source, which overlap bytes
-        // already scanned, is much faster than copying the remainder into
-        // a zeroed array.
-        Some(&last_chunk) if !remainder.is_empty() => {
-            let vector = u8x32::new(last_chunk);
-            let shift = WIDTH - remainder.len();
-            (
-                quoted_content_stops(vector) >> shift,
-                unprintable_mask(vector) >> shift,
-                continuation_byte_mask(vector) >> shift,
-            )
-        }
-        // For a source shorter than one vector, a byte loop is faster than
-        // copying it into a zeroed array.
-        _ => {
-            let mut stops = 0;
-            let mut remainder_unprintable = 0;
-            let mut continuation = 0;
-            for (index, &byte) in remainder.iter().enumerate() {
-                stops |= u32::from(matches!(byte, QUOTE | ESCAPE | LINE_FEED)) << index;
-                remainder_unprintable |= u32::from(!(b' '..=b'~').contains(&byte)) << index;
-                continuation |= u32::from(byte & 0b1100_0000 == 0b1000_0000) << index;
-            }
-            (stops, remainder_unprintable, continuation)
-        }
+    if remainder.is_empty() {
+        return finish_quoted_content(source, source.len(), unprintable == 0);
+    }
+    // Loading the last 32 bytes of the source, which overlap bytes already
+    // scanned, is much faster than copying the remainder into a zeroed array.
+    let Some(&last_chunk) = source.last_chunk::<WIDTH>() else {
+        unreachable!("long quoted content is at least 32 bytes long");
     };
+    let vector = u8x32::new(last_chunk);
+    let shift = WIDTH - remainder.len();
+    let stops = quoted_content_stops(vector) >> shift;
     let remainder_length = if stops == 0 {
         remainder.len()
     } else {
         stops.trailing_zeros() as usize
     };
-    let within = low_bits(remainder_length);
-    let length = chunks.len() * WIDTH + remainder_length;
+    unprintable |= (unprintable_mask(vector) >> shift) & low_bits(remainder_length);
+    finish_quoted_content(
+        source,
+        chunks.len() * WIDTH + remainder_length,
+        unprintable == 0,
+    )
+}
+
+/// Builds a `QuotedContent` for the first `length` bytes of `source`, counting
+/// UTF-8 characters only when `is_printable_ascii` is false.
+#[inline]
+fn finish_quoted_content(source: &[u8], length: usize, is_printable_ascii: bool) -> QuotedContent {
+    // Printable ASCII has as many characters as bytes.
+    let character_count = if is_printable_ascii {
+        length
+    } else {
+        character_count(&source[..length])
+    };
     QuotedContent {
         length,
-        character_count: length
-            - continuation_bytes
-            - (remainder_continuation & within).count_ones() as usize,
-        is_printable_ascii: unprintable == 0 && remainder_unprintable & within == 0,
+        character_count,
+        is_printable_ascii,
     }
 }
 
@@ -109,7 +148,10 @@ pub fn quoted_content(source: &[u8]) -> QuotedContent {
 /// stops: `"`, `\`, and line feed.
 #[inline]
 fn quoted_content_stops(vector: u8x32) -> u32 {
-    byte_mask(vector, QUOTE) | byte_mask(vector, ESCAPE) | byte_mask(vector, LINE_FEED)
+    (vector.simd_eq(u8x32::splat(QUOTE))
+        | vector.simd_eq(u8x32::splat(ESCAPE))
+        | vector.simd_eq(u8x32::splat(LINE_FEED)))
+    .to_bitmask()
 }
 
 /// What a scan of the rest of a line found.
@@ -126,54 +168,80 @@ pub struct RestOfLine {
 #[inline]
 #[must_use]
 pub fn rest_of_line(source: &[u8]) -> RestOfLine {
+    let Some(&chunk) = source.first_chunk::<WIDTH>() else {
+        return short_rest_of_line(source);
+    };
+    let vector = u8x32::new(chunk);
+    let line_feeds = byte_mask(vector, LINE_FEED);
+    if line_feeds == 0 {
+        return long_rest_of_line(source);
+    }
+    RestOfLine {
+        length: line_feeds.trailing_zeros() as usize,
+        is_printable_ascii: unprintable_mask(vector) & low_bits_before(line_feeds) == 0,
+    }
+}
+
+/// Scans the rest of a line that starts fewer than 32 bytes before the end of
+/// the source.
+#[cold]
+#[inline(never)]
+fn short_rest_of_line(source: &[u8]) -> RestOfLine {
+    let mut length = 0;
+    let mut is_printable_ascii = true;
+    for &byte in source {
+        if byte == LINE_FEED {
+            break;
+        }
+        is_printable_ascii &= (b' '..=b'~').contains(&byte);
+        length += 1;
+    }
+    RestOfLine {
+        length,
+        is_printable_ascii,
+    }
+}
+
+/// Scans the rest of a line that is at least 32 bytes long.
+#[inline(never)]
+fn long_rest_of_line(source: &[u8]) -> RestOfLine {
     let (chunks, remainder) = source.as_chunks::<WIDTH>();
     let mut unprintable = 0;
     for (index, &chunk) in chunks.iter().enumerate() {
         let vector = u8x32::new(chunk);
         let line_feeds = byte_mask(vector, LINE_FEED);
         if line_feeds != 0 {
-            let length = line_feeds.trailing_zeros() as usize;
-            unprintable |= unprintable_mask(vector) & low_bits(length);
+            unprintable |= unprintable_mask(vector) & low_bits_before(line_feeds);
             return RestOfLine {
-                length: index * WIDTH + length,
+                length: index * WIDTH + line_feeds.trailing_zeros() as usize,
                 is_printable_ascii: unprintable == 0,
             };
         }
         unprintable |= unprintable_mask(vector);
     }
-    let offset = chunks.len() * WIDTH;
-    let (line_feeds, remainder_unprintable) = match source.last_chunk::<WIDTH>() {
-        // Loading the last 32 bytes of the source, which overlap bytes already
-        // scanned, is much faster than copying the remainder into a zeroed
-        // array.
-        Some(&last_chunk) if !remainder.is_empty() => {
-            let vector = u8x32::new(last_chunk);
-            let shift = WIDTH - remainder.len();
-            (
-                byte_mask(vector, LINE_FEED) >> shift,
-                unprintable_mask(vector) >> shift,
-            )
-        }
-        // For a source shorter than one vector, a byte loop is faster than
-        // copying it into a zeroed array.
-        _ => {
-            let mut line_feeds = 0;
-            let mut remainder_unprintable = 0;
-            for (index, &byte) in remainder.iter().enumerate() {
-                line_feeds |= u32::from(byte == LINE_FEED) << index;
-                remainder_unprintable |= u32::from(!(b' '..=b'~').contains(&byte)) << index;
-            }
-            (line_feeds, remainder_unprintable)
-        }
+    if remainder.is_empty() {
+        return RestOfLine {
+            length: source.len(),
+            is_printable_ascii: unprintable == 0,
+        };
+    }
+    // Loading the last 32 bytes of the source, which overlap bytes already
+    // scanned, is much faster than copying the remainder into a zeroed array.
+    let Some(&last_chunk) = source.last_chunk::<WIDTH>() else {
+        unreachable!("long rest of line is at least 32 bytes long");
     };
+    let vector = u8x32::new(last_chunk);
+    let shift = WIDTH - remainder.len();
+    let line_feeds = byte_mask(vector, LINE_FEED) >> shift;
     let length = if line_feeds == 0 {
         remainder.len()
     } else {
         line_feeds.trailing_zeros() as usize
     };
+    unprintable |= (unprintable_mask(vector) >> shift) & low_bits(length);
     RestOfLine {
-        length: offset + length,
-        is_printable_ascii: unprintable == 0 && remainder_unprintable & low_bits(length) == 0,
+        length: chunks.len() * WIDTH + length,
+        is_printable_ascii: unprintable == 0,
     }
 }
 
@@ -184,21 +252,29 @@ pub fn unprintable_mask(vector: u8x32) -> u32 {
     !in_range_mask(vector, b' ', b'~')
 }
 
-/// Returns a mask of the bytes in `vector` from `low` through `high`.
+/// Returns a lane mask of the bytes in `vector` from `low` through `high`,
+/// where `high - low` is less than 255.
+#[inline]
+#[must_use]
+pub fn in_range_vector(vector: u8x32, low: u8, high: u8) -> u8x32 {
+    // Shifting `low` to `i8::MIN` makes signed comparison check the unsigned
+    // distance from `low` in two vector instructions on AVX2 and NEON as well
+    // as AVX-512.
+    let shifted = (vector - u8x32::splat(low.wrapping_add(0x80))).cast_signed();
+    let limit = i8x32::splat((high - low).wrapping_sub(0x7F).cast_signed());
+    shifted.simd_lt(limit).cast_unsigned()
+}
+
+/// Returns a mask of the bytes in `vector` from `low` through `high`, where
+/// `high - low` is less than 255.
 #[inline]
 #[must_use]
 pub fn in_range_mask(vector: u8x32, low: u8, high: u8) -> u32 {
-    // Subtracting wraps, so the bytes in the range are exactly those that
-    // become at most `high` - `low`.
-    let offset = vector - u8x32::splat(low);
-    offset
-        .min(u8x32::splat(high - low))
-        .simd_eq(offset)
-        .to_bitmask()
+    in_range_vector(vector, low, high).to_bitmask()
 }
 
 /// Counts the UTF-8 characters in `text`.
-#[inline]
+#[inline(never)]
 #[must_use]
 pub fn character_count(text: &[u8]) -> usize {
     let (chunks, remainder) = text.as_chunks::<WIDTH>();
@@ -232,10 +308,7 @@ pub fn character_count(text: &[u8]) -> usize {
 #[must_use]
 pub fn continuation_byte_mask(vector: u8x32) -> u32 {
     // As signed bytes, the continuation bytes are exactly the values below -64.
-    vector
-        .cast_signed()
-        .simd_lt(wide::i8x32::splat(-64))
-        .to_bitmask()
+    vector.cast_signed().simd_lt(i8x32::splat(-64)).to_bitmask()
 }
 
 /// Returns a mask with a bit set for each byte of `vector` that is `byte`.
@@ -263,6 +336,14 @@ pub const fn low_bits(count: usize) -> u32 {
     } else {
         (1 << count) - 1
     }
+}
+
+/// Returns a mask of the bits below the lowest set bit of `mask`, or all ones
+/// if `mask` is zero.
+#[inline]
+#[must_use]
+pub const fn low_bits_before(mask: u32) -> u32 {
+    !mask & mask.wrapping_sub(1)
 }
 
 #[cfg(test)]
@@ -381,6 +462,31 @@ mod tests {
                 is_printable_ascii: true,
             })
         );
+    }
+
+    #[gtest]
+    fn quoted_content_ending_in_second_vector() -> Result<()> {
+        let source = [&[b'a'; 40][..], b"\"", &[b'b'; 32][..]].concat();
+        verify_that!(
+            quoted_content(&source),
+            eq(QuotedContent {
+                length: 40,
+                character_count: 40,
+                is_printable_ascii: true,
+            })
+        )
+    }
+
+    #[gtest]
+    fn quoted_content_with_non_ascii_near_end_of_source() -> Result<()> {
+        verify_that!(
+            quoted_content("café\"".as_bytes()),
+            eq(QuotedContent {
+                length: 5,
+                character_count: 4,
+                is_printable_ascii: false,
+            })
+        )
     }
 
     #[gtest]
@@ -641,5 +747,28 @@ mod tests {
                 is_printable_ascii: false,
             })
         )
+    }
+
+    #[gtest]
+    fn low_bits_before_boundaries() {
+        expect_that!(low_bits_before(0), eq(u32::MAX));
+        expect_that!(low_bits_before(1), eq(0));
+        expect_that!(low_bits_before(0b10100), eq(0b11));
+        expect_that!(low_bits_before(1 << 31), eq(0x7FFF_FFFF));
+    }
+
+    #[gtest]
+    fn in_range_mask_boundaries() -> Result<()> {
+        let mut bytes = [0u8; WIDTH];
+        bytes[0] = 0;
+        bytes[1] = b'a' - 1;
+        bytes[2] = b'a';
+        bytes[3] = b'z';
+        bytes[4] = b'z' + 1;
+        bytes[5] = 254;
+        bytes[6] = 255;
+        let vector = u8x32::new(bytes);
+        verify_that!(in_range_mask(vector, b'a', b'z'), eq(0b1100))?;
+        verify_that!(in_range_mask(vector, 0, 254), eq(!(1u32 << 6)))
     }
 }

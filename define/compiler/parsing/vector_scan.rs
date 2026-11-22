@@ -32,7 +32,8 @@
 // other files.
 
 use source_scanning::{
-    WIDTH, byte_mask, continuation_byte_mask, low_bits, rest_of_line, unprintable_mask, zero_padded,
+    WIDTH, byte_mask, character_count, continuation_byte_mask, low_bits, low_bits_before,
+    rest_of_line, unprintable_mask, zero_padded,
 };
 use std::marker::PhantomData;
 use std::num::NonZeroU32;
@@ -246,11 +247,12 @@ fn scan_name_content<Scanned: ScannedNameContent>(source: &[u8]) -> Scanned {
     let Some(&chunk) = source.first_chunk::<WIDTH>() else {
         return short_name_content(source);
     };
-    let masks = NameContentMasks::of(u8x32::new(chunk));
+    let vector = u8x32::new(chunk);
+    let masks = NameContentMasks::of(vector);
     if masks.ends == 0 {
         return long_name_content(source);
     }
-    name_content_in_vector(masks, masks.ends.trailing_zeros() as usize)
+    name_content_in_vector(vector, masks)
 }
 
 /// Masks of the bytes in one vector that a scan of name content looks for,
@@ -261,8 +263,6 @@ struct NameContentMasks {
     ends: u32,
     /// The bytes that are not from ` ` through `~`.
     unprintable: u32,
-    /// The UTF-8 continuation bytes (`10xxxxxx`).
-    continuation: u32,
     component_separators: u32,
     spaces: u32,
     path_separators: u32,
@@ -272,7 +272,6 @@ impl NameContentMasks {
     const NONE: Self = Self {
         ends: 0,
         unprintable: 0,
-        continuation: 0,
         component_separators: 0,
         spaces: 0,
         path_separators: 0,
@@ -281,9 +280,10 @@ impl NameContentMasks {
     #[inline]
     fn of(vector: u8x32) -> Self {
         Self {
-            ends: byte_mask(vector, NAME_CONTENT_END) | byte_mask(vector, LINE_FEED),
+            ends: (vector.simd_eq(u8x32::splat(NAME_CONTENT_END))
+                | vector.simd_eq(u8x32::splat(LINE_FEED)))
+            .to_bitmask(),
             unprintable: unprintable_mask(vector),
-            continuation: continuation_byte_mask(vector),
             component_separators: byte_mask(vector, COMPONENT_SEPARATOR),
             spaces: byte_mask(vector, SPACE),
             path_separators: byte_mask(vector, PATH_SEPARATOR),
@@ -298,7 +298,6 @@ impl NameContentMasks {
         Self {
             ends: self.ends >> shift,
             unprintable: self.unprintable >> shift,
-            continuation: self.continuation >> shift,
             component_separators: self.component_separators >> shift,
             spaces: self.spaces >> shift,
             path_separators: self.path_separators >> shift,
@@ -314,67 +313,84 @@ impl NameContentMasks {
 #[cold]
 #[inline(never)]
 fn short_name_content<Scanned: ScannedNameContent>(source: &[u8]) -> Scanned {
-    let mut masks = NameContentMasks::of(zero_padded(source));
+    let vector = zero_padded(source);
+    let mut masks = NameContentMasks::of(vector);
     masks.ends |= !low_bits(source.len());
-    name_content_in_vector(masks, masks.ends.trailing_zeros() as usize)
+    name_content_in_vector(vector, masks)
 }
 
-/// Scans the first `length` bytes of a vector with `masks`, where `length` is
-/// less than 32.
+/// Scans the name content in `vector` when its end is in `vector`, given
+/// `masks` for `vector` with `masks.ends != 0`.
 #[inline]
 fn name_content_in_vector<Scanned: ScannedNameContent>(
+    vector: u8x32,
     masks: NameContentMasks,
-    length: usize,
 ) -> Scanned {
-    let within = low_bits(length);
+    let length = masks.ends.trailing_zeros() as usize;
+    let within = low_bits_before(masks.ends);
     let component_separators = masks.component_separators & within;
+    let spaces = masks.spaces & within;
+    let path_separators = masks.path_separators & within;
+    // `&` rather than `&&`, which compiles to a branch.
+    let is_local_name = Scanned::FINDS_LOCAL_NAMES
+        & (length != 0)
+        & ((component_separators | path_separators | spaces) == 0);
     let path_starts = if Scanned::PATH_STARTS_AT_END {
         1 << length
     } else {
         // A `/` can begin the path of a global name when it is first or
         // follows a `:`, and when at least one more byte follows it in the
         // name content.
-        masks.path_separators & ((component_separators << 1) | 1) & (within >> 1)
+        path_separators & ((component_separators << 1) | 1) & (within >> 1)
     };
     let first_path_start = path_starts.trailing_zeros();
-    let is_global_name = first_path_start < (masks.spaces & within).trailing_zeros();
-    // The `:`s before the first `/` that can begin a path. A global name's
-    // path follows its last `:`, if it has one.
-    let fqun_separators = component_separators & !path_starts & path_starts.wrapping_sub(1);
-    // An FQUN with no path ends where its last component does, as if a `:`
-    // were there.
-    let last = if Scanned::PATH_STARTS_AT_END {
-        first_path_start
+    let is_global_name = first_path_start < spaces.trailing_zeros();
+    let fqun_separators = if is_global_name {
+        // The `:`s before the first `/` that can begin a path. A global name's
+        // path follows its last `:`, if it has one.
+        let separators = component_separators & low_bits_before(path_starts);
+        let count = separators.count_ones() + u32::from(Scanned::PATH_STARTS_AT_END);
+        NonZeroU32::new(count).map(|count| {
+            // An FQUN with no path ends where its last component does, as if a
+            // `:` were there.
+            let last = if Scanned::PATH_STARTS_AT_END {
+                first_path_start
+            } else {
+                first_path_start.wrapping_sub(1)
+            };
+            let first = if Scanned::PATH_STARTS_AT_END {
+                separators.trailing_zeros().min(last)
+            } else {
+                separators.trailing_zeros()
+            };
+            let second = (separators & separators.wrapping_sub(1))
+                .trailing_zeros()
+                .min(last);
+            FqunSeparators {
+                count,
+                first,
+                second,
+                last,
+            }
+        })
     } else {
-        first_path_start.wrapping_sub(1)
+        None
     };
-    // The fields are computed before the `Option` is, so that `None`, which
-    // is only a count of 0, is no branch away from `Some`.
-    let first = if Scanned::PATH_STARTS_AT_END {
-        fqun_separators.trailing_zeros().min(last)
+    let is_printable_ascii = masks.unprintable & within == 0;
+    // Printable ASCII has as many characters as bytes, so counting UTF-8
+    // continuation bytes happens only when the name content has another byte.
+    let character_count = if is_printable_ascii {
+        length
     } else {
-        fqun_separators.trailing_zeros()
+        length - (continuation_byte_mask(vector) & within).count_ones() as usize
     };
-    let second = (fqun_separators & fqun_separators.wrapping_sub(1))
-        .trailing_zeros()
-        .min(last);
-    let separator_count = fqun_separators.count_ones() + u32::from(Scanned::PATH_STARTS_AT_END);
-    let count = separator_count & 0u32.wrapping_sub(u32::from(is_global_name));
     Scanned::new(
         length,
-        length - (masks.continuation & within).count_ones() as usize,
-        masks.unprintable & within == 0,
+        character_count,
+        is_printable_ascii,
         is_global_name,
-        NonZeroU32::new(count).map(|count| FqunSeparators {
-            count,
-            first,
-            second,
-            last,
-        }),
-        // `&` rather than `&&`, which compiles to a branch.
-        Scanned::FINDS_LOCAL_NAMES
-            & (length != 0)
-            & ((component_separators | masks.path_separators | masks.spaces) & within == 0),
+        fqun_separators,
+        is_local_name,
     )
 }
 
@@ -398,11 +414,11 @@ fn long_name_content<Scanned: ScannedNameContent>(source: &[u8]) -> Scanned {
     let decided = loop {
         let Some(&chunk) = chunks.next() else {
             let (masks, length) = last_vector_masks(source, remainder.len());
-            return undecided.finish(bytes, masks, length);
+            return undecided.finish(source, bytes, masks, length);
         };
         let masks = NameContentMasks::of(u8x32::new(chunk));
         if masks.ends != 0 {
-            return undecided.finish(bytes, masks, masks.ends.trailing_zeros() as usize);
+            return undecided.finish(source, bytes, masks, masks.ends.trailing_zeros() as usize);
         }
         if let Some(decided) = undecided.add(masks, bytes.offset) {
             bytes.add(masks, WIDTH);
@@ -413,12 +429,12 @@ fn long_name_content<Scanned: ScannedNameContent>(source: &[u8]) -> Scanned {
     for &chunk in chunks {
         let masks = NameContentMasks::of(u8x32::new(chunk));
         if masks.ends != 0 {
-            return decided.finish(bytes, masks, masks.ends.trailing_zeros() as usize);
+            return decided.finish(source, bytes, masks, masks.ends.trailing_zeros() as usize);
         }
         bytes.add(masks, WIDTH);
     }
     let (masks, length) = last_vector_masks(source, remainder.len());
-    decided.finish(bytes, masks, length)
+    decided.finish(source, bytes, masks, length)
 }
 
 /// Returns the masks of the last vector of long name content, which runs to
@@ -445,7 +461,6 @@ struct LongNameBytes {
     /// The index in the name content of the next vector's first byte.
     offset: u32,
     unprintable_bytes: u32,
-    continuation_bytes: usize,
 }
 
 impl LongNameBytes {
@@ -453,16 +468,13 @@ impl LongNameBytes {
         Self {
             offset: 0,
             unprintable_bytes: 0,
-            continuation_bytes: 0,
         }
     }
 
     /// Adds the first `length` bytes of the next vector, given its `masks`.
     #[inline]
     const fn add(&mut self, masks: NameContentMasks, length: usize) {
-        let within = low_bits(length);
-        self.unprintable_bytes |= masks.unprintable & within;
-        self.continuation_bytes += (masks.continuation & within).count_ones() as usize;
+        self.unprintable_bytes |= masks.unprintable & low_bits(length);
         self.offset += WIDTH_U32;
     }
 }
@@ -548,7 +560,7 @@ impl<Scanned: ScannedNameContent> UndecidedName<Scanned> {
                 & ((component_separators << 1) | self.follows_component_separator)
                 & within
         };
-        let separators = component_separators & !path_starts & path_starts.wrapping_sub(1);
+        let separators = component_separators & low_bits_before(path_starts);
         let after_first = separators & separators.wrapping_sub(1);
         // The first two `:`s in this vector, or `u32::MAX` where there are
         // fewer. A later vector's indexes are all greater than an earlier one's,
@@ -580,9 +592,10 @@ impl<Scanned: ScannedNameContent> UndecidedName<Scanned> {
 
     /// Adds the first `length` bytes of the vector in which the name content
     /// ends, given its `masks`, to `bytes`, and returns what the scan found.
-    #[inline]
+    #[inline(always)]
     fn finish(
         mut self,
+        source: &[u8],
         mut bytes: LongNameBytes,
         masks: NameContentMasks,
         length: usize,
@@ -602,16 +615,17 @@ impl<Scanned: ScannedNameContent> UndecidedName<Scanned> {
         );
         let is_local_name = Scanned::FINDS_LOCAL_NAMES & (self.local_name_breaks == 0);
         bytes.add(masks, length);
-        decided.scanned(bytes, offset as usize + length, is_local_name)
+        decided.scanned(source, bytes, offset as usize + length, is_local_name)
     }
 }
 
 impl DecidedName {
     /// Adds the first `length` bytes of the vector in which the name content
     /// ends, given its `masks`, to `bytes`, and returns what the scan found.
-    #[inline]
+    #[inline(always)]
     fn finish<Scanned: ScannedNameContent>(
         self,
+        source: &[u8],
         mut bytes: LongNameBytes,
         masks: NameContentMasks,
         length: usize,
@@ -620,7 +634,7 @@ impl DecidedName {
         bytes.add(masks, length);
         // Name content with a space or a `/` that can begin a path is not a
         // local name.
-        self.scanned(bytes, total_length, false)
+        self.scanned(source, bytes, total_length, false)
     }
 
     /// Returns what a scan of name content that is `total_length` bytes long,
@@ -628,6 +642,7 @@ impl DecidedName {
     #[inline]
     fn scanned<Scanned: ScannedNameContent>(
         self,
+        source: &[u8],
         bytes: LongNameBytes,
         total_length: usize,
         is_local_name: bool,
@@ -652,10 +667,16 @@ impl DecidedName {
         let second = self.second_fqun_separator.min(last);
         let separator_count = self.fqun_separator_count + u32::from(Scanned::PATH_STARTS_AT_END);
         let count = separator_count & 0u32.wrapping_sub(u32::from(is_global_name));
+        let is_printable_ascii = bytes.unprintable_bytes == 0;
+        let character_count = if is_printable_ascii {
+            total_length
+        } else {
+            character_count(&source[..total_length])
+        };
         Scanned::new(
             total_length,
-            total_length - bytes.continuation_bytes,
-            bytes.unprintable_bytes == 0,
+            character_count,
+            is_printable_ascii,
             is_global_name,
             NonZeroU32::new(count).map(|count| FqunSeparators {
                 count,
@@ -742,13 +763,16 @@ fn line_end_in_vector(source: &[u8], vector: u8x32, length: usize) -> LineEnd {
             if line_feeds == 0 && length == WIDTH {
                 return long_line_end(source, leading_space_count);
             }
-            let end = if line_feeds == 0 {
-                length
+            let (end, within) = if line_feeds == 0 {
+                (length, bytes)
             } else {
-                line_feeds.trailing_zeros() as usize
+                (
+                    line_feeds.trailing_zeros() as usize,
+                    low_bits_before(line_feeds),
+                )
             };
             // The `#` comes before `end`, so `end` is at least 1.
-            if unprintable_mask(vector) & low_bits(end) != 0 || spaces & (1 << (end - 1)) != 0 {
+            if unprintable_mask(vector) & within != 0 || spaces & (1 << (end - 1)) != 0 {
                 return LineEnd::Unusual {
                     leading_space_count,
                     length: end,

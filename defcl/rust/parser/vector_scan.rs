@@ -8,7 +8,7 @@
 // Everything in this module is optimized for performance, not readability
 // (other than the tests).
 
-use source_scanning::{WIDTH, byte_mask, in_range_mask, low_bits};
+use source_scanning::{WIDTH, byte_mask, in_range_mask, in_range_vector, low_bits_before};
 use wide::u8x32;
 
 /// Whether `byte` may be in the word where a field name belongs, which is
@@ -46,28 +46,58 @@ pub(crate) struct FieldNameWord {
 #[inline]
 #[must_use]
 pub(crate) fn field_name_word(source: &[u8]) -> FieldNameWord {
-    // Almost every field name and the byte after it fit in one vector, which
-    // then answers both how long the word is and whether it is a field name.
+    // Almost every field name is valid and fits in one vector with the byte
+    // after it, so checking only valid field-name characters answers both the
+    // length and validity without testing uppercase letters, `-`, or `.`.
     if let Some(&chunk) = source.first_chunk::<WIDTH>() {
         let vector = u8x32::new(chunk);
-        let ends = !field_name_word_mask(vector);
+        let lowercase = in_range_mask(vector, b'a', b'z');
+        let digits = in_range_mask(vector, b'0', b'9');
+        let underscores = byte_mask(vector, b'_');
+        let ends = !(lowercase | digits | underscores);
         if ends != 0 {
             let length = ends.trailing_zeros() as usize;
-            let within = low_bits(length);
-            let lowercase = in_range_mask(vector, b'a', b'z');
-            let digits = in_range_mask(vector, b'0', b'9');
-            let underscores = byte_mask(vector, b'_');
-            let other = !(lowercase | digits | underscores) & within;
-            // An underscore is followed by something other than a lowercase
-            // letter, including the byte after the word.
-            let bad_underscores = underscores & !(lowercase >> 1) & within;
-            let bad_start = !lowercase & 1;
-            return FieldNameWord {
-                length,
-                is_field_name: (other | bad_underscores | bad_start) == 0,
-            };
+            let next = source[length];
+            // `next` is not a lowercase letter, digit, or `_`, so only an
+            // uppercase letter, `-`, or `.` continues the word.
+            if !next.is_ascii_uppercase() && !matches!(next, b'-' | b'.') {
+                let within = low_bits_before(ends);
+                // An underscore is followed by something other than a lowercase
+                // letter, including the byte after the word.
+                let bad_underscores = underscores & !(lowercase >> 1) & within;
+                let bad_start = !lowercase & 1;
+                return FieldNameWord {
+                    length,
+                    is_field_name: (bad_underscores | bad_start) == 0,
+                };
+            }
+            return invalid_field_name_word(source, length);
         }
     }
+    slow_field_name_word(source)
+}
+
+/// Scans a field-name word whose byte at `valid_prefix` already disqualifies
+/// the word from being a valid field name.
+#[cold]
+#[inline(never)]
+fn invalid_field_name_word(source: &[u8], valid_prefix: usize) -> FieldNameWord {
+    let rest = word_length(
+        &source[valid_prefix..],
+        field_name_word_mask,
+        is_field_name_word_character,
+    );
+    FieldNameWord {
+        length: valid_prefix + rest,
+        is_field_name: false,
+    }
+}
+
+/// Scans a field-name word that is at least one vector long or starts fewer
+/// than one vector before the end of `source`.
+#[cold]
+#[inline(never)]
+fn slow_field_name_word(source: &[u8]) -> FieldNameWord {
     let length = word_length(source, field_name_word_mask, is_field_name_word_character);
     FieldNameWord {
         length,
@@ -111,11 +141,20 @@ pub(crate) fn line_feed_and_spaces(source: &[u8]) -> Option<(usize, u8)> {
     // Indentation is almost always shorter than one vector, which then finds
     // its end and the byte after it.
     if let Some(&chunk) = after.first_chunk::<WIDTH>() {
-        let spaces = (!byte_mask(u8x32::new(chunk), b' ')).trailing_zeros() as usize;
-        if spaces < WIDTH {
+        let non_spaces = !byte_mask(u8x32::new(chunk), b' ');
+        if non_spaces != 0 {
+            let spaces = non_spaces.trailing_zeros() as usize;
             return Some((spaces, after[spaces]));
         }
     }
+    remaining_spaces(after)
+}
+
+/// Counts leading spaces in `after` when `after` is shorter than one vector or
+/// starts with a full vector of spaces.
+#[cold]
+#[inline(never)]
+fn remaining_spaces(after: &[u8]) -> Option<(usize, u8)> {
     let spaces = after.iter().take_while(|&&byte| byte == b' ').count();
     after.get(spaces).map(|&byte| (spaces, byte))
 }
@@ -125,6 +164,20 @@ pub(crate) fn line_feed_and_spaces(source: &[u8]) -> Option<(usize, u8)> {
 #[inline]
 #[must_use]
 pub(crate) fn number_word_length(source: &[u8]) -> usize {
+    // Almost every number contains only digits, `-`, and `.` and fits in one
+    // vector with the byte after it.
+    if let Some(&chunk) = source.first_chunk::<WIDTH>() {
+        let ends = !valid_number_character_mask(u8x32::new(chunk));
+        if ends != 0 {
+            let length = ends.trailing_zeros() as usize;
+            let next = source[length];
+            // `next` is not a digit, `-`, or `.`, so only a letter, `_`, or `+`
+            // continues the word.
+            if !next.is_ascii_alphabetic() && !matches!(next, b'_' | b'+') {
+                return length;
+            }
+        }
+    }
     word_length(source, number_word_mask, is_number_word_character)
 }
 
@@ -133,11 +186,20 @@ pub(crate) fn number_word_length(source: &[u8]) -> usize {
 #[inline]
 #[must_use]
 pub(crate) fn enum_word_length(source: &[u8]) -> usize {
+    // Almost every enum value fits in one vector with the byte after it.
+    if let Some(&chunk) = source.first_chunk::<WIDTH>() {
+        let ends = !enum_word_mask(u8x32::new(chunk));
+        if ends != 0 {
+            return ends.trailing_zeros() as usize;
+        }
+    }
     word_length(source, enum_word_mask, is_enum_word_character)
 }
 
 /// The length of the bytes at the start of `source` that `included_mask`
 /// accepts a vector of and `is_included` accepts one of.
+#[cold]
+#[inline(never)]
 fn word_length(
     source: &[u8],
     included_mask: impl Fn(u8x32) -> u32,
@@ -150,10 +212,13 @@ fn word_length(
             return index * WIDTH + ends.trailing_zeros() as usize;
         }
     }
+    if remainder.is_empty() {
+        return source.len();
+    }
     let remainder_length = match source.last_chunk::<WIDTH>() {
         // Loading the last 32 bytes, which overlap bytes already scanned, is
         // faster than copying the remainder into a zeroed array.
-        Some(&last_chunk) if !remainder.is_empty() => {
+        Some(&last_chunk) => {
             let ends = !included_mask(u8x32::new(last_chunk)) >> (WIDTH - remainder.len());
             if ends == 0 {
                 remainder.len()
@@ -163,7 +228,7 @@ fn word_length(
         }
         // For a source shorter than one vector, a byte loop is faster than
         // copying it into a zeroed array.
-        _ => remainder
+        None => remainder
             .iter()
             .take_while(|&&byte| is_included(byte))
             .count(),
@@ -171,31 +236,46 @@ fn word_length(
     chunks.len() * WIDTH + remainder_length
 }
 
+/// A mask of the bytes of `vector` that a valid number may contain: digits,
+/// `-`, and `.`.
+#[inline]
+fn valid_number_character_mask(vector: u8x32) -> u32 {
+    (in_range_vector(vector, b'0', b'9') | in_range_vector(vector, b'-', b'.')).to_bitmask()
+}
+
 /// A mask of the bytes of `vector` that `is_field_name_word_character`
 /// accepts.
+#[inline]
 fn field_name_word_mask(vector: u8x32) -> u32 {
-    alphanumeric_mask(vector)
-        | byte_mask(vector, b'_')
-        | byte_mask(vector, b'-')
-        | byte_mask(vector, b'.')
+    (alphanumeric_vector(vector)
+        | vector.simd_eq(u8x32::splat(b'_'))
+        | in_range_vector(vector, b'-', b'.'))
+    .to_bitmask()
 }
 
 /// A mask of the bytes of `vector` that `is_number_word_character` accepts.
+#[inline]
 fn number_word_mask(vector: u8x32) -> u32 {
-    field_name_word_mask(vector) | byte_mask(vector, b'+')
+    (alphanumeric_vector(vector)
+        | vector.simd_eq(u8x32::splat(b'_'))
+        | in_range_vector(vector, b'-', b'.')
+        | vector.simd_eq(u8x32::splat(b'+')))
+    .to_bitmask()
 }
 
 /// A mask of the bytes of `vector` that `is_enum_word_character` accepts.
+#[inline]
 fn enum_word_mask(vector: u8x32) -> u32 {
-    alphanumeric_mask(vector) | byte_mask(vector, b'_')
+    (alphanumeric_vector(vector) | vector.simd_eq(u8x32::splat(b'_'))).to_bitmask()
 }
 
-/// A mask of the ASCII letters and digits in `vector`.
-fn alphanumeric_mask(vector: u8x32) -> u32 {
+/// A lane mask of the ASCII letters and digits in `vector`.
+#[inline]
+fn alphanumeric_vector(vector: u8x32) -> u8x32 {
     // Setting the bit that tells a lowercase ASCII letter from an uppercase
     // one makes every letter lowercase, and no other byte a lowercase letter.
     let lowercase = vector | u8x32::splat(0x20);
-    in_range_mask(lowercase, b'a', b'z') | in_range_mask(vector, b'0', b'9')
+    in_range_vector(lowercase, b'a', b'z') | in_range_vector(vector, b'0', b'9')
 }
 
 // These tests cover the scans' own logic: what each scan reports, and the
@@ -348,8 +428,10 @@ mod tests {
     }
 
     #[gtest]
-    fn number_with_characters_that_numbers_do_not_have() -> Result<()> {
-        verify_that!(number_word_length(&in_long_source("+1_0e-5x")), eq(8))
+    fn number_with_characters_that_numbers_do_not_have() {
+        for word in ["+1_0e-5x", "1_000", "123e5"] {
+            expect_that!(number_word_length(&in_long_source(word)), eq(word.len()));
+        }
     }
 
     #[gtest]
@@ -381,6 +463,12 @@ mod tests {
     }
 
     #[gtest]
+    fn number_filling_exact_vector_at_end_of_source() -> Result<()> {
+        let source = "12345678901234567890123456789012";
+        verify_that!(number_word_length(source.as_bytes()), eq(32))
+    }
+
+    #[gtest]
     fn enum_value_in_one_vector() -> Result<()> {
         verify_that!(enum_word_length(&in_long_source("STATUS_ACTIVE")), eq(13))
     }
@@ -388,5 +476,16 @@ mod tests {
     #[gtest]
     fn enum_value_does_not_include_hyphen() -> Result<()> {
         verify_that!(enum_word_length(&in_long_source("ACTIVE-2")), eq(6))
+    }
+
+    #[gtest]
+    fn enum_value_near_end_of_source() -> Result<()> {
+        verify_that!(enum_word_length(b"ACTIVE\n"), eq(6))
+    }
+
+    #[gtest]
+    fn enum_value_longer_than_one_vector() -> Result<()> {
+        let word = "AN_ENUM_VALUE_THAT_IS_LONGER_THAN_ONE_VECTOR";
+        verify_that!(enum_word_length(&in_long_source(word)), eq(word.len()))
     }
 }
