@@ -21,8 +21,11 @@ Use these exact terms for these Define concepts. "Not:" lists terms to avoid.
   operation.
 - **constraint**: A name type. A named boolean expression on a particle's value,
   assigned like any other quality: `it has the constraint</positive>.` All of a
-  position's or view's constraints must be true. Not: predicate, value
-  constraint, refinement.
+  position's or view's constraints must be true. Not: value constraint,
+  refinement, refinement type.
+- **input view**: An interface view that reads its value (`it is read.`). A
+  single interface view can be both an input view and an output view. Not: read
+  view.
 - **local view**: A view defined in an Operation Statements Block with
   `define the view<...>`, which holds an intermediate value. Not: temporary,
   scratch view.
@@ -36,6 +39,9 @@ Use these exact terms for these Define concepts. "Not:" lists terms to avoid.
   website. Not: non-filesystem mode, supplied source.
 - **occupancy requirement**: An Action Requirement that a position contain a
   particle or be empty.
+- **output view**: An interface view that writes to its value
+  (`it is written.`). A single interface view can be both an input view and an
+  output view. Not: written view.
 - **particle**: A single atomic creation. It occupies one position and has the
   qualities assigned to it. It may hold a single value. Not: object, instance,
   dimension point.
@@ -45,12 +51,19 @@ Use these exact terms for these Define concepts. "Not:" lists terms to avoid.
   action. Not: variable, slot, container.
 - **Position Quality Assignment Block**: The
   `it may only contain particles where` block of a position.
+- **predicate**: A kind of statement a constraint can make about a value, such
+  as `it has the maximum value`. A value quality lists the predicates it
+  supports. Not: constraint.
 - **quality**: Something that can be assigned to a particle: a potential
   position, potential action, value quality, encoding, or constraint. A quality
   exists only while it is assigned to a particle. Not: type, class.
 - **Quality Assignment Statement**: An `it has the X<y>.` statement in a
   Position or View Quality Assignment Block. Not: Position Requirement
   Statement.
+- **read-only view**: An interface view that has `it is read.` and does not have
+  `it is written.`
+- **read/write view**: An interface view that has both `it is read.` and
+  `it is written.`
 - **value**: The logical meaning a particle holds, such as a rational number.
   Its encoding and value operations determine its behavior. A particle's value
   is either set or unset.
@@ -59,5 +72,9 @@ Use these exact terms for these Define concepts. "Not:" lists terms to avoid.
   value type, data type, value constraint.
 - **value requirement**: An Action Requirement that a position's particle have a
   set value. Not: set-value requirement.
+- **View Direction Statement**: An `it is read.` or `it is written.` statement
+  in an interface view's definition.
 - **View Quality Assignment Block**: The `it may only contain particles where`
   block of a view.
+- **write-only view**: An interface view that has `it is written.` and does not
+  have `it is read.`
