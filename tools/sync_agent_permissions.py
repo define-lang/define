@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
-"""Sync permissions from .claude/settings.json to Cursor and Codex configs."""
+"""Sync permissions from .claude/settings.json to Cursor, Codex, and Antigravity configs."""
 
 from __future__ import annotations
 
 import argparse
 import difflib
 import json
+import re
 import shlex
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
+
+DEFAULT_AGY_PROJECT = "default-cli-project"
+_REGEX_SPECIAL_CHARS = re.compile(r"([.+?()\[\]{}^$|\\])")
 
 
 def translate_permission(permission: str) -> str:
@@ -166,12 +170,129 @@ def generate_codex_rules(permissions: dict[str, list[str]]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def sync_permissions(base_dir: Path):
-    """Fully overwrite agent permissions from Claude settings.
+def _agy_project_path(project: str) -> Path:
+    return Path.home() / ".gemini" / "config" / "projects" / f"{project}.json"
 
-    This function completely replaces .cursor/cli.json and
-    .codex/rules/default.rules with permissions translated from
-    .claude/settings.json, which is the source of truth.
+
+def _glob_token_to_regex(token: str) -> str:
+    return ".*".join(
+        _REGEX_SPECIAL_CHARS.sub(r"\\\1", part) for part in token.split("*")
+    )
+
+
+def _translate_agy_bash_command(command: str) -> str:
+    tokens = shlex.split(command)
+    if tokens[-1] == "*":
+        _ = tokens.pop()
+
+    if any("*" in token for token in tokens):
+        regex_tokens = [_glob_token_to_regex(token) for token in tokens]
+        return f"command(regex:{' '.join(regex_tokens)})"
+
+    return f"command({' '.join(tokens)})"
+
+
+def _translate_agy_permission(permission: str) -> str | None:
+    command = extract_bash_command(permission)
+    if command is not None:
+        return _translate_agy_bash_command(command)
+
+    if permission.startswith("Read(") and permission.endswith(")"):
+        target = permission[5:-1].removesuffix("/**")
+        return f"read_file({Path(target).expanduser().as_posix()})"
+
+    if permission.startswith("WebFetch(domain:") and permission.endswith(")"):
+        return f"read_url({permission[16:-1]})"
+
+    return None
+
+
+def _generate_agy_permissions(
+    permissions: Mapping[str, Iterable[str]],
+) -> dict[str, list[str]]:
+    agy_permissions: dict[str, list[str]] = {}
+    for category in ("allow", "ask", "deny"):
+        translated_rules: list[str] = []
+        seen: set[str] = set()
+        for permission in permissions.get(category, ()):
+            rule = _translate_agy_permission(permission)
+            if rule is not None and rule not in seen:
+                translated_rules.append(rule)
+                seen.add(rule)
+        if translated_rules:
+            agy_permissions[category] = translated_rules
+    return agy_permissions
+
+
+def _merge_agy_project_config(
+    existing_config: Mapping[str, object],
+    agy_permissions: Mapping[str, Iterable[str]],
+    project_id: str,
+) -> dict[str, object]:
+    merged = dict(existing_config)
+    _ = merged.setdefault("id", project_id)
+    default_name = "CLI Project" if project_id == DEFAULT_AGY_PROJECT else project_id
+    _ = merged.setdefault("name", default_name)
+    _ = merged.setdefault("projectResources", {})
+
+    raw_outer_grants = merged.get("permissionGrants")
+    outer_grants = (
+        dict(cast("Mapping[str, object]", raw_outer_grants))
+        if isinstance(raw_outer_grants, dict)
+        else {}
+    )
+    raw_inner_grants = outer_grants.get("permissionGrants")
+    inner_grants = (
+        dict(cast("Mapping[str, object]", raw_inner_grants))
+        if isinstance(raw_inner_grants, dict)
+        else {}
+    )
+
+    for category in ("allow", "ask", "deny"):
+        raw_existing = inner_grants.get(category)
+        existing_rules = (
+            list(cast("list[str]", raw_existing))
+            if isinstance(raw_existing, list)
+            else []
+        )
+        seen = set(existing_rules)
+        for rule in agy_permissions.get(category, ()):
+            if rule not in seen:
+                existing_rules.append(rule)
+                seen.add(rule)
+        if existing_rules:
+            inner_grants[category] = existing_rules
+
+    outer_grants["permissionGrants"] = inner_grants
+    merged["permissionGrants"] = outer_grants
+    return merged
+
+
+def _sync_agy_permissions(permissions: Mapping[str, Iterable[str]], project_path: Path):
+    agy_permissions = _generate_agy_permissions(permissions)
+
+    existing_config: dict[str, object] = {}
+    if project_path.exists():
+        with project_path.open(encoding="utf-8") as f:
+            existing_config = cast("dict[str, object]", json.load(f))
+
+    merged_config = _merge_agy_project_config(
+        existing_config, agy_permissions, project_path.stem
+    )
+    project_path.parent.mkdir(parents=True, exist_ok=True)
+    with project_path.open("w", encoding="utf-8", newline="\n") as f:
+        json.dump(merged_config, f, indent=2)
+        _ = f.write("\n")
+
+    print(f"Synced permissions to {project_path}")
+
+
+def sync_permissions(base_dir: Path, agy_project: str | None = None):
+    """Sync agent permissions from Claude settings.
+
+    Replaces .cursor/cli.json and .codex/rules/default.rules with permissions
+    translated from .claude/settings.json. Also merges translated rules into an
+    Antigravity project config when agy_project is specified.
     """
     permissions = load_permissions(base_dir)
     cursor_config = generate_cursor_config(permissions)
@@ -193,6 +314,9 @@ def sync_permissions(base_dir: Path):
 
     print(f"Synced permissions to {cursor_path}")
     print(f"Synced permissions to {codex_path}")
+
+    if agy_project is not None:
+        _sync_agy_permissions(permissions, _agy_project_path(agy_project))
 
 
 def report_text_diff(
@@ -266,22 +390,35 @@ def check_permissions(base_dir: Path):
 def main():
     """Run the sync or check process."""
     parser = argparse.ArgumentParser(
-        description="Sync or check Cursor and Codex permissions from Claude settings"
+        description="Sync or check Cursor, Codex, and Antigravity permissions from Claude settings"
     )
     _ = parser.add_argument(
         "--check",
         action="store_true",
         help="Check that .cursor/cli.json and .codex/rules/default.rules match expected config without modifying them",
     )
+    _ = parser.add_argument(
+        "--agy",
+        dest="agy_project",
+        nargs="?",
+        const=DEFAULT_AGY_PROJECT,
+        default=None,
+        metavar="PROJECT",
+        help=(
+            "Also merge permissions into ~/.gemini/config/projects/<project>.json "
+            f"(default: {DEFAULT_AGY_PROJECT})"
+        ),
+    )
     args = parser.parse_args()
 
     base_dir = Path(__file__).parent.parent
 
     check = cast("bool", args.check)
+    agy_project = cast("str | None", args.agy_project)
     if check:
         check_permissions(base_dir)
     else:
-        sync_permissions(base_dir)
+        sync_permissions(base_dir, agy_project=agy_project)
 
 
 if __name__ == "__main__":
