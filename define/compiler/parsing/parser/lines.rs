@@ -35,11 +35,10 @@ impl Parser<'_, '_> {
     /// anything, when the line ends after the word, with or without spaces,
     /// or when something other than a space or a letter follows the word.
     pub(crate) fn space_before_word(&mut self) -> ParseResult<bool> {
-        let spaces = self.scanner.next_space_count();
-        if spaces == 1 {
-            self.scanner.consume_bytes(1);
+        if self.scanner.consume_single_space() {
             return Ok(true);
         }
+        let spaces = self.scanner.next_space_count();
         let start = self.scanner.position;
         if spaces == 0 {
             let word = self.scanner.text_before_any(&WORD_ENDS);

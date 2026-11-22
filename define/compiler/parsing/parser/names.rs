@@ -272,11 +272,11 @@ impl<'py, 'source> Parser<'py, 'source> {
     pub(crate) fn parse_local_name_content(&mut self) -> ParseResult<LocalNameParts<'py, 'source>> {
         self.consume_open_angle_bracket()?;
         let start = self.scanner.position;
-        let (content, scanned) = self.scanner.consume_name_content();
+        let (content, is_local_name) = self.scanner.consume_local_name_content();
         let end = self.scanner.position;
         // The name content is not a local name that ends with `>`.
-        if !scanned.is_local_name || !self.scanner.next_byte_is(NAME_CONTENT_END) {
-            return Err(self.invalid_local_name_content(content, scanned, start, end));
+        if !is_local_name || !self.scanner.next_byte_is(NAME_CONTENT_END) {
+            return Err(self.invalid_local_name_content(content, start, end));
         }
         self.local_name_parts(content, start, end)
     }
@@ -740,7 +740,6 @@ impl<'source> Parser<'_, 'source> {
     fn invalid_local_name_content(
         &self,
         content: SourceText<'source>,
-        scanned: vector_scan::NameContent,
         start: Position,
         end: Position,
     ) -> ParseError {
@@ -752,7 +751,7 @@ impl<'source> Parser<'_, 'source> {
             return error;
         }
         // The name is a global name.
-        if scanned.is_global_name {
+        if content.is_global_name() {
             return self
                 .errors
                 .global_name_where_local_name_expected(start, end.previous_column());

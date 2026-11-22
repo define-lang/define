@@ -33,8 +33,9 @@ pub(crate) const fn is_enum_word_character(byte: u8) -> bool {
 pub(crate) struct FieldNameWord {
     /// The length of the word in bytes.
     pub length: usize,
-    /// Whether the word follows the rules for field names.
-    pub is_field_name: bool,
+    /// Whether the word follows the rules for field names, if the scan
+    /// determined it in one vector.
+    pub is_field_name: Option<bool>,
 }
 
 /// Scans the word where a field name belongs at the start of `source`, which
@@ -68,13 +69,16 @@ pub(crate) fn field_name_word(source: &[u8]) -> FieldNameWord {
                 let bad_start = !lowercase & 1;
                 return FieldNameWord {
                     length,
-                    is_field_name: (bad_underscores | bad_start) == 0,
+                    is_field_name: Some((bad_underscores | bad_start) == 0),
                 };
             }
             return invalid_field_name_word(source, length);
         }
     }
-    slow_field_name_word(source)
+    FieldNameWord {
+        length: word_length(source, field_name_word_mask, is_field_name_word_character),
+        is_field_name: None,
+    }
 }
 
 /// Scans a field-name word whose byte at `valid_prefix` already disqualifies
@@ -89,43 +93,8 @@ fn invalid_field_name_word(source: &[u8], valid_prefix: usize) -> FieldNameWord 
     );
     FieldNameWord {
         length: valid_prefix + rest,
-        is_field_name: false,
+        is_field_name: Some(false),
     }
-}
-
-/// Scans a field-name word that is at least one vector long or starts fewer
-/// than one vector before the end of `source`.
-#[cold]
-#[inline(never)]
-fn slow_field_name_word(source: &[u8]) -> FieldNameWord {
-    let length = word_length(source, field_name_word_mask, is_field_name_word_character);
-    FieldNameWord {
-        length,
-        is_field_name: is_field_name(&source[..length]),
-    }
-}
-
-/// Whether `word`, the bytes of the word where a field name belongs, follow
-/// the rules for field names, checked one byte at a time.
-fn is_field_name(word: &[u8]) -> bool {
-    if !word.first().is_some_and(u8::is_ascii_lowercase) {
-        return false;
-    }
-    let mut index = 1;
-    while let Some(&byte) = word.get(index) {
-        if byte == b'_' {
-            if !word.get(index + 1).is_some_and(u8::is_ascii_lowercase) {
-                return false;
-            }
-            index += 2;
-            continue;
-        }
-        if !byte.is_ascii_lowercase() && !byte.is_ascii_digit() {
-            return false;
-        }
-        index += 1;
-    }
-    true
 }
 
 /// The number of spaces after the line feed that `source` starts with, and
@@ -159,41 +128,180 @@ fn remaining_spaces(after: &[u8]) -> Option<(usize, u8)> {
     after.get(spaces).map(|&byte| (spaces, byte))
 }
 
-/// The length in bytes of the word where a number belongs at the start of
-/// `source`, which starts with a byte that `is_number_word_character` accepts.
+/// What kind of number a scanned number word is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum NumberKind {
+    Integer,
+    Float,
+    Invalid,
+}
+
+/// What a scan of the word where a number belongs found.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct NumberWord {
+    /// The length of the word in bytes.
+    pub length: usize,
+    /// Whether the word is a valid integer, a valid float, or neither, if the
+    /// scan determined it in one vector.
+    pub kind: Option<NumberKind>,
+}
+
+/// What a scan of an enum value's word found.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct EnumWord {
+    /// The length of the word in bytes.
+    pub length: usize,
+    /// Whether the word follows the rules for enum values, if the scan
+    /// determined it in one vector.
+    pub is_enum_value: Option<bool>,
+}
+
+/// Scans the word where a number belongs at the start of `source`, which
+/// starts with a byte that `is_number_word_character` accepts.
+///
+/// ```ebnf
+/// INTEGER = ( [ "-" ], dec_lit ) - "-0" ;
+/// FLOAT = ( [ "-" ], dec_lit, ".", fraction ) - "-0.0" ;
+/// dec_lit = "0" | ( dec - "0" ), { dec } ;
+/// fraction = "0" | { dec }, ( dec - "0" ) ;
+/// ```
 #[inline]
 #[must_use]
-pub(crate) fn number_word_length(source: &[u8]) -> usize {
+pub(crate) fn number_word(source: &[u8]) -> NumberWord {
     // Almost every number contains only digits, `-`, and `.` and fits in one
-    // vector with the byte after it.
+    // vector with the byte after it, which then answers both length and kind.
     if let Some(&chunk) = source.first_chunk::<WIDTH>() {
-        let ends = !valid_number_character_mask(u8x32::new(chunk));
+        let vector = u8x32::new(chunk);
+        let digits = in_range_mask(vector, b'0', b'9');
+        let minuses = byte_mask(vector, b'-');
+        let dots = byte_mask(vector, b'.');
+        let ends = !(digits | minuses | dots);
         if ends != 0 {
             let length = ends.trailing_zeros() as usize;
             let next = source[length];
             // `next` is not a digit, `-`, or `.`, so only a letter, `_`, or `+`
             // continues the word.
             if !next.is_ascii_alphabetic() && !matches!(next, b'_' | b'+') {
-                return length;
+                let within = low_bits_before(ends);
+                let minuses_within = minuses & within;
+                if minuses_within > 1 {
+                    return NumberWord {
+                        length,
+                        kind: Some(NumberKind::Invalid),
+                    };
+                }
+                let int_start = minuses_within as usize;
+                let dots_within = dots & within;
+                let kind = if dots_within == 0 {
+                    if length > int_start
+                        && (source[int_start] != b'0' || (int_start == 0 && length == 1))
+                    {
+                        NumberKind::Integer
+                    } else {
+                        NumberKind::Invalid
+                    }
+                } else if is_valid_float_in_chunk(source, int_start, dots_within, length) {
+                    NumberKind::Float
+                } else {
+                    NumberKind::Invalid
+                };
+                return NumberWord {
+                    length,
+                    kind: Some(kind),
+                };
             }
+            return invalid_number_word(source, length);
         }
     }
-    word_length(source, number_word_mask, is_number_word_character)
+    NumberWord {
+        length: word_length(source, number_word_mask, is_number_word_character),
+        kind: None,
+    }
 }
 
-/// The length in bytes of the enum value's word at the start of `source`,
-/// which starts with a byte that `is_enum_word_character` accepts.
+/// Whether `source[..length]`, which has only digits, an optional leading `-`
+/// (`int_start` is 0 or 1), and non-zero `dots_within`, is a valid float.
+#[inline]
+fn is_valid_float_in_chunk(
+    source: &[u8],
+    int_start: usize,
+    dots_within: u32,
+    length: usize,
+) -> bool {
+    if dots_within & dots_within.wrapping_sub(1) != 0 {
+        return false;
+    }
+    let dot = dots_within.trailing_zeros() as usize;
+    let frac_start = dot + 1;
+    let valid_int = dot > int_start && (source[int_start] != b'0' || dot == int_start + 1);
+    let valid_frac =
+        length > frac_start && (source[length - 1] != b'0' || length == frac_start + 1);
+    valid_int && valid_frac && !(int_start == 1 && length == 4 && &source[..4] == b"-0.0")
+}
+
+/// Scans a number word whose byte at `valid_prefix` already disqualifies the
+/// word from being a valid number.
+#[cold]
+#[inline(never)]
+fn invalid_number_word(source: &[u8], valid_prefix: usize) -> NumberWord {
+    let rest = word_length(
+        &source[valid_prefix..],
+        number_word_mask,
+        is_number_word_character,
+    );
+    NumberWord {
+        length: valid_prefix + rest,
+        kind: Some(NumberKind::Invalid),
+    }
+}
+
+/// Scans the enum value's word at the start of `source`, which starts with a
+/// byte that `is_enum_word_character` accepts.
+///
+/// ```ebnf
+/// enum_value = uppercase_letter, { uppercase_letter | dec | "_" } ;
+/// ```
 #[inline]
 #[must_use]
-pub(crate) fn enum_word_length(source: &[u8]) -> usize {
-    // Almost every enum value fits in one vector with the byte after it.
+pub(crate) fn enum_word(source: &[u8]) -> EnumWord {
+    // Almost every enum value is valid and fits in one vector with the byte
+    // after it, so checking only uppercase letters, digits, and `_` answers
+    // both length and validity.
     if let Some(&chunk) = source.first_chunk::<WIDTH>() {
-        let ends = !enum_word_mask(u8x32::new(chunk));
+        let ends = !valid_enum_character_mask(u8x32::new(chunk));
         if ends != 0 {
-            return ends.trailing_zeros() as usize;
+            let length = ends.trailing_zeros() as usize;
+            // `source[length]` is not an uppercase letter, digit, or `_`, so
+            // only a lowercase letter continues the word.
+            if !source[length].is_ascii_lowercase() {
+                return EnumWord {
+                    length,
+                    is_enum_value: Some(source[0].is_ascii_uppercase()),
+                };
+            }
+            return invalid_enum_word(source, length);
         }
     }
-    word_length(source, enum_word_mask, is_enum_word_character)
+    EnumWord {
+        length: word_length(source, enum_word_mask, is_enum_word_character),
+        is_enum_value: None,
+    }
+}
+
+/// Scans an enum word whose byte at `valid_prefix` already disqualifies the
+/// word from being a valid enum value.
+#[cold]
+#[inline(never)]
+fn invalid_enum_word(source: &[u8], valid_prefix: usize) -> EnumWord {
+    let rest = word_length(
+        &source[valid_prefix..],
+        enum_word_mask,
+        is_enum_word_character,
+    );
+    EnumWord {
+        length: valid_prefix + rest,
+        is_enum_value: Some(false),
+    }
 }
 
 /// The length of the bytes at the start of `source` that `included_mask`
@@ -236,11 +344,14 @@ fn word_length(
     chunks.len() * WIDTH + remainder_length
 }
 
-/// A mask of the bytes of `vector` that a valid number may contain: digits,
-/// `-`, and `.`.
+/// A mask of the bytes of `vector` that a valid enum value may contain:
+/// uppercase letters, digits, and `_`.
 #[inline]
-fn valid_number_character_mask(vector: u8x32) -> u32 {
-    (in_range_vector(vector, b'0', b'9') | in_range_vector(vector, b'-', b'.')).to_bitmask()
+fn valid_enum_character_mask(vector: u8x32) -> u32 {
+    (in_range_vector(vector, b'A', b'Z')
+        | in_range_vector(vector, b'0', b'9')
+        | vector.simd_eq(u8x32::splat(b'_')))
+    .to_bitmask()
 }
 
 /// A mask of the bytes of `vector` that `is_field_name_word_character`
@@ -299,7 +410,7 @@ mod tests {
             field_name_word(&in_long_source("universe_name")),
             eq(FieldNameWord {
                 length: 13,
-                is_field_name: true,
+                is_field_name: Some(true),
             })
         )
     }
@@ -310,7 +421,7 @@ mod tests {
             field_name_word(&in_long_source("level2")),
             eq(FieldNameWord {
                 length: 6,
-                is_field_name: true,
+                is_field_name: Some(true),
             })
         )
     }
@@ -324,7 +435,7 @@ mod tests {
                 field_name_word(&in_long_source(word)),
                 eq(FieldNameWord {
                     length: word.len(),
-                    is_field_name: false,
+                    is_field_name: Some(false),
                 })
             );
         }
@@ -336,18 +447,7 @@ mod tests {
             field_name_word(b"a_b: 1\n"),
             eq(FieldNameWord {
                 length: 3,
-                is_field_name: true,
-            })
-        )
-    }
-
-    #[gtest]
-    fn invalid_field_name_near_end_of_source() -> Result<()> {
-        verify_that!(
-            field_name_word(b"a_: 1\n"),
-            eq(FieldNameWord {
-                length: 2,
-                is_field_name: false,
+                is_field_name: None,
             })
         )
     }
@@ -359,19 +459,7 @@ mod tests {
             field_name_word(&in_long_source(word)),
             eq(FieldNameWord {
                 length: word.len(),
-                is_field_name: true,
-            })
-        )
-    }
-
-    #[gtest]
-    fn invalid_field_name_longer_than_one_vector() -> Result<()> {
-        let word = "a_field_name_that_is_longer_than_one_vector_";
-        verify_that!(
-            field_name_word(&in_long_source(word)),
-            eq(FieldNameWord {
-                length: word.len(),
-                is_field_name: false,
+                is_field_name: None,
             })
         )
     }
@@ -385,7 +473,7 @@ mod tests {
             field_name_word(&in_long_source(word)),
             eq(FieldNameWord {
                 length: word.len(),
-                is_field_name: true,
+                is_field_name: None,
             })
         )
     }
@@ -423,69 +511,170 @@ mod tests {
     }
 
     #[gtest]
-    fn number_in_one_vector() -> Result<()> {
-        verify_that!(number_word_length(&in_long_source("-12.5")), eq(5))
+    fn number_in_one_vector() {
+        for (word, kind) in [
+            ("0", NumberKind::Integer),
+            ("42", NumberKind::Integer),
+            ("-42", NumberKind::Integer),
+            ("0.0", NumberKind::Float),
+            ("1.0", NumberKind::Float),
+            ("-12.5", NumberKind::Float),
+            ("-0.05", NumberKind::Float),
+            ("-", NumberKind::Invalid),
+            ("-0", NumberKind::Invalid),
+            ("01", NumberKind::Invalid),
+            ("-0.0", NumberKind::Invalid),
+            ("1.00", NumberKind::Invalid),
+            ("01.5", NumberKind::Invalid),
+            ("1.", NumberKind::Invalid),
+            (".5", NumberKind::Invalid),
+            ("1.2.3", NumberKind::Invalid),
+            ("1-2", NumberKind::Invalid),
+        ] {
+            expect_that!(
+                number_word(&in_long_source(word)),
+                eq(NumberWord {
+                    length: word.len(),
+                    kind: Some(kind),
+                })
+            );
+        }
     }
 
     #[gtest]
     fn number_with_characters_that_numbers_do_not_have() {
         for word in ["+1_0e-5x", "1_000", "123e5"] {
-            expect_that!(number_word_length(&in_long_source(word)), eq(word.len()));
+            expect_that!(
+                number_word(&in_long_source(word)),
+                eq(NumberWord {
+                    length: word.len(),
+                    kind: Some(NumberKind::Invalid),
+                })
+            );
         }
     }
 
     #[gtest]
     fn number_near_end_of_source() -> Result<()> {
-        verify_that!(number_word_length(b"12\n"), eq(2))
-    }
-
-    #[gtest]
-    fn number_at_end_of_source() -> Result<()> {
-        verify_that!(number_word_length(b"12"), eq(2))
+        verify_that!(
+            number_word(b"12\n"),
+            eq(NumberWord {
+                length: 2,
+                kind: None,
+            })
+        )?;
+        verify_that!(
+            number_word(b"12"),
+            eq(NumberWord {
+                length: 2,
+                kind: None,
+            })
+        )
     }
 
     #[gtest]
     fn number_longer_than_one_vector() -> Result<()> {
         let word = "1234567890123456789012345678901234567890";
-        verify_that!(number_word_length(&in_long_source(word)), eq(word.len()))
+        verify_that!(
+            number_word(&in_long_source(word)),
+            eq(NumberWord {
+                length: word.len(),
+                kind: None,
+            })
+        )
     }
 
     #[gtest]
     fn number_ending_in_last_vector_overlapping_the_one_before() -> Result<()> {
         let source = "1234567890123456789012345678901234567890 x";
-        verify_that!(number_word_length(source.as_bytes()), eq(40))
+        verify_that!(
+            number_word(source.as_bytes()),
+            eq(NumberWord {
+                length: 40,
+                kind: None,
+            })
+        )
     }
 
     #[gtest]
     fn number_filling_the_source_past_one_vector() -> Result<()> {
         let source = "1234567890123456789012345678901234567890";
-        verify_that!(number_word_length(source.as_bytes()), eq(40))
+        verify_that!(
+            number_word(source.as_bytes()),
+            eq(NumberWord {
+                length: 40,
+                kind: None,
+            })
+        )
     }
 
     #[gtest]
     fn number_filling_exact_vector_at_end_of_source() -> Result<()> {
         let source = "12345678901234567890123456789012";
-        verify_that!(number_word_length(source.as_bytes()), eq(32))
+        verify_that!(
+            number_word(source.as_bytes()),
+            eq(NumberWord {
+                length: 32,
+                kind: None,
+            })
+        )
     }
 
     #[gtest]
     fn enum_value_in_one_vector() -> Result<()> {
-        verify_that!(enum_word_length(&in_long_source("STATUS_ACTIVE")), eq(13))
+        verify_that!(
+            enum_word(&in_long_source("STATUS_ACTIVE")),
+            eq(EnumWord {
+                length: 13,
+                is_enum_value: Some(true),
+            })
+        )
     }
 
     #[gtest]
     fn enum_value_does_not_include_hyphen() -> Result<()> {
-        verify_that!(enum_word_length(&in_long_source("ACTIVE-2")), eq(6))
+        verify_that!(
+            enum_word(&in_long_source("ACTIVE-2")),
+            eq(EnumWord {
+                length: 6,
+                is_enum_value: Some(true),
+            })
+        )
+    }
+
+    #[gtest]
+    fn invalid_enum_values_in_one_vector() {
+        for word in ["true", "Active", "STATUS_active", "1ACTIVE"] {
+            expect_that!(
+                enum_word(&in_long_source(word)),
+                eq(EnumWord {
+                    length: word.len(),
+                    is_enum_value: Some(false),
+                })
+            );
+        }
     }
 
     #[gtest]
     fn enum_value_near_end_of_source() -> Result<()> {
-        verify_that!(enum_word_length(b"ACTIVE\n"), eq(6))
+        verify_that!(
+            enum_word(b"ACTIVE\n"),
+            eq(EnumWord {
+                length: 6,
+                is_enum_value: None,
+            })
+        )
     }
 
     #[gtest]
     fn enum_value_longer_than_one_vector() -> Result<()> {
         let word = "AN_ENUM_VALUE_THAT_IS_LONGER_THAN_ONE_VECTOR";
-        verify_that!(enum_word_length(&in_long_source(word)), eq(word.len()))
+        verify_that!(
+            enum_word(&in_long_source(word)),
+            eq(EnumWord {
+                length: word.len(),
+                is_enum_value: None,
+            })
+        )
     }
 }

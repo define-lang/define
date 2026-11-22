@@ -106,6 +106,21 @@ pub struct NameContent {
     pub is_local_name: bool,
 }
 
+/// What a scan of name content where only a local name belongs found.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LocalNameContent {
+    /// The length in bytes of the name content, which ends before the first
+    /// `>` or line feed, or at the end of the source.
+    pub length: usize,
+    /// The number of UTF-8 characters in the name content.
+    pub character_count: usize,
+    /// Whether every byte of the name content is from ` ` through `~`.
+    pub is_printable_ascii: bool,
+    /// Whether the name content is not empty and has no space, `:`, or `/`,
+    /// which a local name may not have.
+    pub is_local_name: bool,
+}
+
 /// What a scan of a fully qualified universe name that is a whole source, such
 /// as one that configuration writes, found.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -237,6 +252,137 @@ pub fn name_content(source: &[u8]) -> NameContent {
     scan_name_content(source)
 }
 
+/// Scans the name content at the start of `source`, where only a local name
+/// belongs.
+#[inline]
+#[must_use]
+pub fn local_name_content(source: &[u8]) -> LocalNameContent {
+    let Some(&chunk) = source.first_chunk::<WIDTH>() else {
+        return short_local_name_content(source);
+    };
+    let vector = u8x32::new(chunk);
+    let ends = name_content_ends(vector);
+    if ends == 0 {
+        return long_local_name_content(source);
+    }
+    local_name_content_in_vector(vector, ends)
+}
+
+/// Scans local name content that starts fewer than 32 bytes before the end of
+/// the source.
+#[cold]
+#[inline(never)]
+fn short_local_name_content(source: &[u8]) -> LocalNameContent {
+    let vector = zero_padded(source);
+    let ends = name_content_ends(vector) | !low_bits(source.len());
+    local_name_content_in_vector(vector, ends)
+}
+
+/// Scans local name content in `vector` when its end is in `vector`, given its
+/// non-zero `ends` mask.
+#[inline]
+fn local_name_content_in_vector(vector: u8x32, ends: u32) -> LocalNameContent {
+    let length = ends.trailing_zeros() as usize;
+    let within = low_bits_before(ends);
+    let is_printable_ascii = unprintable_mask(vector) & within == 0;
+    let character_count = if is_printable_ascii {
+        length
+    } else {
+        length - (continuation_byte_mask(vector) & within).count_ones() as usize
+    };
+    LocalNameContent {
+        length,
+        character_count,
+        is_printable_ascii,
+        // `&` rather than `&&`, which compiles to a branch.
+        is_local_name: (length != 0) & (local_name_breaks(vector) & within == 0),
+    }
+}
+
+/// Scans local name content that is at least 32 bytes long.
+#[inline(never)]
+fn long_local_name_content(source: &[u8]) -> LocalNameContent {
+    let (chunks, remainder) = source.as_chunks::<WIDTH>();
+    let mut unprintable = 0;
+    let mut breaks = 0;
+    for (index, &chunk) in chunks.iter().enumerate() {
+        let vector = u8x32::new(chunk);
+        let ends = name_content_ends(vector);
+        if ends != 0 {
+            let within = low_bits_before(ends);
+            unprintable |= unprintable_mask(vector) & within;
+            breaks |= local_name_breaks(vector) & within;
+            return finish_local_name_content(
+                source,
+                index * WIDTH + ends.trailing_zeros() as usize,
+                unprintable == 0,
+                breaks == 0,
+            );
+        }
+        unprintable |= unprintable_mask(vector);
+        breaks |= local_name_breaks(vector);
+    }
+    if remainder.is_empty() {
+        return finish_local_name_content(source, source.len(), unprintable == 0, breaks == 0);
+    }
+    let Some(&last_chunk) = source.last_chunk::<WIDTH>() else {
+        unreachable!("long local name content is at least 32 bytes long");
+    };
+    let vector = u8x32::new(last_chunk);
+    let shift = WIDTH - remainder.len();
+    let ends = name_content_ends(vector) >> shift;
+    let remainder_length = if ends == 0 {
+        remainder.len()
+    } else {
+        ends.trailing_zeros() as usize
+    };
+    let within = low_bits(remainder_length);
+    unprintable |= (unprintable_mask(vector) >> shift) & within;
+    breaks |= (local_name_breaks(vector) >> shift) & within;
+    finish_local_name_content(
+        source,
+        chunks.len() * WIDTH + remainder_length,
+        unprintable == 0,
+        breaks == 0,
+    )
+}
+
+#[inline]
+fn finish_local_name_content(
+    source: &[u8],
+    length: usize,
+    is_printable_ascii: bool,
+    is_local_name: bool,
+) -> LocalNameContent {
+    let character_count = if is_printable_ascii {
+        length
+    } else {
+        character_count(&source[..length])
+    };
+    LocalNameContent {
+        length,
+        character_count,
+        is_printable_ascii,
+        is_local_name,
+    }
+}
+
+/// Returns a mask of the `>` and line feed bytes in `vector`.
+#[inline]
+fn name_content_ends(vector: u8x32) -> u32 {
+    (vector.simd_eq(u8x32::splat(NAME_CONTENT_END)) | vector.simd_eq(u8x32::splat(LINE_FEED)))
+        .to_bitmask()
+}
+
+/// Returns a mask of the `:`, `/`, and space bytes in `vector`.
+#[inline]
+fn local_name_breaks(vector: u8x32) -> u32 {
+    (vector.simd_eq(u8x32::splat(COMPONENT_SEPARATOR))
+        | vector.simd_eq(u8x32::splat(PATH_SEPARATOR))
+        | vector.simd_eq(u8x32::splat(SPACE)))
+    .to_bitmask()
+}
+
 // Name content is the one span whose checks happen in the scan rather than in
 // the parser: its global-name shape and its last `:` come from the same
 // vector load that finds its end, which is much faster than separate passes
@@ -280,9 +426,7 @@ impl NameContentMasks {
     #[inline]
     fn of(vector: u8x32) -> Self {
         Self {
-            ends: (vector.simd_eq(u8x32::splat(NAME_CONTENT_END))
-                | vector.simd_eq(u8x32::splat(LINE_FEED)))
-            .to_bitmask(),
+            ends: name_content_ends(vector),
             unprintable: unprintable_mask(vector),
             component_separators: byte_mask(vector, COMPONENT_SEPARATOR),
             spaces: byte_mask(vector, SPACE),
@@ -2068,5 +2212,124 @@ mod tests {
                 length: 52
             })
         );
+    }
+
+    #[gtest]
+    fn local_name_content_in_one_vector() -> Result<()> {
+        verify_that!(
+            local_name_content(b"my_pos> and enough trailing bytes to fill one vector\n"),
+            eq(LocalNameContent {
+                length: 6,
+                character_count: 6,
+                is_printable_ascii: true,
+                is_local_name: true,
+            })
+        )
+    }
+
+    #[gtest]
+    fn local_name_content_with_non_ascii_in_one_vector() -> Result<()> {
+        verify_that!(
+            local_name_content("café> and enough trailing bytes to fill one vector\n".as_bytes()),
+            eq(LocalNameContent {
+                length: 5,
+                character_count: 4,
+                is_printable_ascii: false,
+                is_local_name: true,
+            })
+        )
+    }
+
+    #[gtest]
+    fn local_name_content_rejects_global_or_spaced_name() {
+        for input in [
+            b"> and enough trailing bytes to fill one vector\n".as_slice(),
+            b"/path> and enough trailing bytes to fill one vector\n".as_slice(),
+            b"a:b> and enough trailing bytes to fill one vector\n".as_slice(),
+            b"a b> and enough trailing bytes to fill one vector\n".as_slice(),
+        ] {
+            expect_that!(local_name_content(input).is_local_name, eq(false));
+        }
+    }
+
+    #[gtest]
+    fn local_name_content_near_end_of_source() -> Result<()> {
+        verify_that!(
+            local_name_content(b"my_pos>"),
+            eq(LocalNameContent {
+                length: 6,
+                character_count: 6,
+                is_printable_ascii: true,
+                is_local_name: true,
+            })
+        )
+    }
+
+    #[gtest]
+    fn local_name_content_ending_in_second_vector() -> Result<()> {
+        let source = [&[b'a'; 40][..], b">", &[b'b'; 32][..]].concat();
+        verify_that!(
+            local_name_content(&source),
+            eq(LocalNameContent {
+                length: 40,
+                character_count: 40,
+                is_printable_ascii: true,
+                is_local_name: true,
+            })
+        )
+    }
+
+    #[gtest]
+    fn local_name_content_longer_than_one_vector_in_last_chunk() -> Result<()> {
+        let source = [&[b'a'; 40][..], b">x"].concat();
+        verify_that!(
+            local_name_content(&source),
+            eq(LocalNameContent {
+                length: 40,
+                character_count: 40,
+                is_printable_ascii: true,
+                is_local_name: true,
+            })
+        )
+    }
+
+    #[gtest]
+    fn local_name_content_longer_than_one_vector_at_end_of_source() -> Result<()> {
+        verify_that!(
+            local_name_content(&[b'a'; 40]),
+            eq(LocalNameContent {
+                length: 40,
+                character_count: 40,
+                is_printable_ascii: true,
+                is_local_name: true,
+            })
+        )
+    }
+
+    #[gtest]
+    fn local_name_content_of_exactly_one_vector_at_end_of_source() -> Result<()> {
+        verify_that!(
+            local_name_content(&[b'a'; 32]),
+            eq(LocalNameContent {
+                length: 32,
+                character_count: 32,
+                is_printable_ascii: true,
+                is_local_name: true,
+            })
+        )
+    }
+
+    #[gtest]
+    fn local_name_content_longer_than_one_vector_with_non_ascii() -> Result<()> {
+        let source = [&[b'a'; 33][..], "é>".as_bytes()].concat();
+        verify_that!(
+            local_name_content(&source),
+            eq(LocalNameContent {
+                length: 35,
+                character_count: 34,
+                is_printable_ascii: false,
+                is_local_name: true,
+            })
+        )
     }
 }

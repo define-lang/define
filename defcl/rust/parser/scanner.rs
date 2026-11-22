@@ -1,9 +1,13 @@
 //! Moving through the source and tracking positions in it.
 
 use crate::syntax_tree::TextRange;
+use crate::vector_scan;
+pub(crate) use crate::vector_scan::{
+    NumberKind, is_enum_word_character, is_field_name_word_character, is_number_word_character,
+};
 use source_characters::{DisallowedReason, Neighbors, TextKind, disallowed_reason};
 use source_rendering::{Position, SourceLocation};
-use source_scanning::{character_count, rest_of_line};
+use source_scanning::{character_count, quoted_content, rest_of_line};
 
 const LINE_FEED: u8 = b'\n';
 
@@ -197,16 +201,6 @@ impl<'source> Scanner<'source> {
         true
     }
 
-    /// Consumes the next `length` bytes, which must be ASCII other than a
-    /// line feed, and returns them. `length` must not be zero.
-    pub(crate) fn consume_ascii(&mut self, length: usize) -> &'source str {
-        let start = self.offset;
-        self.offset += length;
-        self.last_consumed = self.position.columns_later(length - 1);
-        self.position = self.position.columns_later(length);
-        &self.source[start..self.offset]
-    }
-
     /// Consumes the next `length` bytes, which must be `character_count`
     /// characters with no line feed.
     pub(crate) const fn consume_text(&mut self, length: usize, character_count: usize) {
@@ -222,6 +216,50 @@ impl<'source> Scanner<'source> {
     pub(crate) const fn consume_line_feed_and_spaces(&mut self, spaces: usize) {
         self.advance();
         self.consume_text(spaces, spaces);
+    }
+
+    /// The number of spaces after the line feed at the scanner's position, and
+    /// the byte after them, if the remaining bytes start with a line feed and
+    /// something other than spaces follows them.
+    #[inline]
+    pub(crate) fn scan_line_feed_and_spaces(&self) -> Option<(usize, u8)> {
+        vector_scan::line_feed_and_spaces(self.rest())
+    }
+
+    /// Consumes the word where a field name belongs, and returns whether it
+    /// follows the rules for field names if the scan determined it.
+    #[inline]
+    pub(crate) fn consume_field_name_word(&mut self) -> Option<bool> {
+        let word = vector_scan::field_name_word(self.rest());
+        self.consume_text(word.length, word.length);
+        word.is_field_name
+    }
+
+    /// Consumes the word where a number belongs, and returns its kind if the
+    /// scan determined it.
+    #[inline]
+    pub(crate) fn consume_number_word(&mut self) -> Option<NumberKind> {
+        let word = vector_scan::number_word(self.rest());
+        self.consume_text(word.length, word.length);
+        word.kind
+    }
+
+    /// Consumes an enum value's word, and returns whether it follows the rules
+    /// for enum values if the scan determined it.
+    #[inline]
+    pub(crate) fn consume_enum_word(&mut self) -> Option<bool> {
+        let word = vector_scan::enum_word(self.rest());
+        self.consume_text(word.length, word.length);
+        word.is_enum_value
+    }
+
+    /// Consumes quoted content up to its first `"`, `\`, or line feed, and
+    /// returns whether every consumed byte is printable ASCII.
+    #[inline]
+    pub(crate) fn consume_quoted_content(&mut self) -> bool {
+        let scanned = quoted_content(self.rest());
+        self.consume_text(scanned.length, scanned.character_count);
+        scanned.is_printable_ascii
     }
 
     /// The bytes that have not been consumed.

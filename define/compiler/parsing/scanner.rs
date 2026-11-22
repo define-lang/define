@@ -26,6 +26,11 @@ impl SourceText<'_> {
         }
     }
 
+    /// Whether this text has the shape of a global name.
+    pub(crate) fn is_global_name(self) -> bool {
+        vector_scan::global_name_content(self.bytes).is_global_name
+    }
+
     /// Returns the text in the byte `range`, which must start and end on
     /// character boundaries.
     pub(crate) fn slice(self, range: impl SliceIndex<[u8], Output = [u8]>) -> Self {
@@ -88,6 +93,20 @@ impl<'source> Scanner<'source> {
             .zip(expected)
             .take_while(|&(byte, expected_byte)| byte == expected_byte)
             .count()
+    }
+
+    /// Consumes one space if the remaining text starts with a single space not
+    /// followed by another space.
+    pub(crate) const fn consume_single_space(&mut self) -> bool {
+        let Some((&SPACE, rest)) = self.rest.split_first() else {
+            return false;
+        };
+        if matches!(rest.first(), Some(&SPACE)) {
+            return false;
+        }
+        self.rest = rest;
+        self.position = self.position.columns_later(1);
+        true
     }
 
     /// The number of spaces at the start of the remaining text.
@@ -213,6 +232,7 @@ impl<'source> Scanner<'source> {
     /// Consumes the name content, where only a global name belongs, before the
     /// first `>` or line feed, or all of the remaining text if it contains
     /// neither, and returns it with what the scan found in it.
+    #[inline]
     pub(crate) fn consume_global_name_content(
         &mut self,
     ) -> (SourceText<'source>, vector_scan::GlobalNameContent) {
@@ -225,8 +245,23 @@ impl<'source> Scanner<'source> {
         (text, scanned)
     }
 
+    /// Consumes the name content, where only a local name belongs, before the
+    /// first `>` or line feed, or all of the remaining text if it contains
+    /// neither, and returns it with whether it has the shape of a local name.
+    #[inline]
+    pub(crate) fn consume_local_name_content(&mut self) -> (SourceText<'source>, bool) {
+        let scanned = vector_scan::local_name_content(self.rest);
+        let text = self.consume_scanned(
+            scanned.length,
+            scanned.character_count,
+            scanned.is_printable_ascii,
+        );
+        (text, scanned.is_local_name)
+    }
+
     /// Consumes name content that must be a fully qualified universe name with
     /// no path, and returns it with what the scan found.
+    #[inline]
     pub(crate) fn consume_fqun_name_content(
         &mut self,
     ) -> (SourceText<'source>, vector_scan::FqunNameContent) {
@@ -288,6 +323,7 @@ impl<'source> Scanner<'source> {
     /// Consumes the name content, where a local name may belong, before the
     /// first `>` or line feed, or all of the remaining text if it contains
     /// neither, and returns it with what the scan found in it.
+    #[inline]
     pub(crate) fn consume_name_content(
         &mut self,
     ) -> (SourceText<'source>, vector_scan::NameContent) {

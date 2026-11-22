@@ -1,20 +1,18 @@
 //! The parser: a defcl file into its syntax tree.
 
-use crate::scanner::{Scanner, invisible_syntax_reason};
+use crate::scanner::{
+    NumberKind, Scanner, invisible_syntax_reason, is_enum_word_character,
+    is_field_name_word_character, is_number_word_character,
+};
 use crate::syntax_error::{SyntaxError, SyntaxErrorKind};
 use crate::syntax_tree::{
     Field, FieldName, MessageValue, ParsedFile, RepeatedValue, Scalar, TopLevelMessage, Value,
-};
-use crate::vector_scan::{
-    enum_word_length, field_name_word, is_enum_word_character, is_field_name_word_character,
-    is_number_word_character, line_feed_and_spaces, number_word_length,
 };
 use source_characters::{
     DisallowedCharacter, DisallowedReason, Neighbors, TextKind, disallowed_characters,
     disallowed_reason, first_disallowed_character,
 };
 use source_rendering::{Position, SourceLocation};
-use source_scanning::quoted_content;
 use std::ops::Range;
 
 /// The spaces of one level of indentation.
@@ -185,9 +183,44 @@ fn field_name_error(text: &str) -> (usize, SyntaxErrorKind) {
     unreachable!("{text:?} is a valid field name")
 }
 
+/// Whether `text` follows the rules for field names, checked one byte at a
+/// time when the vector scan did not decide in one vector.
+///
+/// ```ebnf
+/// FIELD_NAME = lowercase_letter, { lowercase_letter | dec | ( "_", lowercase_letter ) } ;
+/// ```
+#[cold]
+#[inline(never)]
+fn is_field_name(text: &str) -> bool {
+    let bytes = text.as_bytes();
+    if !bytes.first().is_some_and(u8::is_ascii_lowercase) {
+        return false;
+    }
+    let mut index = 1;
+    while let Some(&byte) = bytes.get(index) {
+        if byte == b'_' {
+            if !bytes.get(index + 1).is_some_and(u8::is_ascii_lowercase) {
+                return false;
+            }
+            index += 2;
+            continue;
+        }
+        if !byte.is_ascii_lowercase() && !byte.is_ascii_digit() {
+            return false;
+        }
+        index += 1;
+    }
+    true
+}
+
+/// Whether `text` follows the rules for enum values, checked one byte at a
+/// time when the vector scan did not decide in one vector.
+///
 /// ```ebnf
 /// enum_value = uppercase_letter, { uppercase_letter | dec | "_" } ;
 /// ```
+#[cold]
+#[inline(never)]
 fn is_enum_value(text: &str) -> bool {
     let bytes = text.as_bytes();
     bytes.first().is_some_and(u8::is_ascii_uppercase)
@@ -212,28 +245,36 @@ fn after_decimal_literal(text: &str) -> Option<&str> {
     Some(text.trim_start_matches(|character: char| character.is_ascii_digit()))
 }
 
+/// Classifies `text` as an integer, a float, or neither, checked one byte at a
+/// time when the vector scan did not decide in one vector.
+///
 /// ```ebnf
-/// INTEGER = [ "-" ], dec_lit ;
-/// ```
-fn is_integer(text: &str) -> bool {
-    after_decimal_literal(text.strip_prefix('-').unwrap_or(text)) == Some("")
-}
-
-/// ```ebnf
+/// INTEGER = ( [ "-" ], dec_lit ) - "-0" ;
+/// FLOAT = ( [ "-" ], dec_lit, ".", fraction ) - "-0.0" ;
 /// fraction = "0" | { dec }, ( dec - "0" ) ;
-/// FLOAT = [ "-" ], dec_lit, ".", fraction ;
 /// ```
-fn is_float(text: &str) -> bool {
-    let Some(fraction) = after_decimal_literal(text.strip_prefix('-').unwrap_or(text))
-        .and_then(|rest| rest.strip_prefix('.'))
-    else {
-        return false;
-    };
-    if fraction == "0" {
-        return true;
+#[cold]
+#[inline(never)]
+fn classify_number(text: &str) -> NumberKind {
+    if text == "-0" || text == "-0.0" {
+        return NumberKind::Invalid;
     }
-    fraction.bytes().all(|byte| byte.is_ascii_digit())
-        && fraction.bytes().last().is_some_and(|byte| byte != b'0')
+    let Some(after_int) = after_decimal_literal(text.strip_prefix('-').unwrap_or(text)) else {
+        return NumberKind::Invalid;
+    };
+    if after_int.is_empty() {
+        return NumberKind::Integer;
+    }
+    let Some(fraction) = after_int.strip_prefix('.') else {
+        return NumberKind::Invalid;
+    };
+    if fraction == "0"
+        || (fraction.bytes().all(|byte| byte.is_ascii_digit())
+            && fraction.bytes().last().is_some_and(|byte| byte != b'0'))
+    {
+        return NumberKind::Float;
+    }
+    NumberKind::Invalid
 }
 
 /// The kind of syntax error in `text`, a word of number characters that
@@ -570,7 +611,7 @@ impl Parser<'_> {
         // indentation of a token that belongs there, which needs no other
         // check.
         if self.scanner.position().column != 1
-            && let Some((spaces, next)) = line_feed_and_spaces(rest)
+            && let Some((spaces, next)) = self.scanner.scan_line_feed_and_spaces()
             && next != b'#'
             && next.is_ascii_graphic()
             && is_expected(Some(next))
@@ -1112,20 +1153,28 @@ impl Parser<'_> {
     fn parse_field_name_and_colon(&mut self) -> Result<FieldName, SyntaxError> {
         let start = self.scanner.position();
         let start_offset = self.scanner.offset();
-        let word = field_name_word(self.scanner.rest());
-        let text = self.scanner.consume_ascii(word.length);
+        let is_field_name = self
+            .scanner
+            .consume_field_name_word()
+            .unwrap_or_else(|| is_field_name(self.scanner.text_from(start_offset)));
         let text_range = self.scanner.range_from(start_offset);
-        // An invisible character splits the word.
-        if let Some(error) = self.invisible_character_in_word(is_field_name_word_character) {
-            return Err(error);
-        }
         let location = SourceLocation {
             start,
             end: self.scanner.last_consumed(),
         };
+        if is_field_name && self.scanner.consume_byte(b':') {
+            return Ok(FieldName {
+                text: text_range,
+                location,
+            });
+        }
+        // An invisible character splits the word.
+        if let Some(error) = self.invisible_character_in_word(is_field_name_word_character) {
+            return Err(error);
+        }
         // The word where the field name belongs is not a valid field name.
-        if !word.is_field_name {
-            let (index, kind) = field_name_error(text);
+        if !is_field_name {
+            let (index, kind) = field_name_error(self.scanner.text_from(start_offset));
             return Err(SyntaxError {
                 kind,
                 location: Some(SourceLocation::at(start.columns_later(index))),
@@ -1183,6 +1232,17 @@ impl Parser<'_> {
         let start = self.scanner.position();
         let start_offset = self.scanner.offset();
         self.scanner.advance();
+        // Almost every string is printable ASCII with no escapes.
+        let mut is_printable_ascii = self.scanner.consume_quoted_content();
+        if is_printable_ascii && self.scanner.consume_byte(b'"') {
+            return Ok(Value::String(Scalar {
+                text: self.scanner.range_from(start_offset),
+                location: SourceLocation {
+                    start,
+                    end: self.scanner.last_consumed(),
+                },
+            }));
+        }
         let mut byte_escape_run = ByteEscapeRun {
             bytes: Vec::new(),
             start,
@@ -1190,7 +1250,6 @@ impl Parser<'_> {
         };
         // Every escape is printable ASCII, so whether the string is printable
         // ASCII depends only on the content between its escapes.
-        let mut is_printable_ascii = true;
         loop {
             match self.scanner.peek() {
                 // The string has no closing quote on its line.
@@ -1216,10 +1275,7 @@ impl Parser<'_> {
                 }
                 Some(_) => {
                     byte_escape_run.end()?;
-                    let scanned = quoted_content(self.scanner.rest());
-                    is_printable_ascii &= scanned.is_printable_ascii;
-                    self.scanner
-                        .consume_text(scanned.length, scanned.character_count);
+                    is_printable_ascii &= self.scanner.consume_quoted_content();
                 }
             }
         }
@@ -1350,9 +1406,10 @@ impl Parser<'_> {
     fn parse_number(&mut self) -> Result<Value, SyntaxError> {
         let start = self.scanner.position();
         let start_offset = self.scanner.offset();
-        let text = self
+        let number_kind = self
             .scanner
-            .consume_ascii(number_word_length(self.scanner.rest()));
+            .consume_number_word()
+            .unwrap_or_else(|| classify_number(self.scanner.text_from(start_offset)));
         // An invisible character splits the word.
         if let Some(error) = self.invisible_character_in_word(is_number_word_character) {
             return Err(error);
@@ -1364,25 +1421,27 @@ impl Parser<'_> {
                 end: self.scanner.last_consumed(),
             },
         };
-        // The number is a negative zero.
-        if text == "-0" || text == "-0.0" {
-            return Err(SyntaxError {
-                kind: SyntaxErrorKind::NegativeZero,
-                location: Some(scalar.location),
-            });
+        match number_kind {
+            NumberKind::Integer => Ok(Value::Integer(scalar)),
+            NumberKind::Float => Ok(Value::Float(scalar)),
+            NumberKind::Invalid => {
+                let text = self.scanner.text_from(start_offset);
+                // The number is a negative zero.
+                if text == "-0" || text == "-0.0" {
+                    return Err(SyntaxError {
+                        kind: SyntaxErrorKind::NegativeZero,
+                        location: Some(scalar.location),
+                    });
+                }
+                // The word that starts like a number is not an integer or a
+                // float.
+                let (index, kind) = number_error(text);
+                Err(SyntaxError {
+                    kind,
+                    location: Some(SourceLocation::at(start.columns_later(index))),
+                })
+            }
         }
-        if is_integer(text) {
-            return Ok(Value::Integer(scalar));
-        }
-        if is_float(text) {
-            return Ok(Value::Float(scalar));
-        }
-        // The word that starts like a number is not an integer or a float.
-        let (index, kind) = number_error(text);
-        Err(SyntaxError {
-            kind,
-            location: Some(SourceLocation::at(start.columns_later(index))),
-        })
     }
 
     /// Parses an enum value, which starts at the scanner's position with a
@@ -1394,9 +1453,10 @@ impl Parser<'_> {
     fn parse_enum_value(&mut self) -> Result<Value, SyntaxError> {
         let start = self.scanner.position();
         let start_offset = self.scanner.offset();
-        let text = self
+        let is_enum_value = self
             .scanner
-            .consume_ascii(enum_word_length(self.scanner.rest()));
+            .consume_enum_word()
+            .unwrap_or_else(|| is_enum_value(self.scanner.text_from(start_offset)));
         // An invisible character splits the word.
         if let Some(error) = self.invisible_character_in_word(is_enum_word_character) {
             return Err(error);
@@ -1405,17 +1465,15 @@ impl Parser<'_> {
             start,
             end: self.scanner.last_consumed(),
         };
-        // The word is a boolean literal.
-        if text == "true" || text == "false" {
+        if !is_enum_value {
+            let text = self.scanner.text_from(start_offset);
+            let kind = if text == "true" || text == "false" {
+                SyntaxErrorKind::BooleanNotSupported
+            } else {
+                SyntaxErrorKind::InvalidEnumCase
+            };
             return Err(SyntaxError {
-                kind: SyntaxErrorKind::BooleanNotSupported,
-                location: Some(location),
-            });
-        }
-        // The word has a lowercase letter.
-        if !is_enum_value(text) {
-            return Err(SyntaxError {
-                kind: SyntaxErrorKind::InvalidEnumCase,
+                kind,
                 location: Some(location),
             });
         }
