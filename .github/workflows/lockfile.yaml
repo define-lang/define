@@ -5,6 +5,8 @@ on:
     branches:
       - "renovate/**"
     paths:
+      # Bazel releases can change extension transitive digests in MODULE.bazel.lock.
+      - .bazelversion
       # Modules under local_path_override, such as vendored/re2, are part of the
       # root module's dependency graph.
       - "**/MODULE.bazel"
