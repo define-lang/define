@@ -235,6 +235,8 @@ crate.from_cargo(
     cargo_lock = "//:Cargo.lock",
     cargo_toml = "//:Cargo.toml",
     generate_lint_config = True,
+    incompatible_no_root_alias_targets = True,
+    incompatible_no_root_crate_data = True,
     platform_triples = [
         "aarch64-apple-darwin",
         "aarch64-pc-windows-msvc",

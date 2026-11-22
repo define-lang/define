@@ -98,7 +98,7 @@ pyo3_extension(
     module_name = "rust_renderer",
     stubs = True,
     tags = ["no-mutation"],
-    deps = ["@crates//:askama"],
+    deps = ["@crates//askama"],
 )
 
 py_library(

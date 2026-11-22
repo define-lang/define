@@ -12,7 +12,7 @@ rust_binary(
         "//tools/bzl:__pkg__",
         "@rules_rust//rust/coverage:__pkg__",
     ],
-    deps = ["@crates//:serde_json"],
+    deps = ["@crates//serde_json"],
 )
 
 # --- Linting ---

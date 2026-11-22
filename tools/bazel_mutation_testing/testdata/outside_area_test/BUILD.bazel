@@ -12,7 +12,7 @@ rust_test(
     lint_config = lint_config(),
     deps = [
         "//tools/bazel_mutation_testing/testdata/rust/outside_area",
-        "@crates//:googletest",
+        "@crates//googletest",
     ],
 )
 

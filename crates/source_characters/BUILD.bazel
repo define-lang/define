@@ -26,7 +26,7 @@ rust_test(
     size = "small",
     crate = ":source_characters",
     lint_config = lint_config(),
-    deps = ["@crates//:googletest"],
+    deps = ["@crates//googletest"],
 )
 
 # --- Linting ---

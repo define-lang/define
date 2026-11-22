@@ -105,7 +105,7 @@ pyo3_extension(
         "//crates/source_rendering/python:capsule",
         "//crates/source_rendering/rust:source_rendering",
         "//crates/source_scanning",
-        "@crates//:rustc-hash",
+        "@crates//rustc-hash",
     ],
 )
 
@@ -144,7 +144,7 @@ rust_library(
     deps = [
         ":terminals",
         "//crates/source_scanning",
-        "@crates//:wide",
+        "@crates//wide",
     ],
 )
 
@@ -153,8 +153,8 @@ rust_test(
     size = "small",
     crate = ":vector_scan",
     lint_config = lint_config(),
-    proc_macro_deps = ["@crates//:indoc"],
-    deps = ["@crates//:googletest"],
+    proc_macro_deps = ["@crates//indoc"],
+    deps = ["@crates//googletest"],
 )
 
 # --- Linting ---

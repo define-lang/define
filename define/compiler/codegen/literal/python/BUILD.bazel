@@ -207,8 +207,8 @@ pyo3_extension(
     stubs = True,
     visibility = ["//tools:__pkg__"],
     deps = [
-        "@crates//:askama",
-        "@crates//:rustc-hash",
+        "@crates//askama",
+        "@crates//rustc-hash",
     ],
 )
 

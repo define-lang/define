@@ -28,9 +28,9 @@ rust_library(
         "//crates/source_characters",
         "//crates/source_rendering/rust:source_rendering",
         "//crates/source_scanning",
-        "@crates//:derive_more",
-        "@crates//:strum",
-        "@crates//:wide",
+        "@crates//derive_more",
+        "@crates//strum",
+        "@crates//wide",
     ],
 )
 
@@ -41,8 +41,8 @@ rust_test(
     compile_data = ["//defcl/testdata:testdata_files"],
     crate = ":parser",
     lint_config = lint_config(),
-    proc_macro_deps = ["@crates//:indoc"],
-    deps = ["@crates//:googletest"],
+    proc_macro_deps = ["@crates//indoc"],
+    deps = ["@crates//googletest"],
 )
 
 # --- Linting ---

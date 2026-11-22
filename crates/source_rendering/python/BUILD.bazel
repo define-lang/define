@@ -19,7 +19,7 @@ rust_library(
     ],
     deps = [
         "//crates/source_rendering/rust:source_rendering",
-        "@crates//:pyo3",
+        "@crates//pyo3",
     ],
 )
 
@@ -52,7 +52,7 @@ pyo3_extension(
     deps = [
         ":capsule",
         "//crates/source_rendering/rust:source_rendering",
-        "@crates//:rustc-hash",
+        "@crates//rustc-hash",
     ],
 )
 

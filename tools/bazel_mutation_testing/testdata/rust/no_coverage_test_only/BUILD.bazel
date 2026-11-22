@@ -18,7 +18,7 @@ rust_test(
     tags = [
         "no-coverage",
     ],
-    deps = ["@crates//:googletest"],
+    deps = ["@crates//googletest"],
 )
 
 # --- Linting ---

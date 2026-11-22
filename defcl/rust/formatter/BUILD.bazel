@@ -9,15 +9,15 @@ rust_binary(
     name = "defclfmt",
     srcs = ["main.rs"],
     lint_config = lint_config(),
-    proc_macro_deps = ["@crates//:indoc"],
+    proc_macro_deps = ["@crates//indoc"],
     rustc_flags = binary_rustc_flags(),
     visibility = ["//tools/format:__pkg__"],
     deps = [
         ":formatter",
         "//crates/source_rendering/rust:source_rendering",
         "//defcl/rust/parser",
-        "@crates//:clap",
-        "@crates//:rayon",
+        "@crates//clap",
+        "@crates//rayon",
     ],
 )
 
@@ -27,10 +27,10 @@ rust_test(
     crate = ":defclfmt",
     data = [":defclfmt"],
     lint_config = lint_config(),
-    proc_macro_deps = ["@crates//:indoc"],
+    proc_macro_deps = ["@crates//indoc"],
     rustc_env = {"DEFCLFMT": "$(rlocationpath :defclfmt)"},
     deps = [
-        "@crates//:googletest",
+        "@crates//googletest",
         "@rules_rust//rust/runfiles",
     ],
 )
@@ -51,10 +51,10 @@ rust_test(
     compile_data = ["//defcl/testdata:testdata_files"],
     crate = ":formatter",
     lint_config = lint_config(),
-    proc_macro_deps = ["@crates//:indoc"],
+    proc_macro_deps = ["@crates//indoc"],
     deps = [
         "//crates/source_rendering/rust:source_rendering",
-        "@crates//:googletest",
+        "@crates//googletest",
     ],
 )
 

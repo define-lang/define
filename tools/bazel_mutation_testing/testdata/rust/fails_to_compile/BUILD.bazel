@@ -15,7 +15,7 @@ rust_test(
     size = "small",
     crate = ":fails_to_compile",
     lint_config = lint_config(),
-    deps = ["@crates//:googletest"],
+    deps = ["@crates//googletest"],
 )
 
 # --- Linting ---

@@ -35,9 +35,9 @@ rust_library(
         ":descriptor_proto",
         "//crates/source_rendering/rust:source_rendering",
         "//defcl/rust/parser",
-        "@crates//:derive_more",
-        "@crates//:rustc-hash",
-        "@crates//:strum",
+        "@crates//derive_more",
+        "@crates//rustc-hash",
+        "@crates//strum",
     ],
 )
 
@@ -54,15 +54,15 @@ rust_test(
         "//defcl/testdata/valid/schemas:schemas_descriptor_set",
     ],
     lint_config = lint_config(),
-    proc_macro_deps = ["@crates//:indoc"],
+    proc_macro_deps = ["@crates//indoc"],
     rustc_env = {
         "INVALID_SCHEMAS": "$(rlocationpath //defcl/testdata/invalid/schemas:schemas_descriptor_set)",
         "INVALID_SEMANTICS_SCHEMAS": "$(rlocationpath //defcl/testdata/invalid/semantics/schemas:schemas_descriptor_set)",
         "VALID_SCHEMAS": "$(rlocationpath //defcl/testdata/valid/schemas:schemas_descriptor_set)",
     },
     deps = [
-        "@crates//:googletest",
-        "@crates//:prost",
+        "@crates//googletest",
+        "@crates//prost",
         "@rules_rust//rust/runfiles",
     ],
 )

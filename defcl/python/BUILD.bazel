@@ -47,12 +47,12 @@ rust_binary(
     name = "generate_error_types",
     srcs = ["generate_error_types.rs"],
     lint_config = lint_config(),
-    proc_macro_deps = ["@crates//:indoc"],
+    proc_macro_deps = ["@crates//indoc"],
     rustc_flags = binary_rustc_flags(),
     deps = [
         "//defcl/rust/parser",
         "//defcl/rust/semantics",
-        "@crates//:strum",
+        "@crates//strum",
     ],
 )
 
@@ -139,7 +139,7 @@ pyo3_extension(
         "//defcl/rust:validator",
         "//defcl/rust/parser",
         "//defcl/rust/semantics",
-        "@crates//:prost",
+        "@crates//prost",
     ],
 )
 

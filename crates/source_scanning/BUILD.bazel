@@ -13,7 +13,7 @@ rust_library(
         "//defcl/rust:__subpackages__",
         "//define/compiler/parsing:__pkg__",
     ],
-    deps = ["@crates//:wide"],
+    deps = ["@crates//wide"],
 )
 
 rust_test(
@@ -21,8 +21,8 @@ rust_test(
     size = "small",
     crate = ":source_scanning",
     lint_config = lint_config(),
-    proc_macro_deps = ["@crates//:indoc"],
-    deps = ["@crates//:googletest"],
+    proc_macro_deps = ["@crates//indoc"],
+    deps = ["@crates//googletest"],
 )
 
 # --- Linting ---

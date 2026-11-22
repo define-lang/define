@@ -16,7 +16,7 @@ rust_test(
     crate = ":failing_baseline",
     lint_config = lint_config(),
     tags = ["manual"],
-    deps = ["@crates//:googletest"],
+    deps = ["@crates//googletest"],
 )
 
 # --- Linting ---

@@ -4,8 +4,7 @@ def lint_config():
     """Return the lint config that applies the workspace's lints from Cargo.toml.
 
     Every Rust target passes it as its `lint_config`, which is what the clippy
-    aspect reads. `lint_config` from `@crates//:defs.bzl` returns None for
-    every package except the Cargo package `define`, so it applies no lints.
+    aspect reads.
     Mutation runs turn some of its lints off.
     """
     return Label("//tools/bzl:rust_lint_config")
