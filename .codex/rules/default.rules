@@ -1,11 +1,6 @@
 # This file is auto-generated from .claude/settings.json. Do not edit manually.
 
 prefix_rule(
-    pattern = ["find", "-exec", "cat"],
-    decision = "allow",
-)
-
-prefix_rule(
     pattern = ["echo"],
     decision = "allow",
 )

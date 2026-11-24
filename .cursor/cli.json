@@ -12,7 +12,6 @@
       "WebFetch(domain:blog.aspect.build)",
       "WebFetch(domain:docs.astral.sh)",
       "WebFetch(domain:blog.bazel.build)",
-      "Shell(find * -exec cat *)",
       "Shell(echo *)",
       "Shell(ls *)",
       "Shell(mkdir *)",

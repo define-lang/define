@@ -75,7 +75,6 @@ def test_sync_agy_permissions_from_repo_claude_settings(
     assert "read_url(registry.bazel.build)" in inner_grants["allow"]
     assert "command(bazelisk)" in inner_grants["allow"]
     assert "command(source .venv/bin/activate)" in inner_grants["allow"]
-    assert "command(regex:find .* -exec cat)" in inner_grants["allow"]
     assert "command(regex:gh api repos/.*/releases)" in inner_grants["allow"]
     assert "command(regex:gh api repos/.*/contents/.*)" in inner_grants["allow"]
     assert "command(pip)" in inner_grants["deny"]
