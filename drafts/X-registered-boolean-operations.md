@@ -18,7 +18,7 @@ One of our aspirations with Define is to allow there to be, to whatever degree
 we can accomplish it, only one way to write any given program.
 [DLP 56 (Logical Operations for Boolean Values)](00056-logical-operations-for-boolean-values.md)
 defines a minimal core of logical operations for boolean values.
-[DLP 59 (No Redundant Boolean Values)](00059-no-redundant-boolean-values.md)
+[DLP 59 (No Redundant Boolean Logic)](00059-no-redundant-boolean-logic.md)
 forbids computing a value the program already has, and
 [DLP 60 (One Order for Boolean Logic)](00060-one-order-for-boolean-logic.md)
 gives boolean logic one order. But a program can still write out logic that an

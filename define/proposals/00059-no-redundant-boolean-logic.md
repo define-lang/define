@@ -317,7 +317,9 @@ A **Boolean Value Operation** is a value operation where:
 - Every view is a boolean view.
 - Every statement in the Operation Statements Block is either (1) an execution
   of a `standard:/boolean` logical operation, (2) an execution of another
-  Boolean Value Operation, or (3) a View Setting Statement.
+  Boolean Value Operation, (3) a View Setting Statement, or (4) a Local View
+  Definition that defines a view with the value quality
+  `value<standard:/boolean>`.
 
 A **Boolean Abstract Operation** is a logical operation allowed for
 `value<standard:/boolean>` or a Boolean Value Operation.
@@ -336,7 +338,8 @@ either:
 One term requires a bit more explanation.
 
 1. Imagine you have a boolean view. Let's call this our "analyzed view."
-2. If the analyzed view is an input view of this Value Operation, stop.
+2. If the analyzed view is an input view of this Value Operation that still has
+   its initial value, stop.
 3. Find the statement that set the value of the analyzed view.
 4. If the statement executes a non-Boolean Abstract Operation, stop at the
    analyzed view.

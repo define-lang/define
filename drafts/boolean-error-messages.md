@@ -1,7 +1,7 @@
 # Boolean Error Messages
 
 Example error messages for the rules of DLP 56 (Logical Operations for Boolean
-Values), DLP 59 (No Redundant Boolean Values), DLP 60 (One Order for Boolean
+Values), DLP 59 (No Redundant Boolean Logic), DLP 60 (One Order for Boolean
 Logic), DLP 61 (Standard Boolean Operations), and DLP 62 (Limits on Boolean
 Logic), to see what they'd be like in practice. What the compiler computes for
 each one is in

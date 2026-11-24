@@ -1,12 +1,12 @@
 # Boolean Logic in the Compiler
 
 How the compiler represents boolean logic, checks the rules of DLP 56 (Logical
-Operations for Boolean Values), DLP 59 (No Redundant Boolean Values), DLP 60
-(One Order for Boolean Logic), DLP 61 (Standard Boolean Operations), DLP 62
-(Limits on Boolean Logic), and DLP 63 (Boolean Contracts for Abstract
-Operations), automatically refactors programs until they follow those rules (DLP
-64, Auto-Fixing Boolean Logic), and structures Value Operation and Action
-contracts for parallel compilation and future whole-program optimization.
+Operations for Boolean Values), DLP 59 (No Redundant Boolean Logic), DLP 60 (One
+Order for Boolean Logic), DLP 61 (Standard Boolean Operations), DLP 62 (Limits
+on Boolean Logic), and DLP 63 (Boolean Contracts for Abstract Operations),
+automatically refactors programs until they follow those rules (DLP 64,
+Auto-Fixing Boolean Logic), and structures Value Operation and Action contracts
+for parallel compilation and future whole-program optimization.
 
 The proposals define what programs may write. This document specifies how the
 compiler performs the work. [The Algorithm](#the-algorithm) describes the
