@@ -2,9 +2,11 @@
 
 How the compiler represents boolean logic, checks the rules of DLP 56 (Logical
 Operations for Boolean Values), DLP 59 (No Redundant Boolean Values), DLP 60
-(One Order for Boolean Logic), and DLP 61 (Registered Boolean Operations), fixes
-programs until they follow those rules, and structures Value Operation and
-Action contracts for parallel compilation and future whole-program optimization.
+(One Order for Boolean Logic), DLP 61 (Standard Boolean Operations), DLP 62
+(Limits on Boolean Logic), and DLP 63 (Boolean Contracts for Abstract
+Operations), fixes programs until they follow those rules, and structures Value
+Operation and Action contracts for parallel compilation and future whole-program
+optimization.
 
 The proposals define what programs may write. This document specifies how the
 compiler performs the work. [The Algorithm](#the-algorithm) describes the
@@ -30,78 +32,97 @@ inlined units at `scope=2`).
 
 ### Limits and Forward Compatibility
 
-The compiler enforces five deterministic, compiler-independent limits on boolean
+The compiler enforces four deterministic, compiler-independent limits on boolean
 logic. Together they bound contract size, per-worker memory in parallel builds,
 exponential BDD growth, and polynomial match search — with no machine-dependent
 timeouts and no heuristic step budget. Raising any of these limits in a future
 version of Define only accepts more programs, preserving Forward Compatibility:
 
-| Limit                                       | Scope                                                           | Value                    | What it bounds                                                                                                                                                                                             |
-| ------------------------------------------- | --------------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Boolean input Interface Views**           | Every Value Operation                                           | **≤ 20**                 | Bounds every pure boolean Value Operation's exported contract to **≤ 128 KB** (truth table) or **≤ 98,302** ROBDD nodes, and limits DLP 60 symmetry checking to at most 190 view pairs.                    |
-| **Registered operation read views (arity)** | Registered boolean ops (`booleans.defcl`)                       | **≤ 3**                  | Bounds `Matcher` search to `O(S * (I + S)^2)` and at most 6 view permutations per op, and enables exact `fewest_ands` via the 14-class 3-variable NPN table.                                               |
-| **Registered boolean operations**           | Each project's `booleans.defcl`                                 | **≤ 16** _(plus stdlib)_ | Bounds the number of registered operations `Matcher` checks against every Value Operation and Action in the project.                                                                                       |
-| **Boolean statements**                      | Every Value Operation and Action                                | **≤ 256**                | Keeps `Matcher` fast even on adversarial non-matching chains; ensures every pure boolean Value Operation fits unconditionally inside the `(256 statements, 20 inputs)` truth-table floor.                  |
-| **Boolean inputs**                          | Every Value Operation and Action                                | **≤ 512**                | Bounds the `Matcher` value pool (`N = I + S ≤ 768`) on mixed Value Operations and Actions with many non-boolean comparisons (`x == 1`, `x < y`, etc.), keeping worst-case `Matcher` runtime around ~0.1 s. |
-| **Canonical shared ROBDD reachable nodes**  | Mixed Value Operations and Actions with `21–512` boolean inputs | **≤ 65,536 (`2^16`)**    | Prevents exponential `O(2^I)` blowups past 20 inputs; bounds worst-case memory to **~5–10 MB per parallel worker** and build time to **~5–20 ms**.                                                         |
+| Limit                                      | Scope                                                           | Value                 | What it bounds                                                                                                                                                                                             |
+| ------------------------------------------ | --------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Boolean input views**                    | Every Value Operation                                           | **≤ 20**              | Bounds every Boolean Value Operation's exported contract to **≤ 128 KB** (truth table) or **≤ 98,302** ROBDD nodes, and limits DLP 60 symmetry checking to at most 190 view pairs.                         |
+| **Boolean Statements**                     | Every Value Operation and Action                                | **≤ 256**             | Keeps checking and matching fast even on adversarial non-matching chains; ensures every Boolean Value Operation fits unconditionally inside the `(256 statements, 20 inputs)` truth-table floor.           |
+| **Boolean inputs**                         | Every Value Operation and Action                                | **≤ 512**             | Bounds the `Matcher` value pool (`N = I + S ≤ 768`) on mixed Value Operations and Actions with many non-boolean comparisons (`x == 1`, `x < y`, etc.), keeping worst-case `Matcher` runtime around ~30 ms. |
+| **Canonical shared ROBDD reachable nodes** | Mixed Value Operations and Actions with `21–512` boolean inputs | **≤ 65,536 (`2^16`)** | Prevents exponential `O(2^I)` blowups past 20 inputs; bounds worst-case memory to **~5–10 MB per parallel worker** and build time to **~5–20 ms**.                                                         |
 
 Two consequences follow directly from these limits:
 
-- **Every pure boolean Value Operation always compiles through the guaranteed
-  truth-table floor.** Because a pure boolean Value Operation has at most 20
-  boolean input Interface Views (its only boolean inputs) and at most 256
-  boolean statements, it can never hit an ROBDD limit, regardless of how tangled
-  its boolean function is.
+- **Every Boolean Value Operation always compiles through the guaranteed
+  truth-table floor.** Because a Boolean Value Operation has at most 20 boolean
+  input views (its only boolean inputs) and at most 256 Boolean Statements, it
+  can never hit an ROBDD limit, regardless of how tangled its boolean function
+  is.
 - **Large expressions refactor cleanly.** A Value Operation or Action that
-  exceeds 256 boolean statements can be split into calls to helper Value
-  Operations (each taking at most 20 boolean input Interface Views, or taking
-  the underlying non-boolean views such as numbers). Each execution collapses
-  into a single statement in the caller while preserving exact redundancy
-  checking through the callee's contract.
+  exceeds 256 Boolean Statements can be split into calls to helper Value
+  Operations (each taking at most 20 boolean input views, or taking the
+  underlying non-boolean views such as numbers). Each execution collapses into a
+  single statement in the caller while preserving exact redundancy checking
+  through the callee's contract.
 
 ### What the Compiler Checks
 
 Value Operations are compiled bottom-up in parallel along their static DAG, and
 Actions are then compiled bottom-up in parallel along their call/trigger DAG.
-For each Value Operation (and each Action's boolean statements block), checked
-once:
+For each Value Operation (and each Action's Boolean Statements block), checked
+once in strict priority order (**DLP 59 → DLP 60 → DLP 61**):
 
-1. **Structural limits:** at most 20 boolean input Interface Views on a Value
-   Operation (and exactly one written view on a pure boolean Value Operation),
-   at most 256 boolean statements, at most 512 boolean inputs, and (when using
+1. **Structural limits:** at most 20 boolean input views on a Value Operation
+   (exactly one output view on a Boolean Value Operation; on a non-Boolean Value
+   Operation, no boolean output view's Boolean Sources may include a boolean
+   input view, and no two boolean output views may share a Boolean Source), at
+   most 256 Boolean Statements, at most 512 boolean inputs, and (when using
    ROBDDs past 20 inputs) at most **65,536** reachable non-terminal nodes in the
    canonical shared ROBDD.
-2. **Order:** boolean statements and arguments passed to interchangeable views
-   follow DLP 60's order.
-3. **Redundant values:** no boolean statement computes a constant (`true` or
-   `false`), or computes the same value or opposite value as a boolean input or
-   an earlier statement (except `not` of that value).
-4. **Dead statements:** every boolean statement's value reaches a written view
-   or a non-boolean statement.
-5. **Read views:** every boolean input Interface View of a pure boolean Value
-   Operation changes the written view for at least one combination of the read
-   views.
-6. **Literals:** no boolean statement receives a Define literal (`true` or
-   `false`), tracing through View Setting Statement copies to the value's
-   origin.
-7. **Matches:** no value computes the same function as a registered boolean
-   operation (or its opposite) applied to at most three earlier values. `and`
-   and `not` count as registered operations. A registered operation's own
-   definition follows only `and`, `not`, and earlier registered operations under
-   DLP 61's order.
-8. **Spellings:** a value computed by a single execution of a registered
-   operation uses the spelling that comes first in DLP 61's order. A `not` is
-   never respelled.
-9. **Wrappers:** no Value Operation merely wraps a registered operation; only
-   the standard library wraps `and` and `not`, and Value Operations do not
-   execute those wrappers. Wrapper checks inspect statements syntactically.
+2. **Literals, dead statements, and input views (DLP 56/59):**
+   - No execution of an Abstract Operation (in a Value Operation or Action)
+     looks at a boolean literal or a view/particle known to contain one (tracing
+     through View Setting Statements in Value Operations, and local sets or
+     transitive callee DLP 53 guarantees in Actions).
+   - Every Boolean Statement's value reaches an output view or a non-boolean
+     statement (no dead statements).
+   - Every boolean input of a Value Operation (each boolean input view, and each
+     boolean value produced by a non-boolean statement) must appear in the
+     Boolean Sources of at least one boolean output view or at least one boolean
+     argument passed to a non-boolean statement; and for every such boolean
+     output view or boolean argument, changing any view in its Boolean Sources
+     must be able to change its value.
+3. **Redundant values (DLP 59):** no Boolean Statement computes a constant
+   (`true` or `false`), or computes the same value or opposite value as a
+   boolean input or an earlier statement (except `not` of that value).
+4. **Order, grouping, and factoring (DLP 60):**
+   - Arguments passed to interchangeable input views follow DLP 60's rank order,
+     and Boolean Statements follow depth-first statement order.
+   - **Associative grouping:** every maximal single-use chain of a commutative,
+     associative binary boolean operation is folded left-to-right in DLP 60 rank
+     order (`op(v_1, v_2)`, `op(v_3, t_1)`, ..., `op(v_m, t_{m-2})`), with no
+     balanced sub-pairs.
+   - **Factoring common terms:** for any two distinct commutative, associative
+     binary boolean operations where `inner` distributes over `outer`, no value
+     `x` repeats across two or more single-use `inner`-chain terms of the same
+     single-use `outer`-chain.
+5. **Standard boolean operations (DLP 61):** checked only when the operation has
+   no DLP 59 redundant values and no DLP 60 unfactored common terms:
+   - **Matches:** no value computes the same function as one of the five
+     standard boolean operations (`and`, `not`, `or`, `xor`, `equal`) — or its
+     opposite — applied to earlier values, when replacing it removes at least
+     two statements (three for an opposite). Each standard library operation's
+     own definition follows only earlier standard operations in the fixed order
+     `and`, `not`, `or`, `xor`, `equal`.
+   - **Spellings:** a value computed by a single execution of a standard boolean
+     operation uses the spelling that comes first (fewest negated arguments,
+     then fixed order `and`, `not`, `or`, `xor`, `equal`, then argument ranks).
+     A `not` is never respelled.
+   - **Wrappers:** no Value Operation merely wraps a standard boolean operation;
+     only the standard library wraps `and` and `not` for Actions, and Value
+     Operations do not execute those wrappers. Wrapper checks inspect statements
+     syntactically.
 
 Each Value Operation is checked once where it is defined, regardless of how many
 callers execute it.
 
 ### Representation
 
-The boolean statements of a Value Operation or Action lower into an and-inverter
+The Boolean Statements of a Value Operation or Action lower into an and-inverter
 graph (AIG): every internal node is an `and` of two literals, and a literal is a
 node index plus a 1-bit negation flag. (Here "literal" means a signed
 logic-synthesis edge, not a Define boolean literal.) `not` flips the negation
@@ -122,20 +143,20 @@ as its source.
 
 ### Executions of Boolean Value Operations
 
-An execution of a boolean Value Operation is a single node in the caller's
+An execution of a Boolean Value Operation is a single node in the caller's
 graph: a reference to the callee plus the caller's argument literals. DLPs 59–61
 check only values produced by the caller's own statements, never the callee's
 internal statements (which were already checked where the callee is defined).
 The execution's result is still checked in the caller because the caller can
 pass correlated values to distinct views of the callee.
 
-When a pure boolean Value Operation compiles, its contract records its boolean
-function over its `k ≤ 20` read views, along with its interchangeable-view
+When a Boolean Value Operation compiles, its contract records its boolean
+function over its `k ≤ 20` input views, along with its interchangeable-view
 symmetry partition and a 128-bit canonical fingerprint:
 
 - **Small AIG:** when the callee's AIG has at most `2^k` nodes (for `k ≤ 6`) or
   at most `16k` nodes (for `k > 6`), callers evaluate those AIG nodes directly.
-- **Truth table:** for `k ≤ 20`, the exact `2^k`-bit truth table of the written
+- **Truth table:** for `k ≤ 20`, the exact `2^k`-bit truth table of the output
   view (at most 128 KB at `k = 20`, and 8 bytes at `k ≤ 6`).
   - In a truth-table caller with `k ≤ 6`, each word is evaluated with direct bit
     lookups.
@@ -148,7 +169,7 @@ symmetry partition and a 128-bit canonical fingerprint:
   compose the callee node by node instead of splitting a `2^k`-bit table.
 
 DLP 60's interchangeable-view groups come directly from the callee's recorded
-contract. With at most 20 boolean read views, checking all pairs takes at most
+contract. With at most 20 boolean input views, checking all pairs takes at most
 `20 * 19 / 2 = 190` word-parallel truth-table swap comparisons (microseconds).
 If symmetry is ever computed directly on a recorded diagram, the compiler
 pre-partitions views using `O(|Diagram|)` biased mod-`(2^61 - 1)` Chow/Walsh
@@ -159,16 +180,16 @@ pairs with zero-allocation lockstep `are_symmetric` checks.
 ### Counting Boolean Inputs
 
 One pass over the statements collects the distinct boolean inputs read by
-boolean statements:
+Boolean Statements:
 
-- In a **pure boolean Value Operation**, the boolean inputs are exactly its
-  boolean input Interface Views (`I ≤ 20`).
+- In a **Boolean Value Operation**, the boolean inputs are exactly its boolean
+  input views (`I ≤ 20`).
 - In a **mixed Value Operation** or **Action**, the boolean inputs are its
-  boolean input Interface Views (or contracted input boolean positions) plus any
-  local view written by a non-boolean statement (such as a numeric comparison or
-  a mixed Value Operation execution) that a boolean statement reads (`I ≤ 512`).
+  boolean input views (or contracted input boolean positions) plus any local
+  view written by a non-boolean statement (such as a numeric comparison or a
+  mixed Value Operation execution) that a Boolean Statement reads (`I ≤ 512`).
 
-Local views written by boolean statements are derived values, not boolean
+Local views written by Boolean Statements are derived values, not boolean
 inputs. The input count depends only on syntax, so every compiler computes the
 exact same count.
 
@@ -178,16 +199,16 @@ Every value is decided exactly using one of two backends, chosen
 deterministically from the boolean input count `I` and the arities of executed
 Value Operations:
 
-| Boolean inputs (`I`)                                             | Method                                                                         |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| `I ≤ 16`                                                         | Truth tables                                                                   |
-| `17 ≤ I ≤ 20`, executing a Value Operation with `> 6` read views | Truth tables                                                                   |
-| `17 ≤ I ≤ 20` otherwise                                          | ROBDDs (with automatic truth-table fallback if the ROBDD exceeds 65,536 nodes) |
-| `21 ≤ I ≤ 512`                                                   | ROBDDs (subject to the 65,536 canonical reachable-node limit)                  |
+| Boolean inputs (`I`)                                              | Method                                                                         |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `I ≤ 16`                                                          | Truth tables                                                                   |
+| `17 ≤ I ≤ 20`, executing a Value Operation with `> 6` input views | Truth tables                                                                   |
+| `17 ≤ I ≤ 20` otherwise                                           | ROBDDs (with automatic truth-table fallback if the ROBDD exceeds 65,536 nodes) |
+| `21 ≤ I ≤ 512`                                                    | ROBDDs (subject to the 65,536 canonical reachable-node limit)                  |
 
 Both backends produce identical errors on every Value Operation and Action.
 Because `I ≤ 20` always falls back to truth tables if an ROBDD hits the node
-cap, every pure boolean Value Operation (`I ≤ 20`, `S ≤ 256`) is guaranteed to
+cap, every Boolean Value Operation (`I ≤ 20`, `S ≤ 256`) is guaranteed to
 compile.
 
 ### Truth Tables
@@ -202,8 +223,9 @@ verification** (never hash-only equality):
 
 - A statement is redundant if an earlier statement, a boolean input, or a
   constant falls in its exact equivalence class (opposite if negated).
-- Read-view relevance on pure boolean Value Operations is checked directly by
-  comparing cofactors across each view's bit stride in the output table.
+- Useless boolean inputs are checked directly by comparing cofactors across each
+  source's bit stride in the truth table of each boolean output view and each
+  boolean argument passed to a non-boolean statement.
 - Dead statements are found purely from the statement dependency graph.
 
 The compiler also exposes diagnostic helpers (`care_set_mask` over up to 4
@@ -218,7 +240,7 @@ ordered binary decision diagram with **complement edges** (so a value and its
 
 The variable ordering is fixed and compiler-independent: inputs are ordered by
 **first-reached depth-first traversal** starting from each root value (values
-not read by any other boolean statement, in statement order), visiting each
+not read by any other Boolean Statement, in statement order), visiting each
 statement's arguments in written order, followed by any unreached inputs in
 index order.
 
@@ -231,7 +253,7 @@ open-addressed caches that rehash dynamically as the node table grows:
 - Zero-allocation `O(I)` lockstep `distinguishing_path(a, b)` for finding an
   exact counterexample assignment where two edges differ.
 - `apply_table` via native Shannon recursion with direct fast paths for
-  `and`/`or`/`xor`/`ite`, and `compose` for recorded diagrams.
+  `and`/`or`/`xor`/`equal`, and `compose` for recorded diagrams.
 
 Node construction enforces a **2× internal construction cap** (`131,072`
 allocated nodes for a `65,536` canonical limit) inside `Bdd::make()`, so even an
@@ -251,52 +273,96 @@ Equivalence checking on the shared ROBDD is `O(1)`:
 - Two values are equal iff their edges are identical, and opposite iff their
   edges differ only in bit 0.
 - A value is constant iff its edge is `kTrue` or `kFalse`.
-- A read view matters iff its level appears in the output edge's reachable
-  subgraph.
-- Candidate matches are verified directly in the same manager, checking both
-  functional equality and essentiality of all arguments (an `O(1)` check for
-  arity 2, and `(k - 1)`-arity cofactor checks for arity 3).
+- A view in the Boolean Sources of a boolean output view (or of a boolean
+  argument passed to a non-boolean statement) matters iff its level appears in
+  that view's reachable ROBDD subgraph.
+- Candidate matches for the five standard operations are verified directly in
+  the same manager, checking both functional equality and essentiality of all
+  arguments in `O(1)` via direct edge comparisons.
 
-### Registered Operations Order (DLP 61)
+### Semantic Associative Grouping and Factoring (DLP 60)
 
-Registered operations are ordered deterministically by their function so that
-boolean expressions read naturally to humans and never depend on the order
-entries are listed in `booleans.defcl`:
+Both DLP 60 grouping and factoring operate purely semantically on binary boolean
+operations (whether `standard:/boolean/and`, a standard operation, or any user
+Boolean Value Operation with 2 input views), using each operation's 4-bit truth
+table (`tt` over `(a, b) ∈ {0, 1}^2`):
 
-1. `standard:/boolean/and`, then `standard:/boolean/not`.
-2. Fewest `and`s in any AIG computing the operation's function (looked up in the
-   precomputed exact-synthesis table of the 14 NPN classes of ≤ 3-variable
-   functions).
-3. Fewest read views.
-4. Project-registered operations before standard-library-registered ones
-   (standard-library operations follow only earlier standard-library operations;
-   project operations follow `and`, `not`, all standard-library registered
-   operations, and earlier project-registered operations).
-5. More symmetric first (fewer interchangeable-view groups).
-6. Truth table in counting order (first read view changing least often, rows
-   from `(0, ..., 0)` to `(1, ..., 1)`, `false < true`).
+- **Commutative & associative (`is_assoc_comm_tt`):** a binary operation is
+  commutative and associative iff its 4-bit truth table is `0x8` (`and`), `0xE`
+  (`or`), `0x6` (`xor`), or `0x9` (`equal`).
+- **Distributivity (`distributes_over_tt`):** two distinct commutative,
+  associative binary operations satisfy `inner` distributes over `outer` iff
+  `inner(a, outer(b, c)) == outer(inner(a, b), inner(a, c))` for all 8 triples
+  `(a, b, c) ∈ {0, 1}^3` — which holds for exactly `(and, or)`, `(or, and)`,
+  `(and, xor)`, and `(or, equal)`.
 
-For the standard boolean operations, this produces the exact order:
+Using reference counts (`readers[v]`) of every value across all statements and
+exits:
 
-`and` → `not` → `or` → `implies` → `xor` → `eq` → `mux` → `maj`
+1. **Maximal single-use chains:** a statement `s` of a commutative, associative
+   binary op `K` is a **chain root** if either `readers[s] ≠ 1` or its sole
+   reader is not an execution of the same operation `K`. Walking downward from a
+   chain root collects every child statement of the same op `K` with
+   `readers[child] == 1` as an internal node of the chain, and all other
+   operands as chain leaves.
+2. **Grouping check (`order_grouping`):** every maximal chain of length `m ≥ 3`
+   must be folded strictly left-to-right in DLP 60 rank order:
+   - No internal statement may have _both_ arguments be internal chain nodes
+     (forbidding balanced pairs like `(a and b) and (c and d)`).
+   - At each step from the deepest internal node up to the root, the single
+     newly introduced leaf must have rank strictly greater than (or equal to)
+     the previous leaf, matching the canonical fold `op(v_1, v_2)`,
+     `op(v_3, t_1)`, ..., `op(v_m, t_{m-2})` where
+     `rank(v_1) ≤ rank(v_2) ≤ ... ≤ rank(v_m)` (combined with DLP 60's argument
+     order, each leaf `v_k` appears on the lower-ranked side of
+     `op(v_k, t_{k-2})`).
+3. **Factoring check (`order_factor`):** for every chain root `r` of an `outer`
+   op with `≥ 2` leaves, collect all single-use `inner`-chain leaves (where
+   `inner` distributes over `outer`). If any value `x` appears in `c ≥ 2`
+   distinct `inner`-chain terms of `r`, report an unfactored common term —
+   choosing the factor `x` that removes the most terms (`c`), breaking ties by
+   lowest DLP 60 rank. Factoring is checked and fixed **before** DLP 61 match
+   search so expressions like `(a and b) or (a and c)` factor cleanly to
+   `a and (b or c)`.
 
-Thus `or(a, b)` is defined from `and`/`not`, `implies(a, b)` is `or(not a, b)`,
-`xor(a, b)` is `or(a and not b, b and not a)`, `eq(a, b)` is `not xor(a, b)`,
-`mux(s, a, b)` is `or(s and a, b and not s)`, and `maj(a, b, c)` is
-`mux(c, or(a, b), a and b)`.
+### Standard Boolean Operations (DLP 61)
+
+Define enforces a single fixed global set of five standard boolean operations
+across all projects:
+
+`and` → `not` → `or` → `xor` → `equal`
+
+Their definitions follow this fixed order:
+
+- `standard:/boolean/and` and `standard:/boolean/not` (primitives).
+- `standard:/boolean/or(a, b) = not (not a and not b)`.
+- `standard:/boolean/xor(a, b) = or(a and not b, b and not a)`.
+- `standard:/boolean/equal(a, b) = not xor(a, b)`.
+
+All five operations have arity ≤ 2 and are completely symmetric across their
+input views. There is no project-level registration file, no NPN exact-synthesis
+table, and no per-project boolean dialect.
 
 ### Finding Matches and Spellings
 
-DLP 61's match search checks whether any value equals a registered operation (or
-its opposite) applied to at most three earlier values. The same unified search
-engine (`Matcher`) handles both matches and spellings in a single pass over
-three modes (`kAll` for fixing, `kBestPerValue`, and `kBestOverall` with
-descending-MFFC early exit for checking):
+When an operation has no DLP 59 redundant values and no DLP 60 unfactored common
+terms, a single unified search engine (`Matcher`) checks whether any statement
+computes one of the standard operations (or its opposite) applied to earlier
+values, and whether any single execution of a standard operation has an earlier
+spelling:
 
-1. **Exact canonical class IDs:** each earlier value carries its exact
+1. **Strictly `O(S * (I + S))` search with zero backtracking:** because every
+   standard operation has arity ≤ 2 and is symmetric, `Matcher` never searches
+   3- or 4-argument combinations:
+   - `xor` and `equal` run a flat `O(1)` hash-table lookup on sample words
+     (`target_word ^ arg0_word`) across the earlier-value pool.
+   - `and` and `or` intersect the single remaining argument's candidate pool via
+     dynamic bitsets (`WordPool`).
+   - `not` is skipped because no redundant/opposite values remain.
+2. **Exact canonical class IDs:** each earlier value carries its exact
    equivalence class ID (from truth-table buckets or ROBDD edges), so duplicate
    or negated copies in the pool are deduplicated with zero hash-collision risk.
-2. **Varied-density sampling + BDD collision-splitting:**
+3. **Varied-density sampling + BDD collision-splitting:**
    - For `I ≤ 8`, all `2^I` assignments are sampled exhaustively (zero false
      positives).
    - For `I > 8`, the compiler starts with 256 multi-density samples (sparse,
@@ -306,87 +372,91 @@ descending-MFFC early exit for checking):
      initial samples are separated in deterministic batches using `O(I)`
      lockstep `distinguishing_path`, ensuring every distinct value has a unique
      sample signature before search begins.
-3. **MFFC pruning & `not` skipping:** replacing a match must remove at least two
-   statements, so `not` statements and values whose maximum fanout-free cone
-   (MFFC) has size `< 2` are skipped. In `kBestOverall` checking mode, targets
-   are searched in descending MFFC order and the search exits as soon as no
-   remaining target can beat the best match found so far.
-4. **Specialized & bitset-pruned argument search:**
-   - Dynamic pool bitsets (`WordPool`) track which earlier values are `0` or `1`
-     on each sample, with no fixed pool-size cap.
-   - `xor` and `eq` use direct `O(1)` flat hash-table lookup on sample words
-     (`target_word ^ arg0_word`).
-   - `mux` splits data-first into two symmetric cases to prune immediately
-     before selecting the control bit.
-   - General arity-2 and arity-3 variants iterate views in optimal constraint
-     order (`Variant::view_order`), intersecting newly forced sample bitsets
-     with inherited candidate lists (`cand_buf_`) and deferring full candidate
-     materialization until after `m0_`/`m1_` and hash checks pass.
-5. **Exact verification & sample refinement:** surviving candidates are verified
-   exactly on truth tables or the shared ROBDD. Any spurious candidate adds its
-   exact counterexample assignment to the sample set so it never recurs.
+4. **MFFC pruning and best-match modes:** replacing a match must remove at least
+   two statements (three for an opposite result), so `not` statements and values
+   whose maximum fanout-free cone (MFFC) has size `< 2` are skipped. In compiler
+   checking mode (`kBestOverall`), targets are searched in descending MFFC order
+   and the search exits as soon as no remaining target can beat the best match
+   found so far.
+5. **Exact verification and sample refinement:** surviving candidates are
+   verified exactly on truth tables or the shared ROBDD. Any spurious candidate
+   adds its exact counterexample assignment to the sample set so it never
+   recurs.
 6. **Spellings:** for any value already computed by a single execution of a
-   registered operation (other than `not`), the search checks only registered
+   standard operation (other than `not`), the search checks only standard
    operations whose best possible spelling could beat the current one (fewer
-   negated arguments, or equal negated arguments and a smaller DLP 61 key),
-   stopping on the first winning spelling when only reporting errors.
+   negated arguments, or equal negated arguments and an earlier standard
+   operation in `and`, `not`, `or`, `xor`, `equal`), stopping on the first
+   winning spelling when only reporting errors.
 
 ### Checking Again on Later Compiles
 
-A Value Operation's check depends only on its own statements, its project's (and
-standard library's) registered operations, and the contracts of the pure boolean
-Value Operations it executes — never on how callees are written internally.
+A Value Operation's check depends only on its own statements and the contracts
+of the Boolean Value Operations it executes — never on how callees are written
+internally.
 
-Each pure boolean Value Operation's contract stores its recorded function (small
-AIG, truth table, or compact ROBDD), its symmetry partition, and a 128-bit
-canonical hash. Rewriting a callee without changing its boolean function or
-symmetry partition leaves its contract hash unchanged, so no caller needs to be
-rechecked. Changing `booleans.defcl` rechecks only the project's own Value
-Operations and Actions, and only for matches and spellings of the added or
-removed registered operations.
+Each Boolean Value Operation's contract stores its recorded function (small AIG,
+truth table, or compact ROBDD), its symmetry partition, and a 128-bit canonical
+hash. Rewriting a callee without changing its boolean function or symmetry
+partition leaves its contract hash unchanged, so no caller needs to be
+rechecked. Because the standard boolean operation set is fixed globally across
+all projects, there is no config-driven invalidation pass.
 
 ### Fixing a Program
 
 A refactoring tool automatically fixes DLP 59's redundant/opposite values, dead
-statements, and unused read views, DLP 60's order, and DLP 61's matches,
-spellings, and wrappers:
+statements, and unused input views, DLP 60's order, associative grouping, and
+factoring common terms, and DLP 61's matches, spellings, and wrappers:
 
-- **Unused read views (`drop_views`):** unused views are dropped one at a time,
-  replacing each dropped view with the first kept read view that makes no value
-  constant. Per-view substitution handles interacting unused views such as
-  `xor(u1, u2)` where substituting all unused views with the same kept view
-  would create a constant. On `I > 20`, constant checks dispatch through the
-  ROBDD backend instead of allocating truth tables.
-- **Batching non-overlapping fixes:** after one check, the tool groups matches
-  in `O(N)` time, applies all redundant-value fixes and all largest-first
-  non-overlapping matches with their first spellings, and rechecks.
-- **Avoiding execution cycles (DLP 9):** if replacing a match inside a
-  registered operation's dependency cone would introduce an execution cycle, the
-  tool first inlines the cycle-forming executions into the registered
-  operation's definition, fixing registered operations and their dependencies
-  before the rest of the program.
-- **Removing wrappers and identity ops:** operations that merely return a view
-  or wrap a single statement are removed and substituted into their callers.
+1. **Dead statements and canonical argument/statement order (DLP 59/60):**
+   remove dead statements, sort arguments of interchangeable views by rank, and
+   topologically sort Boolean Statements into depth-first order.
+2. **Redundant values and unused input views (DLP 59):**
+   - Replace redundant values with the earlier value (or `not` of it for
+     opposites).
+   - Drop unused input views (`drop_views`) one at a time, replacing each
+     dropped view with the first kept input view that makes no value constant.
+     Per-view substitution handles interacting unused views such as
+     `xor(u1, u2)` where substituting all unused views with the same kept view
+     would create a constant. On `I > 20`, constant checks dispatch through the
+     ROBDD backend.
+3. **Wrappers and identity ops (DLP 61):** operations that merely return a view
+   or wrap a single standard operation are removed and substituted into their
+   callers.
+4. **Factoring common terms (DLP 60):** `apply_factor` factors the chosen value
+   `x` out of `k ≥ 2` single-use `inner`-chain terms of an `outer`-chain,
+   inserting the rebuilt statements directly before the chain root (strictly
+   reducing statement count) and canonicalizing before rechecking.
+5. **Batching non-overlapping matches and spellings (DLP 61):** after one check,
+   the tool applies all largest-first non-overlapping standard-operation matches
+   with their first spellings, or fixes the first better spelling when no match
+   is present.
+6. **Associative regrouping (DLP 60):** `regroup_associative` folds the first
+   non-canonical single-use associative chain into canonical left-to-right rank
+   order, inserting rebuilt statements immediately before the chain root to
+   preserve topological order. Running regrouping after DLP 59/factor/match
+   ensures it never pairs complementary leaves (`x` and `not x`) into a spurious
+   constant on an unfixed operation.
 
 The fix loop is proven to terminate in Lean 4
 (`boolean_equality_checking/proof/fixing_termination.lean`, theorem
-`dag_prog_terminates`), which discharges state-space finiteness directly from
-Define's static finite DAG computation graphs over a lexicographic measure:
-total read views across all operations, then per-operation priority order
-(unregistered ops first, then registered ops from largest key to smallest) over
+`dag_prog_terminates`, including `OpFix.factor`), which discharges state-space
+finiteness directly from Define's static finite DAG computation graphs over a
+lexicographic measure: total input views across all operations, then
+per-operation priority order over
 `(statements, non-not statements, multiset of execution precedence keys, multiset of DLP 60 expression ranks)`.
 
-Errors left for the programmer to fix: boolean literals passed to boolean
-statements, constant values or constant written views, limit violations,
-existing execution cycles, unused read views where every kept view creates a
-constant, registered operations defined as wrappers, and cycle-forming
-executions through non-boolean Value Operations.
+Errors left for the programmer to fix: boolean literals passed to Boolean
+Statements, constant values or constant output views, limit violations, existing
+execution cycles, and unused input views where every kept view creates a
+constant.
 
 ## Measurements and Reasons
 
-All measurements below come from the updated C++23 reference implementation
+All measurements below come from the C++23 reference implementation
 (`boolean_equality_checking/src/beq`) with the budget-free canonical ROBDD
-architecture.
+architecture, DLP 60 grouping and factoring, and DLP 61's fixed standard set
+`{and, not, or, xor, equal}`.
 
 ### Representation and Executions as References
 
@@ -426,41 +496,46 @@ Only 9 units out of 3,265 exceed `65,536` ROBDD nodes — all 9 are large
 `visit_comparison_expr` at 44.4M nodes, which as a standalone `scope=1` function
 has only 54 ROBDD nodes).
 
-### Why Registered Operations Are Capped at Arity ≤ 3 and Statements at ≤ 256
+### Why DLP 61 Uses Only the Fixed Standard Set (`and`, `not`, `or`, `xor`, `equal`)
 
 Stress-testing `Matcher` on adversarial linear-BDD chains of `S` calls to an
-unregistered 3-input operation `u3(a, b, c) = (a and b) xor c` (where nothing
-matches, so `Matcher` must prove no match exists for every statement across all
-`N = I + S` earlier values):
+unregistered 3-input operation `u3(a, b, c) = (a and b) xor c` (`I = 2S + 1`,
+where nothing matches, so `Matcher` must prove no match exists for every
+statement across all `N = I + S` earlier values):
 
-| Statements (`S`) | Inputs (`I`) | Arity ≤ 3 (`or, implies, xor, eq, mux, maj`) | With arity-4 XOR-like op (`par4`) |
-| ---------------- | ------------ | -------------------------------------------- | --------------------------------- |
-| **256**          | **513**      | **0.11 s**                                   | **Timeout (> 15 s)**              |
-| 512              | 1,025        | 0.64 s                                       | —                                 |
-| 1,024            | 2,049        | 4.72 s                                       | —                                 |
-| 2,048            | 4,097        | Timeout (> 15 s)                             | —                                 |
+| Statements (`S`) | Inputs (`I`) | Fixed standard set (`and, not, or, xor, equal`) | Arity ≤ 3 (`+ implies, mux, maj`) | With arity-4 XOR-like op (`par4`) |
+| ---------------- | ------------ | ----------------------------------------------- | --------------------------------- | --------------------------------- |
+| **256**          | **513**      | **0.030 s** (`matches` 11.0 ms, 16 MB RSS)      | 0.11 s                            | **Timeout (> 15 s)**              |
+| 512              | 1,025        | **0.078 s** (`matches` 34.6 ms, 16 MB RSS)      | 0.64 s                            | —                                 |
+| 1,024            | 2,049        | **0.28 s** (`matches` 135 ms, 17 MB RSS)        | 4.72 s                            | —                                 |
+| 2,048            | 4,097        | **1.11 s** (`matches` 560 ms, 28 MB RSS)        | Timeout (> 15 s)                  | —                                 |
+| 4,096            | 8,193        | **4.56 s** (`matches` 2.38 s, 56 MB RSS)        | —                                 | —                                 |
 
 Arity-4 XOR-like operations have no forcing prefix until the 4th argument,
-giving worst-case `O(S * N^3)` search even on a tiny linear BDD. Capping
-registered operations at **arity ≤ 3** eliminates the `O(S * N^3)` cliff
-completely (while keeping every standard boolean combinator including `mux` and
-`maj`), and capping **`S ≤ 256` and `I ≤ 512`** bounds worst-case `O(S * N^2)`
-match search to **~0.11 s** even on adversarial non-matching inputs.
+giving worst-case `O(S * N^3)` search even on a tiny linear BDD. Arity-3
+operations (`mux`, `maj`) scale as `O(S * N^2)`. Restricting DLP 61 to the five
+arity-≤-2 symmetric standard operations eliminates backtracking completely,
+giving strictly `O(S * (I + S))` search — **30 ms total** (`11 ms` in `matches`)
+at the `S = 256, I = 512` limits, while also avoiding per-project boolean
+dialects and avoiding `mux` vs. distributive-factoring conflicts.
 
-### Whole-Program Benchmarks
+### Whole-Program and Stress Benchmarks
 
-Checking generated programs with ~20% mixed Value Operations from scratch
-(single-threaded reference binary):
+Checking freshly generated and fixed whole programs with ~20% mixed Value
+Operations, DLP 60 grouping and factoring, and DLP 61's fixed standard set
+`{and, not, or, xor, equal}` (single-threaded reference binary,
+`--bdd_nodes 65536`):
 
-| Program                                        | Total wall time | Peak RSS   | Key breakdown                                                         |
-| ---------------------------------------------- | --------------- | ---------- | --------------------------------------------------------------------- |
-| `ops_15k` (14,897 ops, ≤ 10 inputs)            | **1.34 s**      | **84 MB**  | ~90 µs/op                                                             |
-| `ops_2k_wide` (1,995 ops, mostly 16–20 inputs) | **12.26 s**     | **188 MB** | 4.90 s wide table lookups (8×8 transpose), 1.02 s matches + spellings |
+| Program                                            | Total wall time | Peak RSS   | Key breakdown                                                                      |
+| -------------------------------------------------- | --------------- | ---------- | ---------------------------------------------------------------------------------- |
+| `ops_15k_std` (14,926 ops, ≤ 10 inputs)            | **1.08 s**      | **94 MB**  | ~72 µs/op (`tables` 50 ms, `order` 110 ms, `matches + spellings` 240 ms)           |
+| `ops_2k_wide_std` (1,998 ops, mostly 16–20 inputs) | **12.01 s**     | **194 MB** | `tables` 9.54 s (`lookups` 4.98 s via 8×8 transpose), `matches + spellings` 330 ms |
 
-Across all 277 synthetic stress workloads (`dense`, `xor_heavy`, `parity`,
-`chain`, `mult`, `real_shape`), 277 / 277 finish cleanly with zero timeouts
-(e.g., `dense_8_256` in 0.077 s / 17.2 MB; `dense_48_256` in 0.078 s;
-`xor_heavy_22_256` in 0.047 s).
+Across all 276 synthetic stress workloads (`work/methods/*.prog`: `dense`,
+`xor_heavy`, `parity`, `read_once`, `long` up to 1,024 statements, `real`, and
+multipliers up to 28×28) under the **65,536** canonical ROBDD node limit, **276
+/ 276** finish cleanly in 22.64 s total with zero timeouts and peak RSS **33.7
+MB** (slowest file: `long_22_1024.prog`, 3 ops × 1,024 statements, **1.20 s**).
 
 ## Approaches That Didn't Work
 
@@ -469,21 +544,19 @@ Across all 277 synthetic stress workloads (`dense`, `xor_heavy`, `parity`,
 - **A compiler step budget (`StepBudget`).** Counting internal compiler work
   steps (BDD ops, nodes, search steps, sample evals) is unpredictable for
   programmers, tightly coupled to one implementation's internal optimizations,
-  and hard to standardize across compilers. The five structural limits plus the
+  and hard to standardize across compilers. The four structural limits plus the
   canonical shared ROBDD reachable-node cap are 100% compiler-independent, easy
   to communicate, and bound both time and memory more cleanly.
-- **Arity-4 registered operations.** Even with `S = 256`, an arity-4 parity or
-  XOR-topped registered operation causes an `O(S * N^3)` search cliff (> 15 s)
-  on non-matching chains, and requires a 222-class exact-synthesis table whose
-  hardest classes took 13 minutes to compute. Capping registered ops at arity
-  `≤ 3` covers all standard boolean combinators with only 14 NPN classes and
-  eliminates the `O(S^4)` cliff.
-- **High statement caps (e.g., 8,192 statements) without a step budget.** Even
-  when the ROBDD stays small and linear, arity-3 `Matcher` scales as
-  `O(S * (I + S)^2)` on adversarial non-matching chains (~4.7 s at `S = 1,024`,
-  > 15 s at `S = 2,048`, ~40 minutes at `S = 8,192`). Keeping `S ≤ 256` and
-  > `I ≤ 512` keeps worst-case runtime around 0.1 s while covering 100% of
-  > standalone real-world functions.
+- **Project-level registered boolean operations (`booleans.defcl`) and arity ≥ 3
+  matching.** Allowing projects to register arbitrary boolean operations of
+  arity 3 or 4 introduced three problems at once: (1) an `O(S * N^3)` timeout
+  cliff for arity-4 XOR-like ops and `O(S * N^2)` scaling for arity-3 ops
+  (`mux`, `maj`); (2) per-project boolean dialects where the same expression
+  compiles in one project and fails in another, plus config-wide invalidation
+  and cycle-breaking complexity; and (3) conflicts between `mux` matching
+  (`mux(b, a, a and c)`) and DLP 60 distributive factoring (`a and (b or c)`).
+  Fixing DLP 61 to `{and, not, or, xor, equal}` removes all three problems and
+  reduces matching to strictly `O(S * (I + S))`.
 - **A time limit or SAT solver conflict limit.** Both make compilation results
   depend on hardware speed, load, or solver version.
 - **Partial checking or cutting large graphs into new inputs.** Silently missing
@@ -510,26 +583,27 @@ Across all 277 synthetic stress workloads (`dense`, `xor_heavy`, `parity`,
 
 - **Cuts of at most four values.** Found only 58% of planted redundant values
   (506 / 872), leaving many duplicate ways to write the same logic legal.
-- **Listing order in `booleans.defcl`.** Made program legality depend on config
-  order (720 orders of the 6 standard ops produced 14 distinct `and`-count
-  assignments). Function-based keys make `booleans.defcl` order-independent.
+- **Running associative regrouping before DLP 59 redundancy fixes.** Reordering
+  leaves of an unfixed chain like `equal(x, equal(y, not x))` into
+  `equal(y, equal(x, not x))` introduces a spurious constant sub-expression
+  before redundancy elimination runs. Running `regroup_associative` after DLP
+  59, factoring, and DLP 61 avoids spurious constants while preserving
+  topological order.
 - **Simplifying constant values or replacing unused views with `false`.**
   Propagating constants through callee executions blew up 20–40 statements into
   thousands; constants remain programmer errors, and unused views substitute a
-  kept read view instead.
+  kept input view instead.
 
 ## Open Questions
 
-- **Unused read view when every kept view creates a constant:** e.g.,
+- **Unused input view when every kept view creates a constant:** e.g.,
   `g(x, y, z) = xor(xor(x, z), xor(y, z)) and x`. The refactoring tool leaves
   this to the programmer; whether it should try substituting another internal
   value is open.
-- **Constants created while breaking execution cycles during fixing:** inlining
-  a cycle-forming execution can pair a value with its `not`; the tool stops and
-  reports the constant to the programmer.
-- **One canonical program per function:** fixing always terminates, but two
-  equivalent Value Operations can still differ in which intermediate values they
-  introduce.
+- **One canonical program per function:** fixing always terminates and
+  canonicalizes associative chains and distributive common factors, but two
+  equivalent Value Operations can still differ in which intermediate shared
+  values or helper Value Operations they introduce.
 - **Redundancy across non-boolean statements:** e.g., `(x < 3) and (x < 5)`
   treats both comparisons as independent boolean inputs. Proving non-boolean
   implications requires arithmetic/SMT reasoning outside pure boolean equality.
@@ -568,44 +642,37 @@ scales with the number of active worker threads `T`:
   a few KB), making them cheap to serialize, cache on disk, and share across
   worker threads.
 
-### Value Operation Contracts
+### Value Operation Contracts (DLP 63)
 
-When a Value Operation finishes compiling, its contract exposes everything a
-caller (another Value Operation or an Action) needs so callers never re-parse or
-re-check the callee's body:
+When a Value Operation finishes compiling, its Boolean Contract (specified in
+DLP 63) exposes everything a caller (another Value Operation or an Action) needs
+so callers never re-parse or re-check the callee's body:
 
-1. **Pure boolean Value Operations (`k ≤ 20` boolean input Interface Views, 1
-   boolean output view):**
+1. **Boolean Value Operations (`k ≤ 20` boolean input views, 1 boolean output
+   view):**
    - **Canonical boolean function:** stored in whichever representation is most
      compact for callers:
      - Small AIG (`≤ 2^k` nodes for `k ≤ 6`, or `≤ 16k` nodes for `k > 6`),
      - Exact `2^k`-bit truth table (**≤ 128 KB** at `k = 20`, **8 bytes** at
        `k ≤ 6`), and/or
-     - Output ROBDD over the `k` read views (mathematically guaranteed **≤
+     - Output ROBDD over the `k` input views (mathematically guaranteed **≤
        98,302** non-terminal nodes for any 20-variable function with complement
        edges, and typically tens to hundreds of nodes).
-   - **Interchangeable read-view groups (symmetry partition):** `k` small
+   - **Interchangeable input-view groups (symmetry partition):** `k` small
      integers used by callers to check DLP 60 argument ordering in `O(k)`.
    - **Canonical 128-bit function fingerprint:** for `O(1)` equivalence,
      wrapper, and incremental-recompilation checks.
-2. **Registered boolean Value Operations (`k ≤ 3`, listed in
-   `booleans.defcl`):**
-   - Everything above, plus:
-   - **DLP 61 sort key:**
-     `(fewest_ands, k, is_stdlib, num_groups, counting_order_tt)` (the truth
-     table fits in a single byte `uint8_t` for `k ≤ 3`).
-   - **Canonical `Variant` list:** deduplicated argument permutations modulo
-     symmetry (at most `3! = 6` variants).
-3. **Mixed Value Operations (boolean and non-boolean views):**
-   - Any boolean output view that depends exclusively on boolean input Interface
-     Views exports the same summary as a pure boolean Value Operation.
-   - Any boolean output view that depends on non-boolean views is exposed to
-     callers as an opaque boolean output (unless extended in the future with
-     cross-output relational invariants as below).
+2. **Non-Boolean (mixed) Value Operations:**
+   - Do not export Boolean Contracts. By DLP 59, in a non-Boolean Value
+     Operation, no boolean output view's Boolean Sources can include a boolean
+     input view, and no two boolean output views can share a Boolean Source.
+     Every boolean output view it produces is therefore independent as pure
+     boolean logic and is exposed to callers as an opaque boolean input (unless
+     extended in the future with non-boolean relational contracts).
 
-Because every Value Operation is capped at **≤ 20 boolean input Interface
-Views**, no separate exported-contract ROBDD node limit is needed: the 20-view
-cap mathematically bounds every contract to ≤ 128 KB (truth table) and ≤ 98,302
+Because every Value Operation is capped at **≤ 20 boolean input views**, no
+separate exported-contract ROBDD node limit is needed: the 20-view cap
+mathematically bounds every contract to ≤ 128 KB (truth table) and ≤ 98,302
 nodes (ROBDD).
 
 ### Action Contracts for Future Whole-Program Boolean Optimization
@@ -614,7 +681,7 @@ An Action is not a pure boolean function — it operates on particles in
 positions, triggers other Actions, and produces Action Guarantees (including
 Action Particle Value Guarantees and Destruction Contracts). To enable future
 **whole-program boolean optimizations** across Action boundaries — such as
-eliminating dead triggers/branches, folding duplicate boolean Value Operation
+eliminating dead triggers/branches, folding duplicate Boolean Value Operation
 executions across caller/callee boundaries, propagating known flags, or
 specializing callees — an Action Contract can summarize boolean behavior over
 its **contracted boolean interface positions** (`V` positions) in three

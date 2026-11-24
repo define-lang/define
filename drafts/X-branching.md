@@ -54,11 +54,11 @@ How can the compiler know the range of a value that a condition picks?
 
 ### Narrowing by a Condition (More Precise)
 
-When `standard:/number/less_than` or `standard:/number/equality` produces a
-boolean value, the compiler remembers which comparison of two formulas it came
-from. A Value Setting Statement and executing a value operation pass that on,
-the same way they pass on formulas. `standard:/boolean/not` of it produces the
-opposite comparison.
+When `standard:/number/less_than` or `standard:/number/equal` produces a boolean
+value, the compiler remembers which comparison of two formulas it came from. A
+Value Setting Statement and executing a value operation pass that on, the same
+way they pass on formulas. `standard:/boolean/not` of it produces the opposite
+comparison.
 
 When a `standard:/choose`'s condition came from a comparison, the compiler
 computes the range of `view<if_true>` knowing that the comparison is true, and
@@ -113,7 +113,7 @@ define the operation<mv:example.com:example:/decrement_to_zero> {
                 it has the value<standard:/boolean>.
             }
         }
-        execute the logical_operation<standard:/number/equality> {
+        execute the logical_operation<standard:/number/equal> {
             with view<a> looking at view<a>.
             with view<b> looking at literal<standard:/number>"0".
             with view<result> looking at view<is_zero>.

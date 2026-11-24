@@ -22,7 +22,7 @@ executions all the time. For example, this subtracts 1 from a natural, and says
 whether the natural was 0:
 
 ```define
-execute the logical_operation<standard:/number/equality> {
+execute the logical_operation<standard:/number/equal> {
     with view<a> looking at view<a>.
     with view<b> looking at literal<standard:/number>"0".
     with view<result> looking at view<is_zero>.
@@ -92,12 +92,12 @@ two places a literal's value quality could come from:
   above, `standard:/number/add` adds `view<a>`, a natural, and the literal -1,
   which isn't a natural.
 - The view that the logical operation's result goes to. That makes -1 an
-  integer, which is right. But the result of `standard:/number/equality` is a
+  integer, which is right. But the result of `standard:/number/equal` is a
   boolean value even though it compares numbers, so that doesn't work for the
   literal 0 that's compared to `view<a>`.
 
 Some literals have no other view to go by at all, like the exponent of
-`standard:/number/power`, which DLP 58 already requires to be a literal natural.
+`standard:/number/power`, which DLP 62 already requires to be a literal natural.
 
 Where does a literal in a logical operation execution get its value quality, if
 it needs one?
@@ -375,7 +375,7 @@ define the potential value<standard:/boolean> {
         it may be read.
         it may be written.
     }
-    it supports the logical_operation<standard:/number/equality> {
+    it supports the logical_operation<standard:/number/equal> {
         it may be written.
     }
     it supports the logical_operation<standard:/number/less_than> {
@@ -393,7 +393,7 @@ define the potential value<standard:/number/integer> {
         it may be read.
         it may be written.
     }
-    it supports the logical_operation<standard:/number/equality> {
+    it supports the logical_operation<standard:/number/equal> {
         it may be read.
     }
     it supports the logical_operation<standard:/number/less_than> {
@@ -426,7 +426,7 @@ define the potential value<standard:/number/natural> {
         it may be read.
         it may be written.
     }
-    it supports the logical_operation<standard:/number/equality> {
+    it supports the logical_operation<standard:/number/equal> {
         it may be read.
     }
     it supports the logical_operation<standard:/number/less_than> {
@@ -465,7 +465,7 @@ define the logical_operation<standard:/number/add> {
     }
 }
 
-define the logical_operation<standard:/number/equality> {
+define the logical_operation<standard:/number/equal> {
     define the view<a> {
         it is read.
         it holds the logical_value<standard:/number/rational>.
@@ -482,8 +482,8 @@ define the logical_operation<standard:/number/equality> {
 ```
 
 Every other `standard:/number` logical operation is like `standard:/number/add`,
-except that `standard:/number/less_than` is like `standard:/number/equality`.
-Every view of the `standard:/boolean` logical operations holds
+except that `standard:/number/less_than` is like `standard:/number/equal`. Every
+view of the `standard:/boolean` logical operations holds
 `logical_value<standard:/boolean>`.
 
 ### Decrementing
@@ -512,7 +512,7 @@ define the operation<mv:example.com:example:/decrement> {
     }
 
     it does {
-        execute the logical_operation<standard:/number/equality> {
+        execute the logical_operation<standard:/number/equal> {
             with view<a> looking at view<a>.
             with view<b> looking at literal<standard:/number>"0".
             with view<result> looking at view<is_zero>.
@@ -526,7 +526,7 @@ define the operation<mv:example.com:example:/decrement> {
 }
 ```
 
-- `"0"` is given to `view<b>` of `standard:/number/equality`, which holds
+- `"0"` is given to `view<b>` of `standard:/number/equal`, which holds
   `logical_value<standard:/number/rational>`, so it becomes the rational
   number 0. The equality's result is a boolean value, but that doesn't matter.
 - `"-1"` is given to `view<b>` of `standard:/number/add`, so it becomes the

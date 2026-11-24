@@ -465,7 +465,7 @@ and with an even exponent it's never negative: a value from -3 to 5 squared is 0
 to 25.
 
 A Value Setting Statement keeps the range of whatever it sets the value from.
-`standard:/number/less_than`, `standard:/number/equality`, and the logical
+`standard:/number/less_than`, `standard:/number/equal`, and the logical
 operations on boolean values produce boolean values, which have no order, so
 range constraints don't apply to them.
 
@@ -717,7 +717,7 @@ define the potential value<standard:/number/natural> {
         it may be read.
         it may be written.
     }
-    it supports the logical_operation<standard:/number/equality> {
+    it supports the logical_operation<standard:/number/equal> {
         it may be read.
     }
     it supports the logical_operation<standard:/number/less_than> {
@@ -754,7 +754,7 @@ define the potential value<standard:/number/integer> {
         it may be read.
         it may be written.
     }
-    it supports the logical_operation<standard:/number/equality> {
+    it supports the logical_operation<standard:/number/equal> {
         it may be read.
     }
     it supports the logical_operation<standard:/number/less_than> {
@@ -791,7 +791,7 @@ define the potential value<standard:/boolean> {
         it may be read.
         it may be written.
     }
-    it supports the logical_operation<standard:/number/equality> {
+    it supports the logical_operation<standard:/number/equal> {
         it may be written.
     }
     it supports the logical_operation<standard:/number/less_than> {
