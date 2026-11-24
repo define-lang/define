@@ -574,7 +574,7 @@ These apply to any value quality:
   it from other logical operations uses both operands twice. There's one
   equality for each kind of value, because what it means to be the same depends
   on what the values are. For now, that's numbers and truth values
-  (`standard:/number/equality` and `standard:/boolean/equality`). Comparing two
+  (`standard:/number/equal` and `standard:/boolean/equal`). Comparing two
   different kinds of values needs an explicit conversion first.
 
 These are for numbers:

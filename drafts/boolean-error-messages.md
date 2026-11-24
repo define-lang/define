@@ -47,7 +47,7 @@ program it fixes to are the ones shown here.
 These are the proposals that came out of writing the examples. Each one is shown
 in the examples that need it.
 
-1. **Name values by their views.** Every boolean statement writes a view, so
+1. **Name values by their views.** Every Boolean Statement writes a view, so
    every value has a name the programmer chose. Messages talk about
    `view<both_on>`, never about statements or positions in the logic.
 2. **Say the fix as an edit.** "Replace lines A–B with", "Remove lines A–B", or
@@ -56,7 +56,7 @@ in the examples that need it.
    nothing writes is an error too.
 3. **Show the finished fix.** The DLPs say which error is reported, but fixing
    only that one often leaves a new error: the value operation becomes a
-   wrapper, the values given to an `and` have to swap, or a read view stops
+   wrapper, the values given to an `and` have to swap, or an input view stops
    mattering. The refactoring tool already knows where fixing ends, so the
    message reports the error the DLPs define and shows the edit that ends where
    the tool ends.
@@ -67,7 +67,7 @@ in the examples that need it.
 5. **Show small truth tables for matches.** A registered operation reads at most
    three views, so its table over the match's arguments has at most 8 rows. Put
    the value's table next to it, and mark the combinations that never happen.
-6. **Lead with what suggests a bug.** A value that's always false, or a read
+6. **Lead with what suggests a bug.** A value that's always false, or an input
    view that stops mattering, usually means the logic is wrong, not just written
    the long way.
 7. **One message for a chain.** When one error causes others, in this value
@@ -120,7 +120,7 @@ instead, splitting part of the logic into a helper value operation _does_ fix it
 hitting the 65,536-node ROBDD limit requires either grouping related conditions
 closer together or breaking the entanglement across a non-boolean boundary.
 
-### One Written View
+### One Output View
 
 DLP 59's sum and carry of adding two bits, in one value operation:
 
@@ -282,7 +282,7 @@ to write, in order: `view<either>`, `view<both>`, `view<not_both>`,
 
 ## Redundant Values
 
-### The Same as a Read View
+### The Same as an Input View
 
 DLP 59's example:
 
@@ -520,7 +520,8 @@ comparisons of truth tables, and report the ones that hold, pointing at the line
 that gives each one. That explains it here. It also points at the line that's
 most likely the bug, since related values given to an execution usually mean the
 wrong view was given. When no pair explains it, the message can fall back to a
-table of the execution's read views, marking the combinations that never happen.
+table of the execution's input views, marking the combinations that never
+happen.
 
 ### Hard Case: A Value That's Always False
 
@@ -560,11 +561,11 @@ File "alarm/should_sound.dfn", line 59, column 42
 are never both true, because 'view<armed_and_open>' needs 'view<door_open>' to
 be true, and 'view<all_closed>' needs it to be false.
 So 'operation<mv:example.com:logic:/alarm/should_sound>' always writes false,
-and none of its read views change what it writes. If 'view<sound>' should
+and none of its input views change its output view. If 'view<sound>' should
 sometimes be true, the logic on lines 27-60 is wrong.
 If it shouldn't, there's no way to write it, since a boolean statement can't be
 given false. Remove 'operation<mv:example.com:logic:/alarm/should_sound>', and
-everything its result reaches:
+everything its result affects:
 1. alarm/siren.dfn, line 38: 'view<sound>' is always false, so 'view<siren>' is
    always the same as 'view<panic>'. Remove
    'operation<mv:example.com:logic:/alarm/siren>' too.
@@ -574,7 +575,7 @@ everything its result reaches:
 ```
 
 Hard: the fix that follows the rules is to delete the logic and everything it
-reaches, one file after another, but the programmer almost certainly meant
+affects, one file after another, but the programmer almost certainly meant
 something else, and the compiler can't tell what.
 
 Making it obvious: lead with "can never be true," then the reason, then "if
@@ -582,10 +583,11 @@ that's wrong, the logic is wrong," and only then the plan. For an `and` that's
 always false, its two values are never both true, which is the first half of the
 reason. The second half comes from looking for a boolean input that one of them
 needs true and the other needs false, one truth-table comparison per input. The
-plan lists every file it changes, numbered, and stops where the result reaches
-an action, which can be given a literal or a position's value. `siren.dfn` gets
-its own error too (its `view<sound>` is always false), but it should only be a
-step in this message, not a second message that looks like a second problem.
+plan lists every file it changes, numbered, and stops where the result arrives
+at an action, which can be given a literal or a position's value. `siren.dfn`
+gets its own error too (its `view<sound>` is always false), but it should only
+be a step in this message, not a second message that looks like a second
+problem.
 
 ## Dead Statements
 
@@ -622,7 +624,7 @@ Hard: not much. A dead statement has no place in DLP 60's order, so the compiler
 shouldn't also report that `view<either>` is in the wrong place. When dead
 statements read each other, one message should list all of their lines.
 
-## Read Views That Don't Matter
+## Input Views That Don't Matter
 
 ```define
     it does {
@@ -673,7 +675,7 @@ File "lamp/motion_lit.dfn", line 2, column 16
                ^^^^^^^^^^^^^^
 'view<switch_a>' doesn't change what
 'operation<mv:example.com:logic:/lamp/motion_lit>' writes: for every
-combination of its other read views, 'view<lit>' is the same whether
+combination of its other input views, 'view<lit>' is the same whether
 'view<switch_a>' is true or false.
 'view<lit_when_on>' (line 60) and 'view<lit_when_off>' (line 89) are its two
 cases, and both of them come to 'view<power>' and 'view<motion>'.
@@ -1089,7 +1091,7 @@ File "door/unlocks.dfn", line 80, column 42
 'operation<standard:/boolean/majority>' with 'view<a>' looking at 'view<badge>',
 'view<b>' looking at 'view<pin>', and 'view<c>' looking at 'view<face>'.
 Execute it instead of these 4 statements.
-'operation<standard:/boolean/majority>' is true when at least two of its read
+'operation<standard:/boolean/majority>' is true when at least two of its input
 views are true. The standard library registers it, so every value operation has
 to use it:
     badge  pin    face   | two_factors | majority
@@ -1462,10 +1464,10 @@ say how many executions each choice would change.
 
 - **The first error or the finished fix.** The DLPs say which error is reported,
   and these examples show the edit that ends where the refactoring tool ends.
-  That edit can reach other files and remove whole value operations. Is that too
-  much for one message, or should the message offer to run the tool?
+  That edit can affect other files and remove whole value operations. Is that
+  too much for one message, or should the message offer to run the tool?
 - **How many messages.** DLP 59 reports the first redundant value and every dead
-  statement, and DLP 61 reports the largest match. Consequences, like a read
+  statement, and DLP 61 reports the largest match. Consequences, like an input
   view that stops mattering or an execution elsewhere that becomes always false,
   are folded into one message here. Should they also count as errors of their
   own?

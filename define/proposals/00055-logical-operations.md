@@ -341,7 +341,7 @@ define the potential value<standard:/number/natural> {
         it may be read.
         it may be written.
     }
-    it supports the logical_operation<standard:/number/equality> {
+    it supports the logical_operation<standard:/number/equal> {
         it may be read.
     }
 }
@@ -552,6 +552,10 @@ both views must have the same value quality. The direction rules from
 Single Assignment rules from this proposal apply to it like any other statement
 that appears in a Value Operation. A View Setting Statement is considered to
 read from its source and write to its target.
+
+For the sake of simplifying language across proposals, a View Setting
+Statement's target can also be referred to as its output view, and its source
+can be referred to as its input view.
 
 #### View Setting Statement Restrictions
 
@@ -1173,7 +1177,7 @@ define the operation<mv:example.com:example:/bad_boolean_sum> {
 }
 
 define the potential value<mv:example.com:example:/user_id> {
-    it supports the logical_operation<standard:/number/equality> {
+    it supports the logical_operation<standard:/number/equal> {
         it may be read.
     }
 }

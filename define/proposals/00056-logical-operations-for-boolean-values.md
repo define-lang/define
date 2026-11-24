@@ -68,7 +68,7 @@ the same core logic.
 ### 5: Only One Way to Write Boolean Logic
 
 One of our goals with Define is to say "there is only one way to write a valid
-program." For Boolean logic, the first and most critical step toward that is
+program." For boolean logic, the first and most critical step toward that is
 knowing what the minimal core of logical operations are. Once we know that, we
 can (in later proposals) force all programs to be based on them. But we have to
 know what the base set is, first, in order to reason about how we would
@@ -453,7 +453,7 @@ That's not extremely relevant for us, but the pattern was worth mentioning.
 
 #### Conjunctive Normal Form (CNF)
 
-Conjunctive Normal Form (CNF) is a way of representing Boolean logic as an AND
+Conjunctive Normal Form (CNF) is a way of representing boolean logic as an AND
 of ORs. It's the standard input representation for most modern SAT solvers.
 
 A CNF formula looks like this:
@@ -473,7 +473,7 @@ A formula is true only when every clause is true.
 
 ##### What can CNF express?
 
-Every Boolean function can be expressed in CNF.
+Every boolean function can be expressed in CNF.
 
 Some examples:
 
@@ -484,7 +484,7 @@ Some examples:
 | `a → b`            | `(not a or b)`                  |
 | `a XOR b`          | `(a or b) and (not a or not b)` |
 
-CNF doesn't restrict what Boolean functions can be represented.
+CNF doesn't restrict what boolean functions can be represented.
 
 ##### Avoiding exponential growth
 
@@ -556,7 +556,7 @@ much better at larger n.
 All that said, it's worth noting that a Tseitin transformation is not logically
 equivalent to the original equation, it's only "equisatisfiable."
 
-Two Boolean expressions are equisatisfiable if either both can be true for some
+Two boolean expressions are equisatisfiable if either both can be true for some
 assignment of their variables, or neither can.
 
 For example:
@@ -626,7 +626,7 @@ bit" (HWB) function:
 
 ```python
 def hidden_weighted_bit(a: bool, b: bool, c: bool, d: bool) -> bool:
-    """Compute the Hidden Weighted Bit (HWB) function for four Boolean inputs.
+    """Compute the Hidden Weighted Bit (HWB) function for four boolean inputs.
 
     Count how many inputs are True, then return the input at that
     position (counting from 1). If all inputs are False, return False.
@@ -642,7 +642,7 @@ def hidden_weighted_bit(a: bool, b: bool, c: bool, d: bool) -> bool:
             Three inputs are True, so return the third input (c).
 
     HWB is notable because it can be computed with a polynomial-size
-    Boolean circuit, but requires an exponentially large reduced
+    boolean circuit, but requires an exponentially large reduced
     ordered binary decision diagram (ROBDD).
     """
     # Exactly one input is true, and a is true.
@@ -1195,7 +1195,7 @@ failing to detect that two equations are _different_ (that is, the error can be
 
 #### Algebraic Normal Form (ANF)
 
-ANF is very similar to XAG in that it represents every Boolean function using
+ANF is very similar to XAG in that it represents every boolean function using
 just `xor`, `and`, and `true`. However, ANF is required to be in a particular
 canonical form: ANF must use AND for any operations on variables, and then
 groups are combined using XOR:
@@ -1217,7 +1217,7 @@ equivalence checks on it is a straightforward linear comparison.
 The term "sentential" means "relating to logical sentences."
 
 A Sentential Decision Diagram is similar to a Binary Decision Diagram but can
-represent certain Boolean functions exponentially more compactly. Where a BDD
+represent certain boolean functions exponentially more compactly. Where a BDD
 makes decisions based on individual boolean variables, an SDD makes decisions
 based on entire boolean formulas. Where a BDD node might ask the question "Is
 `a` true?" a single SDD node could ask "Is `a and b` true?"
@@ -1333,7 +1333,7 @@ result = x and y and z and w
 
 The compiler then constructs something called a "primal graph:"
 
-- Each Boolean input is a vertex.
+- Each boolean input is a vertex.
 - Two inputs are connected if they appear together in a constraint.
 
 ```mermaid
@@ -1441,7 +1441,7 @@ is a DNNF. The arrows represent increasing structural restrictions.
 | Polynomial-time model counting | Yes          | Yes                  | Yes            |
 | Polynomial-time satisfiability | Yes          | Yes                  | Yes            |
 | Polynomial-time equivalence    | Yes, reduced | randomized only      | Yes, reduced   |
-| Polynomial-time Boolean Apply  | Yes          | No general guarantee | Yes, unreduced |
+| Polynomial-time boolean Apply  | Yes          | No general guarantee | Yes, unreduced |
 
 ##### Power and Limitations of SDDs
 
@@ -1633,7 +1633,7 @@ define the operation<standard:/boolean/or> {
     }
 }
 
-define the operation<standard:/boolean/equality> {
+define the operation<standard:/boolean/equal> {
     define the view<a> {
         it is read.
         it may only contain particles where {

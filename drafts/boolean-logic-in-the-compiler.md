@@ -4,9 +4,9 @@ How the compiler represents boolean logic, checks the rules of DLP 56 (Logical
 Operations for Boolean Values), DLP 59 (No Redundant Boolean Values), DLP 60
 (One Order for Boolean Logic), DLP 61 (Standard Boolean Operations), DLP 62
 (Limits on Boolean Logic), and DLP 63 (Boolean Contracts for Abstract
-Operations), fixes programs until they follow those rules, and structures Value
-Operation and Action contracts for parallel compilation and future whole-program
-optimization.
+Operations), automatically refactors programs until they follow those rules (DLP
+64, Auto-Fixing Boolean Logic), and structures Value Operation and Action
+contracts for parallel compilation and future whole-program optimization.
 
 The proposals define what programs may write. This document specifies how the
 compiler performs the work. [The Algorithm](#the-algorithm) describes the
@@ -78,11 +78,11 @@ once in strict priority order (**DLP 59 → DLP 60 → DLP 61**):
      looks at a boolean literal or a view/particle known to contain one (tracing
      through View Setting Statements in Value Operations, and local sets or
      transitive callee DLP 53 guarantees in Actions).
-   - Every Boolean Statement's value reaches an output view or a non-boolean
-     statement (no dead statements).
+   - Every Boolean Statement's value is read, directly or indirectly, by an
+     output view or a non-boolean statement (no dead statements).
    - Every boolean input of a Value Operation (each boolean input view, and each
-     boolean value produced by a non-boolean statement) must appear in the
-     Boolean Sources of at least one boolean output view or at least one boolean
+     boolean view written by a non-boolean statement) must appear in the Boolean
+     Sources of at least one boolean output view or at least one boolean
      argument passed to a non-boolean statement; and for every such boolean
      output view or boolean argument, changing any view in its Boolean Sources
      must be able to change its value.
@@ -234,14 +234,14 @@ truth-table and ROBDD backends for clear error messages.
 
 ### ROBDDs
 
-With ROBDDs, every boolean value maps to a canonical edge in one shared reduced
+With ROBDDs, every boolean view maps to a canonical edge in one shared reduced
 ordered binary decision diagram with **complement edges** (so a value and its
 `not` share the same node, differing only in bit 0).
 
 The variable ordering is fixed and compiler-independent: inputs are ordered by
-**first-reached depth-first traversal** starting from each root value (values
-not read by any other Boolean Statement, in statement order), visiting each
-statement's arguments in written order, followed by any unreached inputs in
+**first-reached depth-first traversal** starting from each terminal value (a
+value not read by any other Boolean Statement, in statement order), visiting
+each statement's arguments in written order, followed by any unreached inputs in
 index order.
 
 Core operations use native canonicalized apply routines with power-of-two
@@ -297,26 +297,26 @@ table (`tt` over `(a, b) ∈ {0, 1}^2`):
   `(and, xor)`, and `(or, equal)`.
 
 Using reference counts (`readers[v]`) of every value across all statements and
-exits:
+output views:
 
 1. **Maximal single-use chains:** a statement `s` of a commutative, associative
-   binary op `K` is a **chain root** if either `readers[s] ≠ 1` or its sole
+   binary op `K` is a **chain head** if either `readers[s] ≠ 1` or its sole
    reader is not an execution of the same operation `K`. Walking downward from a
-   chain root collects every child statement of the same op `K` with
+   chain head collects every child statement of the same op `K` with
    `readers[child] == 1` as an internal node of the chain, and all other
    operands as chain leaves.
 2. **Grouping check (`order_grouping`):** every maximal chain of length `m ≥ 3`
    must be folded strictly left-to-right in DLP 60 rank order:
    - No internal statement may have _both_ arguments be internal chain nodes
      (forbidding balanced pairs like `(a and b) and (c and d)`).
-   - At each step from the deepest internal node up to the root, the single
-     newly introduced leaf must have rank strictly greater than (or equal to)
-     the previous leaf, matching the canonical fold `op(v_1, v_2)`,
+   - At each step from the deepest internal node up to the chain head, the
+     single newly introduced leaf must have rank strictly greater than (or equal
+     to) the previous leaf, matching the canonical fold `op(v_1, v_2)`,
      `op(v_3, t_1)`, ..., `op(v_m, t_{m-2})` where
      `rank(v_1) ≤ rank(v_2) ≤ ... ≤ rank(v_m)` (combined with DLP 60's argument
      order, each leaf `v_k` appears on the lower-ranked side of
      `op(v_k, t_{k-2})`).
-3. **Factoring check (`order_factor`):** for every chain root `r` of an `outer`
+3. **Factoring check (`order_factor`):** for every chain head `r` of an `outer`
    op with `≥ 2` leaves, collect all single-use `inner`-chain leaves (where
    `inner` distributes over `outer`). If any value `x` appears in `c ≥ 2`
    distinct `inner`-chain terms of `r`, report an unfactored common term —
@@ -402,54 +402,67 @@ partition leaves its contract hash unchanged, so no caller needs to be
 rechecked. Because the standard boolean operation set is fixed globally across
 all projects, there is no config-driven invalidation pass.
 
-### Fixing a Program
+### Fixing a Program (DLP 64)
 
-A refactoring tool automatically fixes DLP 59's redundant/opposite values, dead
-statements, and unused input views, DLP 60's order, associative grouping, and
-factoring common terms, and DLP 61's matches, spellings, and wrappers:
+The automated refactoring tool brings Value Operations into compliance with DLPs
+59–63 in four bottom-up phases along the static execution DAG (DLP 9):
 
-1. **Dead statements and canonical argument/statement order (DLP 59/60):**
-   remove dead statements, sort arguments of interchangeable views by rank, and
-   topologically sort Boolean Statements into depth-first order.
-2. **Redundant values and unused input views (DLP 59):**
-   - Replace redundant values with the earlier value (or `not` of it for
-     opposites).
-   - Drop unused input views (`drop_views`) one at a time, replacing each
-     dropped view with the first kept input view that makes no value constant.
-     Per-view substitution handles interacting unused views such as
-     `xor(u1, u2)` where substituting all unused views with the same kept view
-     would create a constant. On `I > 20`, constant checks dispatch through the
-     ROBDD backend.
-3. **Wrappers and identity ops (DLP 61):** operations that merely return a view
-   or wrap a single standard operation are removed and substituted into their
-   callers.
-4. **Factoring common terms (DLP 60):** `apply_factor` factors the chosen value
-   `x` out of `k ≥ 2` single-use `inner`-chain terms of an `outer`-chain,
-   inserting the rebuilt statements directly before the chain root (strictly
-   reducing statement count) and canonicalizing before rechecking.
-5. **Batching non-overlapping matches and spellings (DLP 61):** after one check,
-   the tool applies all largest-first non-overlapping standard-operation matches
-   with their first spellings, or fixes the first better spelling when no match
-   is present.
-6. **Associative regrouping (DLP 60):** `regroup_associative` folds the first
-   non-canonical single-use associative chain into canonical left-to-right rank
-   order, inserting rebuilt statements immediately before the chain root to
-   preserve topological order. Running regrouping after DLP 59/factor/match
-   ensures it never pairs complementary leaves (`x` and `not x`) into a spurious
-   constant on an unfixed operation.
+1. **Phase 1 — Structural interface rewrites (DLP 59):**
+   - Split multi-output Boolean Value Operations into one single-output Boolean
+     Value Operation per output view and update callers.
+   - Extract disallowed boolean output logic (`mixed_bool_view` and
+     `mixed_shared_input`) from non-Boolean Value Operations into Boolean Value
+     Operations executed by callers, returning each distinct non-boolean Boolean
+     Source directly at most once.
+2. **Phase 2 — Literal propagation, constant folding, callee specialization, and
+   useless-input elimination (DLP 59):**
+   - Replace constant Boolean Statements with `true`/`false`, fold `and`/`not`
+     on boolean literals, and specialize any Value Operation callee (`call` or
+     `run`) that receives boolean literals into a deduplicated helper
+     (`<callee>__L<pos><T|F>...`).
+   - Propagate constant-output Boolean Value Operations (`true`/`false`) into
+     callers.
+   - Drop unused boolean input views on Boolean Value Operations (`drop_views`)
+     by kept-view substitution when constant-free, falling back to `false`
+     substitution + literal propagation when every kept view creates a constant
+     (such as `xor(xor(x, z), xor(y, z)) and x`).
+   - In non-Boolean Value Operations, eliminate per-expression useless boolean
+     inputs (such as `xor_and`) by cloning the target expression's boolean
+     sub-DAG with that input substituted by `false`, and remove globally unused
+     boolean inputs (dropping unused input views, deleting dead pure
+     comparisons, or specializing callees to drop unused output views).
+3. **Phase 3 — Single-operation normalization loop (DLPs 59–61):**
+   - **Canonicalize:** remove dead statements, resolve copies, sort arguments of
+     interchangeable views by rank, and topologically sort Boolean Statements
+     into depth-first order.
+   - **Redundant and opposite values (DLP 59):** replace redundant values with
+     the earlier value (or `not` of it for opposites).
+   - **Factoring common terms (DLP 60):** `apply_factor` factors the winning
+     value `x` out of `k ≥ 2` single-use `inner`-chain terms of an `outer`-chain
+     before match search.
+   - **Batching non-overlapping matches and spellings (DLP 61):** apply all
+     largest-first non-overlapping standard-operation matches with their first
+     spellings, or fix the first better spelling when no match is present.
+   - **Associative regrouping (DLP 60):** `regroup_associative` folds the first
+     non-canonical single-use associative chain into canonical left-to-right
+     rank order.
+4. **Phase 4 — Settle wrappers and identity ops (DLPs 59/61):** operations that
+   merely return an input view, a constant, or a single standard operation are
+   removed and substituted into their callers; unreferenced synthesized
+   specialization helpers are pruned.
 
-The fix loop is proven to terminate in Lean 4
-(`boolean_equality_checking/proof/fixing_termination.lean`, theorem
-`dag_prog_terminates`, including `OpFix.factor`), which discharges state-space
-finiteness directly from Define's static finite DAG computation graphs over a
-lexicographic measure: total input views across all operations, then
-per-operation priority order over
-`(statements, non-not statements, multiset of execution precedence keys, multiset of DLP 60 expression ranks)`.
+All four phases are formally proven to terminate in Lean 4
+(`boolean_equality_checking/proof/fixing_termination.lean`, theorems
+`structural_terminates`, `specialization_terminates`, `fold_loop_terminates`,
+`useless_elim_terminates`, `dag_prog_terminates`, and `full_autofix_terminates`,
+audited with zero `sorry` and zero custom axioms).
 
-Errors left for the programmer to fix: boolean literals passed to Boolean
-Statements, constant values or constant output views, limit violations, existing
-execution cycles, and unused input views where every kept view creates a
-constant.
+The exact stopping boundary: boolean refactoring stops only when a boolean
+literal (written directly or produced by folding a constant expression) is
+passed to an opaque non-Boolean Logical Operation (or when a non-Boolean Logical
+Operation writes a required unused boolean output view), or when an operation
+hits DLP 62 limits, an existing DLP 9 execution cycle, or a 0-output Boolean
+Value Operation.
 
 ## Measurements and Reasons
 
@@ -687,12 +700,14 @@ specializing callees — an Action Contract can summarize boolean behavior over
 its **contracted boolean interface positions** (`V` positions) in three
 increasing tiers:
 
-1. **Tier 1 — Per-position value, sensitivity, and frame facts (`O(V)` size):**
+1. **Tier 1 — Per-position value, sensitivity, and unchanged-position facts
+   (`O(V)` size):**
    - **Constants:** output boolean position `p_out` is guaranteed `true` or
      `false`.
    - **Copies and negations:** `p_out == p_in` or `p_out == not p_in`.
-   - **Frame conditions:** `p` is unchanged by the Action (so callers preserve
-     their existing boolean knowledge about `p` across a callee trigger).
+   - **Unchanged positions:** `p` is unchanged by the Action (so callers
+     preserve their existing boolean knowledge about `p` across a callee
+     trigger).
    - **Input sensitivity:** which contracted boolean inputs are actually read
      (and under what guard), enabling callers to skip computing dead inputs or
      specialize the callee.
@@ -731,9 +746,9 @@ limits on Define programmers:
 - **If cross-Action boolean invariants are ever promoted into language
   legality** (for example, rejecting dead branches in a caller based on a callee
   Action's boolean postconditions), legality should rely **only on Tier 1 + Tier
-  2 (constants, frame conditions, and the exact 2-SAT implication closure)**.
-  Because 2-SAT implication closure over contracted boolean literals is unique,
-  canonical, and strictly polynomial, it guarantees cross-compiler determinism
-  with no exponential blowup and no heuristic node cap — requiring at most a
-  generous bound on contracted boolean interface positions per Action (such as
-  `≤ 256`, which caps the implication matrix at 16 KB).
+  2 (constants, unchanged-position facts, and the exact 2-SAT implication
+  closure)**. Because 2-SAT implication closure over contracted boolean literals
+  is unique, canonical, and strictly polynomial, it guarantees cross-compiler
+  determinism with no exponential blowup and no heuristic node cap — requiring
+  at most a generous bound on contracted boolean interface positions per Action
+  (such as `≤ 256`, which caps the implication matrix at 16 KB).
