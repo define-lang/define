@@ -7,8 +7,8 @@ require (
 	github.com/bazelbuild/remote-apis v0.0.0-20261110225606-e0c0554bfc8a
 	github.com/define-lang/define/tools/processtree v0.0.0-00010101000000-000000000000
 	golang.org/x/sys v0.50.0
-	google.golang.org/genproto/googleapis/bytestream v0.0.0-20261118221215-c8830f628b3f
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20261118221215-c8830f628b3f
+	google.golang.org/genproto/googleapis/bytestream v0.0.0-20261123191846-1e707ab9fbc2
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20261123191846-1e707ab9fbc2
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
 )
