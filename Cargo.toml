@@ -9,7 +9,7 @@ rust-version = "1.100"
 
 [workspace.dependencies]
 askama = "=0.16.1"
-clap = { version = "=4.6.9", features = ["derive"] }
+clap = { version = "=4.6.10", features = ["derive"] }
 derive_more = { version = "=2.1.1", features = ["display", "error"] }
 googletest = "=0.14.4"
 indoc = "=2.0.8"
