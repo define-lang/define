@@ -1,12 +1,13 @@
 # Boolean Logic in the Compiler
 
 How the compiler represents boolean logic, checks the rules of DLP 56 (Logical
-Operations for Boolean Values), DLP 59 (No Redundant Boolean Logic), DLP 60 (One
-Order for Boolean Logic), DLP 61 (Standard Boolean Operations), DLP 62 (Limits
-on Boolean Logic), and DLP 63 (Boolean Contracts for Abstract Operations),
-automatically refactors programs until they follow those rules (DLP 64,
-Auto-Fixing Boolean Logic), and structures Value Operation and Action contracts
-for parallel compilation and future whole-program optimization.
+Operations for Boolean Values), DLP 59 (No Redundant Boolean Logic), DLP 60
+(Interchangeable Views), DLP 61 (Associative Operations), DLP 62 (Boolean
+Statement Order), DLP 63 (Factored Boolean Logic), DLP 64 (Standard Boolean
+Operations), DLP 65 (Limits on Boolean Logic), and DLP 66 (Boolean Contracts for
+Abstract Operations), automatically refactors programs until they follow those
+rules (DLP 67, Auto-Fixing Boolean Logic), and structures Value Operation and
+Action contracts for parallel compilation and future whole-program optimization.
 
 The proposals define what programs may write. This document specifies how the
 compiler performs the work. [The Algorithm](#the-algorithm) describes the
@@ -40,7 +41,7 @@ version of Define only accepts more programs, preserving Forward Compatibility:
 
 | Limit                                      | Scope                                                           | Value                 | What it bounds                                                                                                                                                                                             |
 | ------------------------------------------ | --------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Boolean input views**                    | Every Value Operation                                           | **≤ 20**              | Bounds every Boolean Value Operation's exported contract to **≤ 128 KB** (truth table) or **≤ 98,302** ROBDD nodes, and limits DLP 60 symmetry checking to at most 190 view pairs.                         |
+| **Boolean input views**                    | Every Value Operation                                           | **≤ 20**              | Bounds every Boolean Value Operation's exported contract to **≤ 128 KB** (truth table) or **≤ 98,302** ROBDD nodes.                                                                                        |
 | **Boolean Statements**                     | Every Value Operation and Action                                | **≤ 256**             | Keeps checking and matching fast even on adversarial non-matching chains; ensures every Boolean Value Operation fits unconditionally inside the `(256 statements, 20 inputs)` truth-table floor.           |
 | **Boolean inputs**                         | Every Value Operation and Action                                | **≤ 512**             | Bounds the `Matcher` value pool (`N = I + S ≤ 768`) on mixed Value Operations and Actions with many non-boolean comparisons (`x == 1`, `x < y`, etc.), keeping worst-case `Matcher` runtime around ~30 ms. |
 | **Canonical shared ROBDD reachable nodes** | Mixed Value Operations and Actions with `21–512` boolean inputs | **≤ 65,536 (`2^16`)** | Prevents exponential `O(2^I)` blowups past 20 inputs; bounds worst-case memory to **~5–10 MB per parallel worker** and build time to **~5–20 ms**.                                                         |
@@ -64,7 +65,7 @@ Two consequences follow directly from these limits:
 Value Operations are compiled bottom-up in parallel along their static DAG, and
 Actions are then compiled bottom-up in parallel along their call/trigger DAG.
 For each Value Operation (and each Action's Boolean Statements block), checked
-once in strict priority order (**DLP 59 → DLP 60 → DLP 61**):
+once in strict priority order (**DLP 59 → DLPs 60–63 → DLP 64**):
 
 1. **Structural limits:** at most 20 boolean input views on a Value Operation
    (exactly one output view on a Boolean Value Operation; on a non-Boolean Value
@@ -89,19 +90,21 @@ once in strict priority order (**DLP 59 → DLP 60 → DLP 61**):
 3. **Redundant values (DLP 59):** no Boolean Statement computes a constant
    (`true` or `false`), or computes the same value or opposite value as a
    boolean input or an earlier statement (except `not` of that value).
-4. **Order, grouping, and factoring (DLP 60):**
-   - Arguments passed to interchangeable input views follow DLP 60's rank order,
-     and Boolean Statements follow depth-first statement order.
-   - **Associative grouping:** every maximal single-use chain of a commutative,
-     associative binary boolean operation is folded left-to-right in DLP 60 rank
-     order (`op(v_1, v_2)`, `op(v_3, t_1)`, ..., `op(v_m, t_{m-2})`), with no
+4. **Argument order (DLP 60), associative grouping (DLP 61), statement order
+   (DLP 62), and factoring (DLP 63):**
+   - Arguments passed to declared interchangeable view groups (DLP 60) follow
+     DLP 60's rank order, and Boolean Statements follow DLP 62's depth-first
+     statement order.
+   - **Associative grouping (DLP 61):** every maximal single-use chain of an
+     associative operation is folded left-to-right (in DLP 60 rank order when
+     interchangeable, or preserving left-to-right leaf order otherwise), with no
      balanced sub-pairs.
-   - **Factoring common terms:** for any two distinct commutative, associative
-     binary boolean operations where `inner` distributes over `outer`, no value
-     `x` repeats across two or more single-use `inner`-chain terms of the same
-     single-use `outer`-chain.
-5. **Standard boolean operations (DLP 61):** checked only when the operation has
-   no DLP 59 redundant values and no DLP 60 unfactored common terms:
+   - **Factoring common terms (DLP 63):** for the four distributive pairs of
+     standard boolean operations (`(and, or)`, `(or, and)`, `(and, xor)`,
+     `(or, equal)`), no value `x` repeats across two or more single-use
+     `inner`-chain terms of the same single-use `outer`-chain.
+5. **Standard boolean operations (DLP 64):** checked only when the operation has
+   no DLP 59 redundant values and no DLP 63 unfactored common terms:
    - **Matches:** no value computes the same function as one of the five
      standard boolean operations (`and`, `not`, `or`, `xor`, `equal`) — or its
      opposite — applied to earlier values, when replacing it removes at least
@@ -144,15 +147,14 @@ as its source.
 ### Executions of Boolean Value Operations
 
 An execution of a Boolean Value Operation is a single node in the caller's
-graph: a reference to the callee plus the caller's argument literals. DLPs 59–61
+graph: a reference to the callee plus the caller's argument literals. DLPs 59–64
 check only values produced by the caller's own statements, never the callee's
 internal statements (which were already checked where the callee is defined).
 The execution's result is still checked in the caller because the caller can
 pass correlated values to distinct views of the callee.
 
 When a Boolean Value Operation compiles, its contract records its boolean
-function over its `k ≤ 20` input views, along with its interchangeable-view
-symmetry partition and a 128-bit canonical fingerprint:
+function over its `k ≤ 20` input views and a 128-bit canonical fingerprint:
 
 - **Small AIG:** when the callee's AIG has at most `2^k` nodes (for `k ≤ 6`) or
   at most `16k` nodes (for `k > 6`), callers evaluate those AIG nodes directly.
@@ -167,15 +169,6 @@ symmetry partition and a 128-bit canonical fingerprint:
   ROBDD (guaranteed ≤ 98,302 nodes for any `k ≤ 20`) can be stored alongside or
   materialized lazily when an ROBDD caller executes the callee, so ROBDD callers
   compose the callee node by node instead of splitting a `2^k`-bit table.
-
-DLP 60's interchangeable-view groups come directly from the callee's recorded
-contract. With at most 20 boolean input views, checking all pairs takes at most
-`20 * 19 / 2 = 190` word-parallel truth-table swap comparisons (microseconds).
-If symmetry is ever computed directly on a recorded diagram, the compiler
-pre-partitions views using `O(|Diagram|)` biased mod-`(2^61 - 1)` Chow/Walsh
-level signatures, filters non-symmetric pairs using targeted satisfying and
-falsifying path samples over each view's dependency cone, and verifies remaining
-pairs with zero-allocation lockstep `are_symmetric` checks.
 
 ### Counting Boolean Inputs
 
@@ -280,21 +273,49 @@ Equivalence checking on the shared ROBDD is `O(1)`:
   the same manager, checking both functional equality and essentiality of all
   arguments in `O(1)` via direct edge comparisons.
 
-### Semantic Associative Grouping and Factoring (DLP 60)
+### Verifying Interchangeable Views (DLP 60)
 
-Both DLP 60 grouping and factoring operate purely semantically on binary boolean
-operations (whether `standard:/boolean/and`, a standard operation, or any user
-Boolean Value Operation with 2 input views), using each operation's 4-bit truth
-table (`tt` over `(a, b) ∈ {0, 1}^2`):
+Logical Operations are trusted as defined. On any Value Operation that declares
+View Interchangeability Statements, the compiler verifies each statement
+(`view<b>` interchangeable with `view<a>`) with two deterministic checks:
 
-- **Commutative & associative (`is_assoc_comm_tt`):** a binary operation is
-  commutative and associative iff its 4-bit truth table is `0x8` (`and`), `0xE`
-  (`or`), `0x6` (`xor`), or `0x9` (`equal`).
-- **Distributivity (`distributes_over_tt`):** two distinct commutative,
-  associative binary operations satisfy `inner` distributes over `outer` iff
-  `inner(a, outer(b, c)) == outer(inner(a, b), inner(a, c))` for all 8 triples
-  `(a, b, c) ∈ {0, 1}^3` — which holds for exactly `(and, or)`, `(or, and)`,
-  `(and, xor)`, and `(or, equal)`.
+1. **Direct structural check (`O(S)` bottom-up hash-consing, all Value
+   Operations):**
+   - Run one bottom-up pass over `it does` in statement order (already
+     topological under Single Assignment), assigning every view a canonical
+     integer ID: interface input views (holding their initial value) and
+     literals get unique IDs, View Setting Statements copy their source's ID,
+     and each executed operation `op` sorts argument IDs within each of `op`'s
+     declared interchangeable view groups (`O(k log k)`) and interns
+     `(op_name, sorted_arg_ids, output_view_index)` in a hash table.
+   - With DLP 61 associative operations, single-use associative chains of the
+     same operation are flattened before interning (sorting leaves when
+     interchangeable, preserving order when non-interchangeable).
+   - For each View Interchangeability Statement, run one second linear pass over
+     `it does` with `view<a>` and `view<b>`'s initial IDs swapped, reusing the
+     same intern table. The check succeeds iff every output view receives the
+     exact same ID as in the original pass.
+   - Verifying the `m - 1` declared statements of a size-`m` interchangeable
+     group generates all `m!` permutations in `O(m * S)` total time with zero
+     backtracking and zero callee expansion.
+2. **Exact boolean fallback (Boolean Value Operations):**
+   - If the structural check does not prove interchangeability (such as
+     `majority(a, b, c)` or `all_equal(a, b, c)`, whose canonical forms are
+     structurally asymmetric due to DLP 59 and DLP 63), check the swap directly
+     on the truth table or ROBDD already built for DLP 59.
+
+### Associative Grouping and Factoring (DLPs 61 and 63)
+
+DLP 61 grouping applies to associative operations (declared on Logical
+Operations via `it is associative with view<...>.` and inferred automatically on
+Value Operations — exact via DLP 59's boolean function for Boolean Value
+Operations, and structurally on pure chains of associative operations for
+non-Boolean Value Operations, ignoring any candidate group that partially
+overlaps a DLP 60 interchangeable view group). DLP 63 factoring applies to the
+four distributive pairs among standard boolean operations (`(and, or)`,
+`(or, and)`, `(and, xor)`, and `(or, equal)`). Under DLPs 59 and 64, these four
+pairs are mathematically the only distributive pairs among commutative,
+associative binary boolean operations.
 
 Using reference counts (`readers[v]`) of every value across all statements and
 output views:
@@ -321,11 +342,11 @@ output views:
    `inner` distributes over `outer`). If any value `x` appears in `c ≥ 2`
    distinct `inner`-chain terms of `r`, report an unfactored common term —
    choosing the factor `x` that removes the most terms (`c`), breaking ties by
-   lowest DLP 60 rank. Factoring is checked and fixed **before** DLP 61 match
+   lowest DLP 60 rank. Factoring is checked and fixed **before** DLP 64 match
    search so expressions like `(a and b) or (a and c)` factor cleanly to
    `a and (b or c)`.
 
-### Standard Boolean Operations (DLP 61)
+### Standard Boolean Operations (DLP 64)
 
 Define enforces a single fixed global set of five standard boolean operations
 across all projects:
@@ -345,7 +366,7 @@ table, and no per-project boolean dialect.
 
 ### Finding Matches and Spellings
 
-When an operation has no DLP 59 redundant values and no DLP 60 unfactored common
+When an operation has no DLP 59 redundant values and no DLP 63 unfactored common
 terms, a single unified search engine (`Matcher`) checks whether any statement
 computes one of the standard operations (or its opposite) applied to earlier
 values, and whether any single execution of a standard operation has an earlier
@@ -396,16 +417,15 @@ of the Boolean Value Operations it executes — never on how callees are written
 internally.
 
 Each Boolean Value Operation's contract stores its recorded function (small AIG,
-truth table, or compact ROBDD), its symmetry partition, and a 128-bit canonical
-hash. Rewriting a callee without changing its boolean function or symmetry
-partition leaves its contract hash unchanged, so no caller needs to be
-rechecked. Because the standard boolean operation set is fixed globally across
-all projects, there is no config-driven invalidation pass.
+truth table, or compact ROBDD) and a 128-bit canonical hash. Rewriting a callee
+without changing its boolean function leaves its contract hash unchanged, so no
+caller needs to be rechecked. Because the standard boolean operation set is
+fixed globally across all projects, there is no config-driven invalidation pass.
 
-### Fixing a Program (DLP 64)
+### Fixing a Program (DLP 67)
 
 The automated refactoring tool brings Value Operations into compliance with DLPs
-59–63 in four bottom-up phases along the static execution DAG (DLP 9):
+59–66 in four bottom-up phases along the static execution DAG (DLP 9):
 
 1. **Phase 1 — Structural interface rewrites (DLP 59):**
    - Split multi-output Boolean Value Operations into one single-output Boolean
@@ -431,22 +451,22 @@ The automated refactoring tool brings Value Operations into compliance with DLPs
      sub-DAG with that input substituted by `false`, and remove globally unused
      boolean inputs (dropping unused input views, deleting dead pure
      comparisons, or specializing callees to drop unused output views).
-3. **Phase 3 — Single-operation normalization loop (DLPs 59–61):**
+3. **Phase 3 — Single-operation normalization loop (DLPs 59–64):**
    - **Canonicalize:** remove dead statements, resolve copies, sort arguments of
-     interchangeable views by rank, and topologically sort Boolean Statements
-     into depth-first order.
+     declared interchangeable view groups (DLP 60) by rank, and topologically
+     sort Boolean Statements into DLP 62 depth-first order.
    - **Redundant and opposite values (DLP 59):** replace redundant values with
      the earlier value (or `not` of it for opposites).
-   - **Factoring common terms (DLP 60):** `apply_factor` factors the winning
+   - **Factoring common terms (DLP 63):** `apply_factor` factors the winning
      value `x` out of `k ≥ 2` single-use `inner`-chain terms of an `outer`-chain
      before match search.
-   - **Batching non-overlapping matches and spellings (DLP 61):** apply all
+   - **Batching non-overlapping matches and spellings (DLP 64):** apply all
      largest-first non-overlapping standard-operation matches with their first
      spellings, or fix the first better spelling when no match is present.
-   - **Associative regrouping (DLP 60):** `regroup_associative` folds the first
-     non-canonical single-use associative chain into canonical left-to-right
-     rank order.
-4. **Phase 4 — Settle wrappers and identity ops (DLPs 59/61):** operations that
+   - **Associative regrouping (DLP 61):** `regroup_associative` folds the first
+     non-canonical single-use associative chain into its canonical left-to-right
+     fold.
+4. **Phase 4 — Settle wrappers and identity ops (DLPs 59/64):** operations that
    merely return an input view, a constant, or a single standard operation are
    removed and substituted into their callers; unreferenced synthesized
    specialization helpers are pruned.
@@ -461,14 +481,14 @@ The exact stopping boundary: boolean refactoring stops only when a boolean
 literal (written directly or produced by folding a constant expression) is
 passed to an opaque non-Boolean Logical Operation (or when a non-Boolean Logical
 Operation writes a required unused boolean output view), or when an operation
-hits DLP 62 limits, an existing DLP 9 execution cycle, or a 0-output Boolean
+hits DLP 65 limits, an existing DLP 9 execution cycle, or a 0-output Boolean
 Value Operation.
 
 ## Measurements and Reasons
 
 All measurements below come from the C++23 reference implementation
 (`boolean_equality_checking/src/beq`) with the budget-free canonical ROBDD
-architecture, DLP 60 grouping and factoring, and DLP 61's fixed standard set
+architecture, DLP 61 grouping, DLP 63 factoring, and DLP 64's fixed standard set
 `{and, not, or, xor, equal}`.
 
 ### Representation and Executions as References
@@ -509,7 +529,7 @@ Only 9 units out of 3,265 exceed `65,536` ROBDD nodes — all 9 are large
 `visit_comparison_expr` at 44.4M nodes, which as a standalone `scope=1` function
 has only 54 ROBDD nodes).
 
-### Why DLP 61 Uses Only the Fixed Standard Set (`and`, `not`, `or`, `xor`, `equal`)
+### Why DLP 64 Uses Only the Fixed Standard Set (`and`, `not`, `or`, `xor`, `equal`)
 
 Stress-testing `Matcher` on adversarial linear-BDD chains of `S` calls to an
 unregistered 3-input operation `u3(a, b, c) = (a and b) xor c` (`I = 2S + 1`,
@@ -526,7 +546,7 @@ statement across all `N = I + S` earlier values):
 
 Arity-4 XOR-like operations have no forcing prefix until the 4th argument,
 giving worst-case `O(S * N^3)` search even on a tiny linear BDD. Arity-3
-operations (`mux`, `maj`) scale as `O(S * N^2)`. Restricting DLP 61 to the five
+operations (`mux`, `maj`) scale as `O(S * N^2)`. Restricting DLP 64 to the five
 arity-≤-2 symmetric standard operations eliminates backtracking completely,
 giving strictly `O(S * (I + S))` search — **30 ms total** (`11 ms` in `matches`)
 at the `S = 256, I = 512` limits, while also avoiding per-project boolean
@@ -535,7 +555,7 @@ dialects and avoiding `mux` vs. distributive-factoring conflicts.
 ### Whole-Program and Stress Benchmarks
 
 Checking freshly generated and fixed whole programs with ~20% mixed Value
-Operations, DLP 60 grouping and factoring, and DLP 61's fixed standard set
+Operations, DLP 61 grouping, DLP 63 factoring, and DLP 64's fixed standard set
 `{and, not, or, xor, equal}` (single-threaded reference binary,
 `--bdd_nodes 65536`):
 
@@ -567,8 +587,8 @@ MB** (slowest file: `long_22_1024.prog`, 3 ops × 1,024 statements, **1.20 s**).
   (`mux`, `maj`); (2) per-project boolean dialects where the same expression
   compiles in one project and fails in another, plus config-wide invalidation
   and cycle-breaking complexity; and (3) conflicts between `mux` matching
-  (`mux(b, a, a and c)`) and DLP 60 distributive factoring (`a and (b or c)`).
-  Fixing DLP 61 to `{and, not, or, xor, equal}` removes all three problems and
+  (`mux(b, a, a and c)`) and DLP 63 distributive factoring (`a and (b or c)`).
+  Fixing DLP 64 to `{and, not, or, xor, equal}` removes all three problems and
   reduces matching to strictly `O(S * (I + S))`.
 - **A time limit or SAT solver conflict limit.** Both make compilation results
   depend on hardware speed, load, or solver version.
@@ -600,7 +620,7 @@ MB** (slowest file: `long_22_1024.prog`, 3 ops × 1,024 statements, **1.20 s**).
   leaves of an unfixed chain like `equal(x, equal(y, not x))` into
   `equal(y, equal(x, not x))` introduces a spurious constant sub-expression
   before redundancy elimination runs. Running `regroup_associative` after DLP
-  59, factoring, and DLP 61 avoids spurious constants while preserving
+  59, factoring, and DLP 64 avoids spurious constants while preserving
   topological order.
 - **Simplifying constant values or replacing unused views with `false`.**
   Propagating constants through callee executions blew up 20–40 statements into
@@ -655,10 +675,10 @@ scales with the number of active worker threads `T`:
   a few KB), making them cheap to serialize, cache on disk, and share across
   worker threads.
 
-### Value Operation Contracts (DLP 63)
+### Value Operation Contracts (DLP 66)
 
 When a Value Operation finishes compiling, its Boolean Contract (specified in
-DLP 63) exposes everything a caller (another Value Operation or an Action) needs
+DLP 66) exposes everything a caller (another Value Operation or an Action) needs
 so callers never re-parse or re-check the callee's body:
 
 1. **Boolean Value Operations (`k ≤ 20` boolean input views, 1 boolean output
@@ -671,8 +691,8 @@ so callers never re-parse or re-check the callee's body:
      - Output ROBDD over the `k` input views (mathematically guaranteed **≤
        98,302** non-terminal nodes for any 20-variable function with complement
        edges, and typically tens to hundreds of nodes).
-   - **Interchangeable input-view groups (symmetry partition):** `k` small
-     integers used by callers to check DLP 60 argument ordering in `O(k)`.
+   - **Inferred associative view group (if any, DLP 61):** cached so callers
+     check DLP 61 grouping without re-deriving associativity.
    - **Canonical 128-bit function fingerprint:** for `O(1)` equivalence,
      wrapper, and incremental-recompilation checks.
 2. **Non-Boolean (mixed) Value Operations:**

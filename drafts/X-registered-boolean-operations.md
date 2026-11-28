@@ -1,8 +1,8 @@
 # Define Language Proposal X: Registered Boolean Operations (Backup)
 
 > **Note:** Archived backup of the earlier generic `booleans.defcl` registration
-> design for DLP 61, superseded by
-> [DLP 61: Standard Boolean Operations](../define/proposals/00061-standard-boolean-operations.md).
+> design for DLP 64, superseded by
+> [DLP 64: Standard Boolean Operations](../define/proposals/00064-standard-boolean-operations.md).
 
 - **Author:** Max Kanat-Alexander
 - **Status:** Draft
@@ -20,8 +20,10 @@ we can accomplish it, only one way to write any given program.
 defines a minimal core of logical operations for boolean values.
 [DLP 59 (No Redundant Boolean Logic)](00059-no-redundant-boolean-logic.md)
 forbids computing a value the program already has, and
-[DLP 60 (One Order for Boolean Logic)](00060-one-order-for-boolean-logic.md)
-gives boolean logic one order. But a program can still write out logic that an
+[DLP 60 (Interchangeable Views)](00060-interchangeable-views.md),
+[DLP 61 (Associative Operations)](00061-associative-operations.md), and
+[DLP 62 (Boolean Statement Order)](00062-boolean-statement-order.md) give
+boolean logic one order. But a program can still write out logic that an
 existing operation already computes.
 
 Note: For the background research behind this proposal, see

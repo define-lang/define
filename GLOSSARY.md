@@ -26,6 +26,10 @@ Use these exact terms for these Define concepts. "Not:" lists terms to avoid.
 - **input view**: An interface view that reads its value (`it is read.`). A
   single interface view can be both an input view and an output view. Not: read
   view.
+- **interchangeable view group**: Two or more read-only input views of an
+  Abstract Operation that are declared commutative with each other (their
+  arguments can be swapped in any order without changing the operation's
+  outputs).
 - **local view**: A view defined in an Operation Statements Block with
   `define the view<...>`, which holds an intermediate value. Not: temporary,
   scratch view.

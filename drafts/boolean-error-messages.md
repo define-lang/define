@@ -1,10 +1,11 @@
 # Boolean Error Messages
 
 Example error messages for the rules of DLP 56 (Logical Operations for Boolean
-Values), DLP 59 (No Redundant Boolean Logic), DLP 60 (One Order for Boolean
-Logic), DLP 61 (Standard Boolean Operations), and DLP 62 (Limits on Boolean
-Logic), to see what they'd be like in practice. What the compiler computes for
-each one is in
+Values), DLP 59 (No Redundant Boolean Logic), DLP 60 (Interchangeable Views),
+DLP 61 (Associative Operations), DLP 62 (Boolean Statement Order), DLP 63
+(Factored Boolean Logic), DLP 64 (Standard Boolean Operations), and DLP 65
+(Limits on Boolean Logic), to see what they'd be like in practice. What the
+compiler computes for each one is in
 [Boolean Logic in the Compiler](boolean-logic-in-the-compiler.md).
 
 The least a message has to do is say "you wrote ___, but it should be ___
@@ -192,7 +193,7 @@ Replace lines 40-45 with:
 ```
 
 Hard: DLP 59's own fix, one value operation for each result, leads straight to
-DLP 61's wrapper error here, so the finished fix is different from the one the
+DLP 64's wrapper error here, so the finished fix is different from the one the
 rule suggests. `math/adder.dfn` is an action, so `and` there is
 `operation<standard:/boolean/and>`; in a value operation it would be the logical
 operation.
@@ -223,9 +224,9 @@ File "lamp/bad_argument_order.dfn", line 38, column 37
     with view<a> looking at view<switches_differ>.
                             ^^^^^^^^^^^^^^^^^^^^^
 'view<power>' has to go to 'view<a>', and 'view<switches_differ>' to 'view<b>'.
-The two views of 'logical_operation<standard:/boolean/and>' are
-interchangeable, so their values go in rank order, and 'view<power>' is an
-interface view while 'view<switches_differ>' isn't.
+'logical_operation<standard:/boolean/and>' is commutative, so its arguments go
+in rank order, and 'view<power>' is an interface view while
+'view<switches_differ>' isn't.
 Replace lines 38-39 with:
     with view<a> looking at view<power>.
     with view<b> looking at view<switches_differ>.
@@ -233,13 +234,11 @@ Replace lines 38-39 with:
 
 Hard: here the reason is one step away. When both values come from statements,
 the first difference can be several statements back, so the message should name
-it with both of its lines. When the views belong to a value operation, the
-message should say that they're interchangeable because swapping them doesn't
-change what it writes, since nothing in its definition says so.
+it with both of its lines.
 
 ### Statement Order
 
-DLP 60's example:
+DLP 62's example:
 
 ```define
     it does {
@@ -620,7 +619,7 @@ Nothing reads 'view<either>', so it doesn't change what
 Remove lines 27-36.
 ```
 
-Hard: not much. A dead statement has no place in DLP 60's order, so the compiler
+Hard: not much. A dead statement has no place in DLP 62's order, so the compiler
 shouldn't also report that `view<either>` is in the wrong place. When dead
 statements read each other, one message should list all of their lines.
 
@@ -909,7 +908,7 @@ good name every time.
 
 ### Hard Case: A Match Spread Over Many Lines
 
-The `xor` from DLP 61's example, written out, with `view<not_a>` also read by a
+The `xor` from DLP 64's example, written out, with `view<not_a>` also read by a
 later statement. It's the whole Operation Statements Block, with its local view
 definitions, because the lines are the point:
 
@@ -1033,7 +1032,7 @@ Remove lines 33-51 and 61-88, and replace lines 94-98 with:
 ```
 
 Hard: six statements over 56 lines, with one statement in the middle that has to
-stay. DLP 60's order keeps a match's statements together except for statements
+stay. DLP 62's order keeps a match's statements together except for statements
 like `view<not_a>`, which the match needs first but something later also reads,
 so this is the usual shape, not the worst one. The match's arguments, though,
 can come from anywhere earlier in the value operation.
@@ -1146,7 +1145,7 @@ finished block, with the reorder already done.
 
 ### Hard Case: A Surprising Spelling Given Related Values
 
-This is DLP 61's example of a match over earlier values: "neither `x` nor `y`"
+This is DLP 64's example of a match over earlier values: "neither `x` nor `y`"
 is the same as "`x` equals `y`" when `x` and `y` are never both true. A lamp is
 on by hand in manual mode, and by the dark in automatic mode, and is idle when
 neither is on:
@@ -1220,7 +1219,7 @@ needs to see both the relation and the one combination that makes "neither" and
 
 Making it obvious: the relation, the table with the impossible row marked, and a
 sentence on why `equality` beats `not or`, since the programmer would otherwise
-write the `or` that DLP 61's "opposite results" rule also points to.
+write the `or` that DLP 64's "opposite results" rule also points to.
 
 ### One Spelling for Each Value
 
@@ -1308,7 +1307,7 @@ operation's, and the new executions may then need their values swapped.
 
 ### A Second Wrapper for `and`
 
-DLP 61's example:
+DLP 64's example:
 
 ```define
     it does {
@@ -1385,7 +1384,7 @@ Hard: nothing.
 
 ### A Registered Operation's Own Definition
 
-The project registers `/boolean/xor`, written as in DLP 60's example:
+The project registers `/boolean/xor`, written as in DLP 62's example:
 
 ```define
     it does {
@@ -1467,7 +1466,7 @@ say how many executions each choice would change.
   That edit can affect other files and remove whole value operations. Is that
   too much for one message, or should the message offer to run the tool?
 - **How many messages.** DLP 59 reports the first redundant value and every dead
-  statement, and DLP 61 reports the largest match. Consequences, like an input
+  statement, and DLP 64 reports the largest match. Consequences, like an input
   view that stops mattering or an execution elsewhere that becomes always false,
   are folded into one message here. Should they also count as errors of their
   own?
